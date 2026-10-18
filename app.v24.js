@@ -340,7 +340,6 @@ function rebuild(){
     lg.add(makeSprite(r.c.toFixed(1), new THREE.Vector3(r.p.x, r.c+5, r.p.z), '#ffffff'));
     lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+5, r.pl.z), '#7fd4ff'));
     lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+5, r.pr.z), '#ffb0a0'));
-    // орг. высоты: СТРОГО под лейблом текущей высоты
     tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.c-2.8, r.p.z), '#cfe3cf', true));
     tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'), new THREE.Vector3(r.pl.x, r.l-2.8, r.pl.z), '#cfe3cf', true));
     tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'), new THREE.Vector3(r.pr.x, r.r-2.8, r.pr.z), '#cfe3cf', true));
@@ -413,6 +412,21 @@ async function loadSlope(id){
     const cv=await loadJSON(`./assets/${id}.curves.json${bust()}`);
     state.curves=cv;
     dbg('Кривые загружены: centre '+(cv.centre||[]).length+', left '+(cv.left||[]).length+', right '+(cv.right||[]).length);
+    // Подписи Maya: ищем файл в assets/
+    const mayaEl=document.getElementById('mayaLabels');
+    mayaEl.textContent='Загрузка подписей Maya…';
+    let mayaLoaded=false;
+    for(const name of [`${id}.maya_labels.json`, `${id}.maya.json`, 'maya_labels.json', 'maya.json']){
+      try{
+        const m=await loadJSON(`./assets/${name}${bust()}`);
+        let txt='';
+        if(Array.isArray(m)) txt=m.map(x=>typeof x==='string'?x:JSON.stringify(x)).join('\n');
+        else if(m&&typeof m==='object') txt=Object.entries(m).map(([k,v])=>k+': '+(typeof v==='object'?JSON.stringify(v):v)).join('\n');
+        else txt=String(m);
+        if(txt.trim()){ mayaEl.textContent=txt; mayaLoaded=true; dbg('Подписи Maya загружены из '+name); break; }
+      }catch(e){ /* файла нет */ }
+    }
+    if(!mayaLoaded){ mayaEl.textContent='Нет данных — файл подписей Maya не найден в assets/.'; dbg('Подписи Maya не найдены.'); }
     const box=new THREE.Box3().setFromObject(root);
     const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
     camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
