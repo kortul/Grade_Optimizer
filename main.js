@@ -3,8 +3,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const state = {
-  slope:'slope1', ang:35, prof:0, cut:5,
-  terrainVisible:true, terrainOpacity:1, designVisible:true,
+  slope:'A1', ang:35, prof:0, cut:5,
+  terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
   designGroup:null, labelsGroup:null, terrainLabelsGroup:null
@@ -227,6 +227,26 @@ function rebuild(){
   mesh.castShadow = true; mesh.receiveShadow = true;
   g.add(mesh);
 
+  // Сетка сегментов: поперечные линии каждые 200 м
+  if(state.gridVisible){
+    const linePos=[];
+    let acc=0; let next=200;
+    for(let i=1;i<N;i++){
+      acc+=C[i].distanceTo(C[i-1]);
+      if(acc>=next){
+        next+=200;
+        for(let j=0;j<M-1;j++){
+          const a=G[i][j], b=G[i][j+1];
+          linePos.push(a.x,a.y+0.15,a.z, b.x,b.y+0.15,b.z);
+        }
+      }
+    }
+    const lgeo=new THREE.BufferGeometry();
+    lgeo.setAttribute('position', new THREE.Float32BufferAttribute(linePos,3));
+    const lines=new THREE.LineSegments(lgeo, new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:0.5}));
+    g.add(lines);
+  }
+
   const stepM=20;
   let acc=0; const rows=[];
   for(let i=1;i<N;i++){
@@ -261,11 +281,9 @@ function rebuild(){
     lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+3.5, r.pl.z), '#7fd4ff'));
     lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+3.5, r.pr.z), '#ffb0a0'));
     const tgl=terrainY(r.pl.x,r.pl.z), tgr=terrainY(r.pr.x,r.pr.z);
-    // высоты оригинальной почвы: точно на поверхности рельефа
     tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+0.6, r.p.z), '#cfe3cf', true));
     if(tgl!==null) tg.add(makeSprite('орг.: '+tgl.toFixed(1), new THREE.Vector3(r.pl.x, tgl+0.6, r.pl.z), '#cfe3cf', true));
     if(tgr!==null) tg.add(makeSprite('орг.: '+tgr.toFixed(1), new THREE.Vector3(r.pr.x, tgr+0.6, r.pr.z), '#cfe3cf', true));
-    // оригинальные уклоны центральной линии (по умолчанию выключены)
     if(state.terrainSlopesVisible){
       lg.add(makeSprite('орг. уклон: '+r.terrSlope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.tg+4.5, r.p.z), '#7fd4ff', true));
     }
@@ -285,11 +303,11 @@ function rebuild(){
 }
 
 async function loadSlopeList(){
-  let names=['slope1','slope2'];
+  let names=['A1'];
   try{
     const m=await loadJSON('./assets/slopes.json'+bust());
     if(Array.isArray(m) && m.length) names=m.map(String);
-  }catch(e){ dbg('slopes.json не найден — использую slope1, slope2'); }
+  }catch(e){ dbg('slopes.json не найден — использую A1'); }
   const list=document.getElementById('slopeList');
   list.innerHTML='';
   names.forEach((n,i)=>{
@@ -344,7 +362,7 @@ async function loadSlope(id){
     rebuild();
   }catch(err){
     const msg=err&&(err.message||err.description)?(err.message||err.description):String(err);
-    document.getElementById('stats').textContent='Ошибка загрузки: '+msg;
+    document.getElementById('stats').textContent='Ошибка загрузки склона "'+id+'": '+msg;
     dbg('ОШИБКА: '+msg);
     console.error(err);
   }finally{
@@ -383,6 +401,9 @@ document.getElementById('pTerrOp').addEventListener('input',e=>{
 document.getElementById('pDesign').addEventListener('change',e=>{
   state.designVisible=e.target.checked; applyDesignLook();
 });
+document.getElementById('pGrid').addEventListener('change',e=>{
+  state.gridVisible=e.target.checked; rebuild();
+});
 document.getElementById('pLabels').addEventListener('change',e=>{
   state.labelsVisible=e.target.checked; applyDesignLook();
 });
@@ -394,7 +415,6 @@ document.getElementById('pTerrainSlopes').addEventListener('change',e=>{
 });
 document.getElementById('pLight').addEventListener('input',e=>{
   sun.intensity=parseFloat(e.target.value);
-  document.getElementById('vLight').textContent=e.target.value;
 });
 document.getElementById('pLightOn').addEventListener('change',e=>{
   sun.visible=e.target.checked;
@@ -419,10 +439,12 @@ document.getElementById('save').addEventListener('click',()=>{
     cut_n:parseFloat(fillN.toFixed(4)),
     saved_at:new Date().toISOString()
   };
+  localStorage.setItem('ssgo_last_preset', JSON.stringify(preset));
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(preset,null,2)],{type:'application/json'}));
   a.download=`ssgo_preset_${state.slope}_${Date.now()}.json`;
   a.click();
+  document.getElementById('stats').innerHTML+='<br><span style="color:#7f7">Параметры сохранены локально и скачаны.</span>';
 });
 
 document.getElementById('reset').addEventListener('click',()=>{

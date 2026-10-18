@@ -30,7 +30,6 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 details[open] summary{margin-bottom:8px}
 #legend{position:absolute;top:12px;right:12px;background:rgba(20,20,24,.85);border:1px solid #3a3a44;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8;pointer-events:none}
 #legend .sw{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:8px;vertical-align:-2px}
-#light{margin-top:8px}
 #loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,20,24,.72);z-index:10}
 #loading .box{text-align:center}
 #loading .spin{width:46px;height:46px;border:4px solid #3a3a44;border-top-color:#2ea36a;border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
@@ -45,7 +44,7 @@ details[open] summary{margin-bottom:8px}
     <h1>Вертикальная планировка склона — оптимизация</h1>
     <div class="group">
       <h2>Склон</h2>
-      <div id="slopeList"><button class="slope-btn active" data-slope="slope1">slope1</button></div>
+      <div id="slopeList"></div>
     </div>
     <div class="group">
       <h2>Основные настройки</h2>
@@ -63,11 +62,10 @@ details[open] summary{margin-bottom:8px}
       <label>Прозрачность почвы <span class="val" id="vTerrOp">100%</span></label>
       <input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
       <div class="chk"><input type="checkbox" id="pDesign" checked/> <span>Показать новый склон</span></div>
+      <div class="chk"><input type="checkbox" id="pGrid" checked/> <span>Сетка сегментов (каждые 200 м)</span></div>
       <div class="chk"><input type="checkbox" id="pLabels" checked/> <span>Показать подписи</span></div>
       <div class="chk"><input type="checkbox" id="pTerrainLabels" checked/> <span>Показать высоты оригинальной почвы</span></div>
       <div class="chk"><input type="checkbox" id="pTerrainSlopes"/> <span>Показать оригинальные уклоны центральной линии</span></div>
-      <label>Освещение <span class="val" id="vLight">1.6</span></label>
-      <input type="range" id="pLight" min="0" max="3" step="0.1" value="1.6"/>
       <div class="hint">Управление: ЛКМ — вращение, колесо — зум, ПКМ — панорама, двойной клик — фокус на точку.</div>
     </div>
     <div class="group">
@@ -86,7 +84,7 @@ details[open] summary{margin-bottom:8px}
       <summary>Debug</summary>
       <div id="debug">-</div>
     </details>
-    <button id="save">Скачать конфигурацию для Maya</button>
+    <button id="save">Сохранить параметры</button>
     <button class="secondary" id="reset">Сбросить</button>
   </div>
   <div id="view">
@@ -95,7 +93,7 @@ details[open] summary{margin-bottom:8px}
       <div><span class="sw" style="background:#d17a5c"></span>Выемка (новый склон ниже почвы)</div>
       <div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div>
       <div><span class="sw" style="background:#2f4a2f"></span>Оригинальная почва</div>
-      <div id="light" class="chk"><input type="checkbox" id="pLightOn" checked/> <span>Солнце</span>
+      <div class="chk"><input type="checkbox" id="pLightOn" checked/> <span>Солнце</span>
       <input type="range" id="pLight" min="0" max="3" step="0.1" value="1.6" style="width:90px"/></div>
     </div>
     <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div>
@@ -107,6 +105,6 @@ details[open] summary{margin-bottom:8px}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=16"></script>
+<script type="module" src="./main.js?v=17"></script>
 </body>
 </html>
