@@ -28,8 +28,6 @@ window.addEventListener('resize', () => {
   renderer.setSize(view.clientWidth, view.clientHeight);
 });
 
-function findMeshes(o){ const a=[]; o.traverse(c=>{ if(c.isMesh) a.push(c); }); return a; }
-
 function curvePoints(obj){
   const pts=[]; obj.updateWorldMatrix(true,true);
   obj.traverse(c=>{
@@ -115,11 +113,10 @@ function rebuild(){
       let last=edge.clone().setY(yEdge);
       for(let d=1; d<=60; d+=1){
         const q=edge.clone().addScaledVector(dir,d);
-        q.y=yEdge-d*tanA*0 ; // placeholder replaced below
-        const slopeDrop = d*tanA;
         const th=terrainY(q.x,q.z);
         if(th===null) break;
-        const dz = yEdge - th;           // >0: road above terrain (fill), <0: below (cut)
+        const dz = yEdge - th;
+        const slopeDrop = d*tanA;
         const yy = dz>0 ? yEdge - slopeDrop : yEdge + slopeDrop;
         if((dz>0 && yy<=th) || (dz<=0 && yy>=th)) return new THREE.Vector3(q.x,th,q.z);
         last=new THREE.Vector3(q.x,yy,q.z);
@@ -169,7 +166,7 @@ function loadSlope(id){
   if(state.ribbon){ scene.remove(state.ribbon); state.ribbon=null; }
   Object.assign(state,{terrain:null,centre:null,left:null,right:null,limit:null});
   document.getElementById('stats').textContent='Загрузка…';
-  loader.load(`./assets/${id}.glb`, gltf=>{
+  loader.load(`./assets/${id}.gltf`, gltf=>{
     const root=gltf.scene; scene.add(root); state.root=root;
     root.traverse(o=>{
       const n=(o.name||'').toLowerCase();
@@ -189,7 +186,7 @@ function loadSlope(id){
     if(miss.length){ document.getElementById('stats').textContent='В GLB не найдены объекты: '+miss.join(', '); return; }
     rebuild();
   }, undefined, err=>{
-    document.getElementById('stats').textContent='Не удалось загрузить assets/'+id+'.glb';
+    document.getElementById('stats').textContent='Не удалось загрузить assets/'+id+'.gltf (проверь, что .bin рядом)';
   });
 }
 
