@@ -23,6 +23,8 @@ button.secondary{background:#3a3a44}
 #debug,#mayaLabels,#labels{font-size:11px;line-height:1.5;color:#aab;white-space:pre-wrap;font-family:monospace;max-height:220px;overflow-y:auto}
 .slope-btn{display:block;width:100%;margin:4px 0;padding:10px;background:#2e2e38;color:#eee;border:1px solid #444;border-radius:6px;cursor:pointer;text-align:left;font-size:14px}
 .slope-btn.active{background:#2ea36a;border-color:#2ea36a}
+.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
+.hint{font-size:11px;color:#889;margin-top:6px}
 @media(max-width:800px){#app{flex-direction:column-reverse}#panel{width:100%;max-height:45vh}}
 </style>
 </head>
@@ -36,19 +38,20 @@ button.secondary{background:#3a3a44}
       <button class="slope-btn" data-slope="slope2">Склон 2</button>
     </div>
     <div class="group">
-      <h2>Параметры трассы</h2>
-      <label>Сдвиг трассы влево/вправо, м <span class="val" id="vOff">0.0</span></label>
-      <input type="range" id="pOff" min="-5" max="5" step="0.1" value="0"/>
-      <label>Поперечный уклон, % <span class="val" id="vCr">0.0</span></label>
-      <input type="range" id="pCr" min="-5" max="5" step="0.1" value="0"/>
-      <label>Уклон откоса насыпи 1:<span class="val" id="vFillN">1.43</span></label>
-      <input type="range" id="pFillN" min="1" max="5" step="0.01" value="1.43"/>
-      <label>Уклон откоса выемки 1:<span class="val" id="vCutN">1.43</span></label>
-      <input type="range" id="pCutN" min="1" max="5" step="0.01" value="1.43"/>
-      <label>Макс. глубина срезки, м <span class="val" id="vCut">3.0</span></label>
-      <input type="range" id="pCut" min="0" max="20" step="0.5" value="3"/>
-      <label>Сглаживание профиля <span class="val" id="vProf">0</span></label>
+      <h2>Основные настройки</h2>
+      <label>Угол откоса (от края трассы к рельефу), ° <span class="val" id="vAng">35°</span></label>
+      <input type="range" id="pAng" min="5" max="60" step="0.5" value="35"/>
+      <label>Сглаживание продольного профиля: 0 (нет) … 10 (макс) <span class="val" id="vProf">0</span></label>
       <input type="range" id="pProf" min="0" max="10" step="1" value="0"/>
+      <label>Макс. глубина срезки, м (лимит, не цель) <span class="val" id="vCut">3.0</span></label>
+      <input type="range" id="pCut" min="0" max="20" step="0.5" value="3"/>
+    </div>
+    <div class="group">
+      <h2>Отображение</h2>
+      <div class="chk"><input type="checkbox" id="pTerrain" checked/> <span>Показать оригинальный terrain</span></div>
+      <label>Прозрачность terrain <span class="val" id="vTerrOp">100%</span></label>
+      <input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
+      <div class="hint">Управление как в Sketchfab: ЛКМ — вращение, колесо — зум, ПКМ — панорама.</div>
     </div>
     <div class="group">
       <h2>Предварительный расчёт (веб)</h2>
@@ -77,6 +80,6 @@ button.secondary{background:#3a3a44}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=10"></script>
+<script type="module" src="./main.js?v=11"></script>
 </body>
 </html>
