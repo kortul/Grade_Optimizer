@@ -8,7 +8,7 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,sans-serif;background:#141418;color:#eee}
 #app{display:flex;height:100vh}
-#panel{width:340px;padding:16px;background:#1c1c22;overflow-y:auto;flex-shrink:0}
+#panel{width:360px;padding:16px;background:#1c1c22;overflow-y:auto;flex-shrink:0}
 #view{flex:1;position:relative}
 h1{font-size:18px;margin:0 0 12px}
 .group{background:#26262e;border-radius:8px;padding:12px;margin-bottom:12px}
@@ -20,6 +20,7 @@ button{width:100%;padding:12px;margin-top:8px;border:0;border-radius:6px;backgro
 button.secondary{background:#3a3a44}
 #stats{font-size:13px;line-height:1.7}
 #stats b{color:#7fd}
+#debug{font-size:11px;line-height:1.6;color:#aab;white-space:pre-wrap;font-family:monospace}
 .slope-btn{display:block;width:100%;margin:4px 0;padding:10px;background:#2e2e38;color:#eee;border:1px solid #444;border-radius:6px;cursor:pointer;text-align:left;font-size:14px;font-weight:normal}
 .slope-btn.active{background:#2ea36a;border-color:#2ea36a}
 .chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
@@ -49,11 +50,15 @@ button.secondary{background:#3a3a44}
       <input type="range" id="pOff" min="-5" max="5" step="0.1" value="0"/>
       <label>Поперечный уклон, % <span class="val" id="vCr">0.0</span></label>
       <input type="range" id="pCr" min="-5" max="5" step="0.1" value="0"/>
-      <div class="chk"><input type="checkbox" id="pDbg" checked/> <span>Debug: показать кривые и каркас</span></div>
+      <div class="chk"><input type="checkbox" id="pDbg" checked/> <span>Debug: кривые + каркас</span></div>
     </div>
     <div class="group">
       <h2>Отчёт по грунту (оценка)</h2>
       <div id="stats">Загрузка…</div>
+    </div>
+    <div class="group">
+      <h2>Debug (масштаб/координаты)</h2>
+      <div id="debug">-</div>
     </div>
     <button id="save">Сохранить конфигурацию</button>
     <button class="secondary" id="reset">Сбросить</button>

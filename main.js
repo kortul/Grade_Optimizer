@@ -28,6 +28,9 @@ window.addEventListener('resize', () => {
   renderer.setSize(view.clientWidth, view.clientHeight);
 });
 
+const dbgEl = document.getElementById('debug');
+function dbg(msg){ dbgEl.textContent += msg + "\n"; }
+
 function resample(pts,n){
   if(pts.length<2) return pts.map(p=>new THREE.Vector3(...p));
   const v=pts.map(p=>new THREE.Vector3(...p));
@@ -73,6 +76,11 @@ function bboxOf(pts){
   return b;
 }
 
+function fmtBox(b){
+  const f=v=>v.toFixed(1);
+  return `min(${f(b.min.x)}, ${f(b.min.y)}, ${f(b.min.z)}) max(${f(b.max.x)}, ${f(b.max.y)}, ${f(b.max.z)})`;
+}
+
 function drawDebug(C,L,R){
   if(state.debugGroup){ scene.remove(state.debugGroup); state.debugGroup=null; }
   if(!state.dbg) return;
@@ -84,7 +92,6 @@ function drawDebug(C,L,R){
   g.add(mk(C,0xffffff));
   g.add(mk(L,0x00ff00));
   g.add(mk(R,0xff3333));
-  // каркас коридора
   if(state.ribbon){
     const wf=new THREE.LineSegments(new THREE.WireframeGeometry(state.ribbon.geometry),
       new THREE.LineBasicMaterial({color:0x4a9fe0,transparent:true,opacity:0.35}));
@@ -104,13 +111,6 @@ function rebuild(){
   const C0=resample(cv.centre,N);
   const L0=alignDir(C0,resample(cv.left,N));
   const R0=alignDir(C0,resample(cv.right,N));
-
-  console.log('[SSGO debug] points:', cv.centre.length, cv.left.length, cv.right.length);
-  console.log('[SSGO debug] centre bbox:', bboxOf(C0));
-  console.log('[SSGO debug] left bbox:', bboxOf(L0));
-  console.log('[SSGO debug] right bbox:', bboxOf(R0));
-  const tb=new THREE.Box3().setFromObject(state.terrain);
-  console.log('[SSGO debug] terrain bbox:', tb);
 
   const tanA=Math.tan(THREE.MathUtils.degToRad(state.ang));
   let zc=smooth(C0.map(p=>p.y), state.prof);
@@ -193,6 +193,7 @@ function loadSlope(id){
   if(state.ribbon){ scene.remove(state.ribbon); state.ribbon=null; }
   if(state.debugGroup){ scene.remove(state.debugGroup); state.debugGroup=null; }
   state.terrain=null; state.curves=null;
+  dbgEl.textContent='';
   document.getElementById('stats').textContent='Загрузка…';
   loader.load(`./assets/${id}.gltf`, gltf=>{
     const root=gltf.scene; scene.add(root); state.root=root;
@@ -200,14 +201,35 @@ function loadSlope(id){
     if(state.terrain) state.terrain.traverse(c=>{ if(c.isMesh){ c.material=new THREE.MeshStandardMaterial({color:0x8a8470,roughness:1,side:THREE.DoubleSide}); }});
     root.updateMatrixWorld(true);
     fetch(`./assets/${id}.curves.json`).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(cv=>{ state.curves=cv; afterLoad(root); })
+      .then(cv=>{ state.curves=cv; fixScaleAndAfterLoad(root); })
       .catch(e=>{ document.getElementById('stats').textContent='Не найден assets/'+id+'.curves.json ('+e.message+')'; });
   }, undefined, err=>{
     document.getElementById('stats').textContent='Не удалось загрузить assets/'+id+'.gltf';
   });
 }
 
-function afterLoad(root){
+function fixScaleAndAfterLoad(root){
+  const cv=state.curves;
+  const tb=new THREE.Box3().setFromObject(state.terrain);
+  const all=[...(cv.centre||[]),...(cv.left||[]),...(cv.right||[])].map(p=>new THREE.Vector3(...p));
+  const cb=bboxOf(all);
+  const tSize=tb.getSize(new THREE.Vector3()).length();
+  const cSize=cb.getSize(new THREE.Vector3()).length();
+  const ratio=tSize/Math.max(cSize,1e-9);
+  dbg('Terrain bbox: '+fmtBox(tb));
+  dbg('Кривые bbox: '+fmtBox(cb));
+  dbg('Размер terrain: '+tSize.toFixed(1)+' | кривых: '+cSize.toFixed(1));
+  dbg('Отношение (terrain/кривые): '+ratio.toFixed(3));
+  if(ratio>20 && ratio<500){
+    const s=1/ratio;
+    dbg('==> МАСШТАБ НЕ СОВПАДАЕТ. Авто-масштаб кривых x'+s.toFixed(4));
+    for(const k of ['centre','left','right','limit']){
+      if(cv[k]) cv[k]=cv[k].map(p=>[p[0]*s,p[1]*s,p[2]*s]);
+    }
+    dbg('Кривые после масштаба: '+fmtBox(bboxOf([...cv.centre,...cv.left,...cv.right].map(p=>new THREE.Vector3(...p)))));
+  } else {
+    dbg('Масштаб совпадает (или вне диапазона авто-фикса).');
+  }
   const box=new THREE.Box3().setFromObject(root);
   const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
   camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
@@ -234,7 +256,7 @@ document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()
 }));
 
 document.getElementById('save').addEventListener('click',()=>{
-  const preset={version:'web-0.4',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
+  const preset={version:'web-0.5',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
     max_cut_depth:state.cut,usable_percent:state.use,offset:state.off,crossfall_percent:state.cr,
     saved_at:new Date().toISOString()};
   const a=document.createElement('a');
