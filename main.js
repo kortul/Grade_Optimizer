@@ -80,7 +80,7 @@ function rebuild(){
   let prof = smoothVals(ground, state.prof);
 
   const pos=[], cols=[], idx=[];
-  const zoneOf = d => d > 0.02 ? [0.16,0.82,0.2] : (d < -0.02 ? [0.9,0.25,0.2] : [0.55,0.55,0.6]);
+  const zoneOf = d => d > 0.02 ? [0.35,0.75,0.35] : (d < -0.02 ? [0.85,0.45,0.35] : [0.75,0.75,0.78]);
   let cutV=0, fillV=0;
   const G=[], TG=[];
   for(let i=0;i<N;i++){
@@ -103,6 +103,7 @@ function rebuild(){
     }
     G.push(row); TG.push(trow);
   }
+  // цвет ячейки — по средней разнице, чтобы не было «треугольников»
   for(let i=0;i<N-1;i++) for(let j=0;j<M-1;j++){
     const a=G[i][j], b=G[i][j+1], c=G[i+1][j+1], e=G[i+1][j];
     const ta=TG[i][j], tb=TG[i][j+1], tc=TG[i+1][j+1], te=TG[i+1][j];
@@ -111,9 +112,10 @@ function rebuild(){
             + Math.abs((c.x-a.x)*(e.z-a.z)-(e.x-a.x)*(c.z-a.z))/2;
     const v=d*s;
     if(v>=0) fillV+=v; else cutV-=v;
-    for(const [p,t] of [[a,ta],[b,tb],[c,tc],[e,te]]){
+    const col=zoneOf(d);
+    for(const p of [a,b,c,e]){
       pos.push(p.x,p.y,p.z);
-      cols.push(...zoneOf(p.y-t));
+      cols.push(...col);
     }
     idx.push(pos.length/3-4, pos.length/3-2, pos.length/3-1);
     idx.push(pos.length/3-4, pos.length/3-1, pos.length/3-3);
@@ -132,11 +134,10 @@ function rebuild(){
       const v=Math.abs((dzPrev+dzCur)/2)*0.5;
       if(isFill) fillV+=v; else cutV+=v;
       const base=pos.length/3-3;
-      cols.push(...zoneOf(dzPrev), ...zoneOf(dzCur), ...zoneOf(0));
+      const col=zoneOf((dzPrev+dzCur)/2);
+      cols.push(...col, ...col, ...col);
       idx.push(base, base+1, base+2);
-      if((isFill && z<=th) || (!isFill && z>=th)){
-        return;
-      }
+      if((isFill && z<=th) || (!isFill && z>=th)) return;
       prev=p;
     }
   };
@@ -152,10 +153,12 @@ function rebuild(){
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
   geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
   geo.setIndex(idx); geo.computeVertexNormals();
-  const mesh=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({vertexColors:true, side:THREE.DoubleSide, roughness:.9,
+  // BasicMaterial без освещения — ровная «карта» без тёмных треугольников
+  const mesh=new THREE.Mesh(geo, new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.DoubleSide,
     polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-1}));
   g.add(mesh);
 
+  // подписи веба: каждые ~20 м
   const stepM=20;
   let acc=0; const rows=[];
   for(let i=1;i<N;i++){
@@ -164,7 +167,7 @@ function rebuild(){
       acc=0;
       const h=Math.max(0.1, C[i].distanceTo(C[i-1]));
       const slope=deg(Math.atan((G[i][4].y-G[i-1][4].y)/h));
-      rows.push({i, slope, c:G[i][4].y, l:G[i][0].y, r:G[i][M-1].y, p:C[i]});
+      rows.push({i, slope, c:G[i][4].y, l:G[i][0].y, r:G[i][M-1].y, p:C[i], pl:G[i][0], pr:G[i][M-1]});
     }
   }
   const labelDiv=document.getElementById('labels');
@@ -174,17 +177,19 @@ function rebuild(){
   const makeSprite=(text, p, color)=>{
     const cnv=document.createElement('canvas'); cnv.width=256; cnv.height=64;
     const ctx=cnv.getContext('2d');
-    ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,256,64);
-    ctx.fillStyle=color; ctx.font='bold 28px sans-serif'; ctx.textAlign='center';
-    ctx.fillText(text,128,42);
+    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,0,256,64);
+    ctx.fillStyle=color; ctx.font='bold 30px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(text,128,44);
     const tex=new THREE.CanvasTexture(cnv);
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
-    sp.scale.set(12,3,1); sp.position.copy(p);
+    sp.scale.set(10,2.5,1); sp.position.copy(p);
     return sp;
   };
   rows.forEach(r=>{
-    lg.add(makeSprite(r.slope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.c+6, r.p.z), '#ffd24a'));
-    lg.add(makeSprite(r.c.toFixed(1), new THREE.Vector3(r.p.x, r.c+3, r.p.z), '#ffffff'));
+    lg.add(makeSprite(r.slope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.c+7, r.p.z), '#ffd24a'));
+    lg.add(makeSprite(r.c.toFixed(1), new THREE.Vector3(r.p.x, r.c+3.5, r.p.z), '#ffffff'));
+    lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+3.5, r.pl.z), '#7fd4ff'));
+    lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+3.5, r.pr.z), '#ffb0a0'));
   });
 
   const usable=cutV*0.9;
@@ -207,6 +212,7 @@ async function loadSlope(id){
   state.labelsGroup=clearGroup(state.labelsGroup);
   dbgEl.textContent='';
   document.getElementById('stats').textContent='Загрузка…';
+  document.getElementById('mayaLabels').textContent='Загрузка…';
   try{
     const gltf=await loadGLTF(`./assets/${id}.gltf${bust()}`);
     const root=gltf.scene; scene.add(root); state.root=root;
@@ -226,6 +232,16 @@ async function loadSlope(id){
     camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
     controls.target.copy(ctr); controls.update();
     rebuild();
+    // подписи Maya (последний ЗАПУСК) — для сверки
+    try{
+      const ml=await loadJSON(`./assets/${id}_labels.json${bust()}`);
+      document.getElementById('mayaLabels').innerHTML = ml.labels.map(r=>
+        `<div>Ст. ${r.station}: уклон <b>${r.slope_deg===null?'—':r.slope_deg.toFixed(1)+'°'}</b> | H: ${r.h_center.toFixed(1)} / ${r.h_left.toFixed(1)} / ${r.h_right.toFixed(1)} м</div>`
+      ).join('');
+      dbg('Подписи Maya загружены: '+ml.labels.length+' станций.');
+    }catch(e){
+      document.getElementById('mayaLabels').textContent='Нет (нужен ЗАПУСК + экспорт в Maya): '+e.message;
+    }
   }catch(err){
     const msg=err&&(err.message||err.description)?(err.message||err.description):String(err);
     document.getElementById('stats').textContent='Ошибка загрузки: '+msg;

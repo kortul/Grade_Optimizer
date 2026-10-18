@@ -20,7 +20,7 @@ button{width:100%;padding:12px;margin-top:8px;border:0;border-radius:6px;backgro
 button.secondary{background:#3a3a44}
 #stats{font-size:13px;line-height:1.7}
 #stats b{color:#7fd}
-#debug{font-size:11px;line-height:1.6;color:#aab;white-space:pre-wrap;font-family:monospace}
+#debug,#mayaLabels,#labels{font-size:11px;line-height:1.5;color:#aab;white-space:pre-wrap;font-family:monospace;max-height:220px;overflow-y:auto}
 .slope-btn{display:block;width:100%;margin:4px 0;padding:10px;background:#2e2e38;color:#eee;border:1px solid #444;border-radius:6px;cursor:pointer;text-align:left;font-size:14px}
 .slope-btn.active{background:#2ea36a;border-color:#2ea36a}
 @media(max-width:800px){#app{flex-direction:column-reverse}#panel{width:100%;max-height:45vh}}
@@ -55,8 +55,12 @@ button.secondary{background:#3a3a44}
       <div id="stats">Загрузка…</div>
     </div>
     <div class="group">
-      <h2>Подписи (высоты и уклоны)</h2>
-      <div id="labels" style="font-size:12px;max-height:220px;overflow-y:auto;line-height:1.5">-</div>
+      <h2>Подписи веба (высоты и уклоны)</h2>
+      <div id="labels">-</div>
+    </div>
+    <div class="group">
+      <h2>Подписи Maya (последний ЗАПУСК)</h2>
+      <div id="mayaLabels">Загрузка…</div>
     </div>
     <div class="group">
       <h2>Debug</h2>
@@ -73,6 +77,6 @@ button.secondary{background:#3a3a44}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=9"></script>
+<script type="module" src="./main.js?v=10"></script>
 </body>
 </html>
