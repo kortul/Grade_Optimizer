@@ -202,7 +202,17 @@ class TriSampler{
 class Engine{
   constructor(verts,tris,sampler,P){
     this.V=verts;this.T=tris;this.sampler=sampler;
-    this.S=(x,z)=>sampler.call(x,z);
+    this._rcMiss=0;this._rcHit=0;
+    this.S=(x,z)=>{
+      let v=sampler.call(x,z);
+      if(v===null){
+        const ry=terrainY(x,z);
+        if(ry!==null){this._rcHit++;return ry;}
+        this._rcMiss++;
+        return null;
+      }
+      return v;
+    };
     this.P=P;this.nV=verts.length;
     this.step=P.march_step;
     let pos=0,neg=0;this.edgeFaces={};
@@ -241,7 +251,6 @@ class Engine{
       if(v===null){gc.push(null);missCount++;}
       else gc.push(v);
     }
-    // интерполяция пропусков между валидными станциями
     const valid=gc.map((v,i)=>v!==null?i:-1).filter(i=>i>=0);
     if(valid.length){
       for(let i=0;i<n;i++){
@@ -257,7 +266,7 @@ class Engine{
       }
     }
     for(let i=0;i<n;i++)if(gc[i]===null)gc[i]=centre[i][1];
-    if(missCount)dbg('Вне terrain: '+missCount+' станций — интерполировано.');
+    if(missCount)dbg('Вне terrain: '+missCount+' станций — интерполировано. Raycast fallback: '+this._rcHit+' попаданий, '+this._rcMiss+' промахов.');
     let prof=gc.slice();
     for(let k=0;k<P.profile_passes;k++){
       const old=prof.slice();
@@ -591,14 +600,14 @@ function rebuild(){
     return '<div>Ст. '+r.station+': уклон <b>'+s+'°</b> | H: '+r.centerHeight.toFixed(1)+' / '+r.leftHeight.toFixed(1)+' / '+r.rightHeight.toFixed(1)+' м</div>';
   }).join('')||'-';
   const makeSprite=(text,p,color,small)=>{
-    const cnv=document.createElement('canvas');cnv.width=384;cnv.height=96;
+    const cnv=document.createElement('canvas');cnv.width=512;cnv.height=128;
     const ctx=cnv.getContext('2d');
-    ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(0,0,384,96);
-    ctx.fillStyle=color;ctx.font=(small?'33px':'bold 45px')+' sans-serif';ctx.textAlign='center';
-    ctx.fillText(text,192,small?60:66);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false}));
-    sp.scale.set(small?10.5:15,small?2.6:3.75,1);
-    sp.position.copy(p);sp.renderOrder=10;
+    ctx.fillStyle='rgba(0,0,0,0.75)';ctx.fillRect(0,0,512,128);
+    ctx.fillStyle=color;ctx.font=(small?'44px':'bold 62px')+' sans-serif';ctx.textAlign='center';
+    ctx.fillText(text,256,small?82:90);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false,depthWrite:false}));
+    sp.scale.set(small?14:20,small?3.5:5,1);
+    sp.position.copy(p);sp.renderOrder=20;
     return sp;
   };
   const slopeColor=s=>s<0?'#ff8000':(s<10?'#00ff00':(s<15?'#0000ff':(s<25?'#ff0000':'#000000')));
@@ -607,16 +616,16 @@ function rebuild(){
     if(i<0)return;
     const c=IDc[i][Math.floor(m/2)],l=IDc[i][0],rr=IDc[i][m-1];
     const tg=eng.groundC[i];
-    lg.add(makeSprite((r.slope===null?'—':r.slope.toFixed(1))+'°',new THREE.Vector3(c[0],c[1]+10,c[2]),slopeColor(r.slope===null?0:r.slope)));
-    lg.add(makeSprite(r.centerHeight.toFixed(1),new THREE.Vector3(c[0],c[1]+5,c[2]),'#ffffff'));
-    lg.add(makeSprite(r.leftHeight.toFixed(1),new THREE.Vector3(l[0],l[1]+5,l[2]),'#7fd4ff'));
-    lg.add(makeSprite(r.rightHeight.toFixed(1),new THREE.Vector3(rr[0],rr[1]+5,rr[2]),'#ffb0a0'));
-    tg.add(makeSprite('орг.: '+eng.groundC[i].toFixed(1),new THREE.Vector3(c[0],eng.groundC[i]-2.8,c[2]),'#cfe3cf',true));
+    lg.add(makeSprite((r.slope===null?'—':r.slope.toFixed(1))+'°',new THREE.Vector3(c[0],c[1]+14,c[2]),slopeColor(r.slope===null?0:r.slope)));
+    lg.add(makeSprite(r.centerHeight.toFixed(1),new THREE.Vector3(c[0],c[1]+7,c[2]),'#ffffff'));
+    lg.add(makeSprite(r.leftHeight.toFixed(1),new THREE.Vector3(l[0],l[1]+7,l[2]),'#7fd4ff'));
+    lg.add(makeSprite(r.rightHeight.toFixed(1),new THREE.Vector3(rr[0],rr[1]+7,rr[2]),'#ffb0a0'));
+    tg.add(makeSprite('орг.: '+eng.groundC[i].toFixed(1),new THREE.Vector3(c[0],eng.groundC[i]-4,c[2]),'#cfe3cf',true));
     const tgl=terrainY(l[0],l[2]),tgr=terrainY(rr[0],rr[2]);
-    tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'),new THREE.Vector3(l[0],l[1]-2.8,l[2]),'#cfe3cf',true));
-    tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'),new THREE.Vector3(rr[0],rr[1]-2.8,rr[2]),'#cfe3cf',true));
+    tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'),new THREE.Vector3(l[0],l[1]-4,l[2]),'#cfe3cf',true));
+    tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'),new THREE.Vector3(rr[0],rr[1]-4,rr[2]),'#cfe3cf',true));
     if(state.terrainSlopesVisible&&r.slope!==null){
-      lg.add(makeSprite('орг. уклон: '+r.slope.toFixed(1)+'°',new THREE.Vector3(c[0],eng.groundC[i]+6.5,c[2]),'#7fd4ff',true));
+      lg.add(makeSprite('орг. уклон: '+r.slope.toFixed(1)+'°',new THREE.Vector3(c[0],eng.groundC[i]+9,c[2]),'#7fd4ff',true));
     }
   });
 
