@@ -311,7 +311,7 @@ class Engine{
     const kmax=Math.floor(P.max_skirt/this.step);
     for(const ray of rays){
       const px=ray.p[0],pz=ray.p[1],nx=ray.n[0],nz=ray.n[1];
-      const T=[];
+      let T=[];
       for(let kk=0;kk<=kmax;kk++){
         const s=kk*this.step,x=px+nx*s,z=pz+nz*s;
         if(limitPoly&&!pointInPoly(x,z,limitPoly))break;
