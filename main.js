@@ -33,7 +33,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.screenSpacePanning = true;
-controls.enableZoom = false; // зум колесом делаем сами, плавно
+controls.enableZoom = false;
 controls.rotateSpeed = 0.8;
 controls.minDistance = 30;
 controls.maxDistance = 4000;
@@ -51,7 +51,6 @@ sun.shadow.camera.top = 1200; sun.shadow.camera.bottom = -1200;
 sun.shadow.bias = -0.0005;
 scene.add(sun);
 
-// Плавный зум колесом
 let targetDist = null;
 renderer.domElement.addEventListener('wheel', ev=>{
   ev.preventDefault();
@@ -264,7 +263,6 @@ function rebuild(){
   mesh.castShadow = true; mesh.receiveShadow = true;
   g.add(mesh);
 
-  // Сетка сегментов: ленты каждые 20 м, под подписями
   if(state.gridVisible){
     const gpos=[], gcol=[];
     const white=[1,1,1];
@@ -335,7 +333,6 @@ function rebuild(){
   rows.forEach(r=>{
     const across=new THREE.Vector3().subVectors(r.pr,r.pl).setY(0).normalize();
     const inward=across.clone();
-    // точки采样 рельефа чуть внутрь от края, чтобы луч не задевал стык
     const smpL=r.pl.clone().addScaledVector(inward,1.5);
     const smpR=r.pr.clone().addScaledVector(inward,-1.5);
     const tgl=terrainY(smpL.x,smpL.z), tgr=terrainY(smpR.x,smpR.z);
@@ -343,10 +340,10 @@ function rebuild(){
     lg.add(makeSprite(r.c.toFixed(1), new THREE.Vector3(r.p.x, r.c+5, r.p.z), '#ffffff'));
     lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+5, r.pl.z), '#7fd4ff'));
     lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+5, r.pr.z), '#ffb0a0'));
-    // орг. высоты: ровно под лейблом текущей высоты, на рельефе
-    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+0.4, r.p.z), '#cfe3cf', true));
-    if(tgl!==null) tg.add(makeSprite('орг.: '+tgl.toFixed(1), new THREE.Vector3(smpL.x, tgl+0.4, smpL.z), '#cfe3cf', true));
-    if(tgr!==null) tg.add(makeSprite('орг.: '+tgr.toFixed(1), new THREE.Vector3(smpR.x, tgr+0.4, smpR.z), '#cfe3cf', true));
+    // орг. высоты: СТРОГО под лейблом текущей высоты (значение = высота рельефа)
+    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.c-2.7, r.p.z), '#cfe3cf', true));
+    tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'), new THREE.Vector3(r.pl.x, r.l-2.7, r.pl.z), '#cfe3cf', true));
+    tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'), new THREE.Vector3(r.pr.x, r.r-2.7, r.pr.z), '#cfe3cf', true));
     if(state.terrainSlopesVisible){
       lg.add(makeSprite('орг. уклон: '+r.terrSlope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.tg+6.5, r.p.z), '#7fd4ff', true));
     }
@@ -395,7 +392,6 @@ async function loadSlope(id){
   state.terrainLabelsGroup=clearGroup(state.terrainLabelsGroup);
   dbgEl.textContent='';
   document.getElementById('stats').textContent='Загрузка…';
-  document.getElementById('mayaLabels').textContent='Загрузка…';
   loadingEl.style.display='flex';
   try{
     const gltf=await loadGLTF(`./assets/${id}.gltf${bust()}`);
@@ -535,7 +531,6 @@ document.getElementById('reset').addEventListener('click',()=>{
 loadSlopeList().then(first=>loadSlope(first));
 (function loop(){
   requestAnimationFrame(loop);
-  // плавный зум
   if(targetDist!==null){
     const dir=new THREE.Vector3().subVectors(camera.position, controls.target);
     const cur=dir.length();
