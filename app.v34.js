@@ -202,7 +202,7 @@ class TriSampler{
 class Engine{
   constructor(verts,tris,sampler,P){
     this.V=verts;this.T=tris;this.sampler=sampler;
-    this._rcMiss=0;this._rcHit=0;
+    this._rcHit=0;this._rcMiss=0;this._triHit=0;
     this.S=(x,z)=>{
       let v=sampler.call(x,z);
       if(v===null){
@@ -211,6 +211,7 @@ class Engine{
         this._rcMiss++;
         return null;
       }
+      this._triHit++;
       return v;
     };
     this.P=P;this.nV=verts.length;
@@ -244,6 +245,14 @@ class Engine{
     left=fix(left,'Left');right=fix(right,'Right');
     this.n=n;this.m=P.core_cols;
     this.A=left.map(p2);this.B=right.map(p2);this.C=centre.map(p2);
+    // ДИАГНОСТИКА: bbox terrain и кривых
+    const tb=new THREE.Box3().setFromObject(state.terrain);
+    const tmin=tb.min,tmax=tb.max;
+    dbg('--- ДИАГНОСТИКА ---');
+    dbg('Terrain bbox: X['+tmin.x.toFixed(1)+'..'+tmax.x.toFixed(1)+'] Y['+tmin.y.toFixed(1)+'..'+tmax.y.toFixed(1)+'] Z['+tmin.z.toFixed(1)+'..'+tmax.z.toFixed(1)+']');
+    let cminx=1e9,cmaxx=-1e9,cminz=1e9,cmaxz=-1e9,cminy=1e9,cmaxy=-1e9;
+    centre.forEach(p=>{cminx=Math.min(cminx,p[0]);cmaxx=Math.max(cmaxx,p[0]);cminz=Math.min(cminz,p[2]);cmaxz=Math.max(cmaxz,p[2]);cminy=Math.min(cminy,p[1]);cmaxy=Math.max(cmaxy,p[1]);});
+    dbg('Centre bbox: X['+cminx.toFixed(1)+'..'+cmaxx.toFixed(1)+'] Y(Z кривой)['+cminy.toFixed(1)+'..'+cmaxy.toFixed(1)+'] Z['+cminz.toFixed(1)+'..'+cmaxz.toFixed(1)+']');
     const gc=[];
     let missCount=0;
     for(let i=0;i<n;i++){
@@ -251,6 +260,16 @@ class Engine{
       if(v===null){gc.push(null);missCount++;}
       else gc.push(v);
     }
+    dbg('Центральные станции: TriSampler='+this._triHit+', raycast='+this._rcHit+', не найдено='+missCount);
+    // сравнение Z кривой с высотой terrain (для валидных)
+    let diffSum=0,diffCnt=0;
+    for(let i=0;i<n;i++){
+      if(gc[i]!==null){
+        const dz=gc[i]-centre[i][1];
+        diffSum+=dz;diffCnt++;
+      }
+    }
+    if(diffCnt)dbg('Средняя разница (terrainY - Z кривой): '+(diffSum/diffCnt).toFixed(2)+' м по '+diffCnt+' станциям.');
     const valid=gc.map((v,i)=>v!==null?i:-1).filter(i=>i>=0);
     if(valid.length){
       for(let i=0;i<n;i++){
@@ -266,7 +285,9 @@ class Engine{
       }
     }
     for(let i=0;i<n;i++)if(gc[i]===null)gc[i]=centre[i][1];
-    if(missCount)dbg('Вне terrain: '+missCount+' станций — интерполировано. Raycast fallback: '+this._rcHit+' попаданий, '+this._rcMiss+' промахов.');
+    let gmin=1e9,gmax=-1e9;
+    gc.forEach(v=>{gmin=Math.min(gmin,v);gmax=Math.max(gmax,v);});
+    dbg('Высоты рельефа по оси: min='+gmin.toFixed(1)+', max='+gmax.toFixed(1)+' м.');
     let prof=gc.slice();
     for(let k=0;k<P.profile_passes;k++){
       const old=prof.slice();
@@ -296,6 +317,17 @@ class Engine{
       for(let j=0;j<this.m-1;j++)row.push(Math.abs(signedArea([this.G[i][j],this.G[i][j+1],this.G[i+1][j+1],this.G[i+1][j]])));
       this.cellArea.push(row);
     }
+    // диагностика уклонов
+    let steep=[];
+    for(let i=1;i<n;i++){
+      const h=hyp(this.C[i],this.C[i-1]);
+      if(h>0.1){
+        const s=Math.atan2(gc[i]-gc[i-1],h)*180/Math.PI;
+        if(Math.abs(s)>25)steep.push(i+':'+s.toFixed(0)+'°');
+      }
+    }
+    dbg('Станции с уклоном >25°: '+(steep.length?steep.slice(0,15).join(', ')+(steep.length>15?' …':''):'нет'));
+    dbg('--- КОНЕЦ ДИАГНОСТИКИ ---');
   }
   makeRays(limitPoly){
     const P=this.P,n=this.n,m=this.m;

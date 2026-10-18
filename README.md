@@ -1,8 +1,7 @@
-# SSGO Web v0.33
+# SSGO Web v0.34
 
-- Порт движка Maya: TriSampler, лучи, daylight, объёмы по треугольникам.
-- Добавлен raycast fallback в сэмплере (если TriSampler не нашёл точку — raycast по terrain).
-- В Debug: сколько точек разрешено raycast'ом.
-- Лейблы увеличены и подняты (должны быть видны).
-- В репо: index.html, app.v33.js, assets/ (gltf/bin/curves/labels/slopes.json).
+- Порт движка Maya: TriSampler + raycast fallback, лучи, daylight, объёмы.
+- Расширенная диагностика в Debug: bbox terrain/кривых, источники высот, средняя разница Z кривой vs рельеф, станции с уклоном >25°.
+- По одному тексту Debug можно определить причину "кривого" склона.
+- В репо: index.html, app.v34.js, assets/ (gltf/bin/curves/labels/slopes.json).
 - Старые main.js / app.v2x.js удалить.
