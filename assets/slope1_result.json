@@ -1,0 +1,15 @@
+{
+  "version": "v17.22-web-labels",
+  "slope": "slope1",
+  "cut_m3": 14182.1,
+  "fill_m3": 12764.8,
+  "usable_m3": 12763.9,
+  "moved_m3": 12763.9,
+  "import_m3": 0.9,
+  "export_m3": 0.0,
+  "balance_m3": -0.9,
+  "offset_m": -0.75,
+  "crossfall_percent": 0.264,
+  "fill_n": 1.4281,
+  "cut_n": 1.4281
+}
