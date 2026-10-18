@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const state = { slope:'slope1', ang:35, prof:0, cut:3, use:90, off:0, cr:0,
-  root:null, terrain:null, centre:null, left:null, right:null, limit:null, ribbon:null };
+  root:null, terrain:null, curves:null, ribbon:null };
 
 const view = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({ antialias:true });
@@ -28,29 +28,17 @@ window.addEventListener('resize', () => {
   renderer.setSize(view.clientWidth, view.clientHeight);
 });
 
-// кривые из Maya приходят как одно-фасетные полигоны: вершины идут по порядку вдоль кривой
-function curvePoints(obj){
-  const pts=[]; obj.updateWorldMatrix(true,true);
-  obj.traverse(c=>{
-    if(pts.length) return;
-    if(c.geometry && c.geometry.attributes && c.geometry.attributes.position){
-      const p=c.geometry.attributes.position;
-      for(let i=0;i<p.count;i++) pts.push(new THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(c.matrixWorld));
-    }
-  });
-  return pts;
-}
-
 function resample(pts,n){
-  if(pts.length<2) return pts;
+  if(pts.length<2) return pts.map(p=>new THREE.Vector3(...p));
+  const v=pts.map(p=>new THREE.Vector3(...p));
   const seg=[],cum=[0]; let tot=0;
-  for(let i=1;i<pts.length;i++){ const d=pts[i].distanceTo(pts[i-1]); seg.push(d); tot+=d; cum.push(tot); }
+  for(let i=1;i<v.length;i++){ const d=v[i].distanceTo(v[i-1]); seg.push(d); tot+=d; cum.push(tot); }
   const out=[]; let j=0;
   for(let i=0;i<n;i++){
     const t=tot*i/(n-1);
     while(j<seg.length-1 && cum[j+1]<t) j++;
     const u=(t-cum[j])/Math.max(seg[j],1e-9);
-    out.push(pts[j].clone().lerp(pts[j+1],Math.min(1,Math.max(0,u))));
+    out.push(v[j].clone().lerp(v[j+1],Math.min(1,Math.max(0,u))));
   }
   return out;
 }
@@ -80,13 +68,15 @@ function terrainY(x,z){
 }
 
 function rebuild(){
-  if(!state.terrain||!state.centre||!state.left||!state.right) return;
+  if(!state.terrain||!state.curves) return;
+  const cv=state.curves;
+  if(!cv.centre||!cv.left||!cv.right){ document.getElementById('stats').textContent='В JSON нет кривых centre/left/right'; return; }
   if(state.ribbon){ scene.remove(state.ribbon); state.ribbon.geometry.dispose(); state.ribbon=null; }
 
   const N=140;
-  const C0=resample(curvePoints(state.centre),N);
-  const L0=alignDir(C0,resample(curvePoints(state.left),N));
-  const R0=alignDir(C0,resample(curvePoints(state.right),N));
+  const C0=resample(cv.centre,N);
+  const L0=alignDir(C0,resample(cv.left,N));
+  const R0=alignDir(C0,resample(cv.right,N));
 
   const tanA=Math.tan(THREE.MathUtils.degToRad(state.ang));
   let zc=smooth(C0.map(p=>p.y), state.prof);
@@ -165,35 +155,27 @@ const loader=new GLTFLoader();
 function loadSlope(id){
   if(state.root){ scene.remove(state.root); state.root=null; }
   if(state.ribbon){ scene.remove(state.ribbon); state.ribbon=null; }
-  Object.assign(state,{terrain:null,centre:null,left:null,right:null,limit:null});
+  state.terrain=null; state.curves=null;
   document.getElementById('stats').textContent='Загрузка…';
   loader.load(`./assets/${id}.gltf`, gltf=>{
     const root=gltf.scene; scene.add(root); state.root=root;
-    root.traverse(o=>{
-      const n=(o.name||'').toLowerCase();
-      if(n.includes('terrain')) state.terrain=o;
-      else if(n.includes('centre')||n.includes('center')) state.centre=o;
-      else if(n.includes('left')) state.left=o;
-      else if(n.includes('right')) state.right=o;
-      else if(n.includes('limit')) state.limit=o;
-    });
+    root.traverse(o=>{ if((o.name||'').toLowerCase().includes('terrain')) state.terrain=o; });
     if(state.terrain) state.terrain.traverse(c=>{ if(c.isMesh){ c.material=new THREE.MeshStandardMaterial({color:0x8a8470,roughness:1,side:THREE.DoubleSide}); }});
-    // линии-кривые делаем прозрачными (они служат только данными)
-    for(const k of ['centre','left','right','limit']){
-      const o=state[k];
-      if(o) o.traverse(c=>{ if(c.isMesh){ c.material=new THREE.MeshBasicMaterial({visible:false}); c.visible=false; }});
-    }
     root.updateMatrixWorld(true);
-    const box=new THREE.Box3().setFromObject(root);
-    const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
-    camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
-    controls.target.copy(ctr); controls.update();
-    const miss=['terrain','centre','left','right'].filter(k=>!state[k]);
-    if(miss.length){ document.getElementById('stats').textContent='В GLTF не найдены объекты: '+miss.join(', '); return; }
-    rebuild();
+    fetch(`./assets/${id}.curves.json`).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(cv=>{ state.curves=cv; afterLoad(root); })
+      .catch(e=>{ document.getElementById('stats').textContent='Не найден assets/'+id+'.curves.json ('+e.message+')'; });
   }, undefined, err=>{
-    document.getElementById('stats').textContent='Не удалось загрузить assets/'+id+'.gltf (проверь, что .bin рядом)';
+    document.getElementById('stats').textContent='Не удалось загрузить assets/'+id+'.gltf';
   });
+}
+
+function afterLoad(root){
+  const box=new THREE.Box3().setFromObject(root);
+  const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
+  camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
+  controls.target.copy(ctr); controls.update();
+  rebuild();
 }
 
 const map=[['pAng','ang','vAng',v=>v+'°'],['pProf','prof','vProf',v=>v],['pCut','cut','vCut',v=>v.toFixed(1)],
@@ -214,7 +196,7 @@ document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()
 }));
 
 document.getElementById('save').addEventListener('click',()=>{
-  const preset={version:'web-0.2',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
+  const preset={version:'web-0.3',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
     max_cut_depth:state.cut,usable_percent:state.use,offset:state.off,crossfall_percent:state.cr,
     saved_at:new Date().toISOString()};
   const a=document.createElement('a');
