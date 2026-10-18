@@ -2,8 +2,15 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// параметры по умолчанию из localStorage (если клиент сохранял)
+let saved=null;
+try{ saved=JSON.parse(localStorage.getItem('ssgo_default_preset')||'null'); }catch(e){}
+
 const state = {
-  slope:'A1', ang:35, prof:0, cut:5,
+  slope:(saved&&saved.slope)||'A1',
+  ang:(saved&&saved.slope_angle)||35,
+  prof:(saved&&saved.profile_level)||0,
+  cut:(saved&&saved.max_cut_depth)||5,
   terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
@@ -82,7 +89,8 @@ function applyTerrainLook(){
     m.transparent = state.terrainOpacity < 1;
   });
   if(state.terrain) state.terrain.visible = state.terrainVisible;
-  if(state.terrainLabelsGroup) state.terrainLabelsGroup.visible = state.terrainLabelsVisible && state.terrainVisible;
+  // высоты оригинальной почвы не зависят от видимости почвы
+  if(state.terrainLabelsGroup) state.terrainLabelsGroup.visible = state.terrainLabelsVisible;
 }
 function applyDesignLook(){
   if(state.designGroup) state.designGroup.visible = state.designVisible;
@@ -227,14 +235,14 @@ function rebuild(){
   mesh.castShadow = true; mesh.receiveShadow = true;
   g.add(mesh);
 
-  // Сетка сегментов: поперечные линии каждые 200 м
+  // Сетка сегментов: поперечные линии каждые 20 м (как шаг подписей)
   if(state.gridVisible){
     const linePos=[];
-    let acc=0; let next=200;
+    let acc=0; let next=20;
     for(let i=1;i<N;i++){
       acc+=C[i].distanceTo(C[i-1]);
       if(acc>=next){
-        next+=200;
+        next+=20;
         for(let j=0;j<M-1;j++){
           const a=G[i][j], b=G[i][j+1];
           linePos.push(a.x,a.y+0.15,a.z, b.x,b.y+0.15,b.z);
@@ -281,9 +289,10 @@ function rebuild(){
     lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+3.5, r.pl.z), '#7fd4ff'));
     lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+3.5, r.pr.z), '#ffb0a0'));
     const tgl=terrainY(r.pl.x,r.pl.z), tgr=terrainY(r.pr.x,r.pr.z);
-    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+0.6, r.p.z), '#cfe3cf', true));
-    if(tgl!==null) tg.add(makeSprite('орг.: '+tgl.toFixed(1), new THREE.Vector3(r.pl.x, tgl+0.6, r.pl.z), '#cfe3cf', true));
-    if(tgr!==null) tg.add(makeSprite('орг.: '+tgr.toFixed(1), new THREE.Vector3(r.pr.x, tgr+0.6, r.pr.z), '#cfe3cf', true));
+    // высоты оригинальной почвы: точно на рельефе, маленький отступ
+    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+0.3, r.p.z), '#cfe3cf', true));
+    if(tgl!==null) tg.add(makeSprite('орг.: '+tgl.toFixed(1), new THREE.Vector3(r.pl.x, tgl+0.3, r.pl.z), '#cfe3cf', true));
+    if(tgr!==null) tg.add(makeSprite('орг.: '+tgr.toFixed(1), new THREE.Vector3(r.pr.x, tgr+0.3, r.pr.z), '#cfe3cf', true));
     if(state.terrainSlopesVisible){
       lg.add(makeSprite('орг. уклон: '+r.terrSlope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.tg+4.5, r.p.z), '#7fd4ff', true));
     }
@@ -312,7 +321,7 @@ async function loadSlopeList(){
   list.innerHTML='';
   names.forEach((n,i)=>{
     const b=document.createElement('button');
-    b.className='slope-btn'+(i===0?' active':'');
+    b.className='slope-btn'+(n===state.slope?' active':'');
     b.dataset.slope=n; b.textContent=n;
     b.addEventListener('click',()=>{
       document.querySelectorAll('.slope-btn').forEach(x=>x.classList.remove('active'));
@@ -320,7 +329,7 @@ async function loadSlopeList(){
     });
     list.appendChild(b);
   });
-  return names[0];
+  return state.slope;
 }
 
 const loadingEl=document.getElementById('loading');
@@ -374,6 +383,8 @@ const map=[['pAng','ang','vAng',v=>v+'°'],['pProf','prof','vProf',v=>v],['pCut'
 let timer=null;
 map.forEach(([id,key,vid,fm])=>{
   const el=document.getElementById(id);
+  el.value=state[key];
+  document.getElementById(vid).textContent=fm(state[key]);
   el.addEventListener('input',()=>{
     state[key]=parseFloat(el.value);
     document.getElementById(vid).textContent=fm(state[key]);
@@ -388,6 +399,22 @@ map.forEach(([id,key,vid,fm])=>{
 document.getElementById('apply').addEventListener('click',()=>{
   loadingEl.style.display='flex';
   setTimeout(()=>{ rebuild(); loadingEl.style.display='none'; },30);
+});
+
+document.getElementById('saveDefault').addEventListener('click',()=>{
+  const fillN = 1.0/Math.tan(THREE.MathUtils.degToRad(state.ang));
+  const preset={
+    version:'web-preset-2',
+    slope:state.slope,
+    slope_angle:state.ang,
+    profile_level:state.prof,
+    max_cut_depth:state.cut,
+    fill_n:parseFloat(fillN.toFixed(4)),
+    cut_n:parseFloat(fillN.toFixed(4)),
+    saved_at:new Date().toISOString()
+  };
+  localStorage.setItem('ssgo_default_preset', JSON.stringify(preset));
+  document.getElementById('stats').innerHTML+='<br><span style="color:#7f7">Сохранено как параметры по умолчанию (в этом браузере).</span>';
 });
 
 document.getElementById('pTerrain').addEventListener('change',e=>{
@@ -433,21 +460,18 @@ document.getElementById('save').addEventListener('click',()=>{
     slope_angle:state.ang,
     profile_level:state.prof,
     max_cut_depth:state.cut,
-    offset:0,
-    crossfall_percent:0,
     fill_n:parseFloat(fillN.toFixed(4)),
     cut_n:parseFloat(fillN.toFixed(4)),
     saved_at:new Date().toISOString()
   };
-  localStorage.setItem('ssgo_last_preset', JSON.stringify(preset));
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(preset,null,2)],{type:'application/json'}));
   a.download=`ssgo_preset_${state.slope}_${Date.now()}.json`;
   a.click();
-  document.getElementById('stats').innerHTML+='<br><span style="color:#7f7">Параметры сохранены локально и скачаны.</span>';
 });
 
 document.getElementById('reset').addEventListener('click',()=>{
+  localStorage.removeItem('ssgo_default_preset');
   const d={pAng:35,pProf:0,pCut:5};
   for(const k in d){ const e=document.getElementById(k); e.value=d[k]; e.dispatchEvent(new Event('input')); }
 });
