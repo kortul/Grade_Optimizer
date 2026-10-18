@@ -340,10 +340,10 @@ function rebuild(){
     lg.add(makeSprite(r.c.toFixed(1), new THREE.Vector3(r.p.x, r.c+5, r.p.z), '#ffffff'));
     lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+5, r.pl.z), '#7fd4ff'));
     lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+5, r.pr.z), '#ffb0a0'));
-    // орг. высоты: СТРОГО под лейблом текущей высоты (значение = высота рельефа)
-    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.c-2.7, r.p.z), '#cfe3cf', true));
-    tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'), new THREE.Vector3(r.pl.x, r.l-2.7, r.pl.z), '#cfe3cf', true));
-    tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'), new THREE.Vector3(r.pr.x, r.r-2.7, r.pr.z), '#cfe3cf', true));
+    // орг. высоты: СТРОГО под лейблом текущей высоты
+    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.c-2.8, r.p.z), '#cfe3cf', true));
+    tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'), new THREE.Vector3(r.pl.x, r.l-2.8, r.pl.z), '#cfe3cf', true));
+    tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'), new THREE.Vector3(r.pr.x, r.r-2.8, r.pr.z), '#cfe3cf', true));
     if(state.terrainSlopesVisible){
       lg.add(makeSprite('орг. уклон: '+r.terrSlope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.tg+6.5, r.p.z), '#7fd4ff', true));
     }
