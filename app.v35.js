@@ -8,7 +8,7 @@ try{ saved=JSON.parse(localStorage.getItem('ssgo_default_preset')||'null'); }cat
 const state = {
   slope:(saved&&saved.slope)||'A1',
   ang:(saved&&saved.slope_angle)||35,
-  prof:(saved&&saved.profile_level)||0,
+  prof:(saved&&saved.profile_level)!==undefined&&(saved&&saved.profile_level)!==null?(saved.profile_level):3,
   cut:(saved&&saved.max_cut_depth)||5,
   off:0, cross:0,
   terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
@@ -245,7 +245,6 @@ class Engine{
     left=fix(left,'Left');right=fix(right,'Right');
     this.n=n;this.m=P.core_cols;
     this.A=left.map(p2);this.B=right.map(p2);this.C=centre.map(p2);
-    // ДИАГНОСТИКА: bbox terrain и кривых
     const tb=new THREE.Box3().setFromObject(state.terrain);
     const tmin=tb.min,tmax=tb.max;
     dbg('--- ДИАГНОСТИКА ---');
@@ -261,7 +260,6 @@ class Engine{
       else gc.push(v);
     }
     dbg('Центральные станции: TriSampler='+this._triHit+', raycast='+this._rcHit+', не найдено='+missCount);
-    // сравнение Z кривой с высотой terrain (для валидных)
     let diffSum=0,diffCnt=0;
     for(let i=0;i<n;i++){
       if(gc[i]!==null){
@@ -317,7 +315,6 @@ class Engine{
       for(let j=0;j<this.m-1;j++)row.push(Math.abs(signedArea([this.G[i][j],this.G[i][j+1],this.G[i+1][j+1],this.G[i+1][j]])));
       this.cellArea.push(row);
     }
-    // диагностика уклонов
     let steep=[];
     for(let i=1;i<n;i++){
       const h=hyp(this.C[i],this.C[i-1]);
@@ -858,7 +855,7 @@ document.getElementById('save').addEventListener('click',()=>{
 
 document.getElementById('reset').addEventListener('click',()=>{
   localStorage.removeItem('ssgo_default_preset');
-  const d={pAng:35,pProf:0,pCut:5,pOff:0,pCross:0};
+  const d={pAng:35,pProf:3,pCut:5,pOff:0,pCross:0};
   for(const k in d){const e=document.getElementById(k);if(e){e.value=d[k];e.dispatchEvent(new Event('input'));}}
 });
 
