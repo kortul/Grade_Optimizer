@@ -51,6 +51,8 @@ button.secondary{background:#3a3a44}
       <div class="chk"><input type="checkbox" id="pTerrain" checked/> <span>Показать оригинальный terrain</span></div>
       <label>Прозрачность terrain <span class="val" id="vTerrOp">100%</span></label>
       <input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
+      <div class="chk"><input type="checkbox" id="pDesign" checked/> <span>Показать новый склон</span></div>
+      <div class="chk"><input type="checkbox" id="pLabels" checked/> <span>Показать подписи</span></div>
       <div class="hint">Управление как в Sketchfab: ЛКМ — вращение, колесо — зум, ПКМ — панорама.</div>
     </div>
     <div class="group">
@@ -61,11 +63,11 @@ button.secondary{background:#3a3a44}
       <h2>Подписи веба (высоты и уклоны)</h2>
       <div id="labels">-</div>
     </div>
-    <div class="group">
+    <div class="group" style="display:none">
       <h2>Подписи Maya (последний ЗАПУСК)</h2>
       <div id="mayaLabels">Загрузка…</div>
     </div>
-    <div class="group">
+    <div class="group" style="display:none">
       <h2>Debug</h2>
       <div id="debug">-</div>
     </div>
@@ -80,6 +82,6 @@ button.secondary{background:#3a3a44}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=11"></script>
+<script type="module" src="./main.js?v=12"></script>
 </body>
 </html>

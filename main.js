@@ -2,10 +2,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// Как в Maya "Основные настройки": угол откоса, сглаживание, макс. глубина срезки
 const state = {
   slope:'slope1', ang:35, prof:0, cut:3,
-  terrainVisible:true, terrainOpacity:1,
+  terrainVisible:true, terrainOpacity:1, designVisible:true, labelsVisible:true,
   root:null, terrain:null, terrainMats:[], curves:null, designGroup:null, labelsGroup:null
 };
 
@@ -13,29 +12,29 @@ const view = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setSize(view.clientWidth, view.clientHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 view.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x141418);
 const camera = new THREE.PerspectiveCamera(55, view.clientWidth/view.clientHeight, 0.5, 20000);
-// Sketchfab-подобное управление: ЛКМ вращение, колесо зум, ПКМ панорама
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.screenSpacePanning = true;
-controls.mouseButtons = {
-  LEFT: THREE.MOUSE.ROTATE,
-  MIDDLE: THREE.MOUSE.DOLLY,
-  RIGHT: THREE.MOUSE.PAN
-};
-controls.touches = {
-  ONE: THREE.TOUCH.ROTATE,
-  TWO: THREE.TOUCH.DOLLY_PAN
-};
+controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 
-scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x3a3a2f, 1.1));
-const sun = new THREE.DirectionalLight(0xffffff, 1.4);
-sun.position.set(300, 500, 200);
+scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x3a3a2f, 0.9));
+const sun = new THREE.DirectionalLight(0xfff4e0, 1.6);
+sun.position.set(300, 600, 200);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 3000;
+sun.shadow.camera.left = -1200; sun.shadow.camera.right = 1200;
+sun.shadow.camera.top = 1200; sun.shadow.camera.bottom = -1200;
 scene.add(sun);
 
 window.addEventListener('resize', () => {
@@ -80,9 +79,12 @@ function applyTerrainLook(){
   state.terrainMats.forEach(m=>{
     m.opacity = state.terrainOpacity;
     m.transparent = state.terrainOpacity < 1;
-    m.visible = state.terrainVisible;
   });
   if(state.terrain) state.terrain.visible = state.terrainVisible;
+}
+function applyDesignLook(){
+  if(state.designGroup) state.designGroup.visible = state.designVisible;
+  if(state.labelsGroup) state.labelsGroup.visible = state.labelsVisible;
 }
 
 function rebuild(){
@@ -91,6 +93,7 @@ function rebuild(){
   state.labelsGroup = clearGroup(state.labelsGroup);
   const g = new THREE.Group(); state.designGroup = g; scene.add(g);
   const lg = new THREE.Group(); state.labelsGroup = lg; scene.add(lg);
+  applyDesignLook();
 
   const cv = state.curves;
   const C = cv.centre.map(p=>new THREE.Vector3(...p));
@@ -102,7 +105,6 @@ function rebuild(){
   let ground = C.map(p => { const h = terrainY(p.x,p.z); return h===null ? p.y : h; });
   let prof = smoothVals(ground, state.prof);
 
-  // как в Maya: уклоны откосов 1:n из угла
   const fillN = 1.0 / Math.tan(THREE.MathUtils.degToRad(state.ang));
   const cutN = fillN;
 
@@ -129,6 +131,14 @@ function rebuild(){
     }
     G.push(row); TG.push(trow);
   }
+  // единая намотка треугольников: всегда против часовой в плане (XZ)
+  function addTri(a,b,c,col){
+    const ar=(b.x-a.x)*(c.z-a.z)-(b.z-a.z)*(c.x-a.x);
+    if(ar<0){ const t=b; b=c; c=t; }
+    const base=pos.length/3;
+    for(const p of [a,b,c]){ pos.push(p.x,p.y,p.z); cols.push(...col); }
+    idx.push(base,base+1,base+2);
+  }
   for(let i=0;i<N-1;i++) for(let j=0;j<M-1;j++){
     const a=G[i][j], b=G[i][j+1], c=G[i+1][j+1], e=G[i+1][j];
     const ta=TG[i][j], tb=TG[i][j+1], tc=TG[i+1][j+1], te=TG[i+1][j];
@@ -138,12 +148,7 @@ function rebuild(){
     const v=d*s;
     if(v>=0) fillV+=v; else cutV-=v;
     const col=zoneOf(d);
-    for(const p of [a,b,c,e]){
-      pos.push(p.x,p.y,p.z);
-      cols.push(...col);
-    }
-    idx.push(pos.length/3-4, pos.length/3-2, pos.length/3-1);
-    idx.push(pos.length/3-4, pos.length/3-1, pos.length/3-3);
+    addTri(a,b,c,col); addTri(a,c,e,col);
   }
   const skirt=(edge, tgY, dir, n_slope, isFill)=>{
     const zEdge=edge.y;
@@ -154,14 +159,11 @@ function rebuild(){
       if(th===null) break;
       const z = isFill ? zEdge - d/n_slope : zEdge + d/n_slope;
       const p=q.clone().setY(z);
-      pos.push(prev.x,prev.y,prev.z, p.x,p.y,p.z, q.x,th,q.z);
       const dzPrev=prev.y-tgY, dzCur=p.y-th;
       const v=Math.abs((dzPrev+dzCur)/2)*0.5;
       if(isFill) fillV+=v; else cutV+=v;
-      const base=pos.length/3-3;
       const col=zoneOf((dzPrev+dzCur)/2);
-      cols.push(...col, ...col, ...col);
-      idx.push(base, base+1, base+2);
+      addTri(prev,p,q,col);
       if((isFill && z<=th) || (!isFill && z>=th)) return;
       prev=p;
     }
@@ -178,15 +180,15 @@ function rebuild(){
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
   geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
   geo.setIndex(idx); geo.computeVertexNormals();
-  // Непрозрачный материал с освещением — как шейдинг в Maya
   const mesh=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
     vertexColors:true, side:THREE.DoubleSide, roughness:0.95, metalness:0,
-    transparent:false, opacity:1,
+    transparent:false, opacity:1, flatShading:false,
     polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-1
   }));
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   g.add(mesh);
 
-  // подписи веба: каждые ~20 м
   const stepM=20;
   let acc=0; const rows=[];
   for(let i=1;i<N;i++){
@@ -250,8 +252,8 @@ async function loadSlope(id){
         state.terrain=o;
         o.traverse(c=>{
           if(c.isMesh){
-            const m=new THREE.MeshStandardMaterial({color:0x8a8470,roughness:1,side:THREE.DoubleSide});
-            c.material=m; state.terrainMats.push(m);
+            const m=new THREE.MeshStandardMaterial({color:0x2f4a2f,roughness:1,side:THREE.DoubleSide});
+            c.material=m; m.receiveShadow=true; state.terrainMats.push(m);
           }
         });
       }
@@ -302,6 +304,12 @@ document.getElementById('pTerrOp').addEventListener('input',e=>{
   state.terrainOpacity=parseFloat(e.target.value)/100;
   document.getElementById('vTerrOp').textContent=e.target.value+'%';
   applyTerrainLook();
+});
+document.getElementById('pDesign').addEventListener('change',e=>{
+  state.designVisible=e.target.checked; applyDesignLook();
+});
+document.getElementById('pLabels').addEventListener('change',e=>{
+  state.labelsVisible=e.target.checked; applyDesignLook();
 });
 
 document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()=>{
