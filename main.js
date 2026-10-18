@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const state = { slope:'slope1', ang:35, prof:0, cut:3, use:90, off:0, cr:0,
-  root:null, terrain:null, curves:null, ribbon:null };
+const state = { slope:'slope1', ang:35, prof:0, cut:3, use:90, off:0, cr:0, dbg:true,
+  root:null, terrain:null, curves:null, ribbon:null, debugGroup:null };
 
 const view = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({ antialias:true });
@@ -67,6 +67,33 @@ function terrainY(x,z){
   return h.length? h[0].point.y : null;
 }
 
+function bboxOf(pts){
+  const b=new THREE.Box3();
+  pts.forEach(p=>b.expandByPoint(p));
+  return b;
+}
+
+function drawDebug(C,L,R){
+  if(state.debugGroup){ scene.remove(state.debugGroup); state.debugGroup=null; }
+  if(!state.dbg) return;
+  const g=new THREE.Group();
+  const mk=(pts,color)=>{
+    const geo=new THREE.BufferGeometry().setFromPoints(pts);
+    return new THREE.Line(geo,new THREE.LineBasicMaterial({color}));
+  };
+  g.add(mk(C,0xffffff));
+  g.add(mk(L,0x00ff00));
+  g.add(mk(R,0xff3333));
+  // каркас коридора
+  if(state.ribbon){
+    const wf=new THREE.LineSegments(new THREE.WireframeGeometry(state.ribbon.geometry),
+      new THREE.LineBasicMaterial({color:0x4a9fe0,transparent:true,opacity:0.35}));
+    g.add(wf);
+  }
+  state.debugGroup=g;
+  scene.add(g);
+}
+
 function rebuild(){
   if(!state.terrain||!state.curves) return;
   const cv=state.curves;
@@ -77,6 +104,13 @@ function rebuild(){
   const C0=resample(cv.centre,N);
   const L0=alignDir(C0,resample(cv.left,N));
   const R0=alignDir(C0,resample(cv.right,N));
+
+  console.log('[SSGO debug] points:', cv.centre.length, cv.left.length, cv.right.length);
+  console.log('[SSGO debug] centre bbox:', bboxOf(C0));
+  console.log('[SSGO debug] left bbox:', bboxOf(L0));
+  console.log('[SSGO debug] right bbox:', bboxOf(R0));
+  const tb=new THREE.Box3().setFromObject(state.terrain);
+  console.log('[SSGO debug] terrain bbox:', tb);
 
   const tanA=Math.tan(THREE.MathUtils.degToRad(state.ang));
   let zc=smooth(C0.map(p=>p.y), state.prof);
@@ -138,6 +172,8 @@ function rebuild(){
   state.ribbon=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x4a9fe0,side:THREE.DoubleSide,roughness:.85,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
   scene.add(state.ribbon);
 
+  drawDebug(C0,L0,R0);
+
   const usable=cutV*state.use/100;
   const imp=Math.max(0,fillV-usable), exp=Math.max(0,usable-fillV), bal=usable-fillV;
   const f=v=>Math.round(v).toLocaleString('ru-RU');
@@ -155,6 +191,7 @@ const loader=new GLTFLoader();
 function loadSlope(id){
   if(state.root){ scene.remove(state.root); state.root=null; }
   if(state.ribbon){ scene.remove(state.ribbon); state.ribbon=null; }
+  if(state.debugGroup){ scene.remove(state.debugGroup); state.debugGroup=null; }
   state.terrain=null; state.curves=null;
   document.getElementById('stats').textContent='Загрузка…';
   loader.load(`./assets/${id}.gltf`, gltf=>{
@@ -189,6 +226,7 @@ map.forEach(([id,key,vid,fm])=>{
     clearTimeout(timer); timer=setTimeout(rebuild,120);
   });
 });
+document.getElementById('pDbg').addEventListener('change',e=>{ state.dbg=e.target.checked; rebuild(); });
 
 document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.slope-btn').forEach(x=>x.classList.remove('active'));
@@ -196,7 +234,7 @@ document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()
 }));
 
 document.getElementById('save').addEventListener('click',()=>{
-  const preset={version:'web-0.3',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
+  const preset={version:'web-0.4',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
     max_cut_depth:state.cut,usable_percent:state.use,offset:state.off,crossfall_percent:state.cr,
     saved_at:new Date().toISOString()};
   const a=document.createElement('a');

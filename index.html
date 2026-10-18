@@ -22,6 +22,7 @@ button.secondary{background:#3a3a44}
 #stats b{color:#7fd}
 .slope-btn{display:block;width:100%;margin:4px 0;padding:10px;background:#2e2e38;color:#eee;border:1px solid #444;border-radius:6px;cursor:pointer;text-align:left;font-size:14px;font-weight:normal}
 .slope-btn.active{background:#2ea36a;border-color:#2ea36a}
+.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
 @media(max-width:800px){#app{flex-direction:column-reverse}#panel{width:100%;max-height:45vh}}
 </style>
 </head>
@@ -48,6 +49,7 @@ button.secondary{background:#3a3a44}
       <input type="range" id="pOff" min="-5" max="5" step="0.1" value="0"/>
       <label>Поперечный уклон, % <span class="val" id="vCr">0.0</span></label>
       <input type="range" id="pCr" min="-5" max="5" step="0.1" value="0"/>
+      <div class="chk"><input type="checkbox" id="pDbg" checked/> <span>Debug: показать кривые и каркас</span></div>
     </div>
     <div class="group">
       <h2>Отчёт по грунту (оценка)</h2>
