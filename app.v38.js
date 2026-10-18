@@ -9,8 +9,8 @@ try{ saved=JSON.parse(localStorage.getItem('ssgo_default_preset')||'null'); }cat
 const state = {
   slope:(saved&&saved.slope)||'A1',
   ang:(saved&&saved.slope_angle)||35,
-  prof:(saved&&saved.profile_level)!==undefined&&(saved&&saved.profile_level)!==null?(saved.profile_level):3,
-  cut:(saved&&saved.max_cut_depth)||5,
+  prof:(saved&&saved.profile_level)!==undefined&&(saved&&saved.profile_level)!==null?(saved.profile_level):0,
+  cut:(saved&&saved.max_cut_depth)||3,
   off:0, cross:0,
   terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
@@ -296,7 +296,6 @@ class Engine{
     let gmin=1e9,gmax=-1e9;
     gc.forEach(v=>{gmin=Math.min(gmin,v);gmax=Math.max(gmax,v);});
     dbg('Высоты рельефа по оси: min='+gmin.toFixed(1)+', max='+gmax.toFixed(1)+' м.');
-    // ПРОФИЛЬ ОСИ: из Z кривой (гладкая проектная линия), а не из шумного terrain
     let prof=centre.map(p=>p[1]);
     for(let k=0;k<P.profile_passes;k++){
       const old=prof.slice();
@@ -551,9 +550,19 @@ function rebuild(){
     cut_n:1/Math.tan(THREE.MathUtils.degToRad(state.ang))
   };
   const eng=new Engine(verts,tris,sampler,P);
-  const C=cv.centre.map(p=>[p[0],p[1],p[2]]);
-  const L=alignDir(C,cv.left.map(p=>[p[0],p[1],p[2]]));
-  const R=alignDir(C,cv.right.map(p=>[p[0],p[1],p[2]]));
+  let C=cv.centre.map(p=>[p[0],p[1],p[2]]);
+  let L=alignDir(C,cv.left.map(p=>[p[0],p[1],p[2]]));
+  let R=alignDir(C,cv.right.map(p=>[p[0],p[1],p[2]]));
+  // Прореживание до шага spacing (как в Maya: 94 станции из 200 точек)
+  const spacing=P.spacing;
+  const keep=[0];let acc=0;
+  for(let i=1;i<C.length;i++){
+    acc+=hyp(p2(C[i]),p2(C[keep[keep.length-1]]));
+    if(acc>=spacing){keep.push(i);acc=0;}
+  }
+  if(keep[keep.length-1]!==C.length-1)keep.push(C.length-1);
+  C=keep.map(i=>C[i]);L=keep.map(i=>L[i]);R=keep.map(i=>R[i]);
+  dbg('Коридор: '+C.length+' станций (прорежено до '+spacing+' м).');
   eng.prepare(C,L,R);
   const limitPoly=(cv.limit&&cv.limit.length)?cv.limit.map(p=>[p[0],p[2]]):null;
   eng.makeRays(limitPoly);
@@ -865,7 +874,7 @@ document.getElementById('save').addEventListener('click',()=>{
 
 document.getElementById('reset').addEventListener('click',()=>{
   localStorage.removeItem('ssgo_default_preset');
-  const d={pAng:35,pProf:3,pCut:5,pOff:0,pCross:0};
+  const d={pAng:35,pProf:0,pCut:3,pOff:0,pCross:0};
   for(const k in d){const e=document.getElementById(k);if(e){e.value=d[k];e.dispatchEvent(new Event('input'));}}
 });
 
