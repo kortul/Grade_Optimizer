@@ -230,7 +230,7 @@ class Engine{
       return line;
     };
     left=fix(left,'Left');right=fix(right,'Right');
-    this.n=n;this.m=P.core_cols;const m=this.m;
+    this.n=n;this.m=P.core_cols;
     this.A=left.map(p2);this.B=right.map(p2);this.C=centre.map(p2);
     const gc=[];
     for(let i=0;i<n;i++){
@@ -252,8 +252,8 @@ class Engine{
     for(let i=0;i<n;i++){
       const e=unit([this.B[i][0]-this.A[i][0],this.B[i][1]-this.A[i][1]]);
       const row=[],trow=[],urow=[];
-      for(let j=0;j<m;j++){
-        const t=j/(m-1);
+      for(let j=0;j<this.m;j++){
+        const t=j/(this.m-1);
         const q=[this.A[i][0]+(this.B[i][0]-this.A[i][0])*t,this.A[i][1]+(this.B[i][1]-this.A[i][1])*t];
         let z=this.S(q[0],q[1]);if(z===null)z=prof[i];
         row.push(q);trow.push(z);
@@ -264,7 +264,7 @@ class Engine{
     this.cellArea=[];
     for(let i=0;i<n-1;i++){
       const row=[];
-      for(let j=0;j<m-1;j++)row.push(Math.abs(signedArea([this.G[i][j],this.G[i][j+1],this.G[i+1][j+1],this.G[i+1][j]])));
+      for(let j=0;j<this.m-1;j++)row.push(Math.abs(signedArea([this.G[i][j],this.G[i][j+1],this.G[i+1][j+1],this.G[i+1][j]])));
       this.cellArea.push(row);
     }
   }
@@ -309,15 +309,15 @@ class Engine{
     const kmax=Math.floor(P.max_skirt/this.step);
     for(const ray of rays){
       const px=ray.p[0],pz=ray.p[1],nx=ray.n[0],nz=ray.n[1];
-      const T=[];let reason='maxwidth';
+      const T=[];
       for(let kk=0;kk<=kmax;kk++){
         const s=kk*this.step,x=px+nx*s,z=pz+nz*s;
-        if(limitPoly&&!pointInPoly(x,z,limitPoly)){reason='limit';break;}
+        if(limitPoly&&!pointInPoly(x,z,limitPoly))break;
         const h=this.S(x,z);
-        if(h===null){reason='terrain_end';break;}
+        if(h===null)break;
         T.push(h);
       }
-      if(!T.length){T=[this.TG[loop[ray.k][0]][loop[ray.k][1]]];}
+      if(!T.length)T=[this.TG[loop[ray.k][0]][loop[ray.k][1]]];
       ray.T=T;
       let dcl=(T.length-1)*this.step;
       if(clamp[ray.k]<dcl)dcl=clamp[ray.k];
@@ -470,6 +470,7 @@ function rebuild(){
       }
     }
   });
+  dbg('Terrain: '+verts.length+' вершин, '+tris.length+' треугольников.');
   const sampler=new TriSampler(verts,tris);
   const cv=state.curves;
   const P={
@@ -486,6 +487,7 @@ function rebuild(){
   eng.prepare(C,L,R);
   const limitPoly=(cv.limit&&cv.limit.length)?cv.limit.map(p=>[p[0],p[2]]):null;
   eng.makeRays(limitPoly);
+  dbg('Лучей: '+eng.rays.length);
   const best=eng.evaluate(state.off,state.cross,P.fill_n,P.cut_n);
   const {Z,zl}=eng.design(state.off,state.cross);
   const {d,zout}=eng.solveRays(zl,P.fill_n,P.cut_n);
@@ -683,7 +685,13 @@ async function loadSlope(id){
     state.homePos=camera.position.clone();
     state.homeTarget=controls.target.clone();
     await new Promise(r=>setTimeout(r,50));
-    rebuild();
+    try{
+      rebuild();
+    }catch(e){
+      dbg('ОШИБКА РАСЧЁТА: '+(e&&e.message?e.message:String(e)));
+      console.error(e);
+      document.getElementById('stats').textContent='Ошибка расчёта: '+(e&&e.message?e.message:String(e));
+    }
   }catch(err){
     const msg=err&&(err.message||err.description)?(err.message||err.description):String(err);
     document.getElementById('stats').textContent='Ошибка загрузки склона "'+id+'": '+msg;
@@ -700,7 +708,10 @@ function scheduleRebuild(delay=150){
   clearTimeout(timer);
   timer=setTimeout(()=>{
     loadingEl.style.display='flex';
-    setTimeout(()=>{rebuild();loadingEl.style.display='none';},30);
+    setTimeout(()=>{
+      try{rebuild();}catch(e){dbg('ОШИБКА РАСЧЁТА: '+(e&&e.message?e.message:String(e)));console.error(e);}
+      loadingEl.style.display='none';
+    },30);
   },delay);
 }
 map.forEach(([id,key,vid,fm])=>{
@@ -716,7 +727,10 @@ map.forEach(([id,key,vid,fm])=>{
 
 document.getElementById('apply').addEventListener('click',()=>{
   loadingEl.style.display='flex';
-  setTimeout(()=>{rebuild();loadingEl.style.display='none';},30);
+  setTimeout(()=>{
+    try{rebuild();}catch(e){dbg('ОШИБКА РАСЧЁТА: '+(e&&e.message?e.message:String(e)));console.error(e);}
+    loadingEl.style.display='none';
+  },30);
 });
 
 document.getElementById('pTerrain').addEventListener('change',e=>{
