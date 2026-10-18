@@ -35,6 +35,7 @@ const bust = () => '?t=' + Date.now();
 const loader = new GLTFLoader();
 const loadGLTF = url => new Promise((res, rej) => loader.load(url, res, undefined, rej));
 const loadJSON = url => fetch(url).then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+const deg = r => r * 180 / Math.PI;
 
 function alignDir(ref, pts){
   const d1=ref[0].distanceTo(pts[0])+ref[ref.length-1].distanceTo(pts[pts.length-1]);
@@ -75,11 +76,9 @@ function rebuild(){
   const N = C.length;
   const M = 9;
 
-  // профиль земли по центру + сглаживание
   let ground = C.map(p => { const h = terrainY(p.x,p.z); return h===null ? p.y : h; });
   let prof = smoothVals(ground, state.prof);
 
-  // проектная поверхность
   const pos=[], cols=[], idx=[];
   const zoneOf = d => d > 0.02 ? [0.16,0.82,0.2] : (d < -0.02 ? [0.9,0.25,0.2] : [0.55,0.55,0.6]);
   let cutV=0, fillV=0;
@@ -104,12 +103,10 @@ function rebuild(){
     }
     G.push(row); TG.push(trow);
   }
-  // объёмы ядра + триангуляция
   for(let i=0;i<N-1;i++) for(let j=0;j<M-1;j++){
     const a=G[i][j], b=G[i][j+1], c=G[i+1][j+1], e=G[i+1][j];
     const ta=TG[i][j], tb=TG[i][j+1], tc=TG[i+1][j+1], te=TG[i+1][j];
     const d=((a.y-ta)+(b.y-tb)+(c.y-tc)+(e.y-te))/4;
-    // площадь ячейки в плане
     const s = Math.abs((b.x-a.x)*(e.z-a.z)-(e.x-a.x)*(b.z-a.z))/2
             + Math.abs((c.x-a.x)*(e.z-a.z)-(e.x-a.x)*(c.z-a.z))/2;
     const v=d*s;
@@ -121,39 +118,34 @@ function rebuild(){
     idx.push(pos.length/3-4, pos.length/3-2, pos.length/3-1);
     idx.push(pos.length/3-4, pos.length/3-1, pos.length/3-3);
   }
-  // откосы: маршируем от края до рельефа с уклоном 1:n
-  const skirt=(i, edge, tgY, dir, n_slope, isFill)=>{
+  const skirt=(edge, tgY, dir, n_slope, isFill)=>{
     const zEdge=edge.y;
     let prev=edge.clone();
-    for(let d=1; d<=80; d+=0.5){
+    for(let d=0.5; d<=80; d+=0.5){
       const q=edge.clone().addScaledVector(dir,d);
       const th=terrainY(q.x,q.z);
       if(th===null) break;
       const z = isFill ? zEdge - d/n_slope : zEdge + d/n_slope;
       const p=q.clone().setY(z);
-      // треугольник между prev и p
       pos.push(prev.x,prev.y,prev.z, p.x,p.y,p.z, q.x,th,q.z);
-      const zi = isFill ? fillV : cutV;
-      const v = Math.abs(((p.y-th)+(prev.y-tgY))/2)*0.5; // грубая площадь
-      if(isFill) fillV+=Math.abs((p.y-th))*0.5*0.5; else cutV+=Math.abs((prev.y-tgY))*0.5*0.5;
+      const dzPrev=prev.y-tgY, dzCur=p.y-th;
+      const v=Math.abs((dzPrev+dzCur)/2)*0.5;
+      if(isFill) fillV+=v; else cutV+=v;
       const base=pos.length/3-3;
-      cols.push(...zoneOf(prev.y-tgY), ...zoneOf(p.y-th), ...zoneOf(0));
+      cols.push(...zoneOf(dzPrev), ...zoneOf(dzCur), ...zoneOf(0));
       idx.push(base, base+1, base+2);
       if((isFill && z<=th) || (!isFill && z>=th)){
-        return {end:new THREE.Vector3(q.x,th,q.z), dist:d};
+        return;
       }
       prev=p;
     }
-    return {end:prev, dist:80};
   };
   for(let i=0;i<N;i++){
     const across=new THREE.Vector3().subVectors(R[i],L[i]).setY(0).normalize();
-    // левый край
     const isFillL = G[i][0].y >= TG[i][0];
-    skirt(i, G[i][0], TG[i][0], across.clone().multiplyScalar(-1), isFillL?state.fillN:state.cutN, isFillL);
-    // правый край
+    skirt(G[i][0], TG[i][0], across.clone().multiplyScalar(-1), isFillL?state.fillN:state.cutN, isFillL);
     const isFillR = G[i][M-1].y >= TG[i][M-1];
-    skirt(i, G[i][M-1], TG[i][M-1], across.clone(), isFillR?state.fillN:state.cutN, isFillR);
+    skirt(G[i][M-1], TG[i][M-1], across.clone(), isFillR?state.fillN:state.cutN, isFillR);
   }
 
   const geo=new THREE.BufferGeometry();
@@ -164,7 +156,6 @@ function rebuild(){
     polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-1}));
   g.add(mesh);
 
-  // подписи: каждые ~20 м — уклон по центру и высоты по трём кривым
   const stepM=20;
   let acc=0; const rows=[];
   for(let i=1;i<N;i++){
@@ -172,7 +163,7 @@ function rebuild(){
     if(acc>=stepM || i===N-1){
       acc=0;
       const h=Math.max(0.1, C[i].distanceTo(C[i-1]));
-      const slope=Math.degrees(Math.atan((G[i][4].y-G[i-1][4].y)/h));
+      const slope=deg(Math.atan((G[i][4].y-G[i-1][4].y)/h));
       rows.push({i, slope, c:G[i][4].y, l:G[i][0].y, r:G[i][M-1].y, p:C[i]});
     }
   }
@@ -180,7 +171,6 @@ function rebuild(){
   labelDiv.innerHTML = rows.map(r=>
     `<div>Ст. ${r.i}: уклон <b>${r.slope.toFixed(1)}°</b> | H: ${r.c.toFixed(1)} / ${r.l.toFixed(1)} / ${r.r.toFixed(1)} м</div>`
   ).join('') || '-';
-  // 3D-подписи: маленькие спрайты с текстом
   const makeSprite=(text, p, color)=>{
     const cnv=document.createElement('canvas'); cnv.width=256; cnv.height=64;
     const ctx=cnv.getContext('2d');
