@@ -65,11 +65,11 @@ function smoothVals(vals, level){
   return cur;
 }
 
-const ray=new THREE.Raycaster();
+const raycaster=new THREE.Raycaster();
 const down=new THREE.Vector3(0,-1,0);
 function terrainY(x,z){
-  ray.set(new THREE.Vector3(x,1e5,z), down);
-  const h=ray.intersectObject(state.terrain,true);
+  raycaster.set(new THREE.Vector3(x,1e5,z), down);
+  const h=raycaster.intersectObject(state.terrain,true);
   return h.length? h[0].point.y : null;
 }
 
@@ -86,6 +86,27 @@ function applyDesignLook(){
   if(state.designGroup) state.designGroup.visible = state.designVisible;
   if(state.labelsGroup) state.labelsGroup.visible = state.labelsVisible;
 }
+
+// Фокус камеры на точку по двойному клику (как в Sketchfab)
+const clickRay=new THREE.Raycaster();
+const ndc=new THREE.Vector2();
+renderer.domElement.addEventListener('dblclick', ev=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  ndc.x=((ev.clientX-rect.left)/rect.width)*2-1;
+  ndc.y=-((ev.clientY-rect.top)/rect.height)*2+1;
+  clickRay.setFromCamera(ndc,camera);
+  const targets=[];
+  if(state.designGroup) targets.push(state.designGroup);
+  if(state.terrain) targets.push(state.terrain);
+  const hits=clickRay.intersectObjects(targets,true);
+  if(!hits.length) return;
+  const p=hits[0].point;
+  const dist=camera.position.distanceTo(controls.target);
+  controls.target.copy(p);
+  const dir=new THREE.Vector3().subVectors(camera.position,controls.target).normalize();
+  camera.position.copy(p).addScaledVector(dir, Math.min(dist, 200));
+  controls.update();
+});
 
 function rebuild(){
   if(!state.terrain||!state.curves) return;
@@ -131,7 +152,6 @@ function rebuild(){
     }
     G.push(row); TG.push(trow);
   }
-  // единая намотка треугольников: всегда против часовой в плане (XZ)
   function addTri(a,b,c,col){
     const ar=(b.x-a.x)*(c.z-a.z)-(b.z-a.z)*(c.x-a.x);
     if(ar<0){ const t=b; b=c; c=t; }
@@ -150,22 +170,24 @@ function rebuild(){
     const col=zoneOf(d);
     addTri(a,b,c,col); addTri(a,c,e,col);
   }
+  // Боковые откосы: строим ЛЕНТУ (strip) из квадов, а не отдельные треугольники
   const skirt=(edge, tgY, dir, n_slope, isFill)=>{
     const zEdge=edge.y;
     let prev=edge.clone();
+    let prevTh=tgY;
     for(let d=0.5; d<=200; d+=0.5){
       const q=edge.clone().addScaledVector(dir,d);
       const th=terrainY(q.x,q.z);
       if(th===null) break;
       const z = isFill ? zEdge - d/n_slope : zEdge + d/n_slope;
       const p=q.clone().setY(z);
-      const dzPrev=prev.y-tgY, dzCur=p.y-th;
+      const dzPrev=prev.y-prevTh, dzCur=p.y-th;
       const v=Math.abs((dzPrev+dzCur)/2)*0.5;
       if(isFill) fillV+=v; else cutV+=v;
       const col=zoneOf((dzPrev+dzCur)/2);
       addTri(prev,p,q,col);
       if((isFill && z<=th) || (!isFill && z>=th)) return;
-      prev=p;
+      prev=p; prevTh=th;
     }
   };
   for(let i=0;i<N;i++){
@@ -280,7 +302,7 @@ async function loadSlope(id){
     }
   }catch(err){
     const msg=err&&(err.message||err.description)?(err.message||err.description):String(err);
-    document.getElementById('stats').textContent='Ошибка загрузки: '+msg;
+    document.getElementById('stats').textContent='Ошибка загрузка: '+msg;
     dbg('ОШИБКА: '+msg);
     console.error(err);
   }
