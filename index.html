@@ -103,9 +103,11 @@ details[open] summary{margin-bottom:8px}
       <div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div>
       <div><span class="sw" style="background:#2f4a2f"></span>Оригинальная почва</div>
       <div class="ctl"><input type="checkbox" id="pLightOn" checked/> <span>Солнце</span>
-      <input type="range" id="pLight" min="0" max="3" step="0.1" value="3" style="width:80px"/></div>
-      <div class="ctl"><span>Поворот солнца</span>
-      <input type="range" id="pSunRot" min="0" max="360" step="5" value="0" style="width:100px"/></div>
+      <input type="range" id="pLight" min="0" max="3" step="0.1" value="3" style="width:70px"/></div>
+      <div class="ctl"><span>Поворот</span>
+      <input type="range" id="pSunRot" min="0" max="360" step="5" value="0" style="width:80px"/></div>
+      <div class="ctl"><span>Тени</span>
+      <input type="range" id="pShadow" min="0" max="3" step="1" value="1" style="width:80px"/></div>
     </div>
     <button id="homeBtn" title="Домой">⌂</button>
     <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div>
@@ -117,6 +119,6 @@ details[open] summary{margin-bottom:8px}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=20"></script>
+<script type="module" src="./main.js?v=21"></script>
 </body>
 </html>

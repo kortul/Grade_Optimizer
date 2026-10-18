@@ -33,7 +33,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.screenSpacePanning = true;
-controls.zoomSpeed = 0.5;
+controls.enableZoom = false; // зум колесом делаем сами, плавно
 controls.rotateSpeed = 0.8;
 controls.minDistance = 30;
 controls.maxDistance = 4000;
@@ -48,7 +48,19 @@ sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.near = 1; sun.shadow.camera.far = 3000;
 sun.shadow.camera.left = -1200; sun.shadow.camera.right = 1200;
 sun.shadow.camera.top = 1200; sun.shadow.camera.bottom = -1200;
+sun.shadow.bias = -0.0005;
 scene.add(sun);
+
+// Плавный зум колесом
+let targetDist = null;
+renderer.domElement.addEventListener('wheel', ev=>{
+  ev.preventDefault();
+  const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
+  let d = dir.length();
+  const factor = Math.exp(ev.deltaY * 0.0012);
+  d = THREE.MathUtils.clamp(d * factor, 30, 4000);
+  targetDist = d;
+}, { passive:false });
 
 window.addEventListener('resize', () => {
   camera.aspect = view.clientWidth/view.clientHeight; camera.updateProjectionMatrix();
@@ -119,6 +131,7 @@ renderer.domElement.addEventListener('dblclick', ev=>{
   const dir=new THREE.Vector3().subVectors(camera.position,controls.target).normalize();
   camera.position.copy(p).addScaledVector(dir, Math.min(dist, 200));
   controls.update();
+  targetDist=null;
 });
 
 function goHome(){
@@ -126,6 +139,7 @@ function goHome(){
     camera.position.copy(state.homePos);
     controls.target.copy(state.homeTarget);
     controls.update();
+    targetDist=null;
   }
 }
 document.getElementById('homeBtn').addEventListener('click', goHome);
@@ -161,7 +175,6 @@ function rebuild(){
     const c=C[i], l=L[i], r=R[i];
     const across=new THREE.Vector3().subVectors(r,l).setY(0);
     const perp=across.clone().normalize();
-    // offset: сдвиг всей станции вбок
     const shift=perp.clone().multiplyScalar(state.off);
     const cc=c.clone().add(shift), ll=l.clone().add(shift), rr=r.clone().add(shift);
     let zc=prof[i];
@@ -173,7 +186,6 @@ function rebuild(){
       let z=zc;
       const floor=tgv-state.cut;
       if(z<floor) z=floor;
-      // crossfall: наклон поперёк
       z += (state.cross/100)*(t-0.5)*ll.distanceTo(rr);
       row.push(q.clone().setY(z)); trow.push(tgv);
     }
@@ -252,7 +264,7 @@ function rebuild(){
   mesh.castShadow = true; mesh.receiveShadow = true;
   g.add(mesh);
 
-  // Сетка сегментов: яркие ленты каждые 20 м
+  // Сетка сегментов: ленты каждые 20 м, под подписями
   if(state.gridVisible){
     const gpos=[], gcol=[];
     const white=[1,1,1];
@@ -267,15 +279,15 @@ function rebuild(){
           if(dir.lengthSq()<1e-6) continue;
           dir.normalize();
           const perp=new THREE.Vector3(-dir.z,0,dir.x).multiplyScalar(0.35);
-          const a1=a.clone().add(perp).setY(a.y+0.25);
-          const a2=a.clone().sub(perp).setY(a.y+0.25);
-          const b1=b.clone().add(perp).setY(b.y+0.25);
-          const b2=b.clone().sub(perp).setY(b.y+0.25);
+          const a1=a.clone().add(perp).setY(a.y+0.2);
+          const a2=a.clone().sub(perp).setY(a.y+0.2);
+          const b1=b.clone().add(perp).setY(b.y+0.2);
+          const b2=b.clone().sub(perp).setY(b.y+0.2);
           for(const p of [a1,a2,b1,b2]){ gpos.push(p.x,p.y,p.z); gcol.push(...white); }
         }
       }
     }
-    const quadCount=gpos.length/12;
+    const quadCount=Math.floor(gpos.length/12);
     const gidx=[];
     for(let q=0;q<quadCount;q++){
       const b=q*4;
@@ -285,8 +297,8 @@ function rebuild(){
     lgeo.setAttribute('position', new THREE.Float32BufferAttribute(gpos,3));
     lgeo.setAttribute('color', new THREE.Float32BufferAttribute(gcol,3));
     lgeo.setIndex(gidx); lgeo.computeVertexNormals();
-    const grid=new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.DoubleSide, transparent:true, opacity:0.9, depthWrite:false}));
-    grid.renderOrder=2;
+    const grid=new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.DoubleSide, transparent:true, opacity:0.85, depthWrite:false}));
+    grid.renderOrder=1;
     g.add(grid);
   }
 
@@ -307,28 +319,36 @@ function rebuild(){
     `<div>Ст. ${r.i}: уклон <b>${r.slope.toFixed(1)}°</b> | H: ${r.c.toFixed(1)} / ${r.l.toFixed(1)} / ${r.r.toFixed(1)} м</div>`
   ).join('') || '-';
   const makeSprite=(text, p, color, small)=>{
-    const cnv=document.createElement('canvas'); cnv.width=256; cnv.height=64;
+    const cnv=document.createElement('canvas'); cnv.width=384; cnv.height=96;
     const ctx=cnv.getContext('2d');
-    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,0,256,64);
-    ctx.fillStyle=color; ctx.font=(small?'22px':'bold 30px')+' sans-serif'; ctx.textAlign='center';
-    ctx.fillText(text,128,small?40:44);
+    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,0,384,96);
+    ctx.fillStyle=color; ctx.font=(small?'33px':'bold 45px')+' sans-serif'; ctx.textAlign='center';
+    ctx.fillText(text,192,small?60:66);
     const tex=new THREE.CanvasTexture(cnv);
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
-    sp.scale.set(small?7:10, small?1.75:2.5, 1); sp.position.copy(p);
+    sp.scale.set(small?10.5:15, small?2.6:3.75, 1);
+    sp.position.copy(p);
+    sp.renderOrder=10;
     return sp;
   };
   const slopeColor = s => s < 0 ? '#ff8000' : (s < 10 ? '#00ff00' : (s < 15 ? '#0000ff' : (s < 25 ? '#ff0000' : '#000000')));
   rows.forEach(r=>{
-    lg.add(makeSprite(r.slope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.c+7, r.p.z), slopeColor(r.slope)));
-    lg.add(makeSprite(r.c.toFixed(1), new THREE.Vector3(r.p.x, r.c+3.5, r.p.z), '#ffffff'));
-    lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+3.5, r.pl.z), '#7fd4ff'));
-    lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+3.5, r.pr.z), '#ffb0a0'));
-    const tgl=terrainY(r.pl.x,r.pl.z), tgr=terrainY(r.pr.x,r.pr.z);
-    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+0.3, r.p.z), '#cfe3cf', true));
-    if(tgl!==null) tg.add(makeSprite('орг.: '+tgl.toFixed(1), new THREE.Vector3(r.pl.x, tgl+0.3, r.pl.z), '#cfe3cf', true));
-    if(tgr!==null) tg.add(makeSprite('орг.: '+tgr.toFixed(1), new THREE.Vector3(r.pr.x, tgr+0.3, r.pr.z), '#cfe3cf', true));
+    const across=new THREE.Vector3().subVectors(r.pr,r.pl).setY(0).normalize();
+    const inward=across.clone();
+    // точки采样 рельефа чуть внутрь от края, чтобы луч не задевал стык
+    const smpL=r.pl.clone().addScaledVector(inward,1.5);
+    const smpR=r.pr.clone().addScaledVector(inward,-1.5);
+    const tgl=terrainY(smpL.x,smpL.z), tgr=terrainY(smpR.x,smpR.z);
+    lg.add(makeSprite(r.slope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.c+10, r.p.z), slopeColor(r.slope)));
+    lg.add(makeSprite(r.c.toFixed(1), new THREE.Vector3(r.p.x, r.c+5, r.p.z), '#ffffff'));
+    lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+5, r.pl.z), '#7fd4ff'));
+    lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+5, r.pr.z), '#ffb0a0'));
+    // орг. высоты: ровно под лейблом текущей высоты, на рельефе
+    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+0.4, r.p.z), '#cfe3cf', true));
+    if(tgl!==null) tg.add(makeSprite('орг.: '+tgl.toFixed(1), new THREE.Vector3(smpL.x, tgl+0.4, smpL.z), '#cfe3cf', true));
+    if(tgr!==null) tg.add(makeSprite('орг.: '+tgr.toFixed(1), new THREE.Vector3(smpR.x, tgr+0.4, smpR.z), '#cfe3cf', true));
     if(state.terrainSlopesVisible){
-      lg.add(makeSprite('орг. уклон: '+r.terrSlope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.tg+4.5, r.p.z), '#7fd4ff', true));
+      lg.add(makeSprite('орг. уклон: '+r.terrSlope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.tg+6.5, r.p.z), '#7fd4ff', true));
     }
   });
 
@@ -471,6 +491,12 @@ document.getElementById('pSunRot').addEventListener('input',e=>{
   const r=700;
   sun.position.set(Math.cos(a)*r, 600, Math.sin(a)*r);
 });
+const shadowSizes=[1024,2048,4096,8192];
+document.getElementById('pShadow').addEventListener('input',e=>{
+  const s=shadowSizes[parseInt(e.target.value)];
+  if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map=null; }
+  sun.shadow.mapSize.set(s,s);
+});
 document.getElementById('pLightOn').addEventListener('change',e=>{
   sun.visible=e.target.checked;
 });
@@ -507,4 +533,16 @@ document.getElementById('reset').addEventListener('click',()=>{
 });
 
 loadSlopeList().then(first=>loadSlope(first));
-(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera); })();
+(function loop(){
+  requestAnimationFrame(loop);
+  // плавный зум
+  if(targetDist!==null){
+    const dir=new THREE.Vector3().subVectors(camera.position, controls.target);
+    const cur=dir.length();
+    const nd=THREE.MathUtils.lerp(cur, targetDist, 0.15);
+    if(Math.abs(nd-targetDist)<0.5){ targetDist=null; }
+    camera.position.copy(controls.target).addScaledVector(dir.normalize(), nd);
+  }
+  controls.update();
+  renderer.render(scene,camera);
+})();
