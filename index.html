@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SSGO Web - Баланс грунта</title>
+<title>SSGO Web — Подбор выравнивания склона</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,sans-serif;background:#141418;color:#eee}
 #app{display:flex;height:100vh}
-#panel{width:360px;padding:16px;background:#1c1c22;overflow-y:auto;flex-shrink:0}
+#panel{width:380px;padding:16px;background:#1c1c22;overflow-y:auto;flex-shrink:0}
 #view{flex:1;position:relative}
 h1{font-size:18px;margin:0 0 12px}
 .group{background:#26262e;border-radius:8px;padding:12px;margin-bottom:12px}
@@ -21,48 +21,48 @@ button.secondary{background:#3a3a44}
 #stats{font-size:13px;line-height:1.7}
 #stats b{color:#7fd}
 #debug{font-size:11px;line-height:1.6;color:#aab;white-space:pre-wrap;font-family:monospace}
-.slope-btn{display:block;width:100%;margin:4px 0;padding:10px;background:#2e2e38;color:#eee;border:1px solid #444;border-radius:6px;cursor:pointer;text-align:left;font-size:14px;font-weight:normal}
+.slope-btn{display:block;width:100%;margin:4px 0;padding:10px;background:#2e2e38;color:#eee;border:1px solid #444;border-radius:6px;cursor:pointer;text-align:left;font-size:14px}
 .slope-btn.active{background:#2ea36a;border-color:#2ea36a}
-.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
 @media(max-width:800px){#app{flex-direction:column-reverse}#panel{width:100%;max-height:45vh}}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="panel">
-    <h1>SSGO Web — Баланс грунта</h1>
+    <h1>SSGO Web — Подбор выравнивания</h1>
     <div class="group">
       <h2>Склон</h2>
-      <button class="slope-btn active" data-slope="slope1">Склон 1 (тест)</button>
-      <button class="slope-btn" data-slope="slope2">Склон 2 (тест)</button>
+      <button class="slope-btn active" data-slope="slope1">Склон 1</button>
+      <button class="slope-btn" data-slope="slope2">Склон 2</button>
     </div>
     <div class="group">
-      <h2>Параметры</h2>
-      <label>Угол откоса, ° <span class="val" id="vAng">35°</span></label>
-      <input type="range" id="pAng" min="5" max="60" step="0.5" value="35"/>
-      <label>Сглаживание профиля <span class="val" id="vProf">0</span></label>
-      <input type="range" id="pProf" min="0" max="10" step="1" value="0"/>
-      <label>Макс. глубина срезки, м <span class="val" id="vCut">3.0</span></label>
-      <input type="range" id="pCut" min="0" max="20" step="0.5" value="3"/>
-      <label>Пригодно к использованию, % <span class="val" id="vUse">90%</span></label>
-      <input type="range" id="pUse" min="10" max="100" step="5" value="90"/>
-      <label>Сдвиг трассы, м <span class="val" id="vOff">0.0</span></label>
+      <h2>Параметры трассы</h2>
+      <label>Сдвиг трассы влево/вправо, м <span class="val" id="vOff">0.0</span></label>
       <input type="range" id="pOff" min="-5" max="5" step="0.1" value="0"/>
       <label>Поперечный уклон, % <span class="val" id="vCr">0.0</span></label>
       <input type="range" id="pCr" min="-5" max="5" step="0.1" value="0"/>
-      <label>Подъём/опускание трассы, м <span class="val" id="vDy">0.0</span></label>
-      <input type="range" id="pDy" min="-10" max="10" step="0.1" value="0"/>
-      <div class="chk"><input type="checkbox" id="pDbg" checked/> <span>Debug: кривые + каркас</span></div>
+      <label>Уклон откоса насыпи 1:<span class="val" id="vFillN">1.43</span></label>
+      <input type="range" id="pFillN" min="1" max="5" step="0.01" value="1.43"/>
+      <label>Уклон откоса выемки 1:<span class="val" id="vCutN">1.43</span></label>
+      <input type="range" id="pCutN" min="1" max="5" step="0.01" value="1.43"/>
+      <label>Макс. глубина срезки, м <span class="val" id="vCut">3.0</span></label>
+      <input type="range" id="pCut" min="0" max="20" step="0.5" value="3"/>
+      <label>Сглаживание профиля <span class="val" id="vProf">0</span></label>
+      <input type="range" id="pProf" min="0" max="10" step="1" value="0"/>
     </div>
     <div class="group">
-      <h2>Отчёт по грунту (оценка)</h2>
+      <h2>Предварительный расчёт (веб)</h2>
       <div id="stats">Загрузка…</div>
+    </div>
+    <div class="group">
+      <h2>Подписи (высоты и уклоны)</h2>
+      <div id="labels" style="font-size:12px;max-height:220px;overflow-y:auto;line-height:1.5">-</div>
     </div>
     <div class="group">
       <h2>Debug</h2>
       <div id="debug">-</div>
     </div>
-    <button id="save">Сохранить конфигурацию</button>
+    <button id="save">Скачать конфигурацию для Maya</button>
     <button class="secondary" id="reset">Сбросить</button>
   </div>
   <div id="view"></div>
@@ -73,6 +73,6 @@ button.secondary{background:#3a3a44}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=7"></script>
+<script type="module" src="./main.js?v=9"></script>
 </body>
 </html>
