@@ -31,9 +31,6 @@ window.addEventListener('resize', () => {
 const dbgEl = document.getElementById('debug');
 function dbg(msg){ dbgEl.textContent += msg + "\n"; }
 
-// ГЛАВНОЕ: кривые из Maya - это NURBS с малым числом CV.
-// В JSON лежат только CV. Если соединять их прямыми - будет "треш".
-// Поэтому строим плавную кривую CatmullRom через CV и семплируем 200 точек.
 function smoothCurve(pts, n){
   const v = pts.map(p=>new THREE.Vector3(...p));
   if(v.length<2) return v;
@@ -84,11 +81,9 @@ function drawDebug(rawC, rawL, rawR, C, L, R){
   if(!state.dbg) return;
   const g=new THREE.Group();
   const line=(pts,color)=>new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color}));
-  // сглаженные кривые (то, что используется для коридора)
   g.add(line(C,0xffffff));
   g.add(line(L,0x00ff00));
   g.add(line(R,0xff3333));
-  // сырые CV из Maya - маленькие точки, чтобы видеть "скелет" кривой
   const dotMat=new THREE.PointsMaterial({color:0xffcc00,size:2.5,sizeAttenuation:false});
   const mkDots=(pts)=>{
     const geo=new THREE.BufferGeometry().setFromPoints(pts.map(p=>new THREE.Vector3(...p)));
@@ -201,33 +196,44 @@ function loadSlope(id){
   state.terrain=null; state.curves=null;
   dbgEl.textContent='';
   document.getElementById('stats').textContent='Загрузка…';
-  loader.load(`./assets/${id}.gltf`, gltf=>{
+  const bust = '?t=' + Date.now(); // обход кэша GitHub Pages
+  loader.load(`./assets/${id}.gltf${bust}`, gltf=>{
     const root=gltf.scene; scene.add(root); state.root=root;
     root.traverse(o=>{ if((o.name||'').toLowerCase().includes('terrain')) state.terrain=o; });
     if(state.terrain) state.terrain.traverse(c=>{ if(c.isMesh){ c.material=new THREE.MeshStandardMaterial({color:0x8a8470,roughness:1,side:THREE.DoubleSide}); }});
     root.updateMatrixWorld(true);
-    fetch(`./assets/${id}.curves.json`).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(cv=>{ state.curves=cv; showCurvesDebug(cv); afterLoad(root); })
-      .catch(e=>{ document.getElementById('stats').textContent='Не найден assets/'+id+'.curves.json ('+e.message+')'; });
-  }, undefined, err=>{
-    document.getElementById('stats').textContent='Не удалось загрузить assets/'+id+'.gltf';
+    dbg('glTF загружен: assets/'+id+'.gltf');
+    fetch(`./assets/${id}.curves.json${bust}`).then(r=>{
+      if(!r.ok) throw new Error('HTTP '+r.status+' при загрузке curves.json');
+      return r.json();
+    }).then(cv=>{
+      state.curves=cv;
+      dbg('--- Кривые из Maya (сырые CV) ---');
+      for(const k of ['centre','left','right']){
+        const pts=cv[k]||[];
+        dbg(`${k}: ${pts.length} CV`);
+        if(pts.length){
+          const b=bboxOf(pts.map(p=>new THREE.Vector3(...p)));
+          dbg(`  bbox: ${fmtBox(b)}`);
+          dbg(`  первая: (${pts[0].map(v=>v.toFixed(1)).join(', ')})`);
+          dbg(`  последняя: (${pts[pts.length-1].map(v=>v.toFixed(1)).join(', ')})`);
+        }
+      }
+      dbg('Жёлтые точки = сырые CV из Maya.');
+      dbg('Белая/зелёная/красная = сглаженные кривые (CatmullRom).');
+      afterLoad(root);
+    }).catch(e=>{
+      document.getElementById('stats').textContent='Ошибка загрузки curves.json: '+e.message;
+      dbg('ОШИБКА curves.json: '+e.message);
+    });
+  }, progress=>{
+    if(progress.total>0) dbg('Загрузка glTF: '+Math.round(100*progress.loaded/progress.total)+'%');
+  }, err=>{
+    const msg = err && (err.message||err.description) ? (err.message||err.description) : String(err);
+    document.getElementById('stats').textContent='Ошибка загрузки assets/'+id+'.gltf: '+msg;
+    dbg('ОШИБКА glTF: '+msg);
+    console.error('[SSGO] glTF load error:', err);
   });
-}
-
-function showCurvesDebug(cv){
-  dbg('--- Кривые из Maya (сырые CV) ---');
-  for(const k of ['centre','left','right']){
-    const pts=cv[k]||[];
-    dbg(`${k}: ${pts.length} CV`);
-    if(pts.length){
-      const b=bboxOf(pts.map(p=>new THREE.Vector3(...p)));
-      dbg(`  bbox: ${fmtBox(b)}`);
-      dbg(`  первая: (${pts[0].map(v=>v.toFixed(1)).join(', ')})`);
-      dbg(`  последняя: (${pts[pts.length-1].map(v=>v.toFixed(1)).join(', ')})`);
-    }
-  }
-  dbg('Жёлтые точки = сырые CV из Maya.');
-  dbg('Белая/зелёная/красная = сглаженные кривые (CatmullRom).');
 }
 
 function afterLoad(root){
@@ -258,7 +264,7 @@ document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()
 }));
 
 document.getElementById('save').addEventListener('click',()=>{
-  const preset={version:'web-0.6',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
+  const preset={version:'web-0.7',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
     max_cut_depth:state.cut,usable_percent:state.use,offset:state.off,crossfall_percent:state.cr,
     dy:state.dy, saved_at:new Date().toISOString()};
   const a=document.createElement('a');
