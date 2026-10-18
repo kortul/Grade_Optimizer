@@ -31,7 +31,7 @@ details[open] summary{margin-bottom:8px}
 #legend{position:absolute;top:12px;right:12px;background:rgba(20,20,24,.85);border:1px solid #3a3a44;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8;pointer-events:none}
 #legend .sw{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:8px;vertical-align:-2px}
 #legend .ctl{pointer-events:auto;display:flex;align-items:center;gap:8px;margin-top:8px}
-#homeBtn{position:absolute;bottom:16px;right:16px;padding:10px 16px;background:rgba(46,163,106,.9);border:0;border-radius:6px;color:#fff;font-size:14px;font-weight:bold;cursor:pointer;z-index:5}
+#homeBtn{position:absolute;top:12px;left:12px;width:38px;height:38px;padding:0;border:0;border-radius:8px;background:rgba(46,163,106,.9);color:#fff;font-size:20px;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center}
 #loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,20,24,.72);z-index:10}
 #loading .box{text-align:center}
 #loading .spin{width:46px;height:46px;border:4px solid #3a3a44;border-top-color:#2ea36a;border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
@@ -57,7 +57,6 @@ details[open] summary{margin-bottom:8px}
       <label>Макс. глубина срезки, м (лимит, не цель) <span class="val" id="vCut">5.0</span></label>
       <input type="range" id="pCut" min="0" max="20" step="0.5" value="5"/>
       <button id="apply">ПРИМЕНИТЬ</button>
-      <button class="secondary" id="saveDefault">Сохранить как параметры по умолчанию</button>
     </div>
     <div class="group">
       <h2>Отображение</h2>
@@ -65,8 +64,10 @@ details[open] summary{margin-bottom:8px}
       <label>Прозрачность почвы <span class="val" id="vTerrOp">100%</span></label>
       <input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
       <div class="chk"><input type="checkbox" id="pDesign" checked/> <span>Показать новый склон</span></div>
+      <div class="chk"><input type="checkbox" id="pGrid" checked/> <span>Сетка сегментов (каждые 20 м)</span></div>
       <div class="chk"><input type="checkbox" id="pLabels" checked/> <span>Показать подписи</span></div>
       <div class="chk"><input type="checkbox" id="pTerrainLabels" checked/> <span>Показать высоты оригинальной почвы</span></div>
+      <div class="chk"><input type="checkbox" id="pTerrainSlopes"/> <span>Показать оригинальные уклоны центральной линии</span></div>
       <div class="hint">Управление: ЛКМ — вращение, колесо — зум, ПКМ — панорама, двойной клик — фокус на точку.</div>
     </div>
     <div class="group">
@@ -75,8 +76,10 @@ details[open] summary{margin-bottom:8px}
     </div>
     <details>
       <summary>Advanced</summary>
-      <div class="chk"><input type="checkbox" id="pGrid" checked/> <span>Сетка сегментов (каждые 20 м)</span></div>
-      <div class="chk"><input type="checkbox" id="pTerrainSlopes"/> <span>Показать оригинальные уклоны центральной линии</span></div>
+      <label>Поперечный сдвиг (offset), м <span class="val" id="vOff">0</span></label>
+      <input type="range" id="pOff" min="-20" max="20" step="0.5" value="0"/>
+      <label>Поперечный уклон (crossfall), % <span class="val" id="vCross">0</span></label>
+      <input type="range" id="pCross" min="-5" max="5" step="0.1" value="0"/>
     </details>
     <details>
       <summary>Подписи веба (высоты и уклоны)</summary>
@@ -104,7 +107,7 @@ details[open] summary{margin-bottom:8px}
       <div class="ctl"><span>Поворот солнца</span>
       <input type="range" id="pSunRot" min="0" max="360" step="5" value="0" style="width:100px"/></div>
     </div>
-    <button id="homeBtn">Домой</button>
+    <button id="homeBtn" title="Домой">⌂</button>
     <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div>
   </div>
 </div>
@@ -114,6 +117,6 @@ details[open] summary{margin-bottom:8px}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=19"></script>
+<script type="module" src="./main.js?v=20"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@ const state = {
   ang:(saved&&saved.slope_angle)||35,
   prof:(saved&&saved.profile_level)||0,
   cut:(saved&&saved.max_cut_depth)||5,
+  off:0, cross:0,
   terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
@@ -32,6 +33,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.screenSpacePanning = true;
+controls.zoomSpeed = 0.5;
+controls.rotateSpeed = 0.8;
 controls.minDistance = 30;
 controls.maxDistance = 4000;
 controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
@@ -157,7 +160,10 @@ function rebuild(){
   for(let i=0;i<N;i++){
     const c=C[i], l=L[i], r=R[i];
     const across=new THREE.Vector3().subVectors(r,l).setY(0);
-    const cc=c.clone(), ll=l.clone(), rr=r.clone();
+    const perp=across.clone().normalize();
+    // offset: сдвиг всей станции вбок
+    const shift=perp.clone().multiplyScalar(state.off);
+    const cc=c.clone().add(shift), ll=l.clone().add(shift), rr=r.clone().add(shift);
     let zc=prof[i];
     const row=[], trow=[];
     for(let j=0;j<M;j++){
@@ -167,6 +173,8 @@ function rebuild(){
       let z=zc;
       const floor=tgv-state.cut;
       if(z<floor) z=floor;
+      // crossfall: наклон поперёк
+      z += (state.cross/100)*(t-0.5)*ll.distanceTo(rr);
       row.push(q.clone().setY(z)); trow.push(tgv);
     }
     G.push(row); TG.push(trow);
@@ -244,7 +252,7 @@ function rebuild(){
   mesh.castShadow = true; mesh.receiveShadow = true;
   g.add(mesh);
 
-  // Сетка сегментов: толстые яркие ленты каждые 20 м
+  // Сетка сегментов: яркие ленты каждые 20 м
   if(state.gridVisible){
     const gpos=[], gcol=[];
     const white=[1,1,1];
@@ -263,16 +271,10 @@ function rebuild(){
           const a2=a.clone().sub(perp).setY(a.y+0.25);
           const b1=b.clone().add(perp).setY(b.y+0.25);
           const b2=b.clone().sub(perp).setY(b.y+0.25);
-          const base=gpos.length/3;
           for(const p of [a1,a2,b1,b2]){ gpos.push(p.x,p.y,p.z); gcol.push(...white); }
-          g.push(); // no-op guard
-          const idxStart=base;
-          // два треугольника: a1,b1,b2 и a1,b2,a2
-          gpos.push(); // no-op
         }
       }
     }
-    // строим индексы корректно
     const quadCount=gpos.length/12;
     const gidx=[];
     for(let q=0;q<quadCount;q++){
@@ -283,7 +285,7 @@ function rebuild(){
     lgeo.setAttribute('position', new THREE.Float32BufferAttribute(gpos,3));
     lgeo.setAttribute('color', new THREE.Float32BufferAttribute(gcol,3));
     lgeo.setIndex(gidx); lgeo.computeVertexNormals();
-    const grid=new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.DoubleSide, transparent:true, opacity:0.95, depthWrite:false}));
+    const grid=new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.DoubleSide, transparent:true, opacity:0.9, depthWrite:false}));
     grid.renderOrder=2;
     g.add(grid);
   }
@@ -413,7 +415,7 @@ async function loadSlope(id){
   }
 }
 
-const map=[['pAng','ang','vAng',v=>v+'°'],['pProf','prof','vProf',v=>v],['pCut','cut','vCut',v=>v.toFixed(1)]];
+const map=[['pAng','ang','vAng',v=>v+'°'],['pProf','prof','vProf',v=>v],['pCut','cut','vCut',v=>v.toFixed(1)],['pOff','off','vOff',v=>v],['pCross','cross','vCross',v=>v]];
 let timer=null;
 function scheduleRebuild(delay=150){
   clearTimeout(timer);
@@ -478,22 +480,6 @@ document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()
   b.classList.add('active'); state.slope=b.dataset.slope; loadSlope(b.dataset.slope);
 }));
 
-document.getElementById('saveDefault').addEventListener('click',()=>{
-  const fillN = 1.0/Math.tan(THREE.MathUtils.degToRad(state.ang));
-  const preset={
-    version:'web-preset-2',
-    slope:state.slope,
-    slope_angle:state.ang,
-    profile_level:state.prof,
-    max_cut_depth:state.cut,
-    fill_n:parseFloat(fillN.toFixed(4)),
-    cut_n:parseFloat(fillN.toFixed(4)),
-    saved_at:new Date().toISOString()
-  };
-  localStorage.setItem('ssgo_default_preset', JSON.stringify(preset));
-  document.getElementById('stats').innerHTML+='<br><span style="color:#7f7">Сохранено как параметры по умолчанию (в этом браузере).</span>';
-});
-
 document.getElementById('save').addEventListener('click',()=>{
   const fillN = 1.0/Math.tan(THREE.MathUtils.degToRad(state.ang));
   const preset={
@@ -502,6 +488,8 @@ document.getElementById('save').addEventListener('click',()=>{
     slope_angle:state.ang,
     profile_level:state.prof,
     max_cut_depth:state.cut,
+    offset:state.off,
+    crossfall_percent:state.cross,
     fill_n:parseFloat(fillN.toFixed(4)),
     cut_n:parseFloat(fillN.toFixed(4)),
     saved_at:new Date().toISOString()
@@ -514,7 +502,7 @@ document.getElementById('save').addEventListener('click',()=>{
 
 document.getElementById('reset').addEventListener('click',()=>{
   localStorage.removeItem('ssgo_default_preset');
-  const d={pAng:35,pProf:0,pCut:5};
+  const d={pAng:35,pProf:0,pCut:5,pOff:0,pCross:0};
   for(const k in d){ const e=document.getElementById(k); e.value=d[k]; e.dispatchEvent(new Event('input')); }
 });
 
