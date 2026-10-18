@@ -28,6 +28,13 @@ button.secondary{background:#3a3a44}
 details{background:#26262e;border-radius:8px;padding:10px 12px;margin-bottom:12px}
 details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercase;letter-spacing:.5px;user-select:none}
 details[open] summary{margin-bottom:8px}
+#legend{position:absolute;top:12px;right:12px;background:rgba(20,20,24,.85);border:1px solid #3a3a44;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8;pointer-events:none}
+#legend .sw{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:8px;vertical-align:-2px}
+#loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,20,24,.72);z-index:10}
+#loading .box{text-align:center}
+#loading .spin{width:46px;height:46px;border:4px solid #3a3a44;border-top-color:#2ea36a;border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#loading .txt{font-size:15px;font-weight:600;color:#dfe}
 @media(max-width:800px){#app{flex-direction:column-reverse}#panel{width:100%;max-height:45vh}}
 </style>
 </head>
@@ -37,8 +44,8 @@ details[open] summary{margin-bottom:8px}
     <h1>SSGO Web — Подбор выравнивания</h1>
     <div class="group">
       <h2>Склон</h2>
-      <button class="slope-btn active" data-slope="slope1">Склон 1</button>
-      <button class="slope-btn" data-slope="slope2">Склон 2</button>
+      <div id="slopeList"><button class="slope-btn active" data-slope="slope1">slope1</button></div>
+      <div class="hint">Чтобы добавить склон: положи в assets/ файлы ИМЯ.gltf, ИМЯ.bin, ИМЯ.curves.json и добавь имя в assets/slopes.json</div>
     </div>
     <div class="group">
       <h2>Основные настройки</h2>
@@ -56,6 +63,7 @@ details[open] summary{margin-bottom:8px}
       <input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
       <div class="chk"><input type="checkbox" id="pDesign" checked/> <span>Показать новый склон</span></div>
       <div class="chk"><input type="checkbox" id="pLabels" checked/> <span>Показать подписи</span></div>
+      <div class="chk"><input type="checkbox" id="pTerrainLabels" checked/> <span>Показать высоты оригинального terrain</span></div>
       <div class="hint">Управление: ЛКМ — вращение, колесо — зум, ПКМ — панорама, двойной клик — фокус на точку.</div>
     </div>
     <div class="group">
@@ -77,7 +85,15 @@ details[open] summary{margin-bottom:8px}
     <button id="save">Скачать конфигурацию для Maya</button>
     <button class="secondary" id="reset">Сбросить</button>
   </div>
-  <div id="view"></div>
+  <div id="view">
+    <div id="legend">
+      <div><span class="sw" style="background:#6bb85f"></span>Насыпь (новый склон выше рельефа)</div>
+      <div><span class="sw" style="background:#d17a5c"></span>Выемка (новый склон ниже рельефа)</div>
+      <div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div>
+      <div><span class="sw" style="background:#2f4a2f"></span>Оригинальный terrain</div>
+    </div>
+    <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div>
+  </div>
 </div>
 <script type="importmap">
 {"imports":{
@@ -85,6 +101,6 @@ details[open] summary{margin-bottom:8px}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=13"></script>
+<script type="module" src="./main.js?v=14"></script>
 </body>
 </html>
