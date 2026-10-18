@@ -235,11 +235,29 @@ class Engine{
     this.n=n;this.m=P.core_cols;
     this.A=left.map(p2);this.B=right.map(p2);this.C=centre.map(p2);
     const gc=[];
+    let missCount=0;
     for(let i=0;i<n;i++){
-      let v=this.S(this.C[i][0],this.C[i][1]);
-      if(v===null){v=centre[i][1];dbg('Станция '+i+' вне terrain.');}
-      gc.push(v);
+      const v=this.S(this.C[i][0],this.C[i][1]);
+      if(v===null){gc.push(null);missCount++;}
+      else gc.push(v);
     }
+    // интерполяция пропусков между валидными станциями
+    const valid=gc.map((v,i)=>v!==null?i:-1).filter(i=>i>=0);
+    if(valid.length){
+      for(let i=0;i<n;i++){
+        if(gc[i]!==null)continue;
+        let prev=-1,next=-1;
+        for(const vi of valid){if(vi<i)prev=vi;if(vi>i){next=vi;break;}}
+        if(prev<0&&next>=0)gc[i]=gc[next];
+        else if(next<0&&prev>=0)gc[i]=gc[prev];
+        else if(prev>=0&&next>=0){
+          const t=(i-prev)/(next-prev);
+          gc[i]=gc[prev]+(gc[next]-gc[prev])*t;
+        }
+      }
+    }
+    for(let i=0;i<n;i++)if(gc[i]===null)gc[i]=centre[i][1];
+    if(missCount)dbg('Вне terrain: '+missCount+' станций — интерполировано.');
     let prof=gc.slice();
     for(let k=0;k<P.profile_passes;k++){
       const old=prof.slice();

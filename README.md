@@ -1,9 +1,7 @@
-# SSGO Web v0.31
+# SSGO Web v0.32
 
 - Порт движка Maya: TriSampler, лучи, daylight, объёмы по треугольникам.
-- Исправлено: Assignment to constant variable (let T в makeRays).
+- Исправлено: станции вне terrain теперь интерполируются между соседними валидными (вместо скачков по Z кривой) — склон должен стать гладким.
 - Ошибки расчёта видны в Debug.
-- Защита от отсутствующих элементов.
-- Подписи Maya из <имя>_labels.json.
-- В репо: index.html, app.v31.js, assets/ (gltf/bin/curves/labels/slopes.json).
+- В репо: index.html, app.v32.js, assets/ (gltf/bin/curves/labels/slopes.json).
 - Старые main.js / app.v2x.js удалить.
