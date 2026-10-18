@@ -10,7 +10,7 @@ body{margin:0;font-family:system-ui,sans-serif;background:#141418;color:#eee}
 #app{display:flex;height:100vh}
 #panel{width:380px;padding:16px;background:#1c1c22;overflow-y:auto;flex-shrink:0}
 #view{flex:1;position:relative}
-h1{font-size:18px;margin:0 0 12px}
+h1{font-size:17px;margin:0 0 12px}
 .group{background:#26262e;border-radius:8px;padding:12px;margin-bottom:12px}
 .group h2{font-size:13px;margin:0 0 8px;color:#9ab;text-transform:uppercase;letter-spacing:.5px}
 label{display:block;font-size:12px;margin:8px 0 2px;color:#ccd}
@@ -31,6 +31,7 @@ details[open] summary{margin-bottom:8px}
 #legend{position:absolute;top:12px;right:12px;background:rgba(20,20,24,.85);border:1px solid #3a3a44;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8;pointer-events:none}
 #legend .sw{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:8px;vertical-align:-2px}
 #legend .ctl{pointer-events:auto;display:flex;align-items:center;gap:8px;margin-top:8px}
+#homeBtn{position:absolute;bottom:16px;right:16px;padding:10px 16px;background:rgba(46,163,106,.9);border:0;border-radius:6px;color:#fff;font-size:14px;font-weight:bold;cursor:pointer;z-index:5}
 #loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,20,24,.72);z-index:10}
 #loading .box{text-align:center}
 #loading .spin{width:46px;height:46px;border:4px solid #3a3a44;border-top-color:#2ea36a;border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
@@ -42,7 +43,7 @@ details[open] summary{margin-bottom:8px}
 <body>
 <div id="app">
   <div id="panel">
-    <h1>Вертикальная планировка склона — оптимизация</h1>
+    <h1>Вертикальная планировка склона — оптимизация по общему балансу грунта</h1>
     <div class="group">
       <h2>Склон</h2>
       <div id="slopeList"></div>
@@ -64,16 +65,19 @@ details[open] summary{margin-bottom:8px}
       <label>Прозрачность почвы <span class="val" id="vTerrOp">100%</span></label>
       <input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
       <div class="chk"><input type="checkbox" id="pDesign" checked/> <span>Показать новый склон</span></div>
-      <div class="chk"><input type="checkbox" id="pGrid" checked/> <span>Сетка сегментов (каждые 20 м)</span></div>
       <div class="chk"><input type="checkbox" id="pLabels" checked/> <span>Показать подписи</span></div>
       <div class="chk"><input type="checkbox" id="pTerrainLabels" checked/> <span>Показать высоты оригинальной почвы</span></div>
-      <div class="chk"><input type="checkbox" id="pTerrainSlopes"/> <span>Показать оригинальные уклоны центральной линии</span></div>
       <div class="hint">Управление: ЛКМ — вращение, колесо — зум, ПКМ — панорама, двойной клик — фокус на точку.</div>
     </div>
     <div class="group">
       <h2>Предварительный расчёт (веб)</h2>
       <div id="stats">Загрузка…</div>
     </div>
+    <details>
+      <summary>Advanced</summary>
+      <div class="chk"><input type="checkbox" id="pGrid" checked/> <span>Сетка сегментов (каждые 20 м)</span></div>
+      <div class="chk"><input type="checkbox" id="pTerrainSlopes"/> <span>Показать оригинальные уклоны центральной линии</span></div>
+    </details>
     <details>
       <summary>Подписи веба (высоты и уклоны)</summary>
       <div id="labels">-</div>
@@ -96,8 +100,11 @@ details[open] summary{margin-bottom:8px}
       <div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div>
       <div><span class="sw" style="background:#2f4a2f"></span>Оригинальная почва</div>
       <div class="ctl"><input type="checkbox" id="pLightOn" checked/> <span>Солнце</span>
-      <input type="range" id="pLight" min="0" max="3" step="0.1" value="1.6" style="width:90px"/></div>
+      <input type="range" id="pLight" min="0" max="3" step="0.1" value="3" style="width:80px"/></div>
+      <div class="ctl"><span>Поворот солнца</span>
+      <input type="range" id="pSunRot" min="0" max="360" step="5" value="0" style="width:100px"/></div>
     </div>
+    <button id="homeBtn">Домой</button>
     <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div>
   </div>
 </div>
@@ -107,6 +114,6 @@ details[open] summary{margin-bottom:8px}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=18"></script>
+<script type="module" src="./main.js?v=19"></script>
 </body>
 </html>

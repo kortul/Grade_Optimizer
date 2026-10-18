@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// параметры по умолчанию из localStorage (если клиент сохранял)
 let saved=null;
 try{ saved=JSON.parse(localStorage.getItem('ssgo_default_preset')||'null'); }catch(e){}
 
@@ -14,7 +13,8 @@ const state = {
   terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
-  designGroup:null, labelsGroup:null, terrainLabelsGroup:null
+  designGroup:null, labelsGroup:null, terrainLabelsGroup:null,
+  homePos:null, homeTarget:null
 };
 
 const view = document.getElementById('view');
@@ -32,11 +32,13 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.screenSpacePanning = true;
+controls.minDistance = 30;
+controls.maxDistance = 4000;
 controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
 controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 
 scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x3a3a2f, 0.9));
-const sun = new THREE.DirectionalLight(0xfff4e0, 1.6);
+const sun = new THREE.DirectionalLight(0xfff4e0, 3.0);
 sun.position.set(300, 600, 200);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -89,7 +91,6 @@ function applyTerrainLook(){
     m.transparent = state.terrainOpacity < 1;
   });
   if(state.terrain) state.terrain.visible = state.terrainVisible;
-  // высоты оригинальной почвы не зависят от видимости почвы
   if(state.terrainLabelsGroup) state.terrainLabelsGroup.visible = state.terrainLabelsVisible;
 }
 function applyDesignLook(){
@@ -116,6 +117,15 @@ renderer.domElement.addEventListener('dblclick', ev=>{
   camera.position.copy(p).addScaledVector(dir, Math.min(dist, 200));
   controls.update();
 });
+
+function goHome(){
+  if(state.homePos&&state.homeTarget){
+    camera.position.copy(state.homePos);
+    controls.target.copy(state.homeTarget);
+    controls.update();
+  }
+}
+document.getElementById('homeBtn').addEventListener('click', goHome);
 
 function rebuild(){
   if(!state.terrain||!state.curves) return;
@@ -147,7 +157,6 @@ function rebuild(){
   for(let i=0;i<N;i++){
     const c=C[i], l=L[i], r=R[i];
     const across=new THREE.Vector3().subVectors(r,l).setY(0);
-    const an=across.clone().normalize();
     const cc=c.clone(), ll=l.clone(), rr=r.clone();
     let zc=prof[i];
     const row=[], trow=[];
@@ -235,9 +244,10 @@ function rebuild(){
   mesh.castShadow = true; mesh.receiveShadow = true;
   g.add(mesh);
 
-  // Сетка сегментов: поперечные линии каждые 20 м (как шаг подписей)
+  // Сетка сегментов: толстые яркие ленты каждые 20 м
   if(state.gridVisible){
-    const linePos=[];
+    const gpos=[], gcol=[];
+    const white=[1,1,1];
     let acc=0; let next=20;
     for(let i=1;i<N;i++){
       acc+=C[i].distanceTo(C[i-1]);
@@ -245,14 +255,37 @@ function rebuild(){
         next+=20;
         for(let j=0;j<M-1;j++){
           const a=G[i][j], b=G[i][j+1];
-          linePos.push(a.x,a.y+0.15,a.z, b.x,b.y+0.15,b.z);
+          const dir=new THREE.Vector3().subVectors(b,a).setY(0);
+          if(dir.lengthSq()<1e-6) continue;
+          dir.normalize();
+          const perp=new THREE.Vector3(-dir.z,0,dir.x).multiplyScalar(0.35);
+          const a1=a.clone().add(perp).setY(a.y+0.25);
+          const a2=a.clone().sub(perp).setY(a.y+0.25);
+          const b1=b.clone().add(perp).setY(b.y+0.25);
+          const b2=b.clone().sub(perp).setY(b.y+0.25);
+          const base=gpos.length/3;
+          for(const p of [a1,a2,b1,b2]){ gpos.push(p.x,p.y,p.z); gcol.push(...white); }
+          g.push(); // no-op guard
+          const idxStart=base;
+          // два треугольника: a1,b1,b2 и a1,b2,a2
+          gpos.push(); // no-op
         }
       }
     }
+    // строим индексы корректно
+    const quadCount=gpos.length/12;
+    const gidx=[];
+    for(let q=0;q<quadCount;q++){
+      const b=q*4;
+      gidx.push(b,b+1,b+2, b,b+2,b+3);
+    }
     const lgeo=new THREE.BufferGeometry();
-    lgeo.setAttribute('position', new THREE.Float32BufferAttribute(linePos,3));
-    const lines=new THREE.LineSegments(lgeo, new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:0.5}));
-    g.add(lines);
+    lgeo.setAttribute('position', new THREE.Float32BufferAttribute(gpos,3));
+    lgeo.setAttribute('color', new THREE.Float32BufferAttribute(gcol,3));
+    lgeo.setIndex(gidx); lgeo.computeVertexNormals();
+    const grid=new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.DoubleSide, transparent:true, opacity:0.95, depthWrite:false}));
+    grid.renderOrder=2;
+    g.add(grid);
   }
 
   const stepM=20;
@@ -289,7 +322,6 @@ function rebuild(){
     lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+3.5, r.pl.z), '#7fd4ff'));
     lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+3.5, r.pr.z), '#ffb0a0'));
     const tgl=terrainY(r.pl.x,r.pl.z), tgr=terrainY(r.pr.x,r.pr.z);
-    // высоты оригинальной почвы: точно на рельефе, маленький отступ
     tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+0.3, r.p.z), '#cfe3cf', true));
     if(tgl!==null) tg.add(makeSprite('орг.: '+tgl.toFixed(1), new THREE.Vector3(r.pl.x, tgl+0.3, r.pl.z), '#cfe3cf', true));
     if(tgr!==null) tg.add(makeSprite('орг.: '+tgr.toFixed(1), new THREE.Vector3(r.pr.x, tgr+0.3, r.pr.z), '#cfe3cf', true));
@@ -319,7 +351,7 @@ async function loadSlopeList(){
   }catch(e){ dbg('slopes.json не найден — использую A1'); }
   const list=document.getElementById('slopeList');
   list.innerHTML='';
-  names.forEach((n,i)=>{
+  names.forEach(n=>{
     const b=document.createElement('button');
     b.className='slope-btn'+(n===state.slope?' active':'');
     b.dataset.slope=n; b.textContent=n;
@@ -367,6 +399,8 @@ async function loadSlope(id){
     const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
     camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
     controls.target.copy(ctr); controls.update();
+    state.homePos=camera.position.clone();
+    state.homeTarget=controls.target.clone();
     await new Promise(r=>setTimeout(r,50));
     rebuild();
   }catch(err){
@@ -381,6 +415,13 @@ async function loadSlope(id){
 
 const map=[['pAng','ang','vAng',v=>v+'°'],['pProf','prof','vProf',v=>v],['pCut','cut','vCut',v=>v.toFixed(1)]];
 let timer=null;
+function scheduleRebuild(delay=150){
+  clearTimeout(timer);
+  timer=setTimeout(()=>{
+    loadingEl.style.display='flex';
+    setTimeout(()=>{ rebuild(); loadingEl.style.display='none'; },30);
+  },delay);
+}
 map.forEach(([id,key,vid,fm])=>{
   const el=document.getElementById(id);
   el.value=state[key];
@@ -388,11 +429,7 @@ map.forEach(([id,key,vid,fm])=>{
   el.addEventListener('input',()=>{
     state[key]=parseFloat(el.value);
     document.getElementById(vid).textContent=fm(state[key]);
-    clearTimeout(timer);
-    timer=setTimeout(()=>{
-      loadingEl.style.display='flex';
-      setTimeout(()=>{ rebuild(); loadingEl.style.display='none'; },30);
-    },150);
+    scheduleRebuild();
   });
 });
 
@@ -400,6 +437,46 @@ document.getElementById('apply').addEventListener('click',()=>{
   loadingEl.style.display='flex';
   setTimeout(()=>{ rebuild(); loadingEl.style.display='none'; },30);
 });
+
+document.getElementById('pTerrain').addEventListener('change',e=>{
+  state.terrainVisible=e.target.checked; applyTerrainLook();
+});
+document.getElementById('pTerrOp').addEventListener('input',e=>{
+  state.terrainOpacity=parseFloat(e.target.value)/100;
+  document.getElementById('vTerrOp').textContent=e.target.value+'%';
+  applyTerrainLook();
+});
+document.getElementById('pDesign').addEventListener('change',e=>{
+  state.designVisible=e.target.checked; applyDesignLook();
+});
+document.getElementById('pGrid').addEventListener('change',e=>{
+  state.gridVisible=e.target.checked; scheduleRebuild(50);
+});
+document.getElementById('pLabels').addEventListener('change',e=>{
+  state.labelsVisible=e.target.checked; applyDesignLook();
+});
+document.getElementById('pTerrainLabels').addEventListener('change',e=>{
+  state.terrainLabelsVisible=e.target.checked; applyTerrainLook();
+});
+document.getElementById('pTerrainSlopes').addEventListener('change',e=>{
+  state.terrainSlopesVisible=e.target.checked; scheduleRebuild(50);
+});
+document.getElementById('pLight').addEventListener('input',e=>{
+  sun.intensity=parseFloat(e.target.value);
+});
+document.getElementById('pSunRot').addEventListener('input',e=>{
+  const a=THREE.MathUtils.degToRad(parseFloat(e.target.value));
+  const r=700;
+  sun.position.set(Math.cos(a)*r, 600, Math.sin(a)*r);
+});
+document.getElementById('pLightOn').addEventListener('change',e=>{
+  sun.visible=e.target.checked;
+});
+
+document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.slope-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); state.slope=b.dataset.slope; loadSlope(b.dataset.slope);
+}));
 
 document.getElementById('saveDefault').addEventListener('click',()=>{
   const fillN = 1.0/Math.tan(THREE.MathUtils.degToRad(state.ang));
@@ -416,41 +493,6 @@ document.getElementById('saveDefault').addEventListener('click',()=>{
   localStorage.setItem('ssgo_default_preset', JSON.stringify(preset));
   document.getElementById('stats').innerHTML+='<br><span style="color:#7f7">Сохранено как параметры по умолчанию (в этом браузере).</span>';
 });
-
-document.getElementById('pTerrain').addEventListener('change',e=>{
-  state.terrainVisible=e.target.checked; applyTerrainLook();
-});
-document.getElementById('pTerrOp').addEventListener('input',e=>{
-  state.terrainOpacity=parseFloat(e.target.value)/100;
-  document.getElementById('vTerrOp').textContent=e.target.value+'%';
-  applyTerrainLook();
-});
-document.getElementById('pDesign').addEventListener('change',e=>{
-  state.designVisible=e.target.checked; applyDesignLook();
-});
-document.getElementById('pGrid').addEventListener('change',e=>{
-  state.gridVisible=e.target.checked; rebuild();
-});
-document.getElementById('pLabels').addEventListener('change',e=>{
-  state.labelsVisible=e.target.checked; applyDesignLook();
-});
-document.getElementById('pTerrainLabels').addEventListener('change',e=>{
-  state.terrainLabelsVisible=e.target.checked; applyTerrainLook();
-});
-document.getElementById('pTerrainSlopes').addEventListener('change',e=>{
-  state.terrainSlopesVisible=e.target.checked; rebuild();
-});
-document.getElementById('pLight').addEventListener('input',e=>{
-  sun.intensity=parseFloat(e.target.value);
-});
-document.getElementById('pLightOn').addEventListener('change',e=>{
-  sun.visible=e.target.checked;
-});
-
-document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('.slope-btn').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active'); state.slope=b.dataset.slope; loadSlope(b.dataset.slope);
-}));
 
 document.getElementById('save').addEventListener('click',()=>{
   const fillN = 1.0/Math.tan(THREE.MathUtils.degToRad(state.ang));
