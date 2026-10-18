@@ -28,6 +28,7 @@ window.addEventListener('resize', () => {
   renderer.setSize(view.clientWidth, view.clientHeight);
 });
 
+// кривые из Maya приходят как одно-фасетные полигоны: вершины идут по порядку вдоль кривой
 function curvePoints(obj){
   const pts=[]; obj.updateWorldMatrix(true,true);
   obj.traverse(c=>{
@@ -177,13 +178,18 @@ function loadSlope(id){
       else if(n.includes('limit')) state.limit=o;
     });
     if(state.terrain) state.terrain.traverse(c=>{ if(c.isMesh){ c.material=new THREE.MeshStandardMaterial({color:0x8a8470,roughness:1,side:THREE.DoubleSide}); }});
+    // линии-кривые делаем прозрачными (они служат только данными)
+    for(const k of ['centre','left','right','limit']){
+      const o=state[k];
+      if(o) o.traverse(c=>{ if(c.isMesh){ c.material=new THREE.MeshBasicMaterial({visible:false}); c.visible=false; }});
+    }
     root.updateMatrixWorld(true);
     const box=new THREE.Box3().setFromObject(root);
     const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
     camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
     controls.target.copy(ctr); controls.update();
     const miss=['terrain','centre','left','right'].filter(k=>!state[k]);
-    if(miss.length){ document.getElementById('stats').textContent='В GLB не найдены объекты: '+miss.join(', '); return; }
+    if(miss.length){ document.getElementById('stats').textContent='В GLTF не найдены объекты: '+miss.join(', '); return; }
     rebuild();
   }, undefined, err=>{
     document.getElementById('stats').textContent='Не удалось загрузить assets/'+id+'.gltf (проверь, что .bin рядом)';
@@ -208,7 +214,7 @@ document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()
 }));
 
 document.getElementById('save').addEventListener('click',()=>{
-  const preset={version:'web-0.1',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
+  const preset={version:'web-0.2',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
     max_cut_depth:state.cut,usable_percent:state.use,offset:state.off,crossfall_percent:state.cr,
     saved_at:new Date().toISOString()};
   const a=document.createElement('a');
