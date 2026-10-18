@@ -38,18 +38,20 @@ button.secondary{background:#3a3a44}
     </div>
     <div class="group">
       <h2>Параметры</h2>
-      <label>Угол откоса (от края трассы к рельефу), ° <span class="val" id="vAng">35°</span></label>
+      <label>Угол откоса, ° <span class="val" id="vAng">35°</span></label>
       <input type="range" id="pAng" min="5" max="60" step="0.5" value="35"/>
-      <label>Сглаживание профиля: 0 (нет) … 10 (макс) <span class="val" id="vProf">0</span></label>
+      <label>Сглаживание профиля <span class="val" id="vProf">0</span></label>
       <input type="range" id="pProf" min="0" max="10" step="1" value="0"/>
       <label>Макс. глубина срезки, м <span class="val" id="vCut">3.0</span></label>
       <input type="range" id="pCut" min="0" max="20" step="0.5" value="3"/>
       <label>Пригодно к использованию, % <span class="val" id="vUse">90%</span></label>
       <input type="range" id="pUse" min="10" max="100" step="5" value="90"/>
-      <label>Сдвиг трассы влево/вправо, м <span class="val" id="vOff">0.0</span></label>
+      <label>Сдвиг трассы, м <span class="val" id="vOff">0.0</span></label>
       <input type="range" id="pOff" min="-5" max="5" step="0.1" value="0"/>
       <label>Поперечный уклон, % <span class="val" id="vCr">0.0</span></label>
       <input type="range" id="pCr" min="-5" max="5" step="0.1" value="0"/>
+      <label>Подъём/опускание трассы, м <span class="val" id="vDy">0.0</span></label>
+      <input type="range" id="pDy" min="-10" max="10" step="0.1" value="0"/>
       <div class="chk"><input type="checkbox" id="pDbg" checked/> <span>Debug: кривые + каркас</span></div>
     </div>
     <div class="group">
@@ -57,7 +59,7 @@ button.secondary{background:#3a3a44}
       <div id="stats">Загрузка…</div>
     </div>
     <div class="group">
-      <h2>Debug (масштаб/координаты)</h2>
+      <h2>Debug</h2>
       <div id="debug">-</div>
     </div>
     <button id="save">Сохранить конфигурацию</button>

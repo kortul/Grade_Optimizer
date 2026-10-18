@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const state = { slope:'slope1', ang:35, prof:0, cut:3, use:90, off:0, cr:0, dbg:true,
+const state = { slope:'slope1', ang:35, prof:0, cut:3, use:90, off:0, cr:0, dy:0, dbg:true,
   root:null, terrain:null, curves:null, ribbon:null, debugGroup:null };
 
 const view = document.getElementById('view');
@@ -31,19 +31,18 @@ window.addEventListener('resize', () => {
 const dbgEl = document.getElementById('debug');
 function dbg(msg){ dbgEl.textContent += msg + "\n"; }
 
-function resample(pts,n){
-  if(pts.length<2) return pts.map(p=>new THREE.Vector3(...p));
-  const v=pts.map(p=>new THREE.Vector3(...p));
-  const seg=[],cum=[0]; let tot=0;
-  for(let i=1;i<v.length;i++){ const d=v[i].distanceTo(v[i-1]); seg.push(d); tot+=d; cum.push(tot); }
-  const out=[]; let j=0;
-  for(let i=0;i<n;i++){
-    const t=tot*i/(n-1);
-    while(j<seg.length-1 && cum[j+1]<t) j++;
-    const u=(t-cum[j])/Math.max(seg[j],1e-9);
-    out.push(v[j].clone().lerp(v[j+1],Math.min(1,Math.max(0,u))));
+// ГЛАВНОЕ: кривые из Maya - это NURBS с малым числом CV.
+// В JSON лежат только CV. Если соединять их прямыми - будет "треш".
+// Поэтому строим плавную кривую CatmullRom через CV и семплируем 200 точек.
+function smoothCurve(pts, n){
+  const v = pts.map(p=>new THREE.Vector3(...p));
+  if(v.length<2) return v;
+  if(v.length===2){
+    const out=[]; for(let i=0;i<n;i++) out.push(v[0].clone().lerp(v[1], i/(n-1)));
+    return out;
   }
-  return out;
+  const curve = new THREE.CatmullRomCurve3(v, false, 'centripetal', 0.5);
+  return curve.getPoints(n-1);
 }
 
 function alignDir(ref, pts){
@@ -52,7 +51,7 @@ function alignDir(ref, pts){
   return d2<d1 ? pts.slice().reverse() : pts;
 }
 
-function smooth(vals, level){
+function smoothVals(vals, level){
   let cur=vals.slice();
   for(let k=0;k<level*2;k++){
     const nx=cur.slice();
@@ -75,23 +74,29 @@ function bboxOf(pts){
   pts.forEach(p=>b.expandByPoint(p));
   return b;
 }
-
 function fmtBox(b){
   const f=v=>v.toFixed(1);
   return `min(${f(b.min.x)}, ${f(b.min.y)}, ${f(b.min.z)}) max(${f(b.max.x)}, ${f(b.max.y)}, ${f(b.max.z)})`;
 }
 
-function drawDebug(C,L,R){
+function drawDebug(rawC, rawL, rawR, C, L, R){
   if(state.debugGroup){ scene.remove(state.debugGroup); state.debugGroup=null; }
   if(!state.dbg) return;
   const g=new THREE.Group();
-  const mk=(pts,color)=>{
-    const geo=new THREE.BufferGeometry().setFromPoints(pts);
-    return new THREE.Line(geo,new THREE.LineBasicMaterial({color}));
+  const line=(pts,color)=>new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color}));
+  // сглаженные кривые (то, что используется для коридора)
+  g.add(line(C,0xffffff));
+  g.add(line(L,0x00ff00));
+  g.add(line(R,0xff3333));
+  // сырые CV из Maya - маленькие точки, чтобы видеть "скелет" кривой
+  const dotMat=new THREE.PointsMaterial({color:0xffcc00,size:2.5,sizeAttenuation:false});
+  const mkDots=(pts)=>{
+    const geo=new THREE.BufferGeometry().setFromPoints(pts.map(p=>new THREE.Vector3(...p)));
+    return new THREE.Points(geo,dotMat);
   };
-  g.add(mk(C,0xffffff));
-  g.add(mk(L,0x00ff00));
-  g.add(mk(R,0xff3333));
+  g.add(mkDots(rawC));
+  g.add(mkDots(rawL));
+  g.add(mkDots(rawR));
   if(state.ribbon){
     const wf=new THREE.LineSegments(new THREE.WireframeGeometry(state.ribbon.geometry),
       new THREE.LineBasicMaterial({color:0x4a9fe0,transparent:true,opacity:0.35}));
@@ -107,13 +112,13 @@ function rebuild(){
   if(!cv.centre||!cv.left||!cv.right){ document.getElementById('stats').textContent='В JSON нет кривых centre/left/right'; return; }
   if(state.ribbon){ scene.remove(state.ribbon); state.ribbon.geometry.dispose(); state.ribbon=null; }
 
-  const N=140;
-  const C0=resample(cv.centre,N);
-  const L0=alignDir(C0,resample(cv.left,N));
-  const R0=alignDir(C0,resample(cv.right,N));
+  const N=200;
+  const C0=smoothCurve(cv.centre,N);
+  const L0=alignDir(C0,smoothCurve(cv.left,N));
+  const R0=alignDir(C0,smoothCurve(cv.right,N));
 
   const tanA=Math.tan(THREE.MathUtils.degToRad(state.ang));
-  let zc=smooth(C0.map(p=>p.y), state.prof);
+  let zc=smoothVals(C0.map(p=>p.y), state.prof);
   const pos=[], idx=[];
   let cutV=0, fillV=0;
   const COLS=5;
@@ -130,6 +135,7 @@ function rebuild(){
     let y=zc[i];
     const th0=terrainY(c.x,c.z);
     if(th0!==null && state.cut>0) y=Math.max(y, th0-state.cut);
+    y += state.dy;
 
     const cross=state.cr/100*halfW;
     const yl=y+cross, yr=y-cross;
@@ -172,7 +178,7 @@ function rebuild(){
   state.ribbon=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x4a9fe0,side:THREE.DoubleSide,roughness:.85,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
   scene.add(state.ribbon);
 
-  drawDebug(C0,L0,R0);
+  drawDebug(cv.centre, cv.left, cv.right, C0, L0, R0);
 
   const usable=cutV*state.use/100;
   const imp=Math.max(0,fillV-usable), exp=Math.max(0,usable-fillV), bal=usable-fillV;
@@ -201,35 +207,30 @@ function loadSlope(id){
     if(state.terrain) state.terrain.traverse(c=>{ if(c.isMesh){ c.material=new THREE.MeshStandardMaterial({color:0x8a8470,roughness:1,side:THREE.DoubleSide}); }});
     root.updateMatrixWorld(true);
     fetch(`./assets/${id}.curves.json`).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(cv=>{ state.curves=cv; fixScaleAndAfterLoad(root); })
+      .then(cv=>{ state.curves=cv; showCurvesDebug(cv); afterLoad(root); })
       .catch(e=>{ document.getElementById('stats').textContent='Не найден assets/'+id+'.curves.json ('+e.message+')'; });
   }, undefined, err=>{
     document.getElementById('stats').textContent='Не удалось загрузить assets/'+id+'.gltf';
   });
 }
 
-function fixScaleAndAfterLoad(root){
-  const cv=state.curves;
-  const tb=new THREE.Box3().setFromObject(state.terrain);
-  const all=[...(cv.centre||[]),...(cv.left||[]),...(cv.right||[])].map(p=>new THREE.Vector3(...p));
-  const cb=bboxOf(all);
-  const tSize=tb.getSize(new THREE.Vector3()).length();
-  const cSize=cb.getSize(new THREE.Vector3()).length();
-  const ratio=tSize/Math.max(cSize,1e-9);
-  dbg('Terrain bbox: '+fmtBox(tb));
-  dbg('Кривые bbox: '+fmtBox(cb));
-  dbg('Размер terrain: '+tSize.toFixed(1)+' | кривых: '+cSize.toFixed(1));
-  dbg('Отношение (terrain/кривые): '+ratio.toFixed(3));
-  if(ratio>20 && ratio<500){
-    const s=1/ratio;
-    dbg('==> МАСШТАБ НЕ СОВПАДАЕТ. Авто-масштаб кривых x'+s.toFixed(4));
-    for(const k of ['centre','left','right','limit']){
-      if(cv[k]) cv[k]=cv[k].map(p=>[p[0]*s,p[1]*s,p[2]*s]);
+function showCurvesDebug(cv){
+  dbg('--- Кривые из Maya (сырые CV) ---');
+  for(const k of ['centre','left','right']){
+    const pts=cv[k]||[];
+    dbg(`${k}: ${pts.length} CV`);
+    if(pts.length){
+      const b=bboxOf(pts.map(p=>new THREE.Vector3(...p)));
+      dbg(`  bbox: ${fmtBox(b)}`);
+      dbg(`  первая: (${pts[0].map(v=>v.toFixed(1)).join(', ')})`);
+      dbg(`  последняя: (${pts[pts.length-1].map(v=>v.toFixed(1)).join(', ')})`);
     }
-    dbg('Кривые после масштаба: '+fmtBox(bboxOf([...cv.centre,...cv.left,...cv.right].map(p=>new THREE.Vector3(...p)))));
-  } else {
-    dbg('Масштаб совпадает (или вне диапазона авто-фикса).');
   }
+  dbg('Жёлтые точки = сырые CV из Maya.');
+  dbg('Белая/зелёная/красная = сглаженные кривые (CatmullRom).');
+}
+
+function afterLoad(root){
   const box=new THREE.Box3().setFromObject(root);
   const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
   camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
@@ -238,7 +239,8 @@ function fixScaleAndAfterLoad(root){
 }
 
 const map=[['pAng','ang','vAng',v=>v+'°'],['pProf','prof','vProf',v=>v],['pCut','cut','vCut',v=>v.toFixed(1)],
-           ['pUse','use','vUse',v=>v+'%'],['pOff','off','vOff',v=>v.toFixed(1)],['pCr','cr','vCr',v=>v.toFixed(1)]];
+           ['pUse','use','vUse',v=>v+'%'],['pOff','off','vOff',v=>v.toFixed(1)],['pCr','cr','vCr',v=>v.toFixed(1)],
+           ['pDy','dy','vDy',v=>v.toFixed(1)]];
 let timer=null;
 map.forEach(([id,key,vid,fm])=>{
   const el=document.getElementById(id);
@@ -256,16 +258,16 @@ document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()
 }));
 
 document.getElementById('save').addEventListener('click',()=>{
-  const preset={version:'web-0.5',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
+  const preset={version:'web-0.6',slope:state.slope,slope_angle:state.ang,profile_level:state.prof,
     max_cut_depth:state.cut,usable_percent:state.use,offset:state.off,crossfall_percent:state.cr,
-    saved_at:new Date().toISOString()};
+    dy:state.dy, saved_at:new Date().toISOString()};
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(preset,null,2)],{type:'application/json'}));
   a.download=`ssgo_preset_${state.slope}_${Date.now()}.json`; a.click();
 });
 
 document.getElementById('reset').addEventListener('click',()=>{
-  const d={pAng:35,pProf:0,pCut:3,pUse:90,pOff:0,pCr:0};
+  const d={pAng:35,pProf:0,pCut:3,pUse:90,pOff:0,pCr:0,pDy:0};
   for(const k in d){ const e=document.getElementById(k); e.value=d[k]; e.dispatchEvent(new Event('input')); }
 });
 
