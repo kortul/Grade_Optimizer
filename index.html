@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SSGO Web — Подбор выравнивания склона</title>
+<title>SSGO Web — Вертикальная планировка склона</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,sans-serif;background:#141418;color:#eee}
@@ -41,29 +41,29 @@ details[open] summary{margin-bottom:8px}
 <body>
 <div id="app">
   <div id="panel">
-    <h1>SSGO Web — Подбор выравнивания</h1>
+    <h1>Вертикальная планировка склона — оптимизация</h1>
     <div class="group">
       <h2>Склон</h2>
       <div id="slopeList"><button class="slope-btn active" data-slope="slope1">slope1</button></div>
-      <div class="hint">Чтобы добавить склон: положи в assets/ файлы ИМЯ.gltf, ИМЯ.bin, ИМЯ.curves.json и добавь имя в assets/slopes.json</div>
     </div>
     <div class="group">
       <h2>Основные настройки</h2>
+      <label>Сглаживание центрального профиля: 0 (нет) … 10 (макс) <span class="val" id="vProf">0</span></label>
+      <input type="range" id="pProf" min="0" max="10" step="1" value="0"/>
       <label>Угол откоса (от края трассы к рельефу), ° <span class="val" id="vAng">35°</span></label>
       <input type="range" id="pAng" min="5" max="60" step="0.5" value="35"/>
-      <label>Сглаживание продольного профиля: 0 (нет) … 10 (макс) <span class="val" id="vProf">0</span></label>
-      <input type="range" id="pProf" min="0" max="10" step="1" value="0"/>
-      <label>Макс. глубина срезки, м (лимит, не цель) <span class="val" id="vCut">3.0</span></label>
-      <input type="range" id="pCut" min="0" max="20" step="0.5" value="3"/>
+      <label>Макс. глубина срезки, м (лимит, не цель) <span class="val" id="vCut">5.0</span></label>
+      <input type="range" id="pCut" min="0" max="20" step="0.5" value="5"/>
+      <button id="apply">ПРИМЕНИТЬ</button>
     </div>
     <div class="group">
       <h2>Отображение</h2>
-      <div class="chk"><input type="checkbox" id="pTerrain" checked/> <span>Показать оригинальный terrain</span></div>
-      <label>Прозрачность terrain <span class="val" id="vTerrOp">100%</span></label>
+      <div class="chk"><input type="checkbox" id="pTerrain" checked/> <span>Показать оригинальную почву</span></div>
+      <label>Прозрачность почвы <span class="val" id="vTerrOp">100%</span></label>
       <input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
       <div class="chk"><input type="checkbox" id="pDesign" checked/> <span>Показать новый склон</span></div>
       <div class="chk"><input type="checkbox" id="pLabels" checked/> <span>Показать подписи</span></div>
-      <div class="chk"><input type="checkbox" id="pTerrainLabels" checked/> <span>Показать высоты оригинального terrain</span></div>
+      <div class="chk"><input type="checkbox" id="pTerrainLabels" checked/> <span>Показать высоты оригинальной почвы</span></div>
       <div class="hint">Управление: ЛКМ — вращение, колесо — зум, ПКМ — панорама, двойной клик — фокус на точку.</div>
     </div>
     <div class="group">
@@ -87,10 +87,10 @@ details[open] summary{margin-bottom:8px}
   </div>
   <div id="view">
     <div id="legend">
-      <div><span class="sw" style="background:#6bb85f"></span>Насыпь (новый склон выше рельефа)</div>
-      <div><span class="sw" style="background:#d17a5c"></span>Выемка (новый склон ниже рельефа)</div>
+      <div><span class="sw" style="background:#598cd9"></span>Насыпь (новый склон выше почвы)</div>
+      <div><span class="sw" style="background:#d17a5c"></span>Выемка (новый склон ниже почвы)</div>
       <div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div>
-      <div><span class="sw" style="background:#2f4a2f"></span>Оригинальный terrain</div>
+      <div><span class="sw" style="background:#2f4a2f"></span>Оригинальная почва</div>
     </div>
     <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div>
   </div>
@@ -101,6 +101,6 @@ details[open] summary{margin-bottom:8px}
  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="./main.js?v=14"></script>
+<script type="module" src="./main.js?v=15"></script>
 </body>
 </html>

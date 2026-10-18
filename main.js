@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const state = {
-  slope:'slope1', ang:35, prof:0, cut:3,
+  slope:'slope1', ang:35, prof:0, cut:5,
   terrainVisible:true, terrainOpacity:1, designVisible:true,
   labelsVisible:true, terrainLabelsVisible:true,
   root:null, terrain:null, terrainMats:[], curves:null,
@@ -89,7 +89,6 @@ function applyDesignLook(){
   if(state.labelsGroup) state.labelsGroup.visible = state.labelsVisible;
 }
 
-// фокус камеры по двойному клику
 const clickRay=new THREE.Raycaster();
 const ndc=new THREE.Vector2();
 renderer.domElement.addEventListener('dblclick', ev=>{
@@ -134,7 +133,7 @@ function rebuild(){
   const cutN = fillN;
 
   const pos=[], cols=[], idx=[];
-  const zoneOf = d => d > 0.02 ? [0.42,0.72,0.38] : (d < -0.02 ? [0.82,0.48,0.36] : [0.76,0.74,0.70]);
+  const zoneOf = d => d > 0.02 ? [0.35,0.55,0.85] : (d < -0.02 ? [0.82,0.48,0.36] : [0.76,0.74,0.70]);
   let cutV=0, fillV=0;
   const G=[], TG=[];
   for(let i=0;i<N;i++){
@@ -175,7 +174,6 @@ function rebuild(){
     if(v>=0) fillV+=v; else cutV-=v;
     addQuad(a,b,c,e,zoneOf(d));
   }
-  // ЮБКИ: непрерывные ленты вдоль трассы (квады между станциями)
   function skirtRibbon(edges, tgs, dirs, nSlope, isFill){
     const profiles = edges.map((edge,i)=>{
       const zEdge=edge.y, tg=tgs[i];
@@ -229,7 +227,6 @@ function rebuild(){
   mesh.castShadow = true; mesh.receiveShadow = true;
   g.add(mesh);
 
-  // подписи веба
   const stepM=20;
   let acc=0; const rows=[];
   for(let i=1;i<N;i++){
@@ -256,13 +253,16 @@ function rebuild(){
     sp.scale.set(small?7:10, small?1.75:2.5, 1); sp.position.copy(p);
     return sp;
   };
+  const slopeColor = s => s < 0 ? '#ff8000' : (s < 10 ? '#00ff00' : (s < 15 ? '#0000ff' : (s < 25 ? '#ff0000' : '#000000')));
   rows.forEach(r=>{
-    lg.add(makeSprite(r.slope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.c+7, r.p.z), '#ffd24a'));
+    lg.add(makeSprite(r.slope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.c+7, r.p.z), slopeColor(r.slope)));
     lg.add(makeSprite(r.c.toFixed(1), new THREE.Vector3(r.p.x, r.c+3.5, r.p.z), '#ffffff'));
     lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+3.5, r.pl.z), '#7fd4ff'));
     lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+3.5, r.pr.z), '#ffb0a0'));
-    // высота оригинального terrain в той же точке (мелко)
+    const tgl=terrainY(r.pl.x,r.pl.z), tgr=terrainY(r.pr.x,r.pr.z);
     tg.add(makeSprite('тер: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+1.2, r.p.z), '#9fb89f', true));
+    if(tgl!==null) tg.add(makeSprite('тер: '+tgl.toFixed(1), new THREE.Vector3(r.pl.x, tgl+1.2, r.pl.z), '#9fb89f', true));
+    if(tgr!==null) tg.add(makeSprite('тер: '+tgr.toFixed(1), new THREE.Vector3(r.pr.x, tgr+1.2, r.pr.z), '#9fb89f', true));
   });
 
   const usable=cutV*0.9;
@@ -275,11 +275,9 @@ function rebuild(){
     `Насыпано: <b>${f(fillV)}</b> м³<br>`+
     `Требуется привезти: <b>${f(imp)}</b> м³<br>`+
     `Останется вывезти: <b>${f(exp)}</b> м³<br>`+
-    `Баланс: <b>${bal>=0?'+':''}${f(bal)}</b> м³<br>`+
-    `<span style="color:#89f">Предварительная оценка. Точный расчёт — в Maya по пресету.</span>`;
+    `Баланс: <b>${bal>=0?'+':''}${f(bal)}</b> м³`;
 }
 
-// список склонов из assets/slopes.json (или дефолт)
 async function loadSlopeList(){
   let names=['slope1','slope2'];
   try{
@@ -336,7 +334,6 @@ async function loadSlope(id){
     const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
     camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
     controls.target.copy(ctr); controls.update();
-    // даём браузеру показать "идёт расчёт" до тяжёлого rebuild
     await new Promise(r=>setTimeout(r,50));
     rebuild();
   }catch(err){
@@ -364,6 +361,11 @@ map.forEach(([id,key,vid,fm])=>{
   });
 });
 
+document.getElementById('apply').addEventListener('click',()=>{
+  loadingEl.style.display='flex';
+  setTimeout(()=>{ rebuild(); loadingEl.style.display='none'; },30);
+});
+
 document.getElementById('pTerrain').addEventListener('change',e=>{
   state.terrainVisible=e.target.checked; applyTerrainLook();
 });
@@ -381,6 +383,11 @@ document.getElementById('pLabels').addEventListener('change',e=>{
 document.getElementById('pTerrainLabels').addEventListener('change',e=>{
   state.terrainLabelsVisible=e.target.checked; applyTerrainLook();
 });
+
+document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.slope-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); state.slope=b.dataset.slope; loadSlope(b.dataset.slope);
+}));
 
 document.getElementById('save').addEventListener('click',()=>{
   const fillN = 1.0/Math.tan(THREE.MathUtils.degToRad(state.ang));
@@ -403,7 +410,7 @@ document.getElementById('save').addEventListener('click',()=>{
 });
 
 document.getElementById('reset').addEventListener('click',()=>{
-  const d={pAng:35,pProf:0,pCut:3};
+  const d={pAng:35,pProf:0,pCut:5};
   for(const k in d){ const e=document.getElementById(k); e.value=d[k]; e.dispatchEvent(new Event('input')); }
 });
 
