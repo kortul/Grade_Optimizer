@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 let saved=null;
 try{ saved=JSON.parse(localStorage.getItem('ssgo_default_preset')||'null'); }catch(e){}
@@ -25,6 +26,14 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 view.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth, view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.top='0';
+labelRenderer.domElement.style.left='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x141418);
@@ -64,6 +73,7 @@ renderer.domElement.addEventListener('wheel', ev=>{
 window.addEventListener('resize', () => {
   camera.aspect = view.clientWidth/view.clientHeight; camera.updateProjectionMatrix();
   renderer.setSize(view.clientWidth, view.clientHeight);
+  labelRenderer.setSize(view.clientWidth, view.clientHeight);
 });
 
 const dbgEl = document.getElementById('debug');
@@ -286,7 +296,8 @@ class Engine{
     let gmin=1e9,gmax=-1e9;
     gc.forEach(v=>{gmin=Math.min(gmin,v);gmax=Math.max(gmax,v);});
     dbg('Высоты рельефа по оси: min='+gmin.toFixed(1)+', max='+gmax.toFixed(1)+' м.');
-    let prof=gc.slice();
+    // ПРОФИЛЬ ОСИ: из Z кривой (гладкая проектная линия), а не из шумного terrain
+    let prof=centre.map(p=>p[1]);
     for(let k=0;k<P.profile_passes;k++){
       const old=prof.slice();
       for(let i=1;i<n-1;i++){
@@ -295,6 +306,7 @@ class Engine{
         prof[i]=s/(b-a);
       }
     }
+    dbg('Профиль оси: из Z кривой (сглажено '+P.profile_passes+' проходов).');
     this.groundC=gc;this.prof=prof;
     this.G=[];this.TG=[];this.u=[];
     for(let i=0;i<n;i++){
@@ -319,11 +331,11 @@ class Engine{
     for(let i=1;i<n;i++){
       const h=hyp(this.C[i],this.C[i-1]);
       if(h>0.1){
-        const s=Math.atan2(gc[i]-gc[i-1],h)*180/Math.PI;
+        const s=Math.atan2(prof[i]-prof[i-1],h)*180/Math.PI;
         if(Math.abs(s)>25)steep.push(i+':'+s.toFixed(0)+'°');
       }
     }
-    dbg('Станции с уклоном >25°: '+(steep.length?steep.slice(0,15).join(', ')+(steep.length>15?' …':''):'нет'));
+    dbg('Станции с уклоном профиля >25°: '+(steep.length?steep.slice(0,15).join(', ')+(steep.length>15?' …':''):'нет'));
     dbg('--- КОНЕЦ ДИАГНОСТИКИ ---');
   }
   makeRays(limitPoly){
@@ -628,33 +640,31 @@ function rebuild(){
     const s=r.slope===null?'—':r.slope.toFixed(1);
     return '<div>Ст. '+r.station+': уклон <b>'+s+'°</b> | H: '+r.centerHeight.toFixed(1)+' / '+r.leftHeight.toFixed(1)+' / '+r.rightHeight.toFixed(1)+' м</div>';
   }).join('')||'-';
-  const makeSprite=(text,p,color,small)=>{
-    const cnv=document.createElement('canvas');cnv.width=512;cnv.height=128;
-    const ctx=cnv.getContext('2d');
-    ctx.fillStyle='rgba(0,0,0,0.75)';ctx.fillRect(0,0,512,128);
-    ctx.fillStyle=color;ctx.font=(small?'44px':'bold 62px')+' sans-serif';ctx.textAlign='center';
-    ctx.fillText(text,256,small?82:90);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false,depthWrite:false}));
-    sp.scale.set(small?14:20,small?3.5:5,1);
-    sp.position.copy(p);sp.renderOrder=20;
-    return sp;
+  const makeLabel=(text,p,color,small)=>{
+    const div=document.createElement('div');
+    div.className='lbl'+(small?' lbl-small':'');
+    div.textContent=text;
+    div.style.color=color;
+    const obj=new CSS2DObject(div);
+    obj.position.copy(p);
+    return obj;
   };
-  const slopeColor=s=>s<0?'#ff8000':(s<10?'#00ff00':(s<15?'#0000ff':(s<25?'#ff0000':'#000000')));
+  const slopeColor=s=>s<0?'#ff9a3c':(s<10?'#5cff7a':(s<15?'#6aa8ff':(s<25?'#ff5c5c':'#ffffff')));
   rows.forEach(r=>{
     const i=eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[2]===r.centerPoint[2]);
     if(i<0)return;
     const c=IDc[i][Math.floor(m/2)],l=IDc[i][0],rr=IDc[i][m-1];
     const tg=eng.groundC[i];
-    lg.add(makeSprite((r.slope===null?'—':r.slope.toFixed(1))+'°',new THREE.Vector3(c[0],c[1]+14,c[2]),slopeColor(r.slope===null?0:r.slope)));
-    lg.add(makeSprite(r.centerHeight.toFixed(1),new THREE.Vector3(c[0],c[1]+7,c[2]),'#ffffff'));
-    lg.add(makeSprite(r.leftHeight.toFixed(1),new THREE.Vector3(l[0],l[1]+7,l[2]),'#7fd4ff'));
-    lg.add(makeSprite(r.rightHeight.toFixed(1),new THREE.Vector3(rr[0],rr[1]+7,rr[2]),'#ffb0a0'));
-    tg.add(makeSprite('орг.: '+eng.groundC[i].toFixed(1),new THREE.Vector3(c[0],eng.groundC[i]-4,c[2]),'#cfe3cf',true));
+    lg.add(makeLabel((r.slope===null?'—':r.slope.toFixed(1))+'°',new THREE.Vector3(c[0],c[1]+16,c[2]),slopeColor(r.slope===null?0:r.slope)));
+    lg.add(makeLabel('H '+r.centerHeight.toFixed(1),new THREE.Vector3(c[0],c[1]+8,c[2]),'#ffffff'));
+    lg.add(makeLabel(r.leftHeight.toFixed(1),new THREE.Vector3(l[0],l[1]+8,l[2]),'#7fd4ff'));
+    lg.add(makeLabel(r.rightHeight.toFixed(1),new THREE.Vector3(rr[0],rr[1]+8,rr[2]),'#ffb0a0'));
+    tg.add(makeLabel('орг. '+eng.groundC[i].toFixed(1),new THREE.Vector3(c[0],eng.groundC[i]-5,c[2]),'#cfe3cf',true));
     const tgl=terrainY(l[0],l[2]),tgr=terrainY(rr[0],rr[2]);
-    tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'),new THREE.Vector3(l[0],l[1]-4,l[2]),'#cfe3cf',true));
-    tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'),new THREE.Vector3(rr[0],rr[1]-4,rr[2]),'#cfe3cf',true));
+    tg.add(makeLabel('орг. '+(tgl!==null?tgl.toFixed(1):'-'),new THREE.Vector3(l[0],l[1]-5,l[2]),'#cfe3cf',true));
+    tg.add(makeLabel('орг. '+(tgr!==null?tgr.toFixed(1):'-'),new THREE.Vector3(rr[0],rr[1]-5,rr[2]),'#cfe3cf',true));
     if(state.terrainSlopesVisible&&r.slope!==null){
-      lg.add(makeSprite('орг. уклон: '+r.slope.toFixed(1)+'°',new THREE.Vector3(c[0],eng.groundC[i]+9,c[2]),'#7fd4ff',true));
+      lg.add(makeLabel('орг. уклон '+r.slope.toFixed(1)+'°',new THREE.Vector3(c[0],eng.groundC[i]+11,c[2]),'#7fd4ff',true));
     }
   });
 
@@ -871,4 +881,5 @@ loadSlopeList().then(first=>loadSlope(first));
   }
   controls.update();
   renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
 })();
