@@ -412,21 +412,23 @@ async function loadSlope(id){
     const cv=await loadJSON(`./assets/${id}.curves.json${bust()}`);
     state.curves=cv;
     dbg('Кривые загружены: centre '+(cv.centre||[]).length+', left '+(cv.left||[]).length+', right '+(cv.right||[]).length);
-    // Подписи Maya: ищем файл в assets/
+    // Подписи Maya: <имя>_labels.json (формат: {"labels":[{station,slope_deg,h_center,h_left,h_right}]})
     const mayaEl=document.getElementById('mayaLabels');
     mayaEl.textContent='Загрузка подписей Maya…';
     let mayaLoaded=false;
-    for(const name of [`${id}.maya_labels.json`, `${id}.maya.json`, 'maya_labels.json', 'maya.json']){
-      try{
-        const m=await loadJSON(`./assets/${name}${bust()}`);
-        let txt='';
-        if(Array.isArray(m)) txt=m.map(x=>typeof x==='string'?x:JSON.stringify(x)).join('\n');
-        else if(m&&typeof m==='object') txt=Object.entries(m).map(([k,v])=>k+': '+(typeof v==='object'?JSON.stringify(v):v)).join('\n');
-        else txt=String(m);
-        if(txt.trim()){ mayaEl.textContent=txt; mayaLoaded=true; dbg('Подписи Maya загружены из '+name); break; }
-      }catch(e){ /* файла нет */ }
-    }
-    if(!mayaLoaded){ mayaEl.textContent='Нет данных — файл подписей Maya не найден в assets/.'; dbg('Подписи Maya не найдены.'); }
+    try{
+      const m=await loadJSON(`./assets/${id}_labels.json${bust()}`);
+      const rows=(m&&Array.isArray(m.labels))?m.labels:[];
+      if(rows.length){
+        mayaEl.textContent=rows.map(r=>{
+          const s=(r.slope_deg===null||r.slope_deg===undefined)?'—':Number(r.slope_deg).toFixed(1);
+          return 'Ст. '+r.station+': уклон '+s+'° | H: '+Number(r.h_center).toFixed(1)+' / '+Number(r.h_left).toFixed(1)+' / '+Number(r.h_right).toFixed(1)+' м';
+        }).join('\n');
+        mayaLoaded=true;
+        dbg('Подписи Maya загружены из '+id+'_labels.json ('+rows.length+' станций)');
+      }
+    }catch(e){ /* файла нет */ }
+    if(!mayaLoaded){ mayaEl.textContent='Нет данных — файл '+id+'_labels.json не найден в assets/ (сначала ЗАПУСК в Maya).'; dbg('Подписи Maya не найдены.'); }
     const box=new THREE.Box3().setFromObject(root);
     const ctr=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3()).length();
     camera.position.set(ctr.x+sz*.5, ctr.y+sz*.5, ctr.z+sz*.7);
