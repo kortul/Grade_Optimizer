@@ -201,7 +201,9 @@ class TriSampler{
 }
 class Engine{
   constructor(verts,tris,sampler,P){
-    this.V=verts;this.T=tris;this.S=sampler;this.P=P;this.nV=verts.length;
+    this.V=verts;this.T=tris;this.sampler=sampler;
+    this.S=(x,z)=>sampler.call(x,z);
+    this.P=P;this.nV=verts.length;
     this.step=P.march_step;
     let pos=0,neg=0;this.edgeFaces={};
     tris.forEach((t,f)=>{
