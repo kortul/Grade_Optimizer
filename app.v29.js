@@ -716,11 +716,13 @@ function scheduleRebuild(delay=150){
 }
 map.forEach(([id,key,vid,fm])=>{
   const el=document.getElementById(id);
+  const vEl=document.getElementById(vid);
+  if(!el||!vEl){console.warn('Нет элемента',id,vid);return;}
   el.value=state[key];
-  document.getElementById(vid).textContent=fm(state[key]);
+  vEl.textContent=fm(state[key]);
   el.addEventListener('input',()=>{
     state[key]=parseFloat(el.value);
-    document.getElementById(vid).textContent=fm(state[key]);
+    vEl.textContent=fm(state[key]);
     scheduleRebuild();
   });
 });
@@ -796,7 +798,7 @@ document.getElementById('save').addEventListener('click',()=>{
 document.getElementById('reset').addEventListener('click',()=>{
   localStorage.removeItem('ssgo_default_preset');
   const d={pAng:35,pProf:0,pCut:5,pOff:0,pCross:0};
-  for(const k in d){const e=document.getElementById(k);e.value=d[k];e.dispatchEvent(new Event('input'));}
+  for(const k in d){const e=document.getElementById(k);if(e){e.value=d[k];e.dispatchEvent(new Event('input'));}}
 });
 
 loadSlopeList().then(first=>loadSlope(first));
