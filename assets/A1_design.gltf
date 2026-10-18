@@ -1,0 +1,106 @@
+{
+  "asset": {
+    "generator": "GLTFMaya",
+    "version": "2.0"
+  },
+  "materials": [
+    {
+      "name": "openPBR_shader1",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "metallicFactor": 1,
+        "roughnessFactor": 1
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "SSGO_v15_ProposedSurface_CutFill_MSHShape",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1
+          },
+          "indices": 2,
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "SSGO_v15_ProposedSurface_CutFill_MSHShape",
+      "mesh": 0
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 183900,
+      "uri": "A1_design.bin"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 61776,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 61776,
+      "byteLength": 61776,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 123552,
+      "byteLength": 60348,
+      "target": 34963
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 5148,
+      "type": "VEC3",
+      "min": [
+        182.10415649414062,
+        -1.4614217281341553,
+        -404.13015747070312
+      ],
+      "max": [
+        770.55999755859375,
+        100.41970062255859,
+        315.81045532226562
+      ]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 5148,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5123,
+      "count": 30174,
+      "type": "SCALAR"
+    }
+  ]
+}

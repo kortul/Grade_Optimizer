@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 const state = {
   slope:'slope1', ang:35, prof:0, cut:5,
   terrainVisible:true, terrainOpacity:1, designVisible:true,
-  labelsVisible:true, terrainLabelsVisible:true,
+  labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
   designGroup:null, labelsGroup:null, terrainLabelsGroup:null
 };
@@ -235,7 +235,8 @@ function rebuild(){
       acc=0;
       const h=Math.max(0.1, C[i].distanceTo(C[i-1]));
       const slope=deg(Math.atan((G[i][4].y-G[i-1][4].y)/h));
-      rows.push({i, slope, c:G[i][4].y, l:G[i][0].y, r:G[i][M-1].y, p:C[i], pl:G[i][0], pr:G[i][M-1], tg:ground[i]});
+      const terrSlope=deg(Math.atan((ground[i]-ground[i-1])/h));
+      rows.push({i, slope, terrSlope, c:G[i][4].y, l:G[i][0].y, r:G[i][M-1].y, p:C[i], pl:G[i][0], pr:G[i][M-1], tg:ground[i]});
     }
   }
   const labelDiv=document.getElementById('labels');
@@ -260,9 +261,14 @@ function rebuild(){
     lg.add(makeSprite(r.l.toFixed(1), new THREE.Vector3(r.pl.x, r.l+3.5, r.pl.z), '#7fd4ff'));
     lg.add(makeSprite(r.r.toFixed(1), new THREE.Vector3(r.pr.x, r.r+3.5, r.pr.z), '#ffb0a0'));
     const tgl=terrainY(r.pl.x,r.pl.z), tgr=terrainY(r.pr.x,r.pr.z);
-    tg.add(makeSprite('тер: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+1.2, r.p.z), '#9fb89f', true));
-    if(tgl!==null) tg.add(makeSprite('тер: '+tgl.toFixed(1), new THREE.Vector3(r.pl.x, tgl+1.2, r.pl.z), '#9fb89f', true));
-    if(tgr!==null) tg.add(makeSprite('тер: '+tgr.toFixed(1), new THREE.Vector3(r.pr.x, tgr+1.2, r.pr.z), '#9fb89f', true));
+    // высоты оригинальной почвы: точно на поверхности рельефа
+    tg.add(makeSprite('орг.: '+r.tg.toFixed(1), new THREE.Vector3(r.p.x, r.tg+0.6, r.p.z), '#cfe3cf', true));
+    if(tgl!==null) tg.add(makeSprite('орг.: '+tgl.toFixed(1), new THREE.Vector3(r.pl.x, tgl+0.6, r.pl.z), '#cfe3cf', true));
+    if(tgr!==null) tg.add(makeSprite('орг.: '+tgr.toFixed(1), new THREE.Vector3(r.pr.x, tgr+0.6, r.pr.z), '#cfe3cf', true));
+    // оригинальные уклоны центральной линии (по умолчанию выключены)
+    if(state.terrainSlopesVisible){
+      lg.add(makeSprite('орг. уклон: '+r.terrSlope.toFixed(1)+'°', new THREE.Vector3(r.p.x, r.tg+4.5, r.p.z), '#7fd4ff', true));
+    }
   });
 
   const usable=cutV*0.9;
@@ -382,6 +388,16 @@ document.getElementById('pLabels').addEventListener('change',e=>{
 });
 document.getElementById('pTerrainLabels').addEventListener('change',e=>{
   state.terrainLabelsVisible=e.target.checked; applyTerrainLook();
+});
+document.getElementById('pTerrainSlopes').addEventListener('change',e=>{
+  state.terrainSlopesVisible=e.target.checked; rebuild();
+});
+document.getElementById('pLight').addEventListener('input',e=>{
+  sun.intensity=parseFloat(e.target.value);
+  document.getElementById('vLight').textContent=e.target.value;
+});
+document.getElementById('pLightOn').addEventListener('change',e=>{
+  sun.visible=e.target.checked;
 });
 
 document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()=>{
