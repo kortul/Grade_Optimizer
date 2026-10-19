@@ -133,16 +133,15 @@ renderer.domElement.addEventListener('dblclick', ev=>{
   controls.update(); targetDist=null;
 });
 
-// ===== Прозрачность лейблов (0-100: чем меньше, тем невидимее; <=25 полностью скрыты) =====
+// ===== Прозрачность лейблов (линейная, <=10% полностью скрыты) =====
 function applyLabelOpacity(){
   const v=(state.labelOpacity===undefined)?1:state.labelOpacity;
-  const hide=v<=0.25;
-  const op=Math.pow(v,2);
+  const hide=v<=0.1;
   [state.labelsGroup,state.terrainLabelsGroup,measureGroup].forEach(g=>{
     if(!g)return;
     g.traverse(o=>{
       if(o.isSprite&&o.material){
-        o.material.opacity=op;
+        o.material.opacity=v;
         o.material.transparent=true;
         o.material.depthWrite=false;
         o.visible=!hide;
@@ -163,14 +162,14 @@ function clearMeasure(){
   measurePts=[];
   measureComplete=false;
 }
-function measureLabel(text,p){
-  const cnv=document.createElement('canvas');cnv.width=560;cnv.height=96;
+function measureLabel(text,p,small){
+  const cnv=document.createElement('canvas');cnv.width=small?300:620;cnv.height=96;
   const ctx=cnv.getContext('2d');
-  ctx.fillStyle='rgba(0,0,0,0.78)';ctx.fillRect(0,0,560,96);
-  ctx.fillStyle='#ffd54a';ctx.font='bold 38px sans-serif';ctx.textAlign='center';
-  ctx.fillText(text,280,62);
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(0,0,cnv.width,96);
+  ctx.fillStyle='#ffd54a';ctx.font=(small?'bold 40px':'bold 38px')+' sans-serif';ctx.textAlign='center';
+  ctx.fillText(text,cnv.width/2,62);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false,transparent:true,opacity:state.labelOpacity}));
-  sp.scale.set(26,4.5,1);sp.position.copy(p);sp.renderOrder=11;
+  sp.scale.set(small?11:27,small?3.5:4.2,1);sp.position.copy(p);sp.renderOrder=11;
   return sp;
 }
 measureBtn.addEventListener('click',()=>{
@@ -200,6 +199,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   measurePts.push(p);
   const mk=new THREE.Mesh(new THREE.SphereGeometry(1.1,12,12),new THREE.MeshBasicMaterial({color:0xffd54a}));
   mk.position.copy(p);measureGroup.add(mk);
+  measureGroup.add(measureLabel('H '+p.y.toFixed(1),new THREE.Vector3(p.x,p.y+5,p.z),true));
   if(measurePts.length===2){
     const a=measurePts[0],b=measurePts[1];
     const g=new THREE.BufferGeometry().setFromPoints([a,b]);
@@ -207,10 +207,11 @@ renderer.domElement.addEventListener('pointerup',e=>{
     ln.computeLineDistances();
     measureGroup.add(ln);
     const d3=a.distanceTo(b),dh=Math.hypot(b.x-a.x,b.z-a.z),dzv=b.y-a.y;
+    const ang=Math.atan2(Math.abs(dzv),Math.max(dh,1e-6))*180/Math.PI;
     const mid=new THREE.Vector3().addVectors(a,b).multiplyScalar(0.5);
-    mid.y+=6;
+    mid.y+=7;
     measureGroup.add(measureLabel(
-      d3.toFixed(1)+' м  (гор. '+dh.toFixed(1)+' · Δh '+(dzv>=0?'+':'')+dzv.toFixed(1)+')',mid));
+      d3.toFixed(1)+' м · '+ang.toFixed(1)+'° (Δh '+(dzv>=0?'+':'')+dzv.toFixed(1)+')',mid,false));
     applyLabelOpacity();
     measurePts=[];
     measureComplete=true;
@@ -818,7 +819,7 @@ function rebuild(){
   const makeSprite=(text, p, color, small)=>{
     const cnv=document.createElement('canvas'); cnv.width=384; cnv.height=96;
     const ctx=cnv.getContext('2d');
-    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,0,384,96);
+    ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,384,96);
     ctx.fillStyle=color; ctx.font=(small?'33px':'bold 45px')+' sans-serif'; ctx.textAlign='center';
     ctx.fillText(text,192,small?60:66);
     const tex=new THREE.CanvasTexture(cnv);
