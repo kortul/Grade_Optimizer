@@ -641,7 +641,7 @@ function rebuild(){
     dbg('Коридор: '+C.length+' станций (3D длина '+centreLen3.toFixed(1)+' м; 2D проекция '+centreLen2.toFixed(1)+' м; spacing '+spacing+' м).');
   }
   const widths=C.map((c,i)=>hyp(p2(L[i]),p2(R[i])));
-  dbg('Ширина коридора: min '+Math.min(...widths).toFixed(1)+' / mean '+(widths.reduce((a,b)=>a+b,0)/widths.length).toFixed(1)+' / max '+Math.max(...widths).toFixed(1)+' м (Maya: 39.9 / 43.5 / 53.3).');
+  dbg('Ширина коридора: min '+Math.min(...widths).toFixed(1)+' / mean '+(widths.reduce((a,b)=>a+b,0)/widths.length).toFixed(1)+' / max '+Math.max(...widths).toFixed(1)+' м.');
   eng.prepare(C,L,R);
   const limitPoly=(cv.limit&&cv.limit.length)?cv.limit.map(p=>[p[0],p[2]]):null;
   eng.makeRays(limitPoly);
@@ -709,8 +709,8 @@ function rebuild(){
     const rows=eng.labelRows(best);
     const linePos=[];
     for(const r of rows){
-      const i=eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[1]===r.centerPoint[2]);
-      if(i<0||i>=n-1)continue;
+      const i=r.station;
+      if(i===undefined||i<0||i>=n-1)continue;
       for(let j=0;j<m-1;j++){
         const a=IDc[i][j],b=IDc[i][j+1];
         linePos.push(a[0],a[1]+0.2,a[2],b[0],b[1]+0.2,b[2]);
@@ -743,9 +743,11 @@ function rebuild(){
   };
   const slopeColor=s=>s<0?'#ff9a3c':(s<10?'#5cff7a':(s<15?'#6aa8ff':(s<25?'#ff5c5c':'#ffffff')));
   rows.forEach(r=>{
-    const cp=new THREE.Vector3(r.center_point[0],r.center_point[1],r.center_point[2]);
-    const pl=new THREE.Vector3(r.left_point[0],r.left_point[1],r.left_point[2]);
-    const pr=new THREE.Vector3(r.right_point[0],r.right_point[1],r.right_point[2]);
+    const i=r.station;
+    if(i===undefined||i<0)return;
+    const cp=new THREE.Vector3(r.centerPoint[0],r.centerPoint[1],r.centerPoint[2]);
+    const pl=new THREE.Vector3(r.leftPoint[0],r.leftPoint[1],r.leftPoint[2]);
+    const pr=new THREE.Vector3(r.rightPoint[0],r.rightPoint[1],r.rightPoint[2]);
     const slope=(r.slope===null||r.slope===undefined)?0:r.slope;
     const across=new THREE.Vector3().subVectors(pr,pl).setY(0).normalize();
     const inward=across.clone();
@@ -756,11 +758,11 @@ function rebuild(){
     lg.add(makeSprite(r.centerHeight.toFixed(1),new THREE.Vector3(cp.x,cp.y+5,cp.z),'#ffffff'));
     lg.add(makeSprite(r.leftHeight.toFixed(1),new THREE.Vector3(pl.x,pl.y+5,pl.z),'#7fd4ff'));
     lg.add(makeSprite(r.rightHeight.toFixed(1),new THREE.Vector3(pr.x,pr.y+5,pr.z),'#ffb0a0'));
-    tg.add(makeSprite('орг.: '+eng.groundC[eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[1]===r.centerPoint[2])].toFixed(1),new THREE.Vector3(cp.x,cp.y-2.8,cp.z),'#cfe3cf',true));
+    tg.add(makeSprite('орг.: '+eng.groundC[i].toFixed(1),new THREE.Vector3(cp.x,cp.y-2.8,cp.z),'#cfe3cf',true));
     tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'),new THREE.Vector3(pl.x,pl.y-2.8,pl.z),'#cfe3cf',true));
     tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'),new THREE.Vector3(pr.x,pr.y-2.8,pr.z),'#cfe3cf',true));
     if(state.terrainSlopesVisible&&r.slope!==null){
-      lg.add(makeSprite('орг. уклон: '+slope.toFixed(1)+'°',new THREE.Vector3(cp.x,eng.groundC[eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[1]===r.centerPoint[2])]+6.5,cp.z),'#7fd4ff',true));
+      lg.add(makeSprite('орг. уклон: '+slope.toFixed(1)+'°',new THREE.Vector3(cp.x,eng.groundC[i]+6.5,cp.z),'#7fd4ff',true));
     }
   });
 
