@@ -133,9 +133,9 @@ renderer.domElement.addEventListener('dblclick', ev=>{
   controls.update(); targetDist=null;
 });
 
-// ===== 3D-линейка (измерение расстояний) =====
+// ===== 3D-линейка (плавающая кнопка справа внизу) =====
 let measureMode=false,measurePts=[],measureGroup=null;
-const measureBtn=document.getElementById('measure');
+const measureBtn=document.getElementById('measureBtn');
 function clearMeasure(){
   if(measureGroup){
     scene.remove(measureGroup);
@@ -156,8 +156,8 @@ function measureLabel(text,p){
 }
 measureBtn.addEventListener('click',()=>{
   measureMode=!measureMode;
-  measureBtn.textContent=measureMode?'📏 Измерить: кликните 2 точки — выключить':'📏 Измерить расстояние';
-  measureBtn.style.background=measureMode?'#b3862a':'#3a3a44';
+  measureBtn.classList.toggle('active',measureMode);
+  measureBtn.title=measureMode?'Выключить линейку':'Включить линейку';
   if(!measureMode)clearMeasure();
 });
 let measureDown=null;
@@ -176,8 +176,8 @@ renderer.domElement.addEventListener('pointerup',e=>{
   const hits=clickRay.intersectObjects(targets,true);
   if(!hits.length)return;
   const p=hits[0].point.clone();
-  clearMeasure();
-  measureGroup=new THREE.Group();scene.add(measureGroup);
+  if(measurePts.length>=2){clearMeasure();}
+  if(!measureGroup){measureGroup=new THREE.Group();scene.add(measureGroup);}
   measurePts.push(p);
   const mk=new THREE.Mesh(new THREE.SphereGeometry(1.1,12,12),new THREE.MeshBasicMaterial({color:0xffd54a}));
   mk.position.copy(p);measureGroup.add(mk);
