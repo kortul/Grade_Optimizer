@@ -592,9 +592,10 @@ function rebuild(){
   let C=cv.centre.map(p=>[p[0],p[1],p[2]]);
   let L=alignDir(C,cv.left.map(p=>[p[0],p[1],p[2]]));
   let R=alignDir(C,cv.right.map(p=>[p[0],p[1],p[2]]));
-  // Maya-style: сглаживание Catmull-Rom + равномерный ресемплинг по длине
+  // Maya-style: 3D длина кривой + равномерный ресемплинг
   const spacing=P.spacing;
-  function polyLen(pts){let s=0;for(let i=1;i<pts.length;i++)s+=hyp(p2(pts[i]),p2(pts[i-1]));return s;}
+  const dist3=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+  function polyLen3(pts){let s=0;for(let i=1;i<pts.length;i++)s+=dist3(pts[i],pts[i-1]);return s;}
   function densifyCatmullRom(pts,per=20){
     if(pts.length<3)return pts.slice();
     const out=[];const get=i=>pts[Math.max(0,Math.min(pts.length-1,i))];
@@ -612,10 +613,10 @@ function rebuild(){
     out.push(pts[pts.length-1].slice());
     return out;
   }
-  function resampleByLength(pts,count){
+  function resampleByLength3(pts,count){
     if(pts.length<2||count<2)return pts.slice();
     const segs=[];let total=0;
-    for(let i=1;i<pts.length;i++){const d=hyp(p2(pts[i]),p2(pts[i-1]));segs.push(d);total+=d;}
+    for(let i=1;i<pts.length;i++){const d=dist3(pts[i],pts[i-1]);segs.push(d);total+=d;}
     const out=[];
     for(let k=0;k<count;k++){
       const target=total*k/(count-1);
@@ -628,11 +629,11 @@ function rebuild(){
     return out;
   }
   const Cd=densifyCatmullRom(C,20),Ld=densifyCatmullRom(L,20),Rd=densifyCatmullRom(R,20);
-  const centreLen=polyLen(Cd);
-  const ns=Math.max(3,Math.ceil(centreLen/Math.max(0.5,spacing))+1);
-  C=resampleByLength(Cd,ns);L=resampleByLength(Ld,ns);R=resampleByLength(Rd,ns);
+  const centreLen3=polyLen3(Cd),centreLen2=(()=>{let s=0;for(let i=1;i<Cd.length;i++)s+=hyp(p2(Cd[i]),p2(Cd[i-1]));return s;})();
+  const ns=Math.max(3,Math.ceil(centreLen3/Math.max(0.5,spacing))+1);
+  C=resampleByLength3(Cd,ns);L=resampleByLength3(Ld,ns);R=resampleByLength3(Rd,ns);
   const widths=C.map((c,i)=>hyp(p2(L[i]),p2(R[i])));
-  dbg('Коридор: '+C.length+' станций (сглаженная длина '+centreLen.toFixed(1)+' м; полилиния '+polyLen(C).toFixed(1)+' м; spacing '+spacing+' м).');
+  dbg('Коридор: '+C.length+' станций (3D длина '+centreLen3.toFixed(1)+' м; 2D проекция '+centreLen2.toFixed(1)+' м; spacing '+spacing+' м).');
   dbg('Ширина коридора: min '+Math.min(...widths).toFixed(1)+' / mean '+(widths.reduce((a,b)=>a+b,0)/widths.length).toFixed(1)+' / max '+Math.max(...widths).toFixed(1)+' м (Maya: 39.9 / 43.5 / 53.3).');
   eng.prepare(C,L,R);
   const limitPoly=(cv.limit&&cv.limit.length)?cv.limit.map(p=>[p[0],p[2]]):null;
