@@ -297,7 +297,7 @@ class Engine{
     let gmin=1e9,gmax=-1e9;
     gc.forEach(v=>{gmin=Math.min(gmin,v);gmax=Math.max(gmax,v);});
     dbg('Высоты рельефа по оси: min='+gmin.toFixed(1)+', max='+gmax.toFixed(1)+' м.');
-    let prof=centre.map(p=>p[1]);
+    let prof=gc.slice();
     for(let k=0;k<P.profile_passes;k++){
       const old=prof.slice();
       for(let i=1;i<n-1;i++){
@@ -306,7 +306,7 @@ class Engine{
         prof[i]=s/(b-a);
       }
     }
-    dbg('Профиль оси: из Z кривой (сглажено '+P.profile_passes+' проходов).');
+    dbg('Профиль оси: из высот рельефа по оси (как в Maya; сглажено '+P.profile_passes+' проходов).');
     this.groundC=gc;this.prof=prof;
     this.G=[];this.TG=[];this.u=[];
     for(let i=0;i<n;i++){
@@ -400,7 +400,7 @@ class Engine{
     const Z=[];
     for(let i=0;i<n;i++){
       const row=[];
-      for(let j=0;j<m;j++)row.push(zc[i]-(cross/100)*this.u[i][j]);
+      for(let j=0;j<m;j++)row.push(zc[i]-cross*this.u[i][j]);
       Z.push(row);
     }
     const mc=this.P.max_cut_depth;
@@ -493,7 +493,7 @@ class Engine{
   }
   optimize(progress){
     const P=this.P,fill0=P.fill_n,cut0=P.cut_n;
-    if(!P.optimize)return this.evaluate(P.offset,P.crossfall,fill0,cut0);
+    if(!P.optimize)return this.evaluate(P.offset,P.crossfall/100,fill0,cut0);
     const Roff=P.off_range,cmax=P.cross_max/100;
     const offs=Array.from({length:13},(_,i)=>-Roff+2*Roff*i/12);
     const crs=cmax>0?Array.from({length:9},(_,i)=>-cmax+2*cmax*i/8):[0];
@@ -639,8 +639,8 @@ function rebuild(){
   const limitPoly=(cv.limit&&cv.limit.length)?cv.limit.map(p=>[p[0],p[2]]):null;
   eng.makeRays(limitPoly);
   dbg('Лучей: '+eng.rays.length);
-  const best=state.optimize===true?eng.optimize():eng.evaluate(state.off,state.cross,P.fill_n,P.cut_n);
-  const {Z,zl}=eng.design(state.off,state.cross);
+  const best=state.optimize===true?eng.optimize():eng.evaluate(state.off,state.cross/100,P.fill_n,P.cut_n);
+  const {Z,zl}=eng.design(state.off,state.cross/100);
   const {d,zout}=eng.solveRays(zl,P.fill_n,P.cut_n);
   const n=eng.n,m=eng.m,S=P.skirt_rings;
 
@@ -722,13 +722,26 @@ function rebuild(){
     return '<div>Ст. '+r.station+': уклон <b>'+s+'°</b> | H: '+r.centerHeight.toFixed(1)+' / '+r.leftHeight.toFixed(1)+' / '+r.rightHeight.toFixed(1)+' м</div>';
   }).join('')||'-';
   const makeLabel=(text,p,color,small)=>{
-    const div=document.createElement('div');
-    div.className='lbl'+(small?' lbl-small':'');
-    div.textContent=text;
-    div.style.color=color;
-    const obj=new CSS2DObject(div);
-    obj.position.copy(p);
-    return obj;
+    const canvas=document.createElement('canvas');
+    let ctx=canvas.getContext('2d');
+    const font=(small?'bold 30px system-ui':'bold 42px system-ui');
+    ctx.font=font;
+    const w=Math.ceil(ctx.measureText(text).width)+28;
+    const h=small?48:68;
+    canvas.width=w;canvas.height=h;
+    ctx=canvas.getContext('2d');
+    ctx.font=font;ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,.95)';ctx.shadowBlur=8;
+    ctx.fillStyle=color;
+    ctx.fillText(text,14,h/2);
+    const tex=new THREE.CanvasTexture(canvas);
+    const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false});
+    const sp=new THREE.Sprite(mat);
+    const k=0.32;
+    sp.scale.set(w*k,h*k,1);
+    sp.position.copy(p);
+    sp.renderOrder=20;
+    return sp;
   };
   const slopeColor=s=>s<0?'#ff9a3c':(s<10?'#5cff7a':(s<15?'#6aa8ff':(s<25?'#ff5c5c':'#ffffff')));
   rows.forEach(r=>{
