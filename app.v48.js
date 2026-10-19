@@ -214,15 +214,16 @@ class Engine{
   constructor(verts,tris,sampler,P){
     this.V=verts;this.T=tris;this.sampler=sampler;
     this._rcHit=0;this._rcMiss=0;this._triHit=0;
+    this._cache=new Map();
     this.S=(x,z)=>{
-      let v=sampler.call(x,z);
-      if(v===null){
-        const ry=terrainY(x,z);
-        if(ry!==null){this._rcHit++;return ry;}
-        this._rcMiss++;
-        return null;
+      const key=Math.round(x*100)+'_'+Math.round(z*100);
+      let v=this._cache.get(key);
+      if(v===undefined){
+        v=terrainY(x,z);
+        this._cache.set(key,v);
       }
-      this._triHit++;
+      if(v===null){this._rcMiss++;return null;}
+      this._rcHit++;
       return v;
     };
     this.P=P;this.nV=verts.length;
@@ -270,7 +271,7 @@ class Engine{
       if(v===null){gc.push(null);missCount++;}
       else gc.push(v);
     }
-    dbg('Центральные станции: TriSampler='+this._triHit+', raycast='+this._rcHit+', не найдено='+missCount);
+    dbg('Центральные станции: raycast='+this._rcHit+', не найдено='+missCount+' (единый метод сэмплинга — raycast, как в Maya-проверке).');
     let diffSum=0,diffCnt=0;
     for(let i=0;i<n;i++){
       if(gc[i]!==null){
@@ -691,8 +692,9 @@ function rebuild(){
     const r2=(r+1)%eng.rays.length;
     for(let k=0;k<S;k++){
       const a=rid[r][k],b=rid[r2][k],c=rid[r2][k+1],e=rid[r][k+1];
-      const za=eng.S(a[0],a[2])||a[1],zb=eng.S(b[0],b[2])||b[1];
-      const zc2=eng.S(c[0],c[2])||c[1],ze2=eng.S(e[0],e[2])||e[1];
+      const za0=eng.S(a[0],a[2]),zb0=eng.S(b[0],b[2]),zc0=eng.S(c[0],c[2]),ze0=eng.S(e[0],e[2]);
+      const za=(za0===null?a[1]:za0),zb=(zb0===null?b[1]:zb0);
+      const zc2=(zc0===null?c[1]:zc0),ze2=(ze0===null?e[1]:ze0);
       const dz=0.25*((a[1]-za)+(b[1]-zb)+(c[1]-zc2)+(e[1]-ze2));
       addQuad(a,b,c,e,zoneOf(dz));
     }
