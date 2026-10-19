@@ -133,11 +133,21 @@ renderer.domElement.addEventListener('dblclick', ev=>{
   controls.update(); targetDist=null;
 });
 
-// ===== Прозрачность лейблов =====
+// ===== Прозрачность лейблов (0-100: чем меньше, тем невидимее; <=25 полностью скрыты) =====
 function applyLabelOpacity(){
-  const op=state.labelOpacity;
+  const v=(state.labelOpacity===undefined)?1:state.labelOpacity;
+  const hide=v<=0.25;
+  const op=Math.pow(v,2);
   [state.labelsGroup,state.terrainLabelsGroup,measureGroup].forEach(g=>{
-    if(g)g.traverse(o=>{if(o.isSprite&&o.material){o.material.opacity=op;o.material.transparent=op<1;}});
+    if(!g)return;
+    g.traverse(o=>{
+      if(o.isSprite&&o.material){
+        o.material.opacity=op;
+        o.material.transparent=true;
+        o.material.depthWrite=false;
+        o.visible=!hide;
+      }
+    });
   });
 }
 
@@ -159,7 +169,7 @@ function measureLabel(text,p){
   ctx.fillStyle='rgba(0,0,0,0.78)';ctx.fillRect(0,0,560,96);
   ctx.fillStyle='#ffd54a';ctx.font='bold 38px sans-serif';ctx.textAlign='center';
   ctx.fillText(text,280,62);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false}));
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false,transparent:true,opacity:state.labelOpacity}));
   sp.scale.set(26,4.5,1);sp.position.copy(p);sp.renderOrder=11;
   return sp;
 }
@@ -812,7 +822,7 @@ function rebuild(){
     ctx.fillStyle=color; ctx.font=(small?'33px':'bold 45px')+' sans-serif'; ctx.textAlign='center';
     ctx.fillText(text,192,small?60:66);
     const tex=new THREE.CanvasTexture(cnv);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true, opacity:state.labelOpacity}));
     sp.scale.set(small?10.5:15, small?2.6:3.75, 1);
     sp.position.copy(p);
     sp.renderOrder=10;
