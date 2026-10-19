@@ -133,6 +133,69 @@ renderer.domElement.addEventListener('dblclick', ev=>{
   controls.update(); targetDist=null;
 });
 
+// ===== 3D-линейка (измерение расстояний) =====
+let measureMode=false,measurePts=[],measureGroup=null;
+const measureBtn=document.getElementById('measure');
+function clearMeasure(){
+  if(measureGroup){
+    scene.remove(measureGroup);
+    measureGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.map)o.material.map.dispose();});
+    measureGroup=null;
+  }
+  measurePts=[];
+}
+function measureLabel(text,p){
+  const cnv=document.createElement('canvas');cnv.width=560;cnv.height=96;
+  const ctx=cnv.getContext('2d');
+  ctx.fillStyle='rgba(0,0,0,0.78)';ctx.fillRect(0,0,560,96);
+  ctx.fillStyle='#ffd54a';ctx.font='bold 38px sans-serif';ctx.textAlign='center';
+  ctx.fillText(text,280,62);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false}));
+  sp.scale.set(26,4.5,1);sp.position.copy(p);sp.renderOrder=11;
+  return sp;
+}
+measureBtn.addEventListener('click',()=>{
+  measureMode=!measureMode;
+  measureBtn.textContent=measureMode?'📏 Измерить: кликните 2 точки — выключить':'📏 Измерить расстояние';
+  measureBtn.style.background=measureMode?'#b3862a':'#3a3a44';
+  if(!measureMode)clearMeasure();
+});
+let measureDown=null;
+renderer.domElement.addEventListener('pointerdown',e=>{measureDown=[e.clientX,e.clientY];});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!measureMode||!measureDown)return;
+  if(Math.hypot(e.clientX-measureDown[0],e.clientY-measureDown[1])>5){measureDown=null;return;}
+  measureDown=null;
+  const rect=renderer.domElement.getBoundingClientRect();
+  ndc.x=((e.clientX-rect.left)/rect.width)*2-1;
+  ndc.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  clickRay.setFromCamera(ndc,camera);
+  const targets=[];
+  if(state.designGroup&&state.designVisible)targets.push(state.designGroup);
+  if(state.terrain&&state.terrainVisible)targets.push(state.terrain);
+  const hits=clickRay.intersectObjects(targets,true);
+  if(!hits.length)return;
+  const p=hits[0].point.clone();
+  clearMeasure();
+  measureGroup=new THREE.Group();scene.add(measureGroup);
+  measurePts.push(p);
+  const mk=new THREE.Mesh(new THREE.SphereGeometry(1.1,12,12),new THREE.MeshBasicMaterial({color:0xffd54a}));
+  mk.position.copy(p);measureGroup.add(mk);
+  if(measurePts.length===2){
+    const a=measurePts[0],b=measurePts[1];
+    const g=new THREE.BufferGeometry().setFromPoints([a,b]);
+    const ln=new THREE.Line(g,new THREE.LineDashedMaterial({color:0xffd54a,dashSize:4,gapSize:2.5}));
+    ln.computeLineDistances();
+    measureGroup.add(ln);
+    const d3=a.distanceTo(b),dh=Math.hypot(b.x-a.x,b.z-a.z),dzv=b.y-a.y;
+    const mid=new THREE.Vector3().addVectors(a,b).multiplyScalar(0.5);
+    mid.y+=6;
+    measureGroup.add(measureLabel(
+      d3.toFixed(1)+' м  (гор. '+dh.toFixed(1)+' · Δh '+(dzv>=0?'+':'')+dzv.toFixed(1)+')',mid));
+    measurePts=[];
+  }
+});
+
 function goHome(){
   if(state.homePos&&state.homeTarget){
     camera.position.copy(state.homePos);
@@ -271,7 +334,7 @@ class Engine{
       if(v===null){gc.push(null);missCount++;}
       else gc.push(v);
     }
-    dbg('Центральные станции: raycast='+this._rcHit+', не найдено='+missCount+' (единый метод сэмплинга — raycast, как в Maya-проверке).');
+    dbg('Центральные станции: raycast='+this._rcHit+', не найдено='+missCount+' (единый метод сэмплинга — raycast).');
     let diffSum=0,diffCnt=0;
     for(let i=0;i<n;i++){
       if(gc[i]!==null){
@@ -550,6 +613,7 @@ class Engine{
 
 function rebuild(){
   if(!state.terrain||!state.curves) return;
+  clearMeasure();
   state.designGroup=clearGroup(state.designGroup);
   state.labelsGroup=clearGroup(state.labelsGroup);
   state.terrainLabelsGroup=clearGroup(state.terrainLabelsGroup);
@@ -810,6 +874,7 @@ async function loadSlope(id){
   state.labelsGroup=clearGroup(state.labelsGroup);
   state.terrainLabelsGroup=clearGroup(state.terrainLabelsGroup);
   dbgEl.textContent='';
+  clearMeasure();
   document.getElementById('stats').textContent='Загрузка…';
   loadingEl.style.display='flex';
   try{
@@ -895,16 +960,6 @@ map.forEach(([id,key,vid,fm])=>{
     vEl.textContent=fm(state[key]);
     scheduleRebuild();
   });
-});
-
-document.getElementById('optimize').addEventListener('click',()=>{
-  state.optimize=true;
-  document.getElementById('loading').style.display='flex';
-  setTimeout(()=>{
-    try{rebuild();}catch(e){dbg('ОШИБКА ОПТИМИЗАЦИИ: '+(e&&e.message?e.message:String(e)));console.error(e);}
-    state.optimize=false;
-    document.getElementById('loading').style.display='none';
-  },30);
 });
 
 document.getElementById('apply').addEventListener('click',()=>{

@@ -13,7 +13,7 @@ label{display:block;font-size:12px;margin:8px 0 2px;color:#ccd}input[type=range]
 input[type=number]{width:100%;padding:6px;border:1px solid #444;border-radius:4px;background:#222;color:#eee}
 .val{float:right;color:#7fd;font-weight:bold}
 button{width:100%;padding:12px;margin-top:8px;border:0;border-radius:6px;background:#2ea36a;color:#fff;font-size:15px;font-weight:bold;cursor:pointer}
-button.secondary{background:#3a3a44}button.optimize{background:#2f6ea3}
+button.secondary{background:#3a3a44}
 #stats{font-size:13px;line-height:1.7}#debug,#mayaLabels,#labels{font-size:11px;line-height:1.5;color:#aab;white-space:pre-wrap;font-family:monospace;max-height:220px;overflow-y:auto}
 .slope-btn{display:block;width:100%;margin:4px 0;padding:10px;background:#2e2e38;color:#eee;border:1px solid #444;border-radius:6px;cursor:pointer;text-align:left;font-size:14px}
 .slope-btn.active{background:#2ea36a;border-color:#2ea36a}.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
@@ -37,7 +37,7 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <label>Сглаживание центрального профиля <span class="val" id="vProf">0</span></label><input type="range" id="pProf" min="0" max="10" step="1" value="0"/>
 <label>Угол откоса, ° <span class="val" id="vAng">35°</span></label><input type="range" id="pAng" min="5" max="60" step="0.5" value="35"/>
 <label>Макс. глубина срезки, м <span class="val" id="vCut">3.0</span></label><input type="range" id="pCut" min="0" max="10" step="0.5" value="3"/>
-<button id="apply">ПРИМЕНИТЬ</button><button id="optimize" class="optimize">ОПТИМИЗИРОВАТЬ offset / crossfall</button></div>
+<button id="apply">ПРИМЕНИТЬ</button></div>
 <div class="group"><h2>Отображение</h2>
 <div class="chk"><input type="checkbox" id="pTerrain" checked/> <span>Показать оригинальную почву</span></div>
 <label>Прозрачность почвы <span class="val" id="vTerrOp">100%</span></label><input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
@@ -45,8 +45,10 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <div class="chk"><input type="checkbox" id="pGrid" checked/> <span>Сетка сегментов</span></div>
 <div class="chk"><input type="checkbox" id="pLabels" checked/> <span>Показать подписи</span></div>
 <div class="chk"><input type="checkbox" id="pTerrainLabels" checked/> <span>Показать высоты почвы</span></div>
-<div class="chk"><input type="checkbox" id="pTerrainSlopes"/> <span>Оригинальные уклоны оси</span></div></div>
-<div class="group"><h2>Расчёт (движок Maya)</h2><div id="stats">Загрузка…</div></div>
+<div class="chk"><input type="checkbox" id="pTerrainSlopes"/> <span>Оригинальные уклоны оси</span></div>
+<button id="measure" class="secondary">📏 Измерить расстояние</button>
+<div class="hint">Линейка: включи, кликни 2 точки на склоне или почве — покажет 3D-расстояние, горизонтальное и перепад высот. Повторный клик начинает новое измерение.</div></div>
+<div class="group"><h2>Расчёт</h2><div id="stats">Загрузка…</div></div>
 <details><summary>Advanced</summary>
 <label>Offset — вертикальный сдвиг профиля, м <span class="val" id="vOff">-0.75</span></label><input type="number" id="pOff" step="0.05" value="-0.75"/>
 <label>Crossfall, % <span class="val" id="vCross">0.264</span></label><input type="number" id="pCross" step="0.001" value="0.264"/>
@@ -70,4 +72,4 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <button id="homeBtn" title="Домой">⌂</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v48.js"></script></body></html>
+<script type="module" src="./app.v49.js"></script></body></html>
