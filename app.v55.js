@@ -81,6 +81,11 @@ const dbgEl = document.getElementById('debug');
 function dbg(msg){ dbgEl.textContent += msg + "\n"; }
 const bust = () => '?t=' + Date.now();
 const loader = new GLTFLoader();
+let assetToken = Date.now();
+loader.setURLModifier(url => {
+  if (/\.bin(\?|$)/i.test(url)) return url + (url.includes('?') ? '&' : '?') + 't=' + assetToken;
+  return url;
+});
 const loadGLTF = url => new Promise((res, rej) => loader.load(url, res, undefined, rej));
 const loadJSON = url => fetch(url).then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
 
@@ -900,6 +905,7 @@ async function loadSlope(id){
   state.terrainLabelsGroup=clearGroup(state.terrainLabelsGroup);
   dbgEl.textContent='';
   clearMeasure();
+  assetToken=Date.now();
   document.getElementById('stats').textContent='Загрузка…';
   loadingEl.style.display='flex';
   try{
