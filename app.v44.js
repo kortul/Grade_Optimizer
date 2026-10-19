@@ -592,7 +592,7 @@ function rebuild(){
   let C=cv.centre.map(p=>[p[0],p[1],p[2]]);
   let L=alignDir(C,cv.left.map(p=>[p[0],p[1],p[2]]));
   let R=alignDir(C,cv.right.map(p=>[p[0],p[1],p[2]]));
-  // Maya-style: 3D длина кривой + равномерный ресемплинг
+  // Maya-style: 3D длина + ресемплинг; если есть точные Maya-станции — берём их
   const spacing=P.spacing;
   const dist3=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
   function polyLen3(pts){let s=0;for(let i=1;i<pts.length;i++)s+=dist3(pts[i],pts[i-1]);return s;}
@@ -628,12 +628,19 @@ function rebuild(){
     }
     return out;
   }
-  const Cd=densifyCatmullRom(C,20),Ld=densifyCatmullRom(L,20),Rd=densifyCatmullRom(R,20);
-  const centreLen3=polyLen3(Cd),centreLen2=(()=>{let s=0;for(let i=1;i<Cd.length;i++)s+=hyp(p2(Cd[i]),p2(Cd[i-1]));return s;})();
-  const ns=Math.max(3,Math.ceil(centreLen3/Math.max(0.5,spacing))+1);
-  C=resampleByLength3(Cd,ns);L=resampleByLength3(Ld,ns);R=resampleByLength3(Rd,ns);
+  if(cv.centre_stations&&cv.left_stations&&cv.right_stations&&cv.centre_stations.length===cv.left_stations.length&&cv.centre_stations.length===cv.right_stations.length){
+    C=cv.centre_stations.map(p=>[p[0],p[1],p[2]]);
+    L=cv.left_stations.map(p=>[p[0],p[1],p[2]]);
+    R=cv.right_stations.map(p=>[p[0],p[1],p[2]]);
+    dbg('Коридор: '+C.length+' станций — использованы ТОЧНЫЕ станции, экспортированные из Maya.');
+  } else {
+    const Cd=densifyCatmullRom(C,20),Ld=densifyCatmullRom(L,20),Rd=densifyCatmullRom(R,20);
+    const centreLen3=polyLen3(Cd),centreLen2=(()=>{let s=0;for(let i=1;i<Cd.length;i++)s+=hyp(p2(Cd[i]),p2(Cd[i-1]));return s;})();
+    const ns=Math.max(3,Math.ceil(centreLen3/Math.max(0.5,spacing))+1);
+    C=resampleByLength3(Cd,ns);L=resampleByLength3(Ld,ns);R=resampleByLength3(Rd,ns);
+    dbg('Коридор: '+C.length+' станций (3D длина '+centreLen3.toFixed(1)+' м; 2D проекция '+centreLen2.toFixed(1)+' м; spacing '+spacing+' м).');
+  }
   const widths=C.map((c,i)=>hyp(p2(L[i]),p2(R[i])));
-  dbg('Коридор: '+C.length+' станций (3D длина '+centreLen3.toFixed(1)+' м; 2D проекция '+centreLen2.toFixed(1)+' м; spacing '+spacing+' м).');
   dbg('Ширина коридора: min '+Math.min(...widths).toFixed(1)+' / mean '+(widths.reduce((a,b)=>a+b,0)/widths.length).toFixed(1)+' / max '+Math.max(...widths).toFixed(1)+' м (Maya: 39.9 / 43.5 / 53.3).');
   eng.prepare(C,L,R);
   const limitPoly=(cv.limit&&cv.limit.length)?cv.limit.map(p=>[p[0],p[2]]):null;
@@ -702,7 +709,7 @@ function rebuild(){
     const rows=eng.labelRows(best);
     const linePos=[];
     for(const r of rows){
-      const i=eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[2]===r.centerPoint[2]);
+      const i=eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[1]===r.centerPoint[2]);
       if(i<0||i>=n-1)continue;
       for(let j=0;j<m-1;j++){
         const a=IDc[i][j],b=IDc[i][j+1];
@@ -745,7 +752,7 @@ function rebuild(){
   };
   const slopeColor=s=>s<0?'#ff9a3c':(s<10?'#5cff7a':(s<15?'#6aa8ff':(s<25?'#ff5c5c':'#ffffff')));
   rows.forEach(r=>{
-    const i=eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[2]===r.centerPoint[2]);
+    const i=eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[1]===r.centerPoint[2]);
     if(i<0)return;
     const c=IDc[i][Math.floor(m/2)],l=IDc[i][0],rr=IDc[i][m-1];
     const tg=eng.groundC[i];
@@ -761,6 +768,8 @@ function rebuild(){
       lg.add(makeLabel('орг. уклон '+r.slope.toFixed(1)+'°',new THREE.Vector3(c[0],eng.groundC[i]+11,c[2]),'#7fd4ff',true));
     }
   });
+
+  dbg('3D-подписей создано: проект '+lg.children.length+', рельеф '+tg.children.length+'.');
 
   const f=v=>Math.round(v).toLocaleString('ru-RU');
   document.getElementById('stats').innerHTML=
