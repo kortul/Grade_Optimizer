@@ -12,7 +12,7 @@ const state = {
   prof:(saved&&saved.profile_level)!==undefined&&(saved&&saved.profile_level)!==null?(saved.profile_level):0,
   cut:(saved&&saved.max_cut_depth)||3,
   off:-0.75, cross:0.264, optimize:false,
-usable:0.9, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3,
+usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3,
   terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
@@ -493,9 +493,7 @@ class Engine{
   }
   optimize(progress){
     const P=this.P,fill0=P.fill_n,cut0=P.cut_n;
-    if(!P.optimize)return this.evaluate(P.offset,P.crossfall,fill0,cutN0());
-    function fillN0(){return fill0;}
-    function cutN0(){return cut0;}
+    if(!P.optimize)return this.evaluate(P.offset,P.crossfall,fill0,cut0);
     const Roff=P.off_range,cmax=P.cross_max/100;
     const offs=Array.from({length:13},(_,i)=>-Roff+2*Roff*i/12);
     const crs=cmax>0?Array.from({length:9},(_,i)=>-cmax+2*cmax*i/8):[0];
@@ -587,7 +585,7 @@ function rebuild(){
   const P={
     spacing:5,core_cols:9,skirt_rings:6,march_step:1.0,min_skirt:2.0,max_skirt:60.0,
     smooth_passes:3,profile_passes:state.prof*2,corner_deg:25,fan_deg:20,curv_factor:0.85,
-    slope_angle:state.ang,max_cut_depth:state.cut,usable:state.usable,
+    slope_angle:state.ang,max_cut_depth:state.cut,usable:state.usable/100,
     earthwork_w:state.earthwork_w,max_fill:state.max_fill,
     off_range:state.off_range,cross_max:state.cross_max,
     offset:state.off,crossfall:state.cross,
@@ -599,9 +597,27 @@ function rebuild(){
   let C=cv.centre.map(p=>[p[0],p[1],p[2]]);
   let L=alignDir(C,cv.left.map(p=>[p[0],p[1],p[2]]));
   let R=alignDir(C,cv.right.map(p=>[p[0],p[1],p[2]]));
-  // Maya-style: равномерный ресемплинг по длине кривой
+  // Maya-style: сглаживание и равномерный ресемплинг по длине кривой
   const spacing=P.spacing;
   function polyLen(pts){let s=0;for(let i=1;i<pts.length;i++)s+=hyp(p2(pts[i]),p2(pts[i-1]));return s;}
+  function densifyCatmullRom(pts,per=20){
+    if(pts.length<3)return pts.slice();
+    const out=[];
+    const get=i=>pts[Math.max(0,Math.min(pts.length-1,i))];
+    for(let i=0;i<pts.length-1;i++){
+      const p0=get(i-1),p1=get(i),p2p=get(i+1),p3=get(i+2);
+      for(let k=0;k<per;k++){
+        const t=k/per,t2=t*t,t3=t2*t;
+        out.push([
+          0.5*((2*p1[0])+(-p0[0]+p2p[0])*t+(2*p0[0]-5*p1[0]+4*p2p[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2p[0]+p3[0])*t3),
+          0.5*((2*p1[1])+(-p0[1]+p2p[1])*t+(2*p0[1]-5*p1[1]+4*p2p[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2p[1]+p3[1])*t3),
+          0.5*((2*p1[2])+(-p0[2]+p2p[2])*t+(2*p0[2]-5*p1[2]+4*p2p[2]-p3[2])*t2+(-p0[2]+3*p1[2]-3*p2p[2]+p3[2])*t3)
+        ]);
+      }
+    }
+    out.push(pts[pts.length-1].slice());
+    return out;
+  }
   function resampleByLength(pts,count){
     if(pts.length<2||count<2)return pts.slice();
     const segs=[];let total=0;
@@ -617,10 +633,11 @@ function rebuild(){
     }
     return out;
   }
-  const centreLen=polyLen(C);
+  const Cd=densifyCatmullRom(C,20),Ld=densifyCatmullRom(L,20),Rd=densifyCatmullRom(R,20);
+  const centreLen=polyLen(Cd);
   const ns=Math.max(3,Math.ceil(centreLen/Math.max(0.5,spacing))+1);
-  C=resampleByLength(C,ns);L=resampleByLength(L,ns);R=resampleByLength(R,ns);
-  dbg('Коридор: '+C.length+' станций (длина центра '+centreLen.toFixed(1)+' м / spacing '+spacing+' м, как в Maya).');
+  C=resampleByLength(Cd,ns);L=resampleByLength(Ld,ns);R=resampleByLength(Rd,ns);
+  dbg('Коридор: '+C.length+' станций (сглаженная длина центра '+centreLen.toFixed(1)+' м / spacing '+spacing+' м; полилиния 200 точек: '+polyLen(C).toFixed(1)+' м).');
   eng.prepare(C,L,R);
   const limitPoly=(cv.limit&&cv.limit.length)?cv.limit.map(p=>[p[0],p[2]]):null;
   eng.makeRays(limitPoly);
