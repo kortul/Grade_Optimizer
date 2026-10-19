@@ -133,7 +133,7 @@ renderer.domElement.addEventListener('dblclick', ev=>{
   controls.update(); targetDist=null;
 });
 
-// ===== Прозрачность лейблов (линейная, <=10% полностью скрыты) =====
+// ===== Прозрачность лейблов =====
 function applyLabelOpacity(){
   const v=(state.labelOpacity===undefined)?1:state.labelOpacity;
   const hide=v<=0.1;
@@ -150,9 +150,10 @@ function applyLabelOpacity(){
   });
 }
 
-// ===== 3D-линейка (плавающая кнопка справа внизу) =====
+// ===== 3D-линейка =====
 let measureMode=false,measurePts=[],measureGroup=null,measureComplete=false;
 const measureBtn=document.getElementById('measureBtn');
+const ELEV_OFF=21.21;
 function clearMeasure(){
   if(measureGroup){
     scene.remove(measureGroup);
@@ -163,13 +164,13 @@ function clearMeasure(){
   measureComplete=false;
 }
 function measureLabel(text,p,small){
-  const cnv=document.createElement('canvas');cnv.width=small?300:620;cnv.height=96;
+  const cnv=document.createElement('canvas');cnv.width=small?300:640;cnv.height=96;
   const ctx=cnv.getContext('2d');
   ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(0,0,cnv.width,96);
   ctx.fillStyle='#ffd54a';ctx.font=(small?'bold 40px':'bold 38px')+' sans-serif';ctx.textAlign='center';
   ctx.fillText(text,cnv.width/2,62);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false,transparent:true,opacity:state.labelOpacity}));
-  sp.scale.set(small?11:27,small?3.5:4.2,1);sp.position.copy(p);sp.renderOrder=11;
+  sp.scale.set(small?11:28,small?3.5:4.2,1);sp.position.copy(p);sp.renderOrder=11;
   return sp;
 }
 measureBtn.addEventListener('click',()=>{
@@ -199,7 +200,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   measurePts.push(p);
   const mk=new THREE.Mesh(new THREE.SphereGeometry(1.1,12,12),new THREE.MeshBasicMaterial({color:0xffd54a}));
   mk.position.copy(p);measureGroup.add(mk);
-  measureGroup.add(measureLabel('H '+p.y.toFixed(1),new THREE.Vector3(p.x,p.y+5,p.z),true));
+  measureGroup.add(measureLabel('H '+(p.y+ELEV_OFF).toFixed(1),new THREE.Vector3(p.x,p.y+5,p.z),true));
   if(measurePts.length===2){
     const a=measurePts[0],b=measurePts[1];
     const g=new THREE.BufferGeometry().setFromPoints([a,b]);
@@ -816,6 +817,7 @@ function rebuild(){
     const s=r.slope===null?'—':r.slope.toFixed(1);
     return '<div>Ст. '+r.station+': уклон <b>'+s+'°</b> | H: '+r.centerHeight.toFixed(1)+' / '+r.leftHeight.toFixed(1)+' / '+r.rightHeight.toFixed(1)+' м</div>';
   }).join('')||'-';
+  const ELEV_OFF=21.21;
   const makeSprite=(text, p, color, small)=>{
     const cnv=document.createElement('canvas'); cnv.width=384; cnv.height=96;
     const ctx=cnv.getContext('2d');
@@ -843,12 +845,12 @@ function rebuild(){
     const smpR=pr.clone().addScaledVector(inward,-1.5);
     const tgl=terrainY(smpL.x,smpL.z),tgr=terrainY(smpR.x,smpR.z);
     lg.add(makeSprite((r.slope===null?'—':slope.toFixed(1))+'°',new THREE.Vector3(cp.x,cp.y+10,cp.z),slopeColor(slope)));
-    lg.add(makeSprite(r.centerHeight.toFixed(1),new THREE.Vector3(cp.x,cp.y+5,cp.z),'#ffffff'));
-    lg.add(makeSprite(r.leftHeight.toFixed(1),new THREE.Vector3(pl.x,pl.y+5,pl.z),'#7fd4ff'));
-    lg.add(makeSprite(r.rightHeight.toFixed(1),new THREE.Vector3(pr.x,pr.y+5,pr.z),'#ffb0a0'));
-    tg.add(makeSprite('орг.: '+eng.groundC[i].toFixed(1),new THREE.Vector3(cp.x,cp.y-2.8,cp.z),'#cfe3cf',true));
-    tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'),new THREE.Vector3(pl.x,pl.y-2.8,pl.z),'#cfe3cf',true));
-    tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'),new THREE.Vector3(pr.x,pr.y-2.8,pr.z),'#cfe3cf',true));
+    lg.add(makeSprite((r.centerHeight+ELEV_OFF).toFixed(1),new THREE.Vector3(cp.x,cp.y+5,cp.z),'#ffffff'));
+    lg.add(makeSprite((r.leftHeight+ELEV_OFF).toFixed(1),new THREE.Vector3(pl.x,pl.y+5,pl.z),'#7fd4ff'));
+    lg.add(makeSprite((r.rightHeight+ELEV_OFF).toFixed(1),new THREE.Vector3(pr.x,pr.y+5,pr.z),'#ffb0a0'));
+    tg.add(makeSprite('орг.: '+(eng.groundC[i]+ELEV_OFF).toFixed(1),new THREE.Vector3(cp.x,cp.y-2.8,cp.z),'#cfe3cf',true));
+    tg.add(makeSprite('орг.: '+(tgl!==null?(tgl+ELEV_OFF).toFixed(1):'-'),new THREE.Vector3(pl.x,pl.y-2.8,pl.z),'#cfe3cf',true));
+    tg.add(makeSprite('орг.: '+(tgr!==null?(tgr+ELEV_OFF).toFixed(1):'-'),new THREE.Vector3(pr.x,pr.y-2.8,pr.z),'#cfe3cf',true));
     if(state.terrainSlopesVisible&&r.slope!==null){
       lg.add(makeSprite('орг. уклон: '+slope.toFixed(1)+'°',new THREE.Vector3(cp.x,eng.groundC[i]+6.5,cp.z),'#7fd4ff',true));
     }
