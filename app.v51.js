@@ -12,7 +12,7 @@ const state = {
   prof:(saved&&saved.profile_level)!==undefined&&(saved&&saved.profile_level)!==null?(saved.profile_level):0,
   cut:(saved&&saved.max_cut_depth)||3,
   off:-0.75, cross:0.264, optimize:false,
-usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3,
+usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3, labelOpacity:1,
   terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
@@ -133,8 +133,16 @@ renderer.domElement.addEventListener('dblclick', ev=>{
   controls.update(); targetDist=null;
 });
 
+// ===== Прозрачность лейблов =====
+function applyLabelOpacity(){
+  const op=state.labelOpacity;
+  [state.labelsGroup,state.terrainLabelsGroup,measureGroup].forEach(g=>{
+    if(g)g.traverse(o=>{if(o.isSprite&&o.material){o.material.opacity=op;o.material.transparent=op<1;}});
+  });
+}
+
 // ===== 3D-линейка (плавающая кнопка справа внизу) =====
-let measureMode=false,measurePts=[],measureGroup=null;
+let measureMode=false,measurePts=[],measureGroup=null,measureComplete=false;
 const measureBtn=document.getElementById('measureBtn');
 function clearMeasure(){
   if(measureGroup){
@@ -143,6 +151,7 @@ function clearMeasure(){
     measureGroup=null;
   }
   measurePts=[];
+  measureComplete=false;
 }
 function measureLabel(text,p){
   const cnv=document.createElement('canvas');cnv.width=560;cnv.height=96;
@@ -176,7 +185,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   const hits=clickRay.intersectObjects(targets,true);
   if(!hits.length)return;
   const p=hits[0].point.clone();
-  if(measurePts.length>=2){clearMeasure();}
+  if(measureComplete){clearMeasure();}
   if(!measureGroup){measureGroup=new THREE.Group();scene.add(measureGroup);}
   measurePts.push(p);
   const mk=new THREE.Mesh(new THREE.SphereGeometry(1.1,12,12),new THREE.MeshBasicMaterial({color:0xffd54a}));
@@ -192,7 +201,9 @@ renderer.domElement.addEventListener('pointerup',e=>{
     mid.y+=6;
     measureGroup.add(measureLabel(
       d3.toFixed(1)+' м  (гор. '+dh.toFixed(1)+' · Δh '+(dzv>=0?'+':'')+dzv.toFixed(1)+')',mid));
+    applyLabelOpacity();
     measurePts=[];
+    measureComplete=true;
   }
 });
 
@@ -831,6 +842,7 @@ function rebuild(){
       lg.add(makeSprite('орг. уклон: '+slope.toFixed(1)+'°',new THREE.Vector3(cp.x,eng.groundC[i]+6.5,cp.z),'#7fd4ff',true));
     }
   });
+  applyLabelOpacity();
 
   dbg('3D-подписей создано: проект '+lg.children.length+', рельеф '+tg.children.length+'.');
 
@@ -1006,6 +1018,11 @@ document.getElementById('pShadow').addEventListener('input',e=>{
   const s=shadowSizes[parseInt(e.target.value)];
   if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}
   sun.shadow.mapSize.set(s,s);
+});
+document.getElementById('pLabelOp').addEventListener('input',e=>{
+  state.labelOpacity=parseFloat(e.target.value)/100;
+  document.getElementById('vLabelOp').textContent=e.target.value+'%';
+  applyLabelOpacity();
 });
 document.getElementById('pLightOn').addEventListener('change',e=>{
   sun.visible=e.target.checked;
