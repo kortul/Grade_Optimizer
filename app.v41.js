@@ -459,11 +459,11 @@ class Engine{
     return {d,zout,mode,forced};
   }
   volumes(Z,zl,d,zout){
-    const n=this.n,m=this.m;let cut=0,fill=0;
+    const n=this.n,m=this.m;let cut=0,fill=0,coreCut=0,coreFill=0;
     for(let i=0;i<n-1;i++)for(let j=0;j<m-1;j++){
       const df=0.25*((Z[i][j]-this.TG[i][j])+(Z[i+1][j]-this.TG[i+1][j])+(Z[i][j+1]-this.TG[i][j+1])+(Z[i+1][j+1]-this.TG[i+1][j+1]));
       const v=df*this.cellArea[i][j];
-      if(v>=0)fill+=v;else cut-=v;
+      if(v>=0){fill+=v;coreFill+=v;}else{cut-=v;coreCut+=v;}
     }
     const step=this.step;
     this.rays.forEach((ray,r)=>{
@@ -478,18 +478,18 @@ class Engine{
         k++;
       }
     });
-    return {cut,fill};
+    return {cut,fill,coreCut,coreFill};
   }
   evaluate(off,cross,fillN,cutN){
     const P=this.P;
     const {zc,Z,zl}=this.design(off,cross);
     const {d,zout,mode,forced}=this.solveRays(zl,fillN,cutN);
-    const {cut,fill}=this.volumes(Z,zl,d,zout);
+    const {cut,fill,coreCut,coreFill}=this.volumes(Z,zl,d,zout);
     const usable=cut*P.usable,bal=usable-fill;
     const nforced=forced.reduce((s,f)=>s+(f===1?1:0),0);
     let score=Math.abs(bal)+P.earthwork_w*(cut+fill)+200*nforced;
     if(P.max_fill>0&&fill>P.max_fill)score+=1000*(fill-P.max_fill)/P.max_fill;
-    return {off,cross,fillN,cutN,cut,fill,usable,bal,nforced,score};
+    return {off,cross,fillN,cutN,cut,fill,usable,bal,nforced,score,coreCut,coreFill};
   }
   optimize(progress){
     const P=this.P,fill0=P.fill_n,cut0=P.cut_n;
@@ -506,9 +506,7 @@ class Engine{
     }
     let so=2*Roff/12*0.5,sc=cmax>0?2*cmax/8*0.5:0,it=0;
     while(it<60){
-      it++;
-      let improved=false;
-      const cands=[];
+      it++;let improved=false;const cands=[];
       for(const sgn of [-1,1]){
         cands.push([best.off+sgn*so,best.cross,fill0,cut0]);
         if(cmax>0)cands.push([best.off,best.cross+sgn*sc,fill0,cut0]);
@@ -519,10 +517,7 @@ class Engine{
         const r=this.evaluate(o,c,f,cu);
         if(r.score<best.score-1e-6){best=r;improved=true;}
       }
-      if(!improved){
-        so*=0.5;sc*=0.5;
-        if(so<0.005&&sc<0.00005)break;
-      }
+      if(!improved){so*=0.5;sc*=0.5;if(so<0.005&&sc<0.00005)break;}
       if(progress)progress(60+35*it/60,'Refining '+it);
     }
     return best;
@@ -597,13 +592,12 @@ function rebuild(){
   let C=cv.centre.map(p=>[p[0],p[1],p[2]]);
   let L=alignDir(C,cv.left.map(p=>[p[0],p[1],p[2]]));
   let R=alignDir(C,cv.right.map(p=>[p[0],p[1],p[2]]));
-  // Maya-style: сглаживание и равномерный ресемплинг по длине кривой
+  // Maya-style: сглаживание Catmull-Rom + равномерный ресемплинг по длине
   const spacing=P.spacing;
   function polyLen(pts){let s=0;for(let i=1;i<pts.length;i++)s+=hyp(p2(pts[i]),p2(pts[i-1]));return s;}
   function densifyCatmullRom(pts,per=20){
     if(pts.length<3)return pts.slice();
-    const out=[];
-    const get=i=>pts[Math.max(0,Math.min(pts.length-1,i))];
+    const out=[];const get=i=>pts[Math.max(0,Math.min(pts.length-1,i))];
     for(let i=0;i<pts.length-1;i++){
       const p0=get(i-1),p1=get(i),p2p=get(i+1),p3=get(i+2);
       for(let k=0;k<per;k++){
@@ -637,7 +631,9 @@ function rebuild(){
   const centreLen=polyLen(Cd);
   const ns=Math.max(3,Math.ceil(centreLen/Math.max(0.5,spacing))+1);
   C=resampleByLength(Cd,ns);L=resampleByLength(Ld,ns);R=resampleByLength(Rd,ns);
-  dbg('Коридор: '+C.length+' станций (сглаженная длина центра '+centreLen.toFixed(1)+' м / spacing '+spacing+' м; полилиния 200 точек: '+polyLen(C).toFixed(1)+' м).');
+  const widths=C.map((c,i)=>hyp(p2(L[i]),p2(R[i])));
+  dbg('Коридор: '+C.length+' станций (сглаженная длина '+centreLen.toFixed(1)+' м; полилиния '+polyLen(C).toFixed(1)+' м; spacing '+spacing+' м).');
+  dbg('Ширина коридора: min '+Math.min(...widths).toFixed(1)+' / mean '+(widths.reduce((a,b)=>a+b,0)/widths.length).toFixed(1)+' / max '+Math.max(...widths).toFixed(1)+' м (Maya: 39.9 / 43.5 / 53.3).');
   eng.prepare(C,L,R);
   const limitPoly=(cv.limit&&cv.limit.length)?cv.limit.map(p=>[p[0],p[2]]):null;
   eng.makeRays(limitPoly);
@@ -755,9 +751,9 @@ function rebuild(){
   const f=v=>Math.round(v).toLocaleString('ru-RU');
   document.getElementById('stats').innerHTML=
     'Угол откоса: <b>'+state.ang+'°</b> (1:'+best.fillN.toFixed(2)+')<br>'+
-    'Срезано: <b>'+f(best.cut)+'</b> м³<br>'+
+    'Срезано: <b>'+f(best.cut)+'</b> м³ (core '+f(best.coreCut)+')<br>'+
     'Пригодно к использованию: <b>'+f(best.usable)+'</b> м³ (90%)<br>'+
-    'Насыпано: <b>'+f(best.fill)+'</b> м³<br>'+
+    'Насыпано: <b>'+f(best.fill)+'</b> м³ (core '+f(best.coreFill)+')<br>'+
     'Требуется привезти: <b>'+f(Math.max(0,best.fill-best.usable))+'</b> м³<br>'+
     'Останется вывезти: <b>'+f(Math.max(0,best.usable-best.fill))+'</b> м³<br>'+
     'Баланс: <b>'+(best.bal>=0?'+':'')+f(best.bal)+'</b> м³';
