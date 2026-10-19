@@ -10,7 +10,7 @@ const state = {
   slope:(saved&&saved.slope)||'A1',
   ang:(saved&&saved.slope_angle)||35,
   prof:(saved&&saved.profile_level)!==undefined&&(saved&&saved.profile_level)!==null?(saved.profile_level):0,
-  cut:(saved&&saved.max_cut_depth)||3,
+  cut:(saved&&saved.max_cut_depth)||5,
   off:-0.75, cross:0.264, optimize:false,
 usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3, labelOpacity:1,
   terrainVisible:true, terrainOpacity:1, designVisible:true, gridVisible:true,
@@ -990,7 +990,6 @@ map.forEach(([id,key,vid,fm])=>{
   el.addEventListener('input',()=>{
     state[key]=parseFloat(el.value);
     vEl.textContent=fm(state[key]);
-    scheduleRebuild();
   });
 });
 
@@ -1069,7 +1068,7 @@ document.getElementById('save').addEventListener('click',()=>{
 
 document.getElementById('reset').addEventListener('click',()=>{
   localStorage.removeItem('ssgo_default_preset');
-  const d={pAng:35,pProf:0,pCut:3,pOff:-0.75,pCross:0.264,pUsable:90,pEarth:0.03,pMaxFill:0,pOffR:3,pCrossMax:3};
+  const d={pAng:35,pProf:0,pCut:5,pOff:-0.75,pCross:0.264,pUsable:90,pEarth:0.03,pMaxFill:0,pOffR:3,pCrossMax:3};
   for(const k in d){const e=document.getElementById(k);if(e){e.value=d[k];e.dispatchEvent(new Event('input'));}}
 });
 

@@ -38,8 +38,9 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <div class="group"><h2>Основные настройки</h2>
 <label>Сглаживание центрального профиля <span class="val" id="vProf">0</span></label><input type="range" id="pProf" min="0" max="10" step="1" value="0"/>
 <label>Угол откоса, ° <span class="val" id="vAng">35°</span></label><input type="range" id="pAng" min="5" max="60" step="0.5" value="35"/>
-<label>Макс. глубина срезки, м <span class="val" id="vCut">3.0</span></label><input type="range" id="pCut" min="0" max="10" step="0.5" value="3"/>
-<button id="apply">ПРИМЕНИТЬ</button></div>
+<label>Макс. глубина срезки, м <span class="val" id="vCut">5.0</span></label><input type="range" id="pCut" min="0" max="10" step="0.5" value="5"/>
+<button id="apply">ПРИМЕНИТЬ</button>
+<div class="hint">Настройки применяются только после нажатия «ПРИМЕНИТЬ».</div></div>
 <div class="group"><h2>Отображение</h2>
 <div class="chk"><input type="checkbox" id="pTerrain" checked/> <span>Показать оригинальную почву</span></div>
 <label>Прозрачность почвы <span class="val" id="vTerrOp">100%</span></label><input type="range" id="pTerrOp" min="10" max="100" step="5" value="100"/>
@@ -75,4 +76,4 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v57.js"></script></body></html>
+<script type="module" src="./app.v58.js"></script></body></html>
