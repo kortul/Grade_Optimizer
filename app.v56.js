@@ -80,12 +80,13 @@ window.addEventListener('resize', () => {
 const dbgEl = document.getElementById('debug');
 function dbg(msg){ dbgEl.textContent += msg + "\n"; }
 const bust = () => '?t=' + Date.now();
-const loader = new GLTFLoader();
+const assetManager = new THREE.LoadingManager();
 let assetToken = Date.now();
-loader.setURLModifier(url => {
+assetManager.setURLModifier(url => {
   if (/\.bin(\?|$)/i.test(url)) return url + (url.includes('?') ? '&' : '?') + 't=' + assetToken;
   return url;
 });
+const loader = new GLTFLoader(assetManager);
 const loadGLTF = url => new Promise((res, rej) => loader.load(url, res, undefined, rej));
 const loadJSON = url => fetch(url).then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
 
