@@ -592,7 +592,7 @@ function rebuild(){
   let C=cv.centre.map(p=>[p[0],p[1],p[2]]);
   let L=alignDir(C,cv.left.map(p=>[p[0],p[1],p[2]]));
   let R=alignDir(C,cv.right.map(p=>[p[0],p[1],p[2]]));
-  // Maya-style: 3D длина + ресемплинг; если есть точные Maya-станции — берём их
+  // Maya-style: 3D длина + ресемплинг; точные Maya-станции имеют приоритет
   const spacing=P.spacing;
   const dist3=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
   function polyLen3(pts){let s=0;for(let i=1;i<pts.length;i++)s+=dist3(pts[i],pts[i-1]);return s;}
@@ -728,44 +728,39 @@ function rebuild(){
     const s=r.slope===null?'—':r.slope.toFixed(1);
     return '<div>Ст. '+r.station+': уклон <b>'+s+'°</b> | H: '+r.centerHeight.toFixed(1)+' / '+r.leftHeight.toFixed(1)+' / '+r.rightHeight.toFixed(1)+' м</div>';
   }).join('')||'-';
-  const makeLabel=(text,p,color,small)=>{
-    const canvas=document.createElement('canvas');
-    let ctx=canvas.getContext('2d');
-    const font=(small?'bold 30px system-ui':'bold 42px system-ui');
-    ctx.font=font;
-    const w=Math.ceil(ctx.measureText(text).width)+28;
-    const h=small?48:68;
-    canvas.width=w;canvas.height=h;
-    ctx=canvas.getContext('2d');
-    ctx.font=font;ctx.textBaseline='middle';
-    ctx.shadowColor='rgba(0,0,0,.95)';ctx.shadowBlur=8;
-    ctx.fillStyle=color;
-    ctx.fillText(text,14,h/2);
-    const tex=new THREE.CanvasTexture(canvas);
-    const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false});
-    const sp=new THREE.Sprite(mat);
-    const k=0.32;
-    sp.scale.set(w*k,h*k,1);
+  const makeSprite=(text, p, color, small)=>{
+    const cnv=document.createElement('canvas'); cnv.width=384; cnv.height=96;
+    const ctx=cnv.getContext('2d');
+    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,0,384,96);
+    ctx.fillStyle=color; ctx.font=(small?'33px':'bold 45px')+' sans-serif'; ctx.textAlign='center';
+    ctx.fillText(text,192,small?60:66);
+    const tex=new THREE.CanvasTexture(cnv);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
+    sp.scale.set(small?10.5:15, small?2.6:3.75, 1);
     sp.position.copy(p);
-    sp.renderOrder=20;
+    sp.renderOrder=10;
     return sp;
   };
   const slopeColor=s=>s<0?'#ff9a3c':(s<10?'#5cff7a':(s<15?'#6aa8ff':(s<25?'#ff5c5c':'#ffffff')));
   rows.forEach(r=>{
-    const i=eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[1]===r.centerPoint[2]);
-    if(i<0)return;
-    const c=IDc[i][Math.floor(m/2)],l=IDc[i][0],rr=IDc[i][m-1];
-    const tg=eng.groundC[i];
-    lg.add(makeLabel((r.slope===null?'—':r.slope.toFixed(1))+'°',new THREE.Vector3(c[0],c[1]+16,c[2]),slopeColor(r.slope===null?0:r.slope)));
-    lg.add(makeLabel('H '+r.centerHeight.toFixed(1),new THREE.Vector3(c[0],c[1]+8,c[2]),'#ffffff'));
-    lg.add(makeLabel(r.leftHeight.toFixed(1),new THREE.Vector3(l[0],l[1]+8,l[2]),'#7fd4ff'));
-    lg.add(makeLabel(r.rightHeight.toFixed(1),new THREE.Vector3(rr[0],rr[1]+8,rr[2]),'#ffb0a0'));
-    tg.add(makeLabel('орг. '+eng.groundC[i].toFixed(1),new THREE.Vector3(c[0],eng.groundC[i]-5,c[2]),'#cfe3cf',true));
-    const tgl=terrainY(l[0],l[2]),tgr=terrainY(rr[0],rr[2]);
-    tg.add(makeLabel('орг. '+(tgl!==null?tgl.toFixed(1):'-'),new THREE.Vector3(l[0],l[1]-5,l[2]),'#cfe3cf',true));
-    tg.add(makeLabel('орг. '+(tgr!==null?tgr.toFixed(1):'-'),new THREE.Vector3(rr[0],rr[1]-5,rr[2]),'#cfe3cf',true));
+    const cp=new THREE.Vector3(r.center_point[0],r.center_point[1],r.center_point[2]);
+    const pl=new THREE.Vector3(r.left_point[0],r.left_point[1],r.left_point[2]);
+    const pr=new THREE.Vector3(r.right_point[0],r.right_point[1],r.right_point[2]);
+    const slope=(r.slope===null||r.slope===undefined)?0:r.slope;
+    const across=new THREE.Vector3().subVectors(pr,pl).setY(0).normalize();
+    const inward=across.clone();
+    const smpL=pl.clone().addScaledVector(inward,1.5);
+    const smpR=pr.clone().addScaledVector(inward,-1.5);
+    const tgl=terrainY(smpL.x,smpL.z),tgr=terrainY(smpR.x,smpR.z);
+    lg.add(makeSprite((r.slope===null?'—':slope.toFixed(1))+'°',new THREE.Vector3(cp.x,cp.y+10,cp.z),slopeColor(slope)));
+    lg.add(makeSprite(r.centerHeight.toFixed(1),new THREE.Vector3(cp.x,cp.y+5,cp.z),'#ffffff'));
+    lg.add(makeSprite(r.leftHeight.toFixed(1),new THREE.Vector3(pl.x,pl.y+5,pl.z),'#7fd4ff'));
+    lg.add(makeSprite(r.rightHeight.toFixed(1),new THREE.Vector3(pr.x,pr.y+5,pr.z),'#ffb0a0'));
+    tg.add(makeSprite('орг.: '+eng.groundC[eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[1]===r.centerPoint[2])].toFixed(1),new THREE.Vector3(cp.x,cp.y-2.8,cp.z),'#cfe3cf',true));
+    tg.add(makeSprite('орг.: '+(tgl!==null?tgl.toFixed(1):'-'),new THREE.Vector3(pl.x,pl.y-2.8,pl.z),'#cfe3cf',true));
+    tg.add(makeSprite('орг.: '+(tgr!==null?tgr.toFixed(1):'-'),new THREE.Vector3(pr.x,pr.y-2.8,pr.z),'#cfe3cf',true));
     if(state.terrainSlopesVisible&&r.slope!==null){
-      lg.add(makeLabel('орг. уклон '+r.slope.toFixed(1)+'°',new THREE.Vector3(c[0],eng.groundC[i]+11,c[2]),'#7fd4ff',true));
+      lg.add(makeSprite('орг. уклон: '+slope.toFixed(1)+'°',new THREE.Vector3(cp.x,eng.groundC[eng.C.findIndex(c=>c[0]===r.centerPoint[0]&&c[1]===r.centerPoint[2])]+6.5,cp.z),'#7fd4ff',true));
     }
   });
 
