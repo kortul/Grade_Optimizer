@@ -1,553 +1,553 @@
 {
-  "version": "v17.24-web-stations",
+  "version": "v19.3-local-offset",
   "labels": [
     {
       "station": 1,
       "slope_deg": null,
-      "h_center": 1.11,
-      "h_left": 1.16,
-      "h_right": 1.06,
+      "h_center": 1.21,
+      "h_left": 1.21,
+      "h_right": 1.21,
       "center_point": [
         462.81,
-        1.11,
+        1.21,
         222.56
       ],
       "left_point": [
         446.91,
-        1.16,
+        1.21,
         234.68
       ],
       "right_point": [
         478.72,
-        1.06,
+        1.21,
         210.44
       ]
     },
     {
       "station": 2,
-      "slope_deg": 1.66,
-      "h_center": 1.69,
-      "h_left": 1.74,
-      "h_right": 1.63,
+      "slope_deg": 2.23,
+      "h_center": 1.99,
+      "h_left": 1.99,
+      "h_right": 1.99,
       "center_point": [
         450.84,
-        1.69,
+        1.99,
         206.65
       ],
       "left_point": [
         433.96,
-        1.74,
+        1.99,
         217.03
       ],
       "right_point": [
         467.45,
-        1.63,
+        1.99,
         195.26
       ]
     },
     {
       "station": 3,
-      "slope_deg": 2.08,
-      "h_center": 2.4,
-      "h_left": 2.46,
-      "h_right": 2.35,
+      "slope_deg": 3.04,
+      "h_center": 3.05,
+      "h_left": 3.05,
+      "h_right": 3.05,
       "center_point": [
         441.72,
-        2.4,
+        3.05,
         189.05
       ],
       "left_point": [
         423.87,
-        2.46,
+        3.05,
         197.69
       ],
       "right_point": [
         460.25,
-        2.35,
+        3.05,
         179.91
       ]
     },
     {
       "station": 4,
-      "slope_deg": 4.76,
-      "h_center": 3.99,
-      "h_left": 4.04,
-      "h_right": 3.93,
+      "slope_deg": 5.14,
+      "h_center": 4.75,
+      "h_left": 4.75,
+      "h_right": 4.75,
       "center_point": [
         439.15,
-        3.99,
+        4.75,
         170.23
       ],
       "left_point": [
         419.64,
-        4.04,
+        4.75,
         178.89
       ],
       "right_point": [
         459.07,
-        3.93,
+        4.75,
         161.38
       ]
     },
     {
       "station": 5,
-      "slope_deg": 5.59,
-      "h_center": 5.93,
-      "h_left": 5.98,
-      "h_right": 5.87,
+      "slope_deg": 6.71,
+      "h_center": 7.08,
+      "h_left": 7.08,
+      "h_right": 7.08,
       "center_point": [
         439.43,
-        5.93,
+        7.08,
         150.41
       ],
       "left_point": [
         419.23,
-        5.98,
+        7.08,
         157.19
       ],
       "right_point": [
         460.28,
-        5.87,
+        7.08,
         142.1
       ]
     },
     {
       "station": 6,
-      "slope_deg": 8.08,
-      "h_center": 8.7,
-      "h_left": 8.76,
-      "h_right": 10.6,
+      "slope_deg": 9.76,
+      "h_center": 10.45,
+      "h_left": 10.45,
+      "h_right": 10.45,
       "center_point": [
         441.77,
-        8.7,
+        10.45,
         130.98
       ],
       "left_point": [
         420.72,
-        8.76,
+        10.45,
         136.22
       ],
       "right_point": [
         464.31,
-        10.6,
+        10.45,
         125.16
       ]
     },
     {
       "station": 7,
-      "slope_deg": 14.8,
-      "h_center": 13.78,
-      "h_left": 13.85,
-      "h_right": 14.98,
+      "slope_deg": 13.06,
+      "h_center": 14.91,
+      "h_left": 14.91,
+      "h_right": 14.91,
       "center_point": [
         447.63,
-        13.78,
+        14.91,
         112.67
       ],
       "left_point": [
         425.14,
-        13.85,
+        14.91,
         116.39
       ],
       "right_point": [
         472.83,
-        14.98,
+        14.91,
         108.87
       ]
     },
     {
       "station": 8,
-      "slope_deg": 14.58,
-      "h_center": 18.78,
-      "h_left": 18.85,
-      "h_right": 18.71,
+      "slope_deg": 13.71,
+      "h_center": 19.59,
+      "h_left": 19.59,
+      "h_right": 19.59,
       "center_point": [
         457.25,
-        18.78,
+        19.59,
         96.05
       ],
       "left_point": [
         432.36,
-        18.85,
+        19.59,
         98.93
       ],
       "right_point": [
         483.52,
-        18.71,
+        19.59,
         94.96
       ]
     },
     {
       "station": 9,
-      "slope_deg": 13.64,
-      "h_center": 23.46,
-      "h_left": 23.53,
-      "h_right": 23.39,
+      "slope_deg": 12.64,
+      "h_center": 23.92,
+      "h_left": 23.92,
+      "h_right": 23.92,
       "center_point": [
         469.21,
-        23.46,
+        23.92,
         80.91
       ],
       "left_point": [
         442.85,
-        23.53,
+        23.92,
         82.04
       ],
       "right_point": [
         495.58,
-        23.39,
+        23.92,
         81.14
       ]
     },
     {
       "station": 10,
-      "slope_deg": 10.79,
-      "h_center": 27.19,
-      "h_left": 27.26,
-      "h_right": 27.61,
+      "slope_deg": 11.7,
+      "h_center": 27.97,
+      "h_left": 27.97,
+      "h_right": 27.97,
       "center_point": [
         482.13,
-        27.19,
+        27.97,
         66.22
       ],
       "left_point": [
         455.7,
-        27.26,
+        27.97,
         65.98
       ],
       "right_point": [
         507.41,
-        27.61,
+        27.97,
         66.44
       ]
     },
     {
       "station": 11,
-      "slope_deg": 13.91,
-      "h_center": 31.97,
-      "h_left": 32.04,
-      "h_right": 31.91,
+      "slope_deg": 12.25,
+      "h_center": 32.16,
+      "h_left": 32.16,
+      "h_right": 32.16,
       "center_point": [
         494.03,
-        31.97,
+        32.16,
         51.01
       ],
       "left_point": [
         469.58,
-        32.04,
+        32.16,
         50.12
       ],
       "right_point": [
         517.93,
-        31.91,
+        32.16,
         50.54
       ]
     },
     {
       "station": 12,
-      "slope_deg": 12.36,
-      "h_center": 36.24,
-      "h_left": 36.3,
-      "h_right": 36.17,
+      "slope_deg": 13.34,
+      "h_center": 36.77,
+      "h_left": 36.77,
+      "h_right": 36.77,
       "center_point": [
         504.17,
-        36.24,
+        36.77,
         34.42
       ],
       "left_point": [
         481.34,
-        36.3,
+        36.77,
         33.58
       ],
       "right_point": [
         526.93,
-        36.17,
+        36.77,
         33.58
       ]
     },
     {
       "station": 13,
-      "slope_deg": 16.59,
-      "h_center": 41.91,
-      "h_left": 41.96,
-      "h_right": 42.63,
+      "slope_deg": 16.04,
+      "h_center": 42.25,
+      "h_left": 42.25,
+      "h_right": 42.25,
       "center_point": [
         512.38,
-        41.91,
+        42.25,
         17.25
       ],
       "left_point": [
         490.85,
-        41.96,
+        42.25,
         16.41
       ],
       "right_point": [
         533.55,
-        42.63,
+        42.25,
         17.74
       ]
     },
     {
       "station": 14,
-      "slope_deg": 23.01,
-      "h_center": 49.62,
-      "h_left": 49.67,
-      "h_right": 51.24,
+      "slope_deg": 20.03,
+      "h_center": 48.87,
+      "h_left": 48.87,
+      "h_right": 49.24,
       "center_point": [
         518.74,
-        49.62,
+        48.87,
         0.23
       ],
       "left_point": [
         498.58,
-        49.67,
+        48.87,
         -2.87
       ],
       "right_point": [
         539.79,
-        51.24,
+        49.24,
         1.32
       ]
     },
     {
       "station": 15,
-      "slope_deg": 20.24,
-      "h_center": 56.5,
-      "h_left": 56.56,
-      "h_right": 58.98,
+      "slope_deg": 21.06,
+      "h_center": 56.06,
+      "h_left": 56.06,
+      "h_right": 56.98,
       "center_point": [
         526.11,
-        56.5,
+        56.06,
         -16.92
       ],
       "left_point": [
         504.81,
-        56.56,
+        56.06,
         -18.28
       ],
       "right_point": [
         546.6,
-        58.98,
+        56.98,
         -13.54
       ]
     },
     {
       "station": 16,
-      "slope_deg": 22.81,
-      "h_center": 64.21,
-      "h_left": 64.27,
-      "h_right": 64.16,
+      "slope_deg": 21.01,
+      "h_center": 63.1,
+      "h_left": 63.1,
+      "h_right": 63.1,
       "center_point": [
         533.06,
-        64.21,
+        63.1,
         -33.88
       ],
       "left_point": [
         511.72,
-        64.27,
+        63.1,
         -33.37
       ],
       "right_point": [
         552.66,
-        64.16,
+        63.1,
         -28.86
       ]
     },
     {
       "station": 17,
-      "slope_deg": 19.33,
-      "h_center": 70.78,
-      "h_left": 70.84,
-      "h_right": 70.73,
+      "slope_deg": 17.38,
+      "h_center": 68.96,
+      "h_left": 68.96,
+      "h_right": 68.96,
       "center_point": [
         539.3,
-        70.78,
+        68.96,
         -51.55
       ],
       "left_point": [
         518.61,
-        70.84,
+        68.96,
         -52.75
       ],
       "right_point": [
         558.89,
-        70.73,
+        68.96,
         -47.09
       ]
     },
     {
       "station": 18,
-      "slope_deg": 10.48,
-      "h_center": 74.4,
-      "h_left": 74.45,
-      "h_right": 74.34,
+      "slope_deg": 11.95,
+      "h_center": 73.1,
+      "h_left": 73.1,
+      "h_right": 73.1,
       "center_point": [
         545.88,
-        74.4,
+        73.1,
         -69.95
       ],
       "left_point": [
         523.94,
-        74.45,
+        73.1,
         -68.94
       ],
       "right_point": [
         565.66,
-        74.34,
+        73.1,
         -65.27
       ]
     },
     {
       "station": 19,
-      "slope_deg": 8.53,
-      "h_center": 77.35,
-      "h_left": 77.4,
-      "h_right": 77.29,
+      "slope_deg": 9.97,
+      "h_center": 76.55,
+      "h_left": 76.55,
+      "h_right": 76.55,
       "center_point": [
         553.7,
-        77.35,
+        76.55,
         -88.01
       ],
       "left_point": [
         532.19,
-        77.4,
+        76.55,
         -88.72
       ],
       "right_point": [
         573.39,
-        77.29,
+        76.55,
         -82.75
       ]
     },
     {
       "station": 20,
-      "slope_deg": 10.17,
-      "h_center": 80.86,
-      "h_left": 80.92,
-      "h_right": 80.81,
+      "slope_deg": 10.32,
+      "h_center": 80.12,
+      "h_left": 80.12,
+      "h_right": 80.12,
       "center_point": [
         562.55,
-        80.86,
+        80.12,
         -105.5
       ],
       "left_point": [
         541.33,
-        80.92,
+        80.12,
         -108.18
       ],
       "right_point": [
         581.98,
-        80.81,
+        80.12,
         -99.75
       ]
     },
     {
       "station": 21,
-      "slope_deg": 8.99,
-      "h_center": 83.97,
-      "h_left": 84.02,
-      "h_right": 83.92,
+      "slope_deg": 9.46,
+      "h_center": 83.4,
+      "h_left": 83.4,
+      "h_right": 83.4,
       "center_point": [
         570.35,
-        83.97,
+        83.4,
         -123.53
       ],
       "left_point": [
         550.49,
-        84.02,
+        83.4,
         -127.71
       ],
       "right_point": [
         589.32,
-        83.92,
+        83.4,
         -117.19
       ]
     },
     {
       "station": 22,
-      "slope_deg": 5.83,
-      "h_center": 85.99,
-      "h_left": 86.04,
-      "h_right": 85.94,
+      "slope_deg": 7.71,
+      "h_center": 86.08,
+      "h_left": 86.08,
+      "h_right": 86.08,
       "center_point": [
         577.16,
-        85.99,
+        86.08,
         -142.14
       ],
       "left_point": [
         557.76,
-        86.04,
+        86.08,
         -147.23
       ],
       "right_point": [
         595.79,
-        85.94,
+        86.08,
         -134.69
       ]
     },
     {
       "station": 23,
-      "slope_deg": 6.14,
-      "h_center": 88.12,
-      "h_left": 88.17,
-      "h_right": 88.07,
+      "slope_deg": 6.77,
+      "h_center": 88.43,
+      "h_left": 88.43,
+      "h_right": 88.43,
       "center_point": [
         584.91,
-        88.12,
+        88.43,
         -160.37
       ],
       "left_point": [
         566.13,
-        88.17,
+        88.43,
         -167.35
       ],
       "right_point": [
         602.51,
-        88.07,
+        88.43,
         -150.7
       ]
     },
     {
       "station": 24,
-      "slope_deg": 5.67,
-      "h_center": 90.09,
-      "h_left": 90.14,
-      "h_right": 90.04,
+      "slope_deg": 5.55,
+      "h_center": 90.36,
+      "h_left": 90.36,
+      "h_right": 90.36,
       "center_point": [
         592.93,
-        90.09,
+        90.36,
         -178.5
       ],
       "left_point": [
         574.97,
-        90.14,
+        90.36,
         -187.33
       ],
       "right_point": [
         610.36,
-        90.04,
+        90.36,
         -168.46
       ]
     },
     {
       "station": 25,
-      "slope_deg": 5.54,
-      "h_center": 90.57,
-      "h_left": 90.63,
-      "h_right": 90.52,
+      "slope_deg": 10.81,
+      "h_center": 91.3,
+      "h_left": 91.3,
+      "h_right": 91.3,
       "center_point": [
         594.93,
-        90.57,
+        91.3,
         -183.04
       ],
       "left_point": [
         577.18,
-        90.63,
+        91.3,
         -192.34
       ],
       "right_point": [
         612.33,
-        90.52,
+        91.3,
         -172.91
       ]
     }
