@@ -433,9 +433,15 @@ function clearTestForest() {
       if(o.geometry) o.geometry.dispose();
       if(o.material) {
         const mats=Array.isArray(o.material)?o.material:[o.material];
-        mats.forEach(m=>m.dispose());
+        mats.forEach(m=>{ if(m!==treeBillboardMaterial) m.dispose(); });
       }
     });
+  }
+  if(treeBillboardMaterial) {
+    treeBillboardMaterial.map?.dispose();
+    treeBillboardMaterial.normalMap?.dispose();
+    treeBillboardMaterial.dispose();
+    treeBillboardMaterial=null;
   }
   state.forestGroup=null;
   state.billboardMesh=null;
