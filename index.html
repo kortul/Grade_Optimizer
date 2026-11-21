@@ -102,6 +102,87 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 #loading .box{text-align:center}#loading .spin{width:46px;height:46px;border:4px solid #3a3a44;border-top-color:#2ea36a;border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}#loading .txt{font-size:15px;font-weight:600;color:#dfe}
 @media(max-width:800px){#app{flex-direction:column-reverse}#panel{width:100%;max-height:45vh}}
+
+/* v0.63 interface pass */
+:root{color-scheme:dark;--ui-bg:#111821;--ui-panel:#19232e;--ui-border:rgba(190,213,235,.13);--ui-text:#eef4fa;--ui-accent:#43b982;--ui-blue:#82b8e2}
+html,body{height:100%;overflow:hidden}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--ui-bg);color:var(--ui-text)}
+#app{height:100vh;height:100dvh;background:radial-gradient(ellipse at 75% 5%,#202e3b 0,#111821 48%)}
+#panel{background:linear-gradient(180deg,#1a2530,#151e27);border-right:1px solid var(--ui-border);box-shadow:8px 0 28px rgba(0,0,0,.16);padding:18px}
+#panel h1{font-size:16px;line-height:1.35;color:#f1f6fb}
+.group{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;padding:13px}
+.group h2,details summary{color:#a8c3d9;font-size:11px;font-weight:750;letter-spacing:1px}
+button{transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease}
+button:hover{filter:brightness(1.1)}button:active{transform:translateY(1px)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #83c8f0;outline-offset:2px}
+button:disabled,input:disabled,select:disabled{opacity:.42;cursor:not-allowed}
+input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
+#sceneBar{left:60px;right:14px;top:14px;gap:10px}
+#sceneBar .sceneMode,#sceneBar .dayCycle{background:rgba(17,25,34,.88);border:1px solid rgba(207,227,245,.14);box-shadow:0 8px 28px rgba(0,0,0,.2);border-radius:12px;padding:6px}
+#sceneBar button{font-size:10px;font-weight:750;letter-spacing:.55px;padding:9px 12px;border:1px solid transparent}
+#sceneBar button.active{background:linear-gradient(135deg,#269b68,#36b77b);box-shadow:0 3px 12px rgba(31,170,109,.2)}
+#sceneBar #editorToggle{border-color:rgba(130,184,226,.18)}
+#sceneBar .dayCycle{padding:8px 11px}
+#sceneBar .dayCycle>span:first-child{font-weight:750;letter-spacing:.8px;color:#a8bed1}
+#sceneBar .timeValue{color:#f1f6fb}
+#sceneBar #autoDay{border:1px solid var(--ui-border);min-width:32px}
+#sceneEditorPanel{width:min(420px,calc(100% - 24px));top:76px;bottom:14px;padding:14px 14px 18px;background:rgba(18,27,37,.97);border:1px solid rgba(177,206,232,.2);border-radius:14px;box-shadow:0 18px 52px rgba(0,0,0,.46);overscroll-behavior:contain}
+#sceneEditorPanel.drag-over{border:2px dashed #64cba0;background:rgba(24,56,49,.97);box-shadow:0 0 0 4px rgba(67,185,130,.12),0 18px 52px rgba(0,0,0,.46)}
+#editorHeader{position:sticky;top:-14px;z-index:3;padding:10px 0 12px;margin:-4px 0 10px;background:rgba(18,27,37,.97);border-bottom:1px solid var(--ui-border)}
+.editor-heading{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+#editorHeader strong{font-size:12px;letter-spacing:1.1px}
+.editor-chip{display:inline-flex;align-items:center;border:1px solid rgba(130,184,226,.2);border-radius:999px;padding:3px 7px;color:#9dc7e7;font-size:9px;font-weight:800;letter-spacing:.65px;white-space:nowrap}
+#sceneEditorPanel .editor-section{padding:12px;margin:10px 0;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.075);border-radius:11px}
+#sceneEditorPanel .editor-section h3{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:1px;color:#a9c8df}
+#sceneEditorPanel label{font-size:11px;color:#c5d3df}
+#sceneEditorPanel select,#sceneEditorPanel input[type=number]{min-height:34px;border:1px solid #425263;border-radius:7px;background:#17222d;color:#eff5fa;transition:border-color .15s ease}
+#sceneEditorPanel select:hover,#sceneEditorPanel input[type=number]:hover{border-color:#66809a}
+#sceneEditorPanel input[type=color]{height:34px;border-radius:7px;cursor:pointer}
+#sceneEditorPanel input[type=range]{accent-color:#63c69a}
+#sceneEditorPanel button{min-height:34px;margin:4px 0 0;padding:8px 10px;border:1px solid rgba(255,255,255,.07);border-radius:7px;font-size:10px;font-weight:750;letter-spacing:.45px}
+#sceneEditorPanel button:not(.secondary){background:linear-gradient(135deg,#238b61,#31a977)}
+#sceneEditorPanel button.secondary{background:#2b3947;border-color:rgba(174,205,230,.12)}
+#sceneEditorPanel button.closeEditor{min-width:32px;background:#2b3947}
+#sceneEditorPanel .editor-hint{font-size:10px;line-height:1.5;color:#94a6b7}
+#editorStatus{min-height:36px;padding:9px 10px;border:1px solid rgba(130,184,226,.16);border-left:3px solid #6aaedb;border-radius:7px;background:rgba(92,145,183,.08);color:#bad4e7;font-size:10px;line-height:1.5}
+#editorStatus.error{border-left-color:#e47c75;background:rgba(228,124,117,.08);color:#ffc0b9}
+#sceneEditorPanel .editor-checks{gap:8px 12px}
+#sceneEditorPanel .editor-checks label{min-height:23px}
+#sceneEditorPanel .editor-split{gap:8px}
+#sceneEditorPanel .editor-row{gap:8px}
+#sceneEditorPanel .editor-value{color:#9bd9bd;font-weight:750}
+#legend{background:rgba(17,25,34,.9);border:1px solid var(--ui-border);border-radius:11px;box-shadow:0 8px 26px rgba(0,0,0,.2)}
+#measureBtn,#homeBtn{border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 22px rgba(0,0,0,.25)}
+#loading{backdrop-filter:blur(5px)}
+#loading .box{padding:22px 28px;border:1px solid var(--ui-border);border-radius:14px;background:rgba(17,25,34,.96);box-shadow:0 15px 40px rgba(0,0,0,.3)}
+#loading .txt{font-size:13px;color:#e6f1f8}
+#debug,#mayaLabels,#labels{color:#9fb1c2}
+.slope-btn{border-color:var(--ui-border);border-radius:8px}
+.slope-btn.active{box-shadow:0 3px 12px rgba(46,163,106,.18)}
+@media(max-width:980px){
+ #sceneBar{left:12px;right:12px;top:10px;align-items:stretch;flex-direction:column}
+ #sceneBar .sceneMode{flex-wrap:wrap;max-width:100%}
+ #sceneBar .dayCycle{align-self:flex-end}
+ #legend{top:116px}
+ #sceneEditorPanel{top:120px}
+ #app.skier-mode #sceneBar{left:12px;right:12px;flex-direction:row;align-items:flex-start}
+ #app.skier-mode #sceneBar .sceneMode{width:auto;max-width:100%}
+}
+@media(max-width:620px){
+ #sceneBar{gap:7px}
+ #sceneBar .sceneMode{gap:4px;padding:5px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #sceneBar .sceneMode button{width:100%;padding:8px 7px;font-size:9px}
+ #sceneBar .dayCycle{align-self:stretch;justify-content:space-between;width:100%;gap:7px}
+ #sceneBar input[type=range]{width:min(34vw,130px)}
+ #sceneEditorPanel{top:124px;bottom:10px;width:calc(100% - 20px);left:10px;padding:11px}
+ #editorHeader{top:-11px}
+ #legend{top:176px;right:8px;padding:8px;font-size:10px}
+ #app.skier-mode #sceneBar{flex-direction:column}
+ #app.skier-mode #sceneBar .sceneMode{width:100%}
+ #skierHud{left:9px;bottom:9px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
 </style>
 </head>
 <body>
@@ -154,11 +235,11 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 </div>
 
 <div id="sceneEditorPanel" aria-label="Scene and material editor">
-  <div id="editorHeader"><strong>SCENE / MATERIAL EDITOR</strong><button class="secondary closeEditor" id="closeEditor" type="button" title="Закрыть">×</button></div>
+  <div id="editorHeader"><div class="editor-heading"><strong>SCENE / MATERIAL EDITOR</strong><span id="editorAssetCount" class="editor-chip">0 ASSETS</span></div><button class="secondary closeEditor" id="closeEditor" type="button" title="Закрыть">×</button></div>
   <div id="editorStatus">Импортируйте GLB-модель, чтобы редактировать её материалы и параметры.</div>
   <input id="glbFileInput" type="file" accept=".glb,model/gltf-binary" multiple hidden/>
   <button id="importGlbButton" type="button">＋ IMPORT GLB MODEL</button>
-  <div class="editor-hint">Поддерживается GLB с текстурами внутри файла. Для первого импорта используйте экспорт GLB из Maya с включёнными текстурами.</div>
+  <div class="editor-hint">Загрузите самодостаточный GLB или перетащите файл в эту панель. Встроенные текстуры сохраняются при импорте.</div>
 
   <div class="editor-section">
     <h3>Объекты сцены</h3>
@@ -192,7 +273,7 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
   </div>
 
   <div class="editor-section">
-    <h3>Материал / PBR</h3>
+    <h3>Материал / PBR <span id="editorMaterialCount" class="editor-chip">0 SLOTS</span></h3>
     <label for="editorMaterialSelect">Mesh / Material Slot</label>
     <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
     <div class="editor-split">
@@ -278,4 +359,4 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v62.js"></script></body></html>
+<script type="module" src="./app.v63.js"></script></body></html>
