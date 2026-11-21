@@ -217,8 +217,37 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
       <label><input type="checkbox" id="editorDoubleSide"/> Double Sided</label>
       <label><input type="checkbox" id="editorWireframe"/> Wireframe</label>
     </div>
-    <div class="editor-hint">Изменения применяются сразу к выбранному материалу. Сами карты текстур остаются встроенными в GLB; tiling меняет RepeatWrapping для доступных карт.</div>
+    <div class="editor-hint">Изменения применяются сразу. Текстуры масштабируются единым параметром Texture Tiling.</div>
   </div>
+
+  <div class="editor-section">
+    <h3>Библиотека PBR-пресетов</h3>
+    <label for="editorPresetSelect">Профиль материала</label>
+    <select id="editorPresetSelect">
+      <option value="">Выберите профиль…</option>
+      <option value="snow_groomed">Snow · Groomed</option><option value="snow_fresh">Snow · Fresh</option>
+      <option value="pine_needles">Pine · Needles</option><option value="bark_wood">Wood · Bark</option>
+      <option value="concrete">Concrete</option><option value="asphalt">Asphalt</option>
+      <option value="painted_metal">Metal · Painted</option><option value="glass">Glass · Simple</option>
+    </select>
+    <button id="applyEditorPreset" class="secondary" type="button">ПРИМЕНИТЬ PBR-ПРЕСЕТ</button>
+    <div class="editor-hint">Пресет задаёт базовые цвет, roughness, metalness и прозрачность. Уже подключённые карты текстур сохраняются.</div>
+  </div>
+
+  <div class="editor-section">
+    <h3>Отдельные карты текстур</h3>
+    <label for="editorTextureType">Тип карты</label>
+    <select id="editorTextureType">
+      <option value="map">Base Color / Albedo</option><option value="normalMap">Normal</option>
+      <option value="roughnessMap">Roughness</option><option value="metalnessMap">Metalness</option>
+      <option value="aoMap">Ambient Occlusion</option><option value="emissiveMap">Emissive</option>
+    </select>
+    <input id="editorTextureFileInput" type="file" accept="image/*" hidden/>
+    <div class="editor-split"><button id="importEditorTexture" type="button">＋ IMPORT MAP</button><button id="clearEditorTexture" class="secondary" type="button">REMOVE MAP</button></div>
+    <div class="editor-hint">Выберите material slot, тип карты и изображение. Цветовые карты читаются в sRGB, технические карты — в линейном цветовом пространстве. Для AO автоматически создаётся UV2 из UV, если его нет.</div>
+  </div>
+  <input id="sceneConfigFileInput" type="file" accept=".json,application/json" hidden/>
+  <div class="editor-split"><button id="loadSceneConfig" class="secondary" type="button">ЗАГРУЗИТЬ CONFIG JSON</button><button id="exportSelectedGlb" type="button">EXPORT SELECTED GLB</button></div>
   <button id="saveSceneConfig" type="button">СОХРАНИТЬ НАСТРОЙКИ СЦЕНЫ · JSON</button>
 </div>
 
@@ -249,4 +278,4 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v61.js"></script></body></html>
+<script type="module" src="./app.v62.js"></script></body></html>
