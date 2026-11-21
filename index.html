@@ -314,6 +314,20 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneBar .sceneMode button{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto!important;min-width:0;min-height:34px;padding:8px 10px;font-size:10px;white-space:nowrap}
 #sceneBar .drone-mode-icon{font-size:17px;line-height:1}
 @media(max-width:700px){#sceneBar .sceneMode{width:calc(100vw - 24px);max-width:calc(100vw - 24px)}#sceneBar .sceneMode button{flex:1 1 auto;padding:8px 7px;font-size:9px}}
+
+/* v0.74 immersive terrain loading screen */
+#sceneLoading{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 65%,#263b4b 0%,#101a24 48%,#080d13 100%);color:#f2f7fb}
+#sceneLoading:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,13,19,.1),rgba(7,13,19,.35)),radial-gradient(ellipse at 50% 100%,rgba(138,194,228,.12),transparent 60%)}
+#sceneLoading .load-card{position:relative;width:min(460px,calc(100vw - 36px));padding:36px 30px 30px;text-align:center;border:1px solid rgba(220,240,255,.14);border-radius:22px;background:rgba(11,18,26,.48);backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,.32)}
+#sceneLoading .mountain-mark{height:74px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;opacity:.95}
+#sceneLoading .brand{font-size:11px;letter-spacing:.28em;font-weight:700;color:#8faec4;text-transform:uppercase}
+#sceneLoading .load-title{font-size:23px;font-weight:650;letter-spacing:.01em;margin:9px 0 7px}
+#sceneLoading .load-sub{font-size:13px;color:#a8bdcd;min-height:20px}
+#sceneLoading .load-track{height:3px;border-radius:8px;background:rgba(255,255,255,.1);margin:26px 3px 14px;overflow:hidden}
+#sceneLoading .load-track:after{content:"";display:block;height:100%;width:36%;border-radius:8px;background:linear-gradient(90deg,#76b9df,#d8f0ff);animation:sceneLoadSweep 1.55s ease-in-out infinite}
+#sceneLoading .load-foot{font-size:10px;letter-spacing:.16em;color:#7891a5;text-transform:uppercase}
+@keyframes sceneLoadSweep{0%{transform:translateX(-110%)}55%{transform:translateX(180%)}100%{transform:translateX(310%)}}
+@media(max-width:520px){#sceneLoading .load-card{padding:28px 22px}#sceneLoading .load-title{font-size:20px}}
 </style>
 </head>
 <body>
@@ -502,5 +516,6 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <button id="homeBtn" title="Домой">⌂</button>
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
+<div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
 <script type="module" src="./app.v72.js"></script></body></html>
