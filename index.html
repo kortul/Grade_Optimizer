@@ -316,7 +316,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @media(max-width:700px){#sceneBar .sceneMode{width:calc(100vw - 24px);max-width:calc(100vw - 24px)}#sceneBar .sceneMode button{flex:1 1 auto;padding:8px 7px;font-size:9px}}
 
 /* v0.74 immersive terrain loading screen */
-#sceneLoading{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 65%,#263b4b 0%,#101a24 48%,#080d13 100%);color:#f2f7fb}
+#sceneLoading{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 65%,#263b4b 0%,#101a24 48%,#080d13 100%);color:#f2f7fb}
 #sceneLoading:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,13,19,.1),rgba(7,13,19,.35)),radial-gradient(ellipse at 50% 100%,rgba(138,194,228,.12),transparent 60%)}
 #sceneLoading .load-card{position:relative;width:min(460px,calc(100vw - 36px));padding:36px 30px 30px;text-align:center;border:1px solid rgba(220,240,255,.14);border-radius:22px;background:rgba(11,18,26,.48);backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,.32)}
 #sceneLoading .mountain-mark{height:74px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;opacity:.95}
@@ -328,6 +328,32 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneLoading .load-foot{font-size:10px;letter-spacing:.16em;color:#7891a5;text-transform:uppercase}
 @keyframes sceneLoadSweep{0%{transform:translateX(-110%)}55%{transform:translateX(180%)}100%{transform:translateX(310%)}}
 @media(max-width:520px){#sceneLoading .load-card{padding:28px 22px}#sceneLoading .load-title{font-size:20px}}
+
+/* v0.74 — compact mode switch, immediate branded loading and clearer drone HUD */
+#sceneBar .mode-pair{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid rgba(169,207,235,.18);border-radius:10px;background:rgba(8,15,22,.5)}
+#sceneBar .mode-pair button{min-width:92px;border-radius:7px}
+#sceneBar .mode-pair button#skierMode.active{background:linear-gradient(135deg,#269b68,#37b980);box-shadow:0 3px 12px rgba(31,170,109,.2)}
+#sceneBar .mode-pair button#droneModeButton.active{background:linear-gradient(135deg,#347ab6,#5aa1dc);box-shadow:0 3px 12px rgba(65,140,220,.22)}
+#sceneBar .mode-pair button:not(.active){background:rgba(54,66,80,.62);color:#b9cad8}
+.drone-hud-controls{margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;line-height:1.65;color:#aebdcb}
+#sceneLoading{background:radial-gradient(ellipse at 50% 70%,#314b5d 0%,#182a38 38%,#09121c 100%);isolation:isolate}
+#sceneLoading:before{background:linear-gradient(180deg,rgba(7,13,19,.08),rgba(7,13,19,.28)),radial-gradient(ellipse at 50% 100%,rgba(151,207,238,.2),transparent 62%);animation:loadAmbient 6s ease-in-out infinite alternate}
+#sceneLoading:after{content:"";position:absolute;inset:-10%;z-index:-1;opacity:.38;background-image:radial-gradient(2px 2px at 10% 18%,rgba(237,249,255,.8) 45%,transparent 55%),radial-gradient(1px 1px at 78% 24%,rgba(237,249,255,.75) 45%,transparent 55%),radial-gradient(1.5px 1.5px at 34% 72%,rgba(237,249,255,.8) 45%,transparent 55%),radial-gradient(1px 1px at 91% 78%,rgba(237,249,255,.7) 45%,transparent 55%);background-size:320px 260px;animation:loadSnowDrift 18s linear infinite}
+#sceneLoading .load-card{overflow:hidden;border-color:rgba(207,234,250,.2);background:linear-gradient(145deg,rgba(18,34,47,.78),rgba(7,16,25,.76));box-shadow:0 30px 100px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.06)}
+#sceneLoading .load-card:before{content:"";position:absolute;left:15%;right:15%;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(193,231,251,.8),transparent)}
+#sceneLoading .mountain-mark{filter:drop-shadow(0 8px 20px rgba(143,199,231,.22));animation:loadMountainFloat 4.5s ease-in-out infinite}
+#sceneLoading .mountain-mark svg{overflow:visible}
+#sceneLoading .brand{color:#a8cbe0}
+#sceneLoading .load-title{font-size:25px;letter-spacing:.015em;text-shadow:0 3px 22px rgba(158,211,239,.18)}
+#sceneLoading .load-sub{color:#c1d3df}
+#sceneLoading .load-track{height:4px;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+#sceneLoading .load-track:after{width:30%;background:linear-gradient(90deg,#72b9e2,#e6f7ff,#72b9e2);box-shadow:0 0 16px rgba(139,207,241,.55);animation:sceneLoadSweep 1.8s cubic-bezier(.45,0,.55,1) infinite}
+#sceneLoading .load-foot{color:#9bb8ca}
+@keyframes loadAmbient{from{opacity:.72;transform:scale(1)}to{opacity:1;transform:scale(1.06)}}
+@keyframes loadSnowDrift{from{transform:translate3d(0,-1%,0)}to{transform:translate3d(-2%,3%,0)}}
+@keyframes loadMountainFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@media(max-width:620px){#sceneBar .mode-pair{grid-column:span 2;justify-content:center}#sceneBar .mode-pair button{min-width:0}}
+
 </style>
 </head>
 <body>
@@ -369,8 +395,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <div class="sceneMode">
     <button id="optimizerToggle" type="button" aria-expanded="false">ОПТИМИЗАЦИЯ СКЛОНОВ</button>
     <button id="overviewMode" class="active" type="button">ОБЗОР</button>
+    <div class="mode-pair" role="group" aria-label="Переключение лыжник / дрон">
     <button id="skierMode" type="button" aria-label="Режим лыжника" title="Режим лыжника"><span class="mode-switch-icon" aria-hidden="true">⛷</span> ЛЫЖНИК</button>
     <button id="droneModeButton" type="button" aria-label="Режим дрона" title="Режим дрона"><span class="drone-mode-icon" aria-hidden="true">✥</span> ДРОН</button>
+  </div>
     <button id="editorToggle" type="button" aria-expanded="false">SCENE EDITOR</button>
   </div>
   <div class="dayCycle" id="dayCycle">
@@ -504,6 +532,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <div class="drone-hud-metrics"><span>СКОРОСТЬ</span><strong><span id="droneSpeedValue">0</span> км/ч</strong></div>
   <div class="hudControls">W / S — вперёд / назад · A / D — в стороны<br>Пробел — вверх · Shift — вниз · Ctrl — ускорение<br>Мышь — направление камеры · Q — в обзор</div>
   <div id="droneLockHint">Кликни по сцене, чтобы захватить мышь</div>
+  <div class="drone-hud-controls">W / S — вперёд и назад · A / D — в стороны<br/>SPACE / SHIFT — высота · CTRL — ускорение<br/>TAB — переключить лыжник / дрон · Q — обзор</div>
   <button id="exitDrone" class="secondary" type="button">ВЕРНУТЬСЯ В ОБЗОР · Q</button>
 </div>
 <div id="legend">
@@ -518,4 +547,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v72.js"></script></body></html>
+<script type="module" src="./app.v74.js"></script></body></html>
