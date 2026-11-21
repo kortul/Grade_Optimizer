@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "scene": {
+    "id": "resort",
+    "name": "Resort Scene",
+    "units": "meters",
+    "coordinateSystem": {
+      "upAxis": "Y",
+      "forwardAxis": "-Z",
+      "handedness": "right"
+    },
+    "defaultPhase": "stage_1"
+  },
+  "assets": [],
+  "forestMasks": [],
+  "materialProfiles": []
+}
