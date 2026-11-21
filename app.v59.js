@@ -81,13 +81,13 @@ const skyDome = new THREE.Mesh(
   new THREE.SphereGeometry(12000, 32, 18),
   new THREE.ShaderMaterial({
     uniforms: skyUniforms,
-    vertexShader: \`varying vec3 vWorldDirection;
+    vertexShader: `varying vec3 vWorldDirection;
       void main(){
         vec4 worldPosition = modelMatrix * vec4(position, 1.0);
         vWorldDirection = normalize(worldPosition.xyz - cameraPosition);
         gl_Position = projectionMatrix * viewMatrix * worldPosition;
-      }\`,
-    fragmentShader: \`uniform vec3 topColor; uniform vec3 horizonColor; uniform vec3 bottomColor;
+      }`,
+    fragmentShader: `uniform vec3 topColor; uniform vec3 horizonColor; uniform vec3 bottomColor;
       uniform vec3 sunDirection; uniform vec3 sunColor; uniform float sunStrength;
       varying vec3 vWorldDirection;
       void main(){
@@ -99,7 +99,7 @@ const skyDome = new THREE.Mesh(
         sky += sunColor * pow(sunDot, 380.0) * sunStrength * 2.4;
         sky += sunColor * pow(sunDot, 15.0) * sunStrength * 0.15;
         gl_FragColor = vec4(sky, 1.0);
-      }\`,
+      }`,
     side: THREE.BackSide,
     depthWrite: false,
     depthTest: false,
