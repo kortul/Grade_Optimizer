@@ -1460,6 +1460,7 @@ async function loadSlopeList(){
 }
 
 const loadingEl=document.getElementById('loading');
+const sceneLoadingEl=document.getElementById('sceneLoading');
 async function loadOptimizerData(id){
     const cv=await loadJSON('./assets/'+id+'.curves.json'+bust());
     state.curves=cv;
@@ -1512,6 +1513,7 @@ async function loadSlope(id){
   clearMeasure();
   assetToken=Date.now();
   document.getElementById('stats').textContent='Загрузка рельефа…';
+  sceneLoadingEl.style.display='flex';
   try{
     const gltf=await loadGLTF('./assets/'+id+'.gltf'+bust());
     const root=gltf.scene;scene.add(root);state.root=root;
@@ -1564,8 +1566,11 @@ async function loadSlope(id){
     document.getElementById('stats').textContent='Ошибка загрузки склона "'+id+'": '+msg;
     dbg('ОШИБКА: '+msg);
     console.error(err);
-  }finally{}
+  }finally{
+    sceneLoadingEl.style.display='none';
+  }
 }
+
 
 const map=[['pAng','ang','vAng',v=>v+'°'],['pProf','prof','vProf',v=>v],['pCut','cut','vCut',v=>v.toFixed(1)],['pOff','off','vOff',v=>v],['pCross','cross','vCross',v=>v],['pUsable','usable','vUsable',v=>v],['pEarth','earthwork_w','vEarth',v=>v],['pMaxFill','max_fill','vMaxFill',v=>v],['pOffR','off_range','vOffR',v=>v],['pCrossMax','cross_max','vCrossMax',v=>v]];
 let timer=null;
