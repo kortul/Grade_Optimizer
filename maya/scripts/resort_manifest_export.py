@@ -22,7 +22,7 @@ def _slug(value):
 def _add_string(node,name,value):
     if not cmds.attributeQuery(name,node=node,exists=True):
         cmds.addAttr(node,longName=name,dataType="string")
-    cmds.setAttr(node+"."+name,str(value),type="string")
+        cmds.setAttr(node+"."+name,str(value),type="string")
 
 def _add_bool(node,name,value):
     if not cmds.attributeQuery(name,node=node,exists=True):
@@ -48,9 +48,20 @@ def _selected_transforms():
 
 def add_metadata_to_selection():
     _maya()
-    nodes=_selected_transforms()
-    if not nodes:
+    roots=_selected_transforms()
+    if not roots:
         cmds.warning("Select one or more Maya transforms first.")
+        return
+    candidates=set(roots)
+    for root in roots:
+        candidates.update(cmds.listRelatives(root,allDescendents=True,type="transform",fullPath=True) or [])
+    nodes=[]
+    for node in sorted(candidates):
+        shapes=cmds.listRelatives(node,shapes=True,noIntermediate=True,fullPath=True) or []
+        if any(cmds.nodeType(shape) in ("mesh","nurbsSurface") for shape in shapes):
+            nodes.append(node)
+    if not nodes:
+        cmds.warning("The selected group contains no mesh/NURBS transforms.")
         return
     for node in nodes:
         _add_string(node,"web_id",_slug(node))
