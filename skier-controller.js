@@ -32,13 +32,19 @@ export class SkierController {
     this.slopeDeg = 0;
     this.lastGroundNormal = new THREE.Vector3(0, 1, 0);
 
+    const physicalKeys = {
+      KeyW:'w', KeyA:'a', KeyS:'s', KeyD:'d',
+      ArrowUp:'arrowup', ArrowDown:'arrowdown',
+      ArrowLeft:'arrowleft', ArrowRight:'arrowright', Space:' '
+    };
+    const readKey = (e) => physicalKeys[e.code] || (e.key||'').toLowerCase();
     this._onKeyDown = (e) => {
       if (!this.active) return;
-      const key = e.key.toLowerCase();
+      const key = readKey(e);
       if (['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].includes(key)) e.preventDefault();
       this.keys.add(key);
     };
-    this._onKeyUp = (e) => this.keys.delete(e.key.toLowerCase());
+    this._onKeyUp = (e) => this.keys.delete(readKey(e));
     this._onMouseMove = (e) => {
       if (!this.active || document.pointerLockElement !== this.domElement) return;
       this.lookYaw = THREE.MathUtils.clamp(this.lookYaw - e.movementX * 0.0018, -1.35, 1.35);
@@ -204,17 +210,19 @@ export class SkierController {
     const brake = this.keys.has('s') || this.keys.has('arrowdown') || this.keys.has(' ');
     const steer = (right ? 1 : 0) - (left ? 1 : 0);
 
-    const speed = Math.hypot(this.velocity.x,this.velocity.z);
-    const turnRate = 0.72 + Math.min(speed/24,0.65);
-    this.headingYaw -= steer * turnRate * dt;
-    this.forward.set(-Math.sin(this.headingYaw),0,-Math.cos(this.headingYaw)).normalize();
-    this.right.set(-this.forward.z,0,this.forward.x).normalize();
-
     const downhill = this._downhill(this.lastGroundNormal);
     this.velocity.addScaledVector(downhill,dt);
-    const lateral = this.velocity.dot(this.right);
-    this.velocity.addScaledVector(this.right,-lateral*Math.min(1,4.2*dt));
-    this.velocity.multiplyScalar(Math.exp(-(tuck?0.075:0.36)*dt));
+    const speedBeforeTurn = Math.hypot(this.velocity.x,this.velocity.z);
+    if(steer !== 0 && speedBeforeTurn > 0.35) {
+      // Rotate the velocity vector itself; changing the camera heading alone does not carve.
+      const turnRate = 0.62 + Math.min(speedBeforeTurn/28,0.82);
+      this.velocity.applyAxisAngle(new THREE.Vector3(0,1,0),-steer*turnRate*dt);
+    }
+    const speedAfterTurn = Math.hypot(this.velocity.x,this.velocity.z);
+    if(speedAfterTurn > 0.25) {
+      this.headingYaw = Math.atan2(-this.velocity.x,-this.velocity.z);
+    }
+    this.velocity.multiplyScalar(Math.exp(-(tuck?0.075:0.36)*dt + (steer?0.08:0)));
     if (brake) this.velocity.multiplyScalar(Math.exp(-3.8*dt));
     const currentSpeed = Math.hypot(this.velocity.x,this.velocity.z);
     if (currentSpeed > this.speedLimit) this.velocity.multiplyScalar(this.speedLimit/currentSpeed);

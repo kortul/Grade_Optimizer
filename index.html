@@ -6,7 +6,7 @@
 <title>Grade Optimizer · Resort Viewer</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#141418;color:#eee}
-#app{display:flex;height:100vh;min-width:0}#panel{width:380px;padding:16px;background:#1c1c22;overflow-y:auto;flex-shrink:0}#view{flex:1;position:relative}
+#app{display:flex;height:100vh;min-width:0}#panel{display:none;width:380px;padding:16px;background:#1c1c22;overflow-y:auto;flex-shrink:0}#app.optimizer-open #panel{display:block}#view{flex:1;position:relative}
 #app{width:100%;min-width:0}
 #view{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden}
 #view canvas{display:block}
@@ -34,6 +34,8 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 #sceneBar .sceneMode,#sceneBar .dayCycle{display:flex;align-items:center;gap:7px;padding:6px;background:rgba(20,24,32,.84);border:1px solid rgba(255,255,255,.15);border-radius:10px;backdrop-filter:blur(12px);pointer-events:auto}
 #sceneBar button{width:auto;margin:0;padding:8px 12px;border-radius:7px;font-size:11px;letter-spacing:.5px;background:#343b47;color:#dce6f2}
 #sceneBar button.active{background:#2ea36a;color:#fff}
+#optimizerToggle{background:#4a5666}
+#app.optimizer-open #optimizerToggle{background:#2ea36a}
 #sceneBar .dayCycle{gap:10px;color:#dce6f2;font-size:11px}
 #sceneBar .timeValue{min-width:42px;font-variant-numeric:tabular-nums;font-weight:700;color:#fff}
 #sceneBar input[type=range]{width:clamp(90px,14vw,190px);margin:0;accent-color:#e5b761}
@@ -49,6 +51,7 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 #skierHud #skierLockHint{color:#f3cf79;margin-top:5px}
 #skierHud button{margin-top:10px;padding:9px;background:#3b4655;font-size:12px}
 #app.skier-mode #panel{display:none}
+#app.optimizer-open:not(.skier-mode) #panel{display:block}
 #app.skier-mode #legend,#app.skier-mode #homeBtn,#app.skier-mode #measureBtn{display:none}
 #app.skier-mode #skierHud{display:block}
 @media(max-width:800px){#sceneBar{left:12px;top:10px;right:12px;flex-wrap:wrap}#sceneBar .dayCycle{margin-left:auto}#sceneBar input[type=range]{width:90px}#legend{top:112px}#app.skier-mode #sceneBar{left:12px;right:12px}}
@@ -95,6 +98,7 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <div id="view">
 <div id="sceneBar">
   <div class="sceneMode">
+    <button id="optimizerToggle" type="button" aria-expanded="false">ОПТИМИЗАЦИЯ СКЛОНОВ</button>
     <button id="overviewMode" class="active" type="button">OVERVIEW</button>
     <button id="skierMode" type="button">SKIER · FPS</button>
   </div>
@@ -116,7 +120,7 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 </div>
 <div id="legend">
 <div><span class="sw" style="background:#598cd9"></span>Насыпь</div><div><span class="sw" style="background:#d17a5c"></span>Выемка</div>
-<div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div><div><span class="sw" style="background:#2f4a2f"></span>Оригинальная почва</div>
+<div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div><div><span class="sw" style="background:#eaf0f5"></span>Снежный рельеф</div>
 <div class="ctl"><input type="checkbox" id="pLightOn" checked/> <span>Солнце</span><input type="range" id="pLight" min="0" max="3" step="0.1" value="3" style="width:70px"/></div>
 <div class="ctl"><span>Поворот</span><input type="range" id="pSunRot" min="0" max="360" step="5" value="0" style="width:80px"/></div>
 <div class="ctl"><span>Тени</span><input type="range" id="pShadow" min="0" max="3" step="1" value="2" style="width:80px"/></div>

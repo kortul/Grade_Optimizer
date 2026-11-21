@@ -18,7 +18,7 @@ usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3, labelOpacity:
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
   designGroup:null, labelsGroup:null, terrainLabelsGroup:null,
-  homePos:null, homeTarget:null, mode:'overview', dayTime:13, autoTime:false,
+  homePos:null, homeTarget:null, mode:'overview', dayTime:13, autoTime:false, optimizeMode:false,
   forestGroup:null, billboardMesh:null, billboardTrees:[]
 };
 
@@ -346,14 +346,14 @@ function makePineTextures() {
   ctx.fillStyle=trunk;
   ctx.beginPath(); ctx.moveTo(119,490); ctx.lineTo(121,275); ctx.lineTo(136,275); ctx.lineTo(140,490); ctx.closePath(); ctx.fill();
 
-  const greens=['#18372f','#21453a','#294f40','#1b3b34','#315346'];
+  const greens=['#477d58','#538b63','#60996d','#3e724f','#6b9d70'];
   for (let layer=0;layer<5;layer++) {
     const top=24+layer*63;
     const base=105+layer*58;
     const half=31+layer*18;
     const grad=ctx.createLinearGradient(0,top,0,base);
     grad.addColorStop(0,greens[layer]);
-    grad.addColorStop(1,layer%2?'#102b27':'#16342d');
+    grad.addColorStop(1,layer%2?'#315b40':'#356448');
     ctx.fillStyle=grad;
     ctx.beginPath();
     ctx.moveTo(cx,top);
@@ -370,7 +370,7 @@ function makePineTextures() {
     ctx.lineTo(cx+half*0.55,top+27);
     ctx.closePath(); ctx.fill();
 
-    ctx.strokeStyle='rgba(192,218,222,0.30)';
+    ctx.strokeStyle='rgba(218,238,229,0.42)';
     ctx.lineWidth=3.2;
     ctx.lineCap='round';
     ctx.beginPath();
@@ -419,9 +419,10 @@ function makePineTextures() {
   normalMap.minFilter=THREE.LinearMipmapLinearFilter;
   normalMap.magFilter=THREE.LinearFilter;
   treeBillboardMaterial=new THREE.MeshStandardMaterial({
-    map, normalMap, normalScale:new THREE.Vector2(0.45,0.45),
-    color:0xffffff, roughness:1, metalness:0,
-    side:THREE.DoubleSide, alphaTest:0.12, transparent:false
+    map, normalMap, normalScale:new THREE.Vector2(0.32,0.32),
+    color:0xffffff, emissive:0x243a2a, emissiveIntensity:0.48,
+    roughness:1, metalness:0, side:THREE.DoubleSide,
+    alphaTest:0.12, transparent:false
   });
   return treeBillboardMaterial;
 }
@@ -458,33 +459,22 @@ function buildTestForest() {
   let seed=0x51A1;
   const rnd=()=>{ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
   const trees=[];
-  const xStart=bounds.min.x+spanX*0.08;
-  const xEnd=bounds.max.x-spanX*0.08;
+  const xMin=bounds.min.x+spanX*0.025, xMax=bounds.max.x-spanX*0.025;
+  const zMin=bounds.min.z+spanZ*0.025, zMax=bounds.max.z-spanZ*0.025;
 
-  // Two loose forest belts frame the current test piste, leaving the fall line clear.
-  for(let i=0;i<42;i++) {
-    const t=(i+rnd()*0.55)/42;
-    const x=THREE.MathUtils.lerp(xStart,xEnd,t)+(rnd()-0.5)*12;
-    for(const side of [-1,1]) {
-      const offset=side<0 ? 22+rnd()*72 : 22+rnd()*88;
-      const z=laneZ+side*offset;
-      const y=terrainY(x,z);
-      if(y===null) continue;
-      const height=5.2+rnd()*4.0;
-      trees.push({x,y,z,height,width:height*(0.43+rnd()*0.12),side});
-    }
-  }
-
-  // Fallback sampling if a future test mesh has a different outline.
-  if(trees.length<24) {
-    for(let i=0;i<120 && trees.length<52;i++) {
-      const x=THREE.MathUtils.lerp(xStart,xEnd,rnd());
-      const z=THREE.MathUtils.lerp(bounds.min.z+spanZ*0.06,bounds.max.z-spanZ*0.06,rnd());
-      const y=terrainY(x,z);
-      if(y===null || trees.some(t=>Math.hypot(t.x-x,t.z-z)<13)) continue;
-      const height=5.0+rnd()*3.8;
-      trees.push({x,y,z,height,width:height*0.48,side:Math.sign(z-laneZ)});
-    }
+  // Populate the full terrain extent while preserving a clear fall-line corridor.
+  const desiredCount=380;
+  const minSpacing=11.5;
+  for(let attempt=0;attempt<5200 && trees.length<desiredCount;attempt++) {
+    const x=THREE.MathUtils.lerp(xMin,xMax,rnd());
+    const z=THREE.MathUtils.lerp(zMin,zMax,rnd());
+    const corridor=27+rnd()*8;
+    if(Math.abs(z-laneZ)<corridor) continue;
+    if(trees.some(t=>Math.hypot(t.x-x,t.z-z)<minSpacing)) continue;
+    const y=terrainY(x,z);
+    if(y===null) continue;
+    const height=6.0+rnd()*5.6;
+    trees.push({x,y,z,height,width:height*(0.44+rnd()*0.10)});
   }
 
   if(!trees.length) return;
@@ -493,40 +483,38 @@ function buildTestForest() {
   state.forestGroup=forest;
   scene.add(forest);
 
-  // Small close trees retain simple 3D volume; the rest use normal-mapped camera-facing cards.
-  const closeTrees=trees.filter((t,i)=>Math.abs(t.z-laneZ)<49 && i%3===0).slice(0,18);
+  // A small near-field set uses simple instanced 3D firs.
+  const closeTrees=trees.filter((t,i)=>Math.abs(t.z-laneZ)<105 && i%4===0).slice(0,42);
   if(closeTrees.length) {
     const trunkGeo=new THREE.CylinderGeometry(0.08,0.13,1,5);
     const coneGeo=new THREE.ConeGeometry(1,2,6,1);
-    const trunkMat=new THREE.MeshStandardMaterial({color:0x6d5846,roughness:1});
-    const foliageMat=new THREE.MeshStandardMaterial({color:0x24473d,roughness:1});
+    const trunkMat=new THREE.MeshStandardMaterial({color:0x8b7055,roughness:1});
+    const foliageMat=new THREE.MeshStandardMaterial({
+      color:0x4d875c, emissive:0x173522, emissiveIntensity:0.35, roughness:0.96
+    });
     const trunkMesh=new THREE.InstancedMesh(trunkGeo,trunkMat,closeTrees.length);
     const lowerMesh=new THREE.InstancedMesh(coneGeo,foliageMat,closeTrees.length);
     const middleMesh=new THREE.InstancedMesh(coneGeo,foliageMat,closeTrees.length);
     const topMesh=new THREE.InstancedMesh(coneGeo,foliageMat,closeTrees.length);
     const dummy=new THREE.Object3D();
     closeTrees.forEach((t,i)=>{
-      const h=t.height*1.04, yaw=rnd()*Math.PI*2;
-      dummy.rotation.set(0,yaw,0);
+      const h=t.height*1.04;
+      dummy.rotation.set(0,rnd()*Math.PI*2,0);
       dummy.position.set(t.x,t.y+h*0.15,t.z);
       dummy.scale.set(0.82,h*0.19,0.82);
       dummy.updateMatrix(); trunkMesh.setMatrixAt(i,dummy.matrix);
 
-      const tiers=[
-        [0.46,0.40,0.43],
-        [0.68,0.33,0.34],
-        [0.86,0.23,0.26]
-      ];
+      const tiers=[[0.46,0.40,0.43],[0.68,0.33,0.34],[0.86,0.23,0.26]];
       for(const [index,mesh] of [lowerMesh,middleMesh,topMesh].entries()) {
         const tier=tiers[index];
         dummy.position.set(t.x,t.y+h*tier[0],t.z);
         dummy.scale.set(h*tier[1],h*tier[2],h*tier[1]);
         dummy.updateMatrix(); mesh.setMatrixAt(i,dummy.matrix);
       }
-      const tint=new THREE.Color().setHSL(0.39+rnd()*0.025,0.28+rnd()*0.12,0.20+rnd()*0.08);
+      const tint=new THREE.Color().setHSL(0.36+rnd()*0.035,0.28+rnd()*0.10,0.43+rnd()*0.09);
       lowerMesh.setColorAt(i,tint);
-      middleMesh.setColorAt(i,tint.clone().offsetHSL(0,0,0.025));
-      topMesh.setColorAt(i,tint.clone().offsetHSL(0,0,0.05));
+      middleMesh.setColorAt(i,tint.clone().offsetHSL(0,0,0.035));
+      topMesh.setColorAt(i,tint.clone().offsetHSL(0,0,0.07));
     });
     [trunkMesh,lowerMesh,middleMesh,topMesh].forEach(m=>{
       m.castShadow=false; m.receiveShadow=true; m.frustumCulled=false; forest.add(m);
@@ -541,25 +529,20 @@ function buildTestForest() {
     mesh.name='Pine_Billboard_Impostors';
     mesh.frustumCulled=false;
     mesh.castShadow=false;
-    mesh.receiveShadow=true;
+    mesh.receiveShadow=false;
     const dummy=new THREE.Object3D();
     billboardTrees.forEach((t,i)=>{
-      // Store foot position; the quad is centered at half tree height.
-      const yaw=rnd()*Math.PI*2;
       dummy.position.set(t.x,t.y+t.height*0.5,t.z);
-      dummy.rotation.set(0,yaw,0);
+      dummy.rotation.set(0,rnd()*Math.PI*2,0);
       dummy.scale.set(t.width,t.height,1);
       dummy.updateMatrix();
       mesh.setMatrixAt(i,dummy.matrix);
-      const tint=new THREE.Color().setHSL(0.36+rnd()*0.04,0.24+rnd()*0.12,0.27+rnd()*0.10);
-      mesh.setColorAt(i,tint);
-      billboardTrees[i]={x:t.x,y:t.y,z:t.z,height:t.height,width:t.width};
+      // Keep billboard albedo untinted: setColorAt here multiplied an already dark map.
     });
     mesh.instanceMatrix.needsUpdate=true;
-    if(mesh.instanceColor) mesh.instanceColor.needsUpdate=true;
     forest.add(mesh);
     state.billboardMesh=mesh;
-    state.billboardTrees=billboardTrees.map((t,i)=>({x:t.x,y:t.y,z:t.z,height:t.height,width:t.width}));
+    state.billboardTrees=billboardTrees.map(t=>({x:t.x,y:t.y,z:t.z,height:t.height,width:t.width}));
   }
   dbg('Лес тестового склона: '+trees.length+' деревьев · 3D '+closeTrees.length+' · billboard '+billboardTrees.length);
 }
@@ -1378,6 +1361,28 @@ async function loadSlopeList(){
 }
 
 const loadingEl=document.getElementById('loading');
+async function loadOptimizerData(id){
+    const cv=await loadJSON('./assets/'+id+'.curves.json'+bust());
+    state.curves=cv;
+    dbg('Кривые загружены: centre '+(cv.centre||[]).length+', left '+(cv.left||[]).length+', right '+(cv.right||[]).length);
+    const mayaEl=document.getElementById('mayaLabels');
+    mayaEl.textContent='Загрузка подписей Maya…';
+    let mayaLoaded=false;
+    try{
+      const m=await loadJSON('./assets/'+id+'_labels.json'+bust());
+      const rows=(m&&Array.isArray(m.labels))?m.labels:[];
+      if(rows.length){
+        mayaEl.textContent=rows.map(r=>{
+          const s=(r.slope_deg===null||r.slope_deg===undefined)?'—':Number(r.slope_deg).toFixed(1);
+          return 'Ст. '+r.station+': уклон '+s+'° | H: '+Number(r.h_center).toFixed(1)+' / '+Number(r.h_left).toFixed(1)+' / '+Number(r.h_right).toFixed(1)+' м';
+        }).join('\n');
+        mayaLoaded=true;
+        dbg('Подписи Maya загружены: '+rows.length+' станций');
+      }
+    }catch(e){}
+    if(!mayaLoaded){mayaEl.textContent='Нет данных — файл '+id+'_labels.json не найден в assets/ (сначала ЗАПУСК в Maya).';}
+}
+
 async function loadSlope(id){
   clearTestForest();
   if(state.root){scene.remove(state.root);state.root=null;}
@@ -1407,25 +1412,13 @@ async function loadSlope(id){
     root.updateMatrixWorld(true);
     buildTestForest();
     dbg('Terrain загружен.');
-    const cv=await loadJSON('./assets/'+id+'.curves.json'+bust());
-    state.curves=cv;
-    dbg('Кривые загружены: centre '+(cv.centre||[]).length+', left '+(cv.left||[]).length+', right '+(cv.right||[]).length);
-    const mayaEl=document.getElementById('mayaLabels');
-    mayaEl.textContent='Загрузка подписей Maya…';
-    let mayaLoaded=false;
-    try{
-      const m=await loadJSON('./assets/'+id+'_labels.json'+bust());
-      const rows=(m&&Array.isArray(m.labels))?m.labels:[];
-      if(rows.length){
-        mayaEl.textContent=rows.map(r=>{
-          const s=(r.slope_deg===null||r.slope_deg===undefined)?'—':Number(r.slope_deg).toFixed(1);
-          return 'Ст. '+r.station+': уклон '+s+'° | H: '+Number(r.h_center).toFixed(1)+' / '+Number(r.h_left).toFixed(1)+' / '+Number(r.h_right).toFixed(1)+' м';
-        }).join('\n');
-        mayaLoaded=true;
-        dbg('Подписи Maya загружены: '+rows.length+' станций');
-      }
-    }catch(e){}
-    if(!mayaLoaded){mayaEl.textContent='Нет данных — файл '+id+'_labels.json не найден в assets/ (сначала ЗАПУСК в Maya).';}
+    if(state.optimizeMode){
+      await loadOptimizerData(id);
+    }else{
+      state.curves=null;
+      document.getElementById('stats').textContent='Презентационный режим. Откройте «Оптимизация», чтобы загрузить инструменты выравнивания.';
+      document.getElementById('mayaLabels').textContent='Инструменты оптимизации не загружены.';
+    }
     const box=new THREE.Box3().setFromObject(root);
     const ctr=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3()).length();
     lightingCenter.copy(ctr); updateDaylight(state.dayTime);
@@ -1433,13 +1426,16 @@ async function loadSlope(id){
     controls.target.copy(ctr);controls.update();
     state.homePos=camera.position.clone();
     state.homeTarget=controls.target.clone();
-    await new Promise(r=>setTimeout(r,50));
-    try{
-      rebuild();
-    }catch(e){
-      dbg('ОШИБКА РАСЧЁТА: '+(e&&e.message?e.message:String(e)));
-      console.error(e);
-      document.getElementById('stats').textContent='Ошибка расчёта: '+(e&&e.message?e.message:String(e));
+    if(state.optimizeMode){
+      await new Promise(r=>setTimeout(r,50));
+      try{ rebuild(); }
+      catch(e){
+        dbg('ОШИБКА РАСЧЁТА: '+(e&&e.message?e.message:String(e)));
+        console.error(e);
+        document.getElementById('stats').textContent='Ошибка расчёта: '+(e&&e.message?e.message:String(e));
+      }
+    }else{
+      document.getElementById('stats').textContent='Рельеф загружен. Режим презентации готов.';
     }
   }catch(err){
     const msg=err&&(err.message||err.description)?(err.message||err.description):String(err);
@@ -1554,7 +1550,27 @@ document.getElementById('reset').addEventListener('click',()=>{
 
 
 const appRoot = document.getElementById('app');
+const optimizerToggleButton = document.getElementById('optimizerToggle');
 const overviewModeButton = document.getElementById('overviewMode');
+async function setOptimizerOpen(open) {
+  state.optimizeMode = open;
+  appRoot.classList.toggle('optimizer-open',open);
+  optimizerToggleButton.classList.toggle('active',open);
+  optimizerToggleButton.textContent = open ? 'ЗАКРЫТЬ ОПТИМИЗАЦИЮ' : 'ОПТИМИЗАЦИЯ СКЛОНОВ';
+  if(!open || !state.terrain || state.curves) return;
+  loadingEl.style.display='flex';
+  try {
+    await loadOptimizerData(state.slope);
+    await new Promise(resolve=>setTimeout(resolve,40));
+    rebuild();
+  } catch(e) {
+    dbg('ОШИБКА ЗАГРУЗКИ ИНСТРУМЕНТОВ: '+(e?.message||String(e)));
+    document.getElementById('stats').textContent='Ошибка загрузки инструментов: '+(e?.message||String(e));
+  } finally {
+    loadingEl.style.display='none';
+  }
+}
+optimizerToggleButton.addEventListener('click',()=>setOptimizerOpen(!state.optimizeMode));
 const skierModeButton = document.getElementById('skierMode');
 const speedValueEl = document.getElementById('speedValue');
 const slopeValueEl = document.getElementById('slopeValue');
@@ -1638,9 +1654,14 @@ function setSceneMode(mode) {
 overviewModeButton.addEventListener('click', () => setSceneMode('overview'));
 skierModeButton.addEventListener('click', () => setSceneMode('skier'));
 document.getElementById('exitSkier').addEventListener('click', () => setSceneMode('overview'));
-window.addEventListener('keydown', e => {
-  if (e.key.toLowerCase() === 'q' && state.mode === 'skier') setSceneMode('overview');
-});
+document.addEventListener('keydown', e => {
+  if(state.mode !== 'skier') return;
+  if(e.code === 'KeyQ' || (e.key||'').toLowerCase() === 'q') {
+    e.preventDefault();
+    e.stopPropagation();
+    setSceneMode('overview');
+  }
+}, true);
 
 loadSlopeList().then(first=>loadSlope(first));
 let previousFrameTime = performance.now();
