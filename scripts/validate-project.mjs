@@ -71,7 +71,7 @@ for (const id of slopeIds) {
     assert.ok(Array.isArray(curves[key]) && curves[key].length > 1, id + ' curve missing or empty: ' + key);
   }
   for (const buffer of gltf.buffers || []) {
-    assert.ok(buffer.uri && !/^(?:https?:|data:|\\/|\\.\\.)/i.test(buffer.uri), id + ' has a non-local or unsafe glTF buffer URI');
+    assert.ok(buffer.uri && !/^(?:https?:|data:|\/|\.\.)/i.test(buffer.uri), id + ' has a non-local or unsafe glTF buffer URI');
     const bufferPath = resolve(root, 'assets', buffer.uri);
     assert.ok(existsSync(bufferPath), id + ' glTF buffer is missing: ' + buffer.uri);
     const bytes = readFileSync(bufferPath);
