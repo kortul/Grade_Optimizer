@@ -19,7 +19,8 @@ const duplicateIds = ids.filter((id, i) => ids.indexOf(id) !== i);
 assert.deepEqual([...new Set(duplicateIds)], [], 'duplicate HTML ids: ' + [...new Set(duplicateIds)].join(', '));
 pass('HTML ids are unique (' + ids.length + ')');
 
-const staticDomRefs = [...read('app.v77.js').toString('utf8').matchAll(/getElementById\\(['"]([^'"]+)['"]\\)/g)].map(m => m[1]);
+const staticDomRefs = [...read('app.v77.js').toString('utf8').matchAll(/getElementById\(['"]([^'"]+)['"]\)/g)].map(m => m[1]);
+assert.ok(staticDomRefs.length > 0, 'expected to find static DOM lookups in the app');
 const missingDomRefs = [...new Set(staticDomRefs.filter(id => !ids.includes(id)))];
 assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missingDomRefs.join(', '));
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
