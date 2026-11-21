@@ -289,7 +289,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneBar .dayCycle .timeControls .timeValue{min-width:42px}
 #sceneBar .dayCycle .timeControls input[type=range]{flex:1;min-width:85px;width:auto}
 #sceneBar .dayCycle .timeControls #autoDay{flex:0 0 32px}
-#sceneBar #skierMode{display:flex;align-items:center;justify-content:center;gap:8px;min-width:116px}
+#sceneBar #skierMode{display:flex;align-items:center;justify-content:center;gap:0;min-width:44px;width:44px;height:40px;padding:6px}
 #sceneBar .mode-switch-icon{font-size:18px;line-height:1;display:inline-flex;align-items:center}
 #sceneBar .mode-switch-icon svg{display:block;width:20px;height:20px}
 #sceneEditorPanel .transform-range{display:block;width:100%;height:16px;margin:2px 0 7px;accent-color:#63c69a}
@@ -310,7 +310,6 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 /* v0.69: clear, direct drone entry and reliable toolbar layout */
 #sceneBar .sceneMode{display:flex!important;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:6px;width:max-content;max-width:calc(100vw - 24px)}
 #sceneBar .sceneMode button{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto!important;min-width:0;min-height:34px;padding:8px 10px;font-size:10px;white-space:nowrap}
-#sceneBar #droneModeButton.active{border-color:rgba(115,190,255,.8);background:rgba(49,91,126,.92);color:#f3f8ff}
 #sceneBar .drone-mode-icon{font-size:17px;line-height:1}
 @media(max-width:700px){#sceneBar .sceneMode{width:calc(100vw - 24px);max-width:calc(100vw - 24px)}#sceneBar .sceneMode button{flex:1 1 auto;padding:8px 7px;font-size:9px}}
 </style>
@@ -354,8 +353,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <div class="sceneMode">
     <button id="optimizerToggle" type="button" aria-expanded="false">ОПТИМИЗАЦИЯ СКЛОНОВ</button>
     <button id="overviewMode" class="active" type="button">ОБЗОР</button>
-    <button id="skierMode" type="button" aria-label="Переключиться на режим лыжника" title="Переключить режим"><span id="modeSwitchIcon" class="mode-switch-icon" aria-hidden="true">⛷</span><span id="modeSwitchLabel">ЛЫЖНИК</span></button>
-    <button id="droneModeButton" type="button" aria-label="Включить режим дрона" title="Включить режим дрона"><span class="drone-mode-icon" aria-hidden="true">✥</span> ДРОН</button>
+    <button id="skierMode" type="button" aria-label="Переключиться на режим лыжника" title="Переключить режим"><span id="modeSwitchIcon" class="mode-switch-icon" aria-hidden="true">⛷</span></button>
     <button id="editorToggle" type="button" aria-expanded="false">SCENE EDITOR</button>
   </div>
   <div class="dayCycle" id="dayCycle">
@@ -502,4 +500,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v69.js"></script></body></html>
+<script type="module" src="./app.v70.js"></script></body></html>
