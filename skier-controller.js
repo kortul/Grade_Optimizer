@@ -50,7 +50,7 @@ export class SkierController {
     this.maxTurnRate = 0.65;      // rad/s low-speed steering limit
     this.maxSafeSpeed = 60;       // m/s numerical guard only, not a gameplay speed cap
 
-    this.eyeHeight = 1.62;
+    this.eyeHeight = 1.80; // approximate standing eye height in metres
     this.headingYaw = 0;
     this.lookYaw = 0;
     this.lookPitch = -0.035;

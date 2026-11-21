@@ -34,6 +34,43 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 #sceneBar .sceneMode,#sceneBar .dayCycle{display:flex;align-items:center;gap:7px;padding:6px;background:rgba(20,24,32,.84);border:1px solid rgba(255,255,255,.15);border-radius:10px;backdrop-filter:blur(12px);pointer-events:auto}
 #sceneBar button{width:auto;margin:0;padding:8px 12px;border-radius:7px;font-size:11px;letter-spacing:.5px;background:#343b47;color:#dce6f2}
 #sceneBar button.active{background:#2ea36a;color:#fff}
+
+#editorToggle{background:#3b536b}
+#app.editor-open #editorToggle{background:#2ea36a;color:#fff}
+#sceneEditorPanel{
+ display:none;position:absolute;z-index:6;top:64px;left:12px;bottom:14px;
+ width:min(370px,calc(100% - 24px));overflow-y:auto;padding:14px;
+ background:rgba(25,29,36,.96);border:1px solid rgba(255,255,255,.16);
+ border-radius:12px;box-shadow:0 16px 42px rgba(0,0,0,.42);
+ backdrop-filter:blur(16px);color:#e8edf4;pointer-events:auto
+}
+#app.editor-open #sceneEditorPanel{display:block}
+#app.skier-mode #sceneEditorPanel{display:none}
+#editorHeader{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+#editorHeader strong{font-size:13px;letter-spacing:1px;color:#c6d9eb}
+#sceneEditorPanel button{width:100%;margin:5px 0 0;padding:9px 10px;font-size:11px;letter-spacing:.4px}
+#sceneEditorPanel button.secondary{background:#465363}
+#sceneEditorPanel button.closeEditor{width:32px;height:30px;padding:0;margin:0;font-size:18px}
+.editor-section{padding:10px;margin:9px 0;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);border-radius:8px}
+.editor-section h3{font-size:11px;margin:0 0 8px;color:#a9c6df;text-transform:uppercase;letter-spacing:.8px}
+#sceneEditorPanel label{display:block;margin:8px 0 3px;font-size:11px;color:#bdc9d6}
+#sceneEditorPanel select,#sceneEditorPanel input[type=number]{
+ width:100%;padding:7px 8px;border:1px solid #475360;border-radius:6px;
+ background:#202832;color:#edf3f8;font-size:12px
+}
+#sceneEditorPanel input[type=range]{width:100%;accent-color:#83b8d8;margin:4px 0}
+#sceneEditorPanel input[type=color]{width:100%;height:30px;border:1px solid #475360;border-radius:6px;background:#202832;padding:2px}
+#sceneEditorPanel .editor-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+#sceneEditorPanel .editor-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+#sceneEditorPanel .editor-checks label{display:flex;align-items:center;gap:6px;margin:0}
+#sceneEditorPanel .editor-value{float:right;color:#a9d8f1;font-variant-numeric:tabular-nums}
+#sceneEditorPanel .editor-hint{font-size:10px;line-height:1.45;color:#91a0b0;margin-top:7px}
+#editorStatus{font-size:11px;line-height:1.45;color:#a7c7dc;min-height:28px;margin:5px 0}
+#editorStatus.error{color:#ff9b91}
+#sceneEditorPanel .editor-inline{display:flex;align-items:center;gap:8px}
+#sceneEditorPanel .editor-inline>*{flex:1}
+#sceneEditorPanel .editor-split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
 #optimizerToggle{background:#4a5666}
 #app.optimizer-open #optimizerToggle{background:#2ea36a}
 #sceneBar .dayCycle{gap:10px;color:#dce6f2;font-size:11px}
@@ -107,6 +144,7 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
     <button id="optimizerToggle" type="button" aria-expanded="false">ОПТИМИЗАЦИЯ СКЛОНОВ</button>
     <button id="overviewMode" class="active" type="button">OVERVIEW</button>
     <button id="skierMode" type="button">SKIER · FPS</button>
+    <button id="editorToggle" type="button" aria-expanded="false">SCENE EDITOR</button>
   </div>
   <div class="dayCycle">
     <span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:00</span>
@@ -114,6 +152,76 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
     <button id="autoDay" type="button" title="Автоматическая смена времени">▶</button>
   </div>
 </div>
+
+<div id="sceneEditorPanel" aria-label="Scene and material editor">
+  <div id="editorHeader"><strong>SCENE / MATERIAL EDITOR</strong><button class="secondary closeEditor" id="closeEditor" type="button" title="Закрыть">×</button></div>
+  <div id="editorStatus">Импортируйте GLB-модель, чтобы редактировать её материалы и параметры.</div>
+  <input id="glbFileInput" type="file" accept=".glb,model/gltf-binary" multiple hidden/>
+  <button id="importGlbButton" type="button">＋ IMPORT GLB MODEL</button>
+  <div class="editor-hint">Поддерживается GLB с текстурами внутри файла. Для первого импорта используйте экспорт GLB из Maya с включёнными текстурами.</div>
+
+  <div class="editor-section">
+    <h3>Объекты сцены</h3>
+    <label for="editorObjectSelect">Выбранный объект</label>
+    <select id="editorObjectSelect"><option value="">Нет импортированных моделей</option></select>
+    <div class="editor-row">
+      <div><label for="editorPosX">X</label><input id="editorPosX" type="number" step="0.1" value="0"/></div>
+      <div><label for="editorPosY">Y</label><input id="editorPosY" type="number" step="0.1" value="0"/></div>
+      <div><label for="editorPosZ">Z</label><input id="editorPosZ" type="number" step="0.1" value="0"/></div>
+    </div>
+    <div class="editor-split">
+      <div><label for="editorRotY">Поворот Y, °</label><input id="editorRotY" type="number" step="1" value="0"/></div>
+      <div><label for="editorScale">Масштаб</label><input id="editorScale" type="number" min="0.001" step="0.01" value="1"/></div>
+    </div>
+    <div class="editor-split">
+      <div><label for="editorCategory">Категория</label><select id="editorCategory">
+        <option value="terrain">Terrain</option><option value="slope">Slope</option><option value="forest">Forest</option>
+        <option value="building">Building</option><option value="lift">Lift</option><option value="infrastructure">Infrastructure</option>
+        <option value="vegetation">Vegetation</option><option value="prop" selected>Prop</option><option value="lighting">Lighting</option>
+      </select></div>
+      <div><label for="editorPhase">Очередь</label><select id="editorPhase">
+        <option value="always">Always</option><option value="stage_1" selected>Stage 1</option><option value="stage_2">Stage 2</option>
+      </select></div>
+    </div>
+    <div class="editor-checks">
+      <label><input type="checkbox" id="editorVisible" checked/> Видимый</label>
+      <label><input type="checkbox" id="editorCollision"/> Коллизия</label>
+      <label><input type="checkbox" id="editorForestBlocker"/> Блокировать деревья</label>
+    </div>
+    <button id="removeImportedAsset" class="secondary" type="button">УДАЛИТЬ ВЫБРАННЫЙ ОБЪЕКТ</button>
+  </div>
+
+  <div class="editor-section">
+    <h3>Материал / PBR</h3>
+    <label for="editorMaterialSelect">Mesh / Material Slot</label>
+    <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
+    <div class="editor-split">
+      <div><label for="editorBaseColor">Base Color</label><input id="editorBaseColor" type="color" value="#ffffff"/></div>
+      <div><label for="editorEmissiveColor">Emissive Color</label><input id="editorEmissiveColor" type="color" value="#000000"/></div>
+    </div>
+    <label for="editorRoughness">Roughness <span class="editor-value" id="editorRoughnessValue">0.85</span></label>
+    <input id="editorRoughness" type="range" min="0" max="1" step="0.01" value="0.85"/>
+    <label for="editorMetalness">Metalness <span class="editor-value" id="editorMetalnessValue">0.00</span></label>
+    <input id="editorMetalness" type="range" min="0" max="1" step="0.01" value="0"/>
+    <label for="editorNormalScale">Normal Strength <span class="editor-value" id="editorNormalScaleValue">1.00</span></label>
+    <input id="editorNormalScale" type="range" min="0" max="3" step="0.01" value="1"/>
+    <label for="editorAo">AO Intensity <span class="editor-value" id="editorAoValue">1.00</span></label>
+    <input id="editorAo" type="range" min="0" max="3" step="0.01" value="1"/>
+    <label for="editorEmissive">Emissive Strength <span class="editor-value" id="editorEmissiveValue">0.00</span></label>
+    <input id="editorEmissive" type="range" min="0" max="5" step="0.01" value="0"/>
+    <label for="editorTiling">Texture Tiling <span class="editor-value" id="editorTilingValue">1.00</span></label>
+    <input id="editorTiling" type="range" min="0.1" max="20" step="0.1" value="1"/>
+    <label for="editorOpacity">Opacity <span class="editor-value" id="editorOpacityValue">1.00</span></label>
+    <input id="editorOpacity" type="range" min="0.05" max="1" step="0.01" value="1"/>
+    <div class="editor-checks">
+      <label><input type="checkbox" id="editorDoubleSide"/> Double Sided</label>
+      <label><input type="checkbox" id="editorWireframe"/> Wireframe</label>
+    </div>
+    <div class="editor-hint">Изменения применяются сразу к выбранному материалу. Сами карты текстур остаются встроенными в GLB; tiling меняет RepeatWrapping для доступных карт.</div>
+  </div>
+  <button id="saveSceneConfig" type="button">СОХРАНИТЬ НАСТРОЙКИ СЦЕНЫ · JSON</button>
+</div>
+
 <div id="skierHud">
   <div class="hudHead"><span>SKIER MODE</span><span class="hudState" id="groundState">GROUND CONTACT</span></div>
   <div class="hudMetrics">
@@ -141,4 +249,4 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v60.js"></script></body></html>
+<script type="module" src="./app.v61.js"></script></body></html>
