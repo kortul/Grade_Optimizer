@@ -183,6 +183,37 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
+
+/* v0.64 — reserved toolbar band and overlay-only side panels */
+#app{display:block!important;position:relative;overflow:hidden;min-height:0}
+#view{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0;min-height:0}
+#panel{display:none;position:absolute;z-index:12;left:12px;top:72px;bottom:12px;width:min(380px,calc(100% - 24px));max-height:none;overflow-y:auto;border:1px solid rgba(177,206,232,.2);border-radius:13px;background:rgba(18,27,37,.97);box-shadow:0 18px 52px rgba(0,0,0,.45);backdrop-filter:blur(16px)}
+#app.optimizer-open:not(.skier-mode) #panel{display:block}
+#sceneBar{position:absolute;z-index:20;left:60px;right:14px;top:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px;pointer-events:none}
+#sceneBar .sceneMode{min-width:0;max-width:100%;flex-wrap:wrap}
+#sceneBar .dayCycle{justify-self:end;white-space:nowrap;min-width:max-content}
+#app.optimizer-open #legend,#app.editor-open #legend{display:none}
+#sceneEditorPanel{z-index:14;top:72px;bottom:12px;width:min(420px,calc(100% - 24px))}
+#sceneEditorPanel select{min-width:0}
+#sceneEditorPanel .editor-row>div,#sceneEditorPanel .editor-split>div{min-width:0}
+#removeImportedAsset:disabled{opacity:.5;background:#293542!important;color:#9eafbd;cursor:not-allowed}
+#app.editor-open #view canvas{cursor:crosshair}
+@media(max-width:1180px){
+ #sceneBar{left:12px;right:12px;top:10px;grid-template-columns:minmax(0,1fr);gap:7px}
+ #sceneBar .sceneMode{justify-self:start;width:max-content;max-width:100%}
+ #sceneBar .dayCycle{justify-self:end}
+ #panel{top:116px;left:10px;width:min(380px,calc(100% - 20px));bottom:10px}
+ #sceneEditorPanel{top:116px;left:10px;width:calc(100% - 20px);bottom:10px}
+}
+@media(max-width:620px){
+ #sceneBar .sceneMode{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+ #sceneBar .sceneMode button{width:100%;padding:8px 6px;font-size:9px}
+ #sceneBar .dayCycle{justify-self:stretch;width:100%;min-width:0;justify-content:space-between}
+ #sceneBar input[type=range]{width:min(34vw,130px)}
+ #panel{top:152px;left:8px;right:8px;bottom:8px;width:auto;max-height:none}
+ #sceneEditorPanel{top:152px;left:8px;right:8px;bottom:8px;width:auto}
+}
+
 </style>
 </head>
 <body>
@@ -239,7 +270,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <div id="editorStatus">Импортируйте GLB-модель, чтобы редактировать её материалы и параметры.</div>
   <input id="glbFileInput" type="file" accept=".glb,model/gltf-binary" multiple hidden/>
   <button id="importGlbButton" type="button">＋ IMPORT GLB MODEL</button>
-  <div class="editor-hint">Загрузите самодостаточный GLB или перетащите файл в эту панель. Встроенные текстуры сохраняются при импорте.</div>
+  <div class="editor-hint">Кликни по рельефу в окне 3D, чтобы выбрать его материал. Отдельные модели добавляются через GLB или перетаскиванием сюда.</div>
 
   <div class="editor-section">
     <h3>Объекты сцены</h3>
@@ -359,4 +390,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v63.js"></script></body></html>
+<script type="module" src="./app.v64.js"></script></body></html>
