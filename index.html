@@ -214,6 +214,70 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
  #sceneEditorPanel{top:152px;left:8px;right:8px;bottom:8px;width:auto}
 }
 
+
+/* v0.66 — Sketchfab-inspired workspace, hard-separated toolbar and panels */
+#app{display:block!important;position:relative;overflow:hidden;min-height:0}
+#view{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0;min-height:0}
+#sceneBar{position:absolute;z-index:30;left:60px;right:14px;top:10px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:7px;pointer-events:none}
+#sceneBar .sceneMode{align-self:flex-start;display:flex;flex-wrap:wrap;gap:6px;min-width:0;max-width:100%;background:rgba(15,22,30,.94);border-color:rgba(173,201,225,.18)}
+#sceneBar .dayCycle{align-self:flex-end;display:flex;gap:10px;min-width:0;width:max-content;max-width:100%;height:38px;padding:5px 10px;background:rgba(15,22,30,.94);border:1px solid rgba(173,201,225,.18);white-space:nowrap}
+#sceneBar .dayCycle input[type=range]{width:clamp(100px,13vw,175px)}
+#panel{display:none;position:absolute;z-index:14;left:12px;top:112px;bottom:12px;width:min(380px,calc(100% - 24px));max-height:none;overflow-y:auto;border:1px solid rgba(177,206,232,.2);border-radius:13px;background:rgba(18,27,37,.97);box-shadow:0 18px 52px rgba(0,0,0,.45);backdrop-filter:blur(16px)}
+#app.optimizer-open:not(.skier-mode) #panel{display:block}
+#sceneHierarchyPanel,#sceneEditorPanel{display:none;position:absolute;z-index:16;top:112px;bottom:12px;overflow-y:auto;overscroll-behavior:contain;padding:12px;background:rgba(17,25,34,.97);border:1px solid rgba(173,201,225,.18);border-radius:12px;box-shadow:0 16px 42px rgba(0,0,0,.42);backdrop-filter:blur(16px);color:#eaf2f8;min-height:0}
+#sceneHierarchyPanel{left:12px;width:258px;flex-direction:column;gap:8px}
+#app.editor-open #sceneHierarchyPanel{display:flex}
+#sceneEditorPanel{left:auto;right:12px;width:min(390px,calc(100% - 24px))}
+#app.editor-open #sceneEditorPanel{display:block}
+#app.skier-mode #sceneHierarchyPanel,#app.skier-mode #sceneEditorPanel{display:none}
+#app.editor-open #legend,#app.optimizer-open #legend{display:none}
+.hierarchy-header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 1px 9px;border-bottom:1px solid rgba(255,255,255,.1)}
+.hierarchy-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.hierarchy-title strong{font-size:12px;letter-spacing:1.2px;color:#c9dced}
+#sceneHierarchyPanel button{width:100%;min-height:34px;margin:0;padding:8px 9px;border:1px solid rgba(255,255,255,.08);border-radius:7px;background:#293b4b;color:#eaf3fa;font-size:10px;font-weight:750;letter-spacing:.45px}
+#sceneHierarchyPanel button:hover{background:#334b5f}
+#sceneHierarchyPanel.drag-over,#sceneEditorPanel.drag-over{border:2px dashed #61c99a;background:rgba(22,53,47,.97)}
+#sceneHierarchyPanel .tree-search-label{font-size:9px;font-weight:800;letter-spacing:1px;color:#8fa9bf;margin:5px 0 0}
+#sceneHierarchyPanel input[type=search]{width:100%;height:34px;padding:7px 9px;border:1px solid #405365;border-radius:7px;background:#111c27;color:#f1f6fb;font-size:11px}
+#editorTreeList{display:flex;flex-direction:column;gap:2px;min-height:90px;overflow-y:auto;flex:1}
+.tree-group-title{margin:10px 0 4px;padding:0 6px;color:#7594ad;font-size:9px;font-weight:850;letter-spacing:1.1px}
+.editor-tree-item{display:flex!important;align-items:center;gap:8px;width:100%;min-height:34px!important;padding:7px 8px!important;margin:0!important;text-align:left;border:1px solid transparent!important;border-radius:6px!important;background:transparent!important;color:#c4d3df!important;font-size:11px!important;font-weight:500!important;letter-spacing:0!important}
+.editor-tree-item:hover{background:rgba(125,174,211,.10)!important}
+.editor-tree-item.selected{background:rgba(66,156,119,.18)!important;border-color:rgba(86,195,143,.34)!important;color:#f0fff7!important}
+.editor-tree-item .tree-icon{width:16px;flex:0 0 16px;color:#82b9dd;text-align:center;font-size:13px}
+.editor-tree-item .tree-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.editor-tree-item .tree-tag{font-size:8px;color:#71899e;letter-spacing:.5px}
+.tree-empty{padding:16px 8px;color:#8295a7;font-size:10px;text-align:center}
+#sceneHierarchyPanel .editor-hint{font-size:9px;line-height:1.5;color:#8095a7;border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
+#sceneEditorPanel{padding:12px;scrollbar-width:thin}
+#editorHeader{position:sticky;top:-12px;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-4px -2px 10px;padding:7px 2px 11px;background:rgba(17,25,34,.98);border-bottom:1px solid rgba(255,255,255,.1)}
+#editorHeader strong{font-size:12px;letter-spacing:1.15px;color:#c9dced}
+#editorHeader button.closeEditor{width:30px;height:29px;min-width:30px;margin:0;padding:0;border-radius:6px}
+#editorStatus{margin:0 0 9px;padding:8px 9px;min-height:34px;border:1px solid rgba(125,173,209,.15);border-left:3px solid #65a9d1;border-radius:6px;background:rgba(93,145,183,.07);font-size:10px;line-height:1.45;color:#b3cadc}
+#editorStatus.error{border-left-color:#df8178;color:#ffc2bb;background:rgba(223,129,120,.08)}
+#sceneEditorPanel .editor-section{margin:8px 0;padding:11px;background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.07);border-radius:9px}
+#sceneEditorPanel .editor-section h3{font-size:9px;letter-spacing:1.1px;color:#8fb3cd}
+.editor-selected-name{margin:5px 0 9px;padding:8px 9px;border:1px solid rgba(120,171,207,.14);border-radius:6px;background:rgba(92,144,183,.07);color:#e5f1f9;font-size:11px;font-weight:700;overflow-wrap:anywhere}
+#editorObjectSelect{display:none!important}
+#removeImportedAsset:disabled{opacity:.5;background:#293542!important;color:#9eafbd;cursor:not-allowed}
+#app.editor-open #view canvas{cursor:crosshair}
+#app.optimizer-open #panel{top:112px}
+@media(max-width:980px){
+ #sceneBar{left:12px;right:12px}
+ #sceneHierarchyPanel{left:8px;width:230px}
+ #sceneEditorPanel{right:8px;width:340px}
+ #panel{left:8px;width:min(380px,calc(100% - 16px))}
+}
+@media(max-width:700px){
+ #sceneBar .sceneMode{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+ #sceneBar .sceneMode button{width:100%;padding:8px 6px;font-size:9px}
+ #sceneBar .dayCycle{align-self:stretch;width:100%;justify-content:space-between}
+ #sceneBar .dayCycle input[type=range]{width:min(34vw,150px)}
+ #panel{top:150px;left:8px;right:8px;bottom:8px;width:auto}
+ #sceneHierarchyPanel{top:150px;left:8px;right:8px;bottom:auto;width:auto;height:135px;min-height:135px}
+ #sceneEditorPanel{top:292px;left:8px;right:8px;bottom:8px;width:auto}
+}
+
 </style>
 </head>
 <body>
@@ -265,17 +329,23 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   </div>
 </div>
 
-<div id="sceneEditorPanel" aria-label="Scene and material editor">
-  <div id="editorHeader"><div class="editor-heading"><strong>SCENE / MATERIAL EDITOR</strong><span id="editorAssetCount" class="editor-chip">0 ASSETS</span></div><button class="secondary closeEditor" id="closeEditor" type="button" title="Закрыть">×</button></div>
-  <div id="editorStatus">Импортируйте GLB-модель, чтобы редактировать её материалы и параметры.</div>
+<div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
+  <div class="hierarchy-header"><div class="hierarchy-title"><strong>SCENE</strong><span id="editorAssetCount" class="editor-chip">0 OBJECTS</span></div></div>
+  <button id="importGlbButton" type="button">＋ IMPORT MODEL · GLB</button>
   <input id="glbFileInput" type="file" accept=".glb,model/gltf-binary" multiple hidden/>
-  <button id="importGlbButton" type="button">＋ IMPORT GLB MODEL</button>
-  <div class="editor-hint">Кликни по рельефу в окне 3D, чтобы выбрать его материал. Отдельные модели добавляются через GLB или перетаскиванием сюда.</div>
+  <label for="editorTreeSearch" class="tree-search-label">SCENE HIERARCHY</label>
+  <input id="editorTreeSearch" type="search" placeholder="Filter objects…" autocomplete="off"/>
+  <div id="editorTreeList" role="list" aria-label="Объекты сцены"></div>
+  <div class="editor-hint">Выбери объект здесь или кликни по нему в 3D-окне. GLB можно перетащить в панель.</div>
+</div>
 
+<div id="sceneEditorPanel" aria-label="Scene and material inspector">
+  <div id="editorHeader"><div class="editor-heading"><strong>INSPECTOR</strong><span class="editor-chip">SCENE / MATERIAL</span></div><button class="secondary closeEditor" id="closeEditor" type="button" title="Закрыть">×</button></div>
+  <div id="editorStatus">Выбери объект в сцене, чтобы редактировать его свойства и материалы.</div>
+  <select id="editorObjectSelect" hidden aria-hidden="true"><option value="">Сцена загружается…</option></select>
   <div class="editor-section">
-    <h3>Объекты сцены</h3>
-    <label for="editorObjectSelect">Выбранный объект</label>
-    <select id="editorObjectSelect"><option value="">Нет импортированных моделей</option></select>
+    <h3>ОБЪЕКТ <span class="editor-chip">TRANSFORM</span></h3>
+    <div id="editorSelectedName" class="editor-selected-name">Нет выбранного объекта</div>
     <div class="editor-row">
       <div><label for="editorPosX">X</label><input id="editorPosX" type="number" step="0.1" value="0"/></div>
       <div><label for="editorPosY">Y</label><input id="editorPosY" type="number" step="0.1" value="0"/></div>
@@ -390,4 +460,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v65.js"></script></body></html>
+<script type="module" src="./app.v66.js"></script></body></html>
