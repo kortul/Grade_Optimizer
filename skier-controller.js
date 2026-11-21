@@ -16,9 +16,10 @@ import * as THREE from 'three';
  * control are represented by simplified effective parameters.
  */
 export class SkierController {
-  constructor({ camera, domElement, onHud = () => {}, onPointerLock = () => {} }) {
+  constructor({ camera, domElement, scene, onHud = () => {}, onPointerLock = () => {} }) {
     this.camera = camera;
     this.domElement = domElement;
+    this.scene = scene || null;
     this.onHud = onHud;
     this.onPointerLock = onPointerLock;
 
@@ -56,6 +57,9 @@ export class SkierController {
     this.slopeDeg = 0;
     this.lastLongitudinalAccel = 0;
 
+    this.skiRig = this._createSkiRig();
+    if (this.scene && this.skiRig) this.scene.add(this.skiRig);
+
     this._onKeyDown = (e) => {
       if (!this.active) return;
       const key = this._readKey(e);
@@ -85,6 +89,69 @@ export class SkierController {
     document.addEventListener('mousemove', this._onMouseMove);
     document.addEventListener('pointerlockchange', this._onPointerLock);
     this.domElement.addEventListener('click', this._onCanvasClick);
+  }
+
+
+  _createSkiRig() {
+    const rig = new THREE.Group();
+    rig.name = 'Skier_FirstPerson_Skis';
+    const outline = new THREE.Shape();
+    outline.moveTo(-0.047,-0.92);
+    outline.quadraticCurveTo(-0.052,-0.58,-0.050,0.60);
+    outline.quadraticCurveTo(-0.048,0.96,0,1.035);
+    outline.quadraticCurveTo(0.048,0.96,0.050,0.60);
+    outline.quadraticCurveTo(0.052,-0.58,0.047,-0.92);
+    outline.closePath();
+    const boardGeometry = new THREE.ExtrudeGeometry(outline,{
+      depth:0.035,bevelEnabled:true,bevelSegments:2,steps:1,
+      bevelSize:0.006,bevelThickness:0.006,curveSegments:8
+    });
+    boardGeometry.rotateX(-Math.PI/2);
+    boardGeometry.translate(0,-0.0175,0);
+    boardGeometry.computeVertexNormals();
+    const boardMaterial=new THREE.MeshStandardMaterial({color:0x273b50,metalness:0.28,roughness:0.42});
+    const topMaterial=new THREE.MeshStandardMaterial({color:0xd8e3eb,metalness:0.18,roughness:0.5});
+    const bindingMaterial=new THREE.MeshStandardMaterial({color:0x171d24,metalness:0.42,roughness:0.38});
+    const metalMaterial=new THREE.MeshStandardMaterial({color:0x9aa9b5,metalness:0.72,roughness:0.28});
+    for(const side of [-1,1]){
+      const ski=new THREE.Group();
+      ski.position.x=side*0.18;
+      const board=new THREE.Mesh(boardGeometry,boardMaterial);
+      board.castShadow=false;board.receiveShadow=false;ski.add(board);
+      const stripe=new THREE.Mesh(new THREE.BoxGeometry(0.009,0.004,1.20),topMaterial);
+      stripe.position.set(0,0.022,0.02);ski.add(stripe);
+      const plate=new THREE.Mesh(new THREE.BoxGeometry(0.105,0.025,0.31),bindingMaterial);
+      plate.position.set(0,0.043,0.015);ski.add(plate);
+      const toe=new THREE.Mesh(new THREE.BoxGeometry(0.112,0.075,0.085),bindingMaterial);
+      toe.position.set(0,0.090,-0.105);ski.add(toe);
+      const heel=new THREE.Mesh(new THREE.BoxGeometry(0.108,0.066,0.075),bindingMaterial);
+      heel.position.set(0,0.084,0.145);ski.add(heel);
+      const rail=new THREE.Mesh(new THREE.BoxGeometry(0.116,0.012,0.018),metalMaterial);
+      rail.position.set(0,0.128,-0.105);ski.add(rail);
+      rig.add(ski);
+    }
+    rig.visible=false;
+    rig.frustumCulled=false;
+    return rig;
+  }
+
+  _updateSkiRig() {
+    if(!this.skiRig)return;
+    const normal=this.lastGroundNormal.clone().normalize();
+    let forward=this.velocity.clone().projectOnPlane(normal);
+    if(forward.lengthSq()<1e-4){
+      forward.set(-Math.sin(this.headingYaw),0,-Math.cos(this.headingYaw)).projectOnPlane(normal);
+    }
+    if(forward.lengthSq()<1e-4)forward.set(0,0,-1);
+    forward.normalize();
+    const right=new THREE.Vector3().crossVectors(forward,normal).normalize();
+    const back=forward.clone().negate();
+    this.skiRig.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,normal,back));
+    const viewForward=new THREE.Vector3(0,0,-1).applyQuaternion(this.camera.quaternion).normalize();
+    const viewUp=new THREE.Vector3(0,1,0).applyQuaternion(this.camera.quaternion).normalize();
+    this.skiRig.position.copy(this.camera.position)
+      .addScaledVector(viewForward,1.15)
+      .addScaledVector(viewUp,-0.40);
   }
 
   _readKey(e) {
@@ -250,6 +317,7 @@ export class SkierController {
     this.lookPitch=-0.035;
     this.lastLongitudinalAccel=0;
     this._syncCamera(0);
+    this._updateSkiRig();
     return hit;
   }
 
@@ -276,6 +344,8 @@ export class SkierController {
     if(!this._findSpawn()){this.terrain=null;return false;}
     this.active=true;
     this.keys.clear();
+    if(this.skiRig)this.skiRig.visible=true;
+    this._updateSkiRig();
     this.domElement.style.cursor='crosshair';
     const result=this.domElement.requestPointerLock?.();
     if(result && typeof result.catch==='function') result.catch(()=>{});
@@ -289,6 +359,7 @@ export class SkierController {
   stop() {
     this.active=false;
     this.keys.clear();
+    if(this.skiRig)this.skiRig.visible=false;
     this.domElement.style.cursor='';
     if(document.pointerLockElement===this.domElement) document.exitPointerLock?.();
     this.terrain=null;
@@ -391,6 +462,7 @@ export class SkierController {
     }
 
     this._syncCamera(steer);
+    this._updateSkiRig();
     this.onHud({
       speed:this.velocity.length(),
       slope:this.slopeDeg,
@@ -408,5 +480,13 @@ export class SkierController {
     document.removeEventListener('mousemove',this._onMouseMove);
     document.removeEventListener('pointerlockchange',this._onPointerLock);
     this.domElement.removeEventListener('click',this._onCanvasClick);
+    if(this.scene&&this.skiRig)this.scene.remove(this.skiRig);
+    const geometries=new Set(),materials=new Set();
+    this.skiRig?.traverse(object=>{
+      if(object.geometry)geometries.add(object.geometry);
+      if(object.material)(Array.isArray(object.material)?object.material:[object.material]).forEach(m=>materials.add(m));
+    });
+    geometries.forEach(g=>g.dispose());
+    materials.forEach(m=>m.dispose());
   }
 }
