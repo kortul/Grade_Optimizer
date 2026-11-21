@@ -1,0 +1,132 @@
+{
+  "schemaVersion": "1.0",
+  "scene": {
+    "id": "ski-resort-demo",
+    "name": "Ski Resort — Maya export example",
+    "units": "meters",
+    "sourceUnits": "centimeters",
+    "unitScaleToMeters": 0.01,
+    "coordinateSystem": {
+      "upAxis": "Y",
+      "forwardAxis": "-Z",
+      "handedness": "right"
+    },
+    "defaultPhase": "stage_1"
+  },
+  "assets": [
+    {
+      "id": "Terrain_Base",
+      "name": "Base topographic terrain",
+      "nodeName": "Terrain_Base",
+      "sourcePath": "|01_TERRAIN|Terrain_Base",
+      "category": "terrain",
+      "uri": "assets/resort/Terrain_Base.glb",
+      "phase": "always",
+      "visible": true,
+      "collision": false,
+      "materialProfile": "Snow_Fresh"
+    },
+    {
+      "id": "Terrain_Collision",
+      "name": "Unified collision terrain",
+      "nodeName": "Terrain_Collision",
+      "sourcePath": "|01_TERRAIN|Terrain_Collision",
+      "category": "terrain",
+      "uri": "assets/resort/Terrain_Collision.glb",
+      "phase": "always",
+      "visible": false,
+      "collision": true
+    },
+    {
+      "id": "Slope_A1",
+      "name": "A1 engineered piste overlay",
+      "nodeName": "Slope_A1",
+      "sourcePath": "|02_SLOPES|Slope_A1",
+      "category": "slope",
+      "uri": "assets/resort/Slope_A1.glb",
+      "phase": "stage_1",
+      "visible": true,
+      "collision": false,
+      "forestBlocker": true,
+      "materialProfile": "Snow_Groomed",
+      "renderDepthBias": {
+        "factor": -1,
+        "units": -1
+      }
+    },
+    {
+      "id": "Building_Main",
+      "name": "Main base building",
+      "nodeName": "Building_Main",
+      "sourcePath": "|04_BUILDINGS|Building_Main",
+      "category": "building",
+      "uri": "assets/resort/Building_Main.glb",
+      "phase": "stage_1",
+      "visible": true,
+      "collision": true,
+      "materialProfile": "Concrete_Wood"
+    },
+    {
+      "id": "Lift_01",
+      "name": "Chairlift 01",
+      "nodeName": "Lift_01",
+      "sourcePath": "|05_LIFTS|Lift_01",
+      "category": "lift",
+      "uri": "assets/resort/Lift_01.glb",
+      "phase": "stage_2",
+      "visible": true,
+      "collision": false,
+      "materialProfile": "Glass_Metal"
+    }
+  ],
+  "forestMasks": [
+    {
+      "id": "NoTrees_Slope_A1",
+      "name": "Tree exclusion for A1",
+      "sourceObject": "|02_SLOPES|Slope_Footprints|Slope_Mask_A1",
+      "uri": "assets/resort/masks/Slope_Mask_A1.geojson",
+      "bufferMeters": 7.5,
+      "enabled": true
+    }
+  ],
+  "forest": {
+    "placementsUri": "assets/resort/forest_instances.json",
+    "prototypes": [
+      {
+        "id": "Pine_A",
+        "uri": "assets/resort/trees/Pine_A.glb",
+        "species": "conifer"
+      }
+    ]
+  },
+  "materialProfiles": [
+    {
+      "id": "Snow_Groomed",
+      "baseColor": "#eaf0f5",
+      "roughness": 0.96,
+      "metalness": 0,
+      "normalScale": 0.45,
+      "textureRepeat": 1
+    },
+    {
+      "id": "Snow_Fresh",
+      "baseColor": "#f4f7fa",
+      "roughness": 0.99,
+      "metalness": 0,
+      "normalScale": 0.3,
+      "textureRepeat": 1
+    },
+    {
+      "id": "Concrete_Wood",
+      "baseColor": "#b5b2aa",
+      "roughness": 0.82,
+      "metalness": 0.02
+    },
+    {
+      "id": "Glass_Metal",
+      "baseColor": "#c8d4dc",
+      "roughness": 0.24,
+      "metalness": 0.72
+    }
+  ]
+}
