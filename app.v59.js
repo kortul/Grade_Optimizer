@@ -1574,6 +1574,9 @@ optimizerToggleButton.addEventListener('click',()=>setOptimizerOpen(!state.optim
 const skierModeButton = document.getElementById('skierMode');
 const speedValueEl = document.getElementById('speedValue');
 const slopeValueEl = document.getElementById('slopeValue');
+const accelerationValueEl = document.getElementById('accelerationValue');
+const snowFrictionInput = document.getElementById('snowFriction');
+const snowFrictionValueEl = document.getElementById('snowFrictionValue');
 const groundStateEl = document.getElementById('groundState');
 const skierLockHintEl = document.getElementById('skierLockHint');
 let overviewSnapshot = null;
@@ -1582,9 +1585,11 @@ let hiddenOverviewObjects = [];
 const skierController = new SkierController({
   camera,
   domElement: renderer.domElement,
-  onHud: ({speed,slope,grounded}) => {
+  onHud: ({speed,slope,grounded,acceleration=0,snowMu=0.045}) => {
     speedValueEl.textContent = String(Math.round(speed*3.6));
     slopeValueEl.textContent = Number(slope).toFixed(1);
+    accelerationValueEl.textContent = Number(acceleration).toFixed(2);
+    snowFrictionValueEl.textContent = Number(snowMu).toFixed(3);
     groundStateEl.textContent = grounded ? 'GROUND CONTACT' : 'EDGE / NO CONTACT';
     groundStateEl.style.color = grounded ? '#82d6a6' : '#f3cf79';
   },
@@ -1593,6 +1598,9 @@ const skierController = new SkierController({
       ? 'Мышь захвачена · ESC освобождает курсор'
       : 'Кликни по сцене, чтобы снова захватить мышь';
   }
+});
+snowFrictionInput.addEventListener('input',e=>{
+  skierController.setSnowFriction(parseFloat(e.target.value));
 });
 
 function resizeSceneAfterModeChange() {
