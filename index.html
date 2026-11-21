@@ -278,6 +278,34 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
  #sceneEditorPanel{top:292px;left:8px;right:8px;bottom:8px;width:auto}
 }
 
+/* v0.67 — left clock popover, range sliders and drone mode */
+#sceneBar{flex-direction:column!important;align-items:flex-start!important;justify-content:flex-start!important;gap:7px!important}
+#sceneBar .dayCycle{align-self:flex-start!important;margin:0!important;width:78px;height:38px;min-width:78px;padding:3px!important;gap:0!important;overflow:hidden;flex:0 0 auto;transition:width .18s ease}
+#sceneBar .dayCycle.expanded{width:min(430px,calc(100vw - 80px))}
+#sceneBar .dayCycle .timeControls{display:none;align-items:center;gap:8px;flex:1;min-width:0;white-space:nowrap}
+#sceneBar .dayCycle.expanded .timeControls{display:flex}
+#sceneBar #timeToggle{width:70px!important;min-width:70px!important;height:30px;padding:4px 7px!important;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(207,227,245,.14);background:#263746;color:#eaf4fb;font-size:16px;letter-spacing:0}
+#sceneBar #timeToggle strong{font-size:11px;font-variant-numeric:tabular-nums}
+#sceneBar .dayCycle .timeControls .timeValue{min-width:42px}
+#sceneBar .dayCycle .timeControls input[type=range]{flex:1;min-width:85px;width:auto}
+#sceneBar .dayCycle .timeControls #autoDay{flex:0 0 32px}
+#sceneBar #skierMode{display:flex;align-items:center;justify-content:center;gap:8px;min-width:116px}
+#sceneBar .mode-switch-icon{font-size:18px;line-height:1;display:inline-flex;align-items:center}
+#sceneBar .mode-switch-icon svg{display:block;width:20px;height:20px}
+#sceneEditorPanel .transform-range{display:block;width:100%;height:16px;margin:2px 0 7px;accent-color:#63c69a}
+#droneHud{display:none;position:absolute;left:16px;bottom:16px;z-index:8;width:min(330px,calc(100% - 32px));padding:14px 16px;border-radius:12px;background:rgba(11,18,28,.86);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(14px);box-shadow:0 8px 28px rgba(0,0,0,.28);pointer-events:auto}
+#app.drone-mode #droneHud{display:block}
+#app.drone-mode #panel{display:none}
+#app.drone-mode #legend,#app.drone-mode #homeBtn,#app.drone-mode #measureBtn{display:none}
+.drone-hud-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:11px;letter-spacing:1px;color:#a9c1d8;font-weight:750}
+.drone-hud-live{color:#82d6a6;font-size:9px}
+.drone-hud-metrics{display:flex;align-items:baseline;justify-content:space-between;margin:8px 0 10px;color:#a9b6c5;font-size:11px}
+.drone-hud-metrics strong{color:#fff;font-size:23px;font-variant-numeric:tabular-nums}
+#droneLockHint{font-size:10px;color:#f3cf79;margin-top:6px}
+#droneHud button{margin-top:10px;padding:9px;background:#3b4655;font-size:12px}
+#panel,#sceneHierarchyPanel,#sceneEditorPanel{top:112px}
+@media(max-width:980px){#sceneBar{align-items:flex-start!important}#sceneBar .dayCycle{align-self:flex-start!important}#panel,#sceneHierarchyPanel,#sceneEditorPanel{top:148px}}
+@media(max-width:700px){#sceneBar .dayCycle.expanded{width:calc(100vw - 24px)}#sceneBar .dayCycle .timeControls{gap:5px}#sceneBar .dayCycle .timeControls>span:first-child{display:none}#sceneBar .dayCycle .timeControls input[type=range]{min-width:55px}#panel,#sceneHierarchyPanel{top:150px}#sceneEditorPanel{top:292px}}
 </style>
 </head>
 <body>
@@ -318,14 +346,13 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="sceneBar">
   <div class="sceneMode">
     <button id="optimizerToggle" type="button" aria-expanded="false">ОПТИМИЗАЦИЯ СКЛОНОВ</button>
-    <button id="overviewMode" class="active" type="button">OVERVIEW</button>
-    <button id="skierMode" type="button">SKIER · FPS</button>
+    <button id="overviewMode" class="active" type="button">ОБЗОР</button>
+    <button id="skierMode" type="button" aria-label="Переключиться на режим лыжника" title="Переключить режим"><span id="modeSwitchIcon" class="mode-switch-icon" aria-hidden="true">⛷</span><span id="modeSwitchLabel">ЛЫЖНИК</span></button>
     <button id="editorToggle" type="button" aria-expanded="false">SCENE EDITOR</button>
   </div>
-  <div class="dayCycle">
-    <span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:00</span>
-    <input id="timeOfDay" type="range" min="5" max="22" step="0.25" value="13" aria-label="Время суток"/>
-    <button id="autoDay" type="button" title="Автоматическая смена времени">▶</button>
+  <div class="dayCycle" id="dayCycle">
+    <button id="timeToggle" type="button" aria-expanded="false" aria-label="Показать управление временем" title="Время суток"><span aria-hidden="true">◷</span><strong id="timeCompactValue">13:00</strong></button>
+    <div class="timeControls"><span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:00</span><input id="timeOfDay" type="range" min="5" max="22" step="0.25" value="13" aria-label="Время суток"/><button id="autoDay" type="button" title="Автоматическая смена времени">▶</button></div>
   </div>
 </div>
 
@@ -354,7 +381,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="editor-split">
       <div><label for="editorRotY">Поворот Y, °</label><input id="editorRotY" type="number" step="1" value="0"/></div>
       <div><label for="editorScale">Масштаб</label><input id="editorScale" type="number" min="0.001" step="0.01" value="1"/></div>
-    </div>
+    </div><input id="editorRotYRange" class="transform-range" type="range" min="-360" max="360" step="0.5" value="0" aria-label="Поворот по Y"/><input id="editorScaleRange" class="transform-range" type="range" min="0.001" max="10" step="0.01" value="1" aria-label="Масштаб объекта"/>
     <div class="editor-split">
       <div><label for="editorCategory">Категория</label><select id="editorCategory">
         <option value="terrain">Terrain</option><option value="slope">Slope</option><option value="forest">Forest</option>
@@ -434,7 +461,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 </div>
 
 <div id="skierHud">
-  <div class="hudHead"><span>SKIER MODE</span><span class="hudState" id="groundState">GROUND CONTACT</span></div>
+  <div class="hudHead"><span>РЕЖИМ ЛЫЖНИКА</span><span class="hudState" id="groundState">НА СНЕГУ</span></div>
   <div class="hudMetrics">
     <div class="hudMetric"><strong><span id="speedValue">0</span> <small>км/ч</small></strong>СКОРОСТЬ</div>
     <div class="hudMetric"><strong><span id="slopeValue">0</span><small>°</small></strong>УКЛОН</div>
@@ -445,9 +472,16 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <input id="snowFriction" type="range" min="0.02" max="0.14" step="0.001" value="0.045" aria-label="Коэффициент трения снега"/>
     <div class="hudSnowScale"><span>Лёд / быстрое скольжение</span><span>Мокрый / рыхлый снег</span></div>
   </div>
-  <div class="hudControls">W / ↑ — присесть (меньше сопротивление воздуха) · S / Space — тормоз<br>A / D или ← / → — поворот с ограничением сцепления · мышь — обзор</div>
+  <div class="hudControls">W / ↑ — присесть (уменьшить сопротивление воздуха) · S / ↓ — тормоз<br>A / D или ← / → — поворот лыж · Shift / пробел — толчок вперёд и в гору · мышь — обзор</div>
   <div id="skierLockHint">Кликни по сцене, чтобы захватить мышь</div>
-  <button id="exitSkier" class="secondary" type="button">ВЕРНУТЬСЯ В OVERVIEW · Q</button>
+  <button id="exitSkier" class="secondary" type="button">ВЕРНУТЬСЯ В ОБЗОР · Q</button>
+</div>
+<div id="droneHud">
+  <div class="drone-hud-title"><span>РЕЖИМ ДРОНА</span><span class="drone-hud-live">● ПОЛЁТ</span></div>
+  <div class="drone-hud-metrics"><span>СКОРОСТЬ</span><strong><span id="droneSpeedValue">0</span> км/ч</strong></div>
+  <div class="hudControls">W / S — вперёд / назад · A / D — в стороны<br>Пробел — вверх · Shift — вниз · Ctrl — ускорение<br>Мышь — направление камеры · Q — в обзор</div>
+  <div id="droneLockHint">Кликни по сцене, чтобы захватить мышь</div>
+  <button id="exitDrone" class="secondary" type="button">ВЕРНУТЬСЯ В ОБЗОР · Q</button>
 </div>
 <div id="legend">
 <div><span class="sw" style="background:#598cd9"></span>Насыпь</div><div><span class="sw" style="background:#d17a5c"></span>Выемка</div>
@@ -460,4 +494,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v66.js"></script></body></html>
+<script type="module" src="./app.v67.js"></script></body></html>
