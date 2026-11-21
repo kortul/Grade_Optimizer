@@ -1,0 +1,299 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kortul.github.io/Grade_Optimizer/scene-manifest.schema.json",
+  "title": "Resort Scene Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scene",
+    "assets"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "units",
+        "coordinateSystem",
+        "defaultPhase"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "units": {
+          "const": "meters"
+        },
+        "sourceUnits": {
+          "type": "string"
+        },
+        "unitScaleToMeters": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "defaultPhase": {
+          "enum": [
+            "stage_1",
+            "stage_2"
+          ]
+        },
+        "coordinateSystem": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "upAxis",
+            "forwardAxis",
+            "handedness"
+          ],
+          "properties": {
+            "upAxis": {
+              "const": "Y"
+            },
+            "forwardAxis": {
+              "const": "-Z"
+            },
+            "handedness": {
+              "const": "right"
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    },
+    "forestMasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "uri",
+          "enabled"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "sourceObject": {
+            "type": "string"
+          },
+          "bufferMeters": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    "forest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "placementsUri": {
+          "type": "string"
+        },
+        "prototypes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "uri"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "uri": {
+                "type": "string"
+              },
+              "species": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "materialProfiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "baseColor": {
+            "type": "string"
+          },
+          "roughness": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "metalness": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "normalScale": {
+            "type": "number",
+            "minimum": 0
+          },
+          "textureRepeat": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "nodeName",
+        "category",
+        "uri",
+        "phase",
+        "visible",
+        "collision"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourcePath": {
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "terrain",
+            "slope",
+            "forest",
+            "building",
+            "lift",
+            "infrastructure",
+            "vegetation",
+            "prop",
+            "lighting"
+          ]
+        },
+        "uri": {
+          "type": "string",
+          "minLength": 1
+        },
+        "phase": {
+          "enum": [
+            "always",
+            "stage_1",
+            "stage_2"
+          ]
+        },
+        "visible": {
+          "type": "boolean",
+          "default": true
+        },
+        "collision": {
+          "type": "boolean",
+          "default": false
+        },
+        "forestBlocker": {
+          "type": "boolean",
+          "default": false
+        },
+        "materialProfile": {
+          "type": "string"
+        },
+        "renderDepthBias": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "factor": {
+              "type": "number",
+              "default": -1
+            },
+            "units": {
+              "type": "number",
+              "default": -1
+            }
+          }
+        },
+        "transform": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "translation": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "rotation": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "scale": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          }
+        }
+      }
+    }
+  }
+}
