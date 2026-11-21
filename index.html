@@ -289,7 +289,9 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneBar .dayCycle .timeControls .timeValue{min-width:42px}
 #sceneBar .dayCycle .timeControls input[type=range]{flex:1;min-width:85px;width:auto}
 #sceneBar .dayCycle .timeControls #autoDay{flex:0 0 32px}
-#sceneBar #skierMode{display:flex;align-items:center;justify-content:center;gap:0;min-width:44px;width:44px;height:40px;padding:6px}
+#sceneBar #skierMode{display:flex;align-items:center;justify-content:center;gap:6px;min-width:100px;width:auto;height:40px;padding:8px 10px}
+#sceneBar #droneModeButton{display:flex;align-items:center;justify-content:center;gap:6px;min-width:100px;width:auto;height:40px;padding:8px 10px}
+#sceneBar #droneModeButton.active{background:linear-gradient(135deg,#3579b6,#579bd4);box-shadow:0 3px 12px rgba(65,140,220,.25)}
 #sceneBar .mode-switch-icon{font-size:18px;line-height:1;display:inline-flex;align-items:center}
 #sceneBar .mode-switch-icon svg{display:block;width:20px;height:20px}
 #sceneEditorPanel .transform-range{display:block;width:100%;height:16px;margin:2px 0 7px;accent-color:#63c69a}
@@ -353,7 +355,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <div class="sceneMode">
     <button id="optimizerToggle" type="button" aria-expanded="false">ОПТИМИЗАЦИЯ СКЛОНОВ</button>
     <button id="overviewMode" class="active" type="button">ОБЗОР</button>
-    <button id="skierMode" type="button" aria-label="Переключиться на режим лыжника" title="Переключить режим"><span id="modeSwitchIcon" class="mode-switch-icon" aria-hidden="true">⛷</span></button>
+    <button id="skierMode" type="button" aria-label="Режим лыжника" title="Режим лыжника"><span class="mode-switch-icon" aria-hidden="true">⛷</span> ЛЫЖНИК</button>
+    <button id="droneModeButton" type="button" aria-label="Режим дрона" title="Режим дрона"><span class="drone-mode-icon" aria-hidden="true">✥</span> ДРОН</button>
     <button id="editorToggle" type="button" aria-expanded="false">SCENE EDITOR</button>
   </div>
   <div class="dayCycle" id="dayCycle">
@@ -500,4 +503,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v70.js"></script></body></html>
+<script type="module" src="./app.v71.js"></script></body></html>
