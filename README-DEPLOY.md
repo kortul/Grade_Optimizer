@@ -1,21 +1,27 @@
-# SSGO Web v0.58
+# Grade Optimizer · Deployment notes
 
-## Главное: пересчёт только по кнопке
-- Слайдеры (сглаживание, угол, глубина срезки, offset, crossfall и advanced) больше НЕ
-  запускают пересчёт при движении — только обновляют число у ползунка.
-- Пересчёт строго по кнопке "ПРИМЕНИТЬ".
-- Исключения (мгновенно, без кнопки): чекбоксы почвы/склона/подписей/сетки,
-  прозрачность почвы, солнце/тени/лейблы — это только отображение.
+The project is hosted as a static GitHub Pages site. A push to `main` triggers the Pages build and deployment workflow.
 
-## Дефолты при загрузке
-- Сглаживание: 0
-- Угол откоса: 35°
-- Макс. глубина срезки: 5 м
-- Offset: -0.75 м, Crossfall: 0.264% (как в Maya)
+## Current release
 
-## Без изменений
-- Кэш-bust A1.bin, +21.21 во всех высотах, подложка 30%, линейка с высотами/углом/Δh.
-- Эталон: 14 182 / 12 765 м³, core 13 920 / 11 443, баланс -1 м³.
+- Active browser entrypoint: `index.html` → `app.v77.js`.
+- Previous app releases remain in the repository for rollback.
+- Skier and drone controllers are versioned separately.
+- Generated forest texture: `assets/trees/snowy_conifer_atlas.webp`.
 
-## Деплой
-index.html + app.v58.js в корень; A1.curves.json от Maya v17.24.
+## Safe release procedure
+
+1. Read the current active module and controllers before editing.
+2. Create a new versioned app file rather than overwriting the previous release.
+3. Update only the module script in `index.html` to point at the new file.
+4. Run `node scripts/validate-project.mjs`, or let the quality-check workflow run on the commit.
+5. Confirm both **Grade Optimizer quality checks** and **pages build and deployment** succeed for the same commit SHA.
+6. Hard-refresh the live site with Ctrl + F5 and test overview, skier, drone, mode switching, and slope loading.
+
+## Regression-sensitive areas
+
+- Preserve the skier's ski rig and the drone's W/S forward/back controls.
+- Keep tree billboards single-plane. Crossed planes caused visible depth-buffer flicker.
+- Crop atlas cells into independent textures before mipmap generation.
+- Keep async slope loads guarded so an older request cannot replace a newer selection.
+- If a slope is changed while piloting or skiing, return to overview before replacing its terrain.
