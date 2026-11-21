@@ -112,7 +112,7 @@ scene.add(skyDome);
 
 const lightingCenter = new THREE.Vector3();
 let sunAzimuthOffset = 0;
-let sunIntensityScale = 3;
+let sunIntensityScale = 1;
 let sunEnabled = true;
 const daylightColors = {
   nightTop: new THREE.Color(0x071322), nightHorizon: new THREE.Color(0x24384a), nightBottom: new THREE.Color(0x101b29),
