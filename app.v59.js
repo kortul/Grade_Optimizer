@@ -18,7 +18,8 @@ usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3, labelOpacity:
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
   designGroup:null, labelsGroup:null, terrainLabelsGroup:null,
-  homePos:null, homeTarget:null, mode:'overview', dayTime:13, autoTime:false
+  homePos:null, homeTarget:null, mode:'overview', dayTime:13, autoTime:false,
+  forestGroup:null, billboardMesh:null, billboardTrees:[]
 };
 
 const view = document.getElementById('view');
@@ -196,11 +197,32 @@ renderer.domElement.addEventListener('wheel', ev=>{
   targetDist = d;
 }, { passive:false });
 
-window.addEventListener('resize', () => {
-  camera.aspect = view.clientWidth/view.clientHeight; camera.updateProjectionMatrix();
-  renderer.setSize(view.clientWidth, view.clientHeight);
-  labelRenderer.setSize(view.clientWidth, view.clientHeight);
-});
+let resizeRaf = 0;
+let lastViewWidth = 0, lastViewHeight = 0;
+function syncViewportSize() {
+  const rect = view.getBoundingClientRect();
+  const width = Math.max(1, Math.round(rect.width));
+  const height = Math.max(1, Math.round(rect.height));
+  if (width === lastViewWidth && height === lastViewHeight) return;
+  lastViewWidth = width; lastViewHeight = height;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+  labelRenderer.setSize(width, height);
+}
+function scheduleViewportResize() {
+  if (resizeRaf) cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    resizeRaf = 0;
+    syncViewportSize();
+  });
+}
+window.addEventListener('resize', scheduleViewportResize);
+if (typeof ResizeObserver !== 'undefined') {
+  const viewResizeObserver = new ResizeObserver(scheduleViewportResize);
+  viewResizeObserver.observe(view);
+}
+scheduleViewportResize();
 
 const dbgEl = document.getElementById('debug');
 function dbg(msg){ dbgEl.textContent += msg + "\n"; }
@@ -228,6 +250,332 @@ function terrainY(x,z){
   const h=raycaster.intersectObject(state.terrain,true);
   return h.length? h[0].point.y : null;
 }
+
+// ---------- Snow surface + lightweight test forest ----------
+let snowTextures = null;
+let treeBillboardMaterial = null;
+
+function makeSnowTextures() {
+  if (snowTextures) return snowTextures;
+  const size = 512;
+  let seed = 0xA1B2026;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  const colorCanvas = document.createElement('canvas');
+  colorCanvas.width = colorCanvas.height = size;
+  const colorCtx = colorCanvas.getContext('2d');
+  const colorImage = colorCtx.createImageData(size,size);
+  for (let y=0; y<size; y++) for (let x=0; x<size; x++) {
+    const i=(y*size+x)*4;
+    const broad = Math.sin(y*0.035 + Math.sin(x*0.013)*2.2)*2.5
+                + Math.sin((x+y)*0.021)*1.2;
+    const grain = (rnd()-0.5)*12 + broad;
+    colorImage.data[i]   = Math.max(0,Math.min(255,231+grain));
+    colorImage.data[i+1] = Math.max(0,Math.min(255,239+grain));
+    colorImage.data[i+2] = Math.max(0,Math.min(255,246+grain));
+    colorImage.data[i+3] = 255;
+  }
+  colorCtx.putImageData(colorImage,0,0);
+  // Fine wind-combed streaks: barely visible, so the snow does not look striped.
+  for (let i=0;i<150;i++) {
+    const y=rnd()*size, x=rnd()*size, len=12+rnd()*90;
+    colorCtx.strokeStyle = rnd()>0.5 ? 'rgba(255,255,255,0.09)' : 'rgba(112,139,159,0.035)';
+    colorCtx.lineWidth = 0.5+rnd()*1.4;
+    colorCtx.beginPath(); colorCtx.moveTo(x,y); colorCtx.lineTo(x+len,y+(rnd()-0.5)*2); colorCtx.stroke();
+  }
+
+  const bumpCanvas = document.createElement('canvas');
+  bumpCanvas.width = bumpCanvas.height = size;
+  const bumpCtx = bumpCanvas.getContext('2d');
+  const bumpImage = bumpCtx.createImageData(size,size);
+  for (let y=0;y<size;y++) for (let x=0;x<size;x++) {
+    const i=(y*size+x)*4;
+    const v=Math.max(0,Math.min(255,128+(rnd()-0.5)*38+Math.sin(y*0.07+x*0.025)*5));
+    bumpImage.data[i]=bumpImage.data[i+1]=bumpImage.data[i+2]=v;
+    bumpImage.data[i+3]=255;
+  }
+  bumpCtx.putImageData(bumpImage,0,0);
+
+  const map = new THREE.CanvasTexture(colorCanvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(1,1);
+  map.anisotropy = Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  const bump = new THREE.CanvasTexture(bumpCanvas);
+  bump.wrapS = bump.wrapT = THREE.RepeatWrapping;
+  bump.repeat.set(1,1);
+  bump.anisotropy = Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  snowTextures = { map, bump };
+  return snowTextures;
+}
+
+function setTerrainSnowMaterial(mesh) {
+  const geometry = mesh.geometry;
+  const position = geometry && geometry.attributes && geometry.attributes.position;
+  if (!position) return;
+  const uv = new Float32Array(position.count*2);
+  // World-like planar UVs: one tile covers roughly 34 metres.
+  for (let i=0;i<position.count;i++) {
+    uv[i*2] = position.getX(i)/34;
+    uv[i*2+1] = position.getZ(i)/34;
+  }
+  geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  const tex = makeSnowTextures();
+  const material = new THREE.MeshStandardMaterial({
+    color:0xffffff, map:tex.map, bumpMap:tex.bump, bumpScale:0.035,
+    roughness:0.97, metalness:0, side:THREE.DoubleSide
+  });
+  mesh.material = material;
+  mesh.receiveShadow = true;
+  state.terrainMats.push(material);
+}
+
+function makePineTextures() {
+  const width=256, height=512;
+  const canvas=document.createElement('canvas');
+  canvas.width=width; canvas.height=height;
+  const ctx=canvas.getContext('2d');
+  const cx=128;
+
+  // Trunk and layered conifer silhouette, with small snowy branch highlights.
+  const trunk=ctx.createLinearGradient(115,0,143,0);
+  trunk.addColorStop(0,'#382f2a'); trunk.addColorStop(0.45,'#765b43'); trunk.addColorStop(1,'#302b29');
+  ctx.fillStyle=trunk;
+  ctx.beginPath(); ctx.moveTo(119,490); ctx.lineTo(121,275); ctx.lineTo(136,275); ctx.lineTo(140,490); ctx.closePath(); ctx.fill();
+
+  const greens=['#18372f','#21453a','#294f40','#1b3b34','#315346'];
+  for (let layer=0;layer<5;layer++) {
+    const top=24+layer*63;
+    const base=105+layer*58;
+    const half=31+layer*18;
+    const grad=ctx.createLinearGradient(0,top,0,base);
+    grad.addColorStop(0,greens[layer]);
+    grad.addColorStop(1,layer%2?'#102b27':'#16342d');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.moveTo(cx,top);
+    ctx.lineTo(cx-half*0.55,top+27);
+    ctx.lineTo(cx-half*0.37,top+26);
+    ctx.lineTo(cx-half,base-8);
+    ctx.lineTo(cx-half*0.56,base-2);
+    ctx.lineTo(cx-half*0.72,base+8);
+    ctx.lineTo(cx,base-4);
+    ctx.lineTo(cx+half*0.72,base+8);
+    ctx.lineTo(cx+half*0.56,base-2);
+    ctx.lineTo(cx+half,base-8);
+    ctx.lineTo(cx+half*0.37,top+26);
+    ctx.lineTo(cx+half*0.55,top+27);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle='rgba(192,218,222,0.30)';
+    ctx.lineWidth=3.2;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(cx-half*0.80,base-10);
+    ctx.lineTo(cx-half*0.43,top+34);
+    ctx.lineTo(cx-half*0.14,top+7);
+    ctx.stroke();
+    for (let k=0;k<12;k++) {
+      const yy=top+18+Math.random()*Math.max(8,base-top-26);
+      const side=Math.random()<0.5?-1:1;
+      const xx=cx+side*(8+Math.random()*half*0.72);
+      ctx.strokeStyle='rgba(8,28,25,0.22)';
+      ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(xx,yy); ctx.lineTo(xx+side*7,yy+4); ctx.stroke();
+    }
+  }
+
+  const map=new THREE.CanvasTexture(canvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.minFilter=THREE.LinearMipmapLinearFilter;
+  map.magFilter=THREE.LinearFilter;
+  map.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+
+  // Approximate tangent-space normal map from the cutout silhouette.
+  // The alpha gradient gives the card subtle edge lighting rather than a flat plane look.
+  const src=ctx.getImageData(0,0,width,height).data;
+  const normalCanvas=document.createElement('canvas');
+  normalCanvas.width=width; normalCanvas.height=height;
+  const nctx=normalCanvas.getContext('2d');
+  const nimg=nctx.createImageData(width,height);
+  const alpha=(x,y)=> {
+    if(x<0||x>=width||y<0||y>=height)return 0;
+    return src[(y*width+x)*4+3];
+  };
+  for(let y=0;y<height;y++) for(let x=0;x<width;x++) {
+    const i=(y*width+x)*4;
+    const dx=(alpha(x+1,y)-alpha(x-1,y))/255;
+    const dy=(alpha(x,y+1)-alpha(x,y-1))/255;
+    nimg.data[i]=Math.max(0,Math.min(255,128-dx*42));
+    nimg.data[i+1]=Math.max(0,Math.min(255,128+dy*42));
+    nimg.data[i+2]=245;
+    nimg.data[i+3]=255;
+  }
+  nctx.putImageData(nimg,0,0);
+  const normalMap=new THREE.CanvasTexture(normalCanvas);
+  normalMap.minFilter=THREE.LinearMipmapLinearFilter;
+  normalMap.magFilter=THREE.LinearFilter;
+  treeBillboardMaterial=new THREE.MeshStandardMaterial({
+    map, normalMap, normalScale:new THREE.Vector2(0.45,0.45),
+    color:0xffffff, roughness:1, metalness:0,
+    side:THREE.DoubleSide, alphaTest:0.12, transparent:false
+  });
+  return treeBillboardMaterial;
+}
+
+function clearTestForest() {
+  if (state.forestGroup) {
+    scene.remove(state.forestGroup);
+    state.forestGroup.traverse(o=>{
+      if(o.geometry) o.geometry.dispose();
+      if(o.material) {
+        const mats=Array.isArray(o.material)?o.material:[o.material];
+        mats.forEach(m=>m.dispose());
+      }
+    });
+  }
+  state.forestGroup=null;
+  state.billboardMesh=null;
+  state.billboardTrees=[];
+}
+
+function buildTestForest() {
+  clearTestForest();
+  if(!state.terrain) return;
+  const bounds=new THREE.Box3().setFromObject(state.terrain);
+  const spanX=bounds.max.x-bounds.min.x;
+  const spanZ=bounds.max.z-bounds.min.z;
+  const laneZ=bounds.min.z+spanZ*0.187;
+  let seed=0x51A1;
+  const rnd=()=>{ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
+  const trees=[];
+  const xStart=bounds.min.x+spanX*0.08;
+  const xEnd=bounds.max.x-spanX*0.08;
+
+  // Two loose forest belts frame the current test piste, leaving the fall line clear.
+  for(let i=0;i<42;i++) {
+    const t=(i+rnd()*0.55)/42;
+    const x=THREE.MathUtils.lerp(xStart,xEnd,t)+(rnd()-0.5)*12;
+    for(const side of [-1,1]) {
+      const offset=side<0 ? 22+rnd()*72 : 22+rnd()*88;
+      const z=laneZ+side*offset;
+      const y=terrainY(x,z);
+      if(y===null) continue;
+      const height=5.2+rnd()*4.0;
+      trees.push({x,y,z,height,width:height*(0.43+rnd()*0.12),side});
+    }
+  }
+
+  // Fallback sampling if a future test mesh has a different outline.
+  if(trees.length<24) {
+    for(let i=0;i<120 && trees.length<52;i++) {
+      const x=THREE.MathUtils.lerp(xStart,xEnd,rnd());
+      const z=THREE.MathUtils.lerp(bounds.min.z+spanZ*0.06,bounds.max.z-spanZ*0.06,rnd());
+      const y=terrainY(x,z);
+      if(y===null || trees.some(t=>Math.hypot(t.x-x,t.z-z)<13)) continue;
+      const height=5.0+rnd()*3.8;
+      trees.push({x,y,z,height,width:height*0.48,side:Math.sign(z-laneZ)});
+    }
+  }
+
+  if(!trees.length) return;
+  const forest=new THREE.Group();
+  forest.name='TestForest_Billboards_LOD';
+  state.forestGroup=forest;
+  scene.add(forest);
+
+  // Small close trees retain simple 3D volume; the rest use normal-mapped camera-facing cards.
+  const closeTrees=trees.filter((t,i)=>Math.abs(t.z-laneZ)<49 && i%3===0).slice(0,18);
+  if(closeTrees.length) {
+    const trunkGeo=new THREE.CylinderGeometry(0.08,0.13,1,5);
+    const coneGeo=new THREE.ConeGeometry(1,2,6,1);
+    const trunkMat=new THREE.MeshStandardMaterial({color:0x6d5846,roughness:1});
+    const foliageMat=new THREE.MeshStandardMaterial({color:0x24473d,roughness:1});
+    const trunkMesh=new THREE.InstancedMesh(trunkGeo,trunkMat,closeTrees.length);
+    const lowerMesh=new THREE.InstancedMesh(coneGeo,foliageMat,closeTrees.length);
+    const middleMesh=new THREE.InstancedMesh(coneGeo,foliageMat,closeTrees.length);
+    const topMesh=new THREE.InstancedMesh(coneGeo,foliageMat,closeTrees.length);
+    const dummy=new THREE.Object3D();
+    closeTrees.forEach((t,i)=>{
+      const h=t.height*1.04, yaw=rnd()*Math.PI*2;
+      dummy.rotation.set(0,yaw,0);
+      dummy.position.set(t.x,t.y+h*0.15,t.z);
+      dummy.scale.set(0.82,h*0.19,0.82);
+      dummy.updateMatrix(); trunkMesh.setMatrixAt(i,dummy.matrix);
+
+      const tiers=[
+        [0.46,0.40,0.43],
+        [0.68,0.33,0.34],
+        [0.86,0.23,0.26]
+      ];
+      for(const [index,mesh] of [lowerMesh,middleMesh,topMesh].entries()) {
+        const tier=tiers[index];
+        dummy.position.set(t.x,t.y+h*tier[0],t.z);
+        dummy.scale.set(h*tier[1],h*tier[2],h*tier[1]);
+        dummy.updateMatrix(); mesh.setMatrixAt(i,dummy.matrix);
+      }
+      const tint=new THREE.Color().setHSL(0.39+rnd()*0.025,0.28+rnd()*0.12,0.20+rnd()*0.08);
+      lowerMesh.setColorAt(i,tint);
+      middleMesh.setColorAt(i,tint.clone().offsetHSL(0,0,0.025));
+      topMesh.setColorAt(i,tint.clone().offsetHSL(0,0,0.05));
+    });
+    [trunkMesh,lowerMesh,middleMesh,topMesh].forEach(m=>{
+      m.castShadow=false; m.receiveShadow=true; m.frustumCulled=false; forest.add(m);
+    });
+  }
+
+  const billboardTrees=trees.filter(t=>!closeTrees.includes(t));
+  if(billboardTrees.length) {
+    const material=makePineTextures();
+    const geometry=new THREE.PlaneGeometry(1,1);
+    const mesh=new THREE.InstancedMesh(geometry,material,billboardTrees.length);
+    mesh.name='Pine_Billboard_Impostors';
+    mesh.frustumCulled=false;
+    mesh.castShadow=false;
+    mesh.receiveShadow=true;
+    const dummy=new THREE.Object3D();
+    billboardTrees.forEach((t,i)=>{
+      // Store foot position; the quad is centered at half tree height.
+      const yaw=rnd()*Math.PI*2;
+      dummy.position.set(t.x,t.y+t.height*0.5,t.z);
+      dummy.rotation.set(0,yaw,0);
+      dummy.scale.set(t.width,t.height,1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i,dummy.matrix);
+      const tint=new THREE.Color().setHSL(0.36+rnd()*0.04,0.24+rnd()*0.12,0.27+rnd()*0.10);
+      mesh.setColorAt(i,tint);
+      billboardTrees[i]={x:t.x,y:t.y,z:t.z,height:t.height,width:t.width};
+    });
+    mesh.instanceMatrix.needsUpdate=true;
+    if(mesh.instanceColor) mesh.instanceColor.needsUpdate=true;
+    forest.add(mesh);
+    state.billboardMesh=mesh;
+    state.billboardTrees=billboardTrees.map((t,i)=>({x:t.x,y:t.y,z:t.z,height:t.height,width:t.width}));
+  }
+  dbg('Лес тестового склона: '+trees.length+' деревьев · 3D '+closeTrees.length+' · billboard '+billboardTrees.length);
+}
+
+const forestUp=new THREE.Vector3(0,1,0);
+const forestPosition=new THREE.Vector3();
+const forestScale=new THREE.Vector3();
+const forestQuaternion=new THREE.Quaternion();
+const forestMatrix=new THREE.Matrix4();
+function updateForestBillboards() {
+  if(!state.billboardMesh || !state.billboardTrees.length) return;
+  state.billboardTrees.forEach((t,i)=>{
+    const yaw=Math.atan2(camera.position.x-t.x,camera.position.z-t.z);
+    forestQuaternion.setFromAxisAngle(forestUp,yaw);
+    forestPosition.set(t.x,t.y+t.height*0.5,t.z);
+    forestScale.set(t.width,t.height,1);
+    forestMatrix.compose(forestPosition,forestQuaternion,forestScale);
+    state.billboardMesh.setMatrixAt(i,forestMatrix);
+  });
+  state.billboardMesh.instanceMatrix.needsUpdate=true;
+}
+
 
 function clearGroup(g){ if(g){ scene.remove(g); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); } return null; }
 
@@ -1025,6 +1373,7 @@ async function loadSlopeList(){
 
 const loadingEl=document.getElementById('loading');
 async function loadSlope(id){
+  clearTestForest();
   if(state.root){scene.remove(state.root);state.root=null;}
   state.terrain=null;state.curves=null;state.terrainMats=[];
   state.designGroup=clearGroup(state.designGroup);
@@ -1043,14 +1392,14 @@ async function loadSlope(id){
         state.terrain=o;
         o.traverse(c=>{
           if(c.isMesh){
-            const m=new THREE.MeshStandardMaterial({color:0x2f4a2f,roughness:1,side:THREE.DoubleSide});
-            c.material=m;m.receiveShadow=true;state.terrainMats.push(m);
+            setTerrainSnowMaterial(c);
           }
         });
       }
     });
     applyTerrainLook();
     root.updateMatrixWorld(true);
+    buildTestForest();
     dbg('Terrain загружен.');
     const cv=await loadJSON('./assets/'+id+'.curves.json'+bust());
     state.curves=cv;
@@ -1225,11 +1574,8 @@ const skierController = new SkierController({
 });
 
 function resizeSceneAfterModeChange() {
-  const w = Math.max(1, view.clientWidth), h = Math.max(1, view.clientHeight);
-  camera.aspect = w/h;
-  camera.updateProjectionMatrix();
-  renderer.setSize(w,h);
-  labelRenderer.setSize(w,h);
+  scheduleViewportResize();
+  requestAnimationFrame(() => scheduleViewportResize());
 }
 
 function setSceneMode(mode) {
@@ -1314,6 +1660,7 @@ let previousFrameTime = performance.now();
   }
   if(controls.enabled) controls.update();
   skyDome.position.copy(camera.position);
+  updateForestBillboards();
   renderer.render(scene,camera);
   if(labelRenderer.domElement.style.display !== 'none') labelRenderer.render(scene,camera);
 })();
