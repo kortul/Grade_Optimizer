@@ -827,7 +827,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <button id="editorTreeCollapseAll" type="button" class="tree-action">COLLAPSE ALL</button>
   </div>
   <div id="editorTreeList" role="tree" aria-label="Иерархия сцены Maya"></div>
-  <div class="editor-hint">Раскрывай группы до mesh и material slots. Выбор узла позволяет менять его transform; общий материал отмечен SHARED. GLB / FBX можно перетащить сюда.</div>
+  <div class="editor-hint">Раскрывай группы до mesh и material slots. Общие материалы связываются через PBR Library; GLB / FBX можно перетащить сюда.</div>
 </div>
 
 <div id="sceneEditorPanel" aria-label="Scene and material inspector">
@@ -889,6 +889,17 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <h3>Материал / PBR <span id="editorMaterialCount" class="editor-chip">0 SLOTS</span></h3>
     <label for="editorMaterialSelect">Component / Material Slot</label>
     <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
+    <div id="editorMaterialLinkStatus" class="editor-hint">Выбери material slot для редактирования.</div>
+    <div class="editor-section" style="margin:9px 0;padding:9px;background:rgba(255,255,255,.025)">
+      <h3>ОБЩАЯ БИБЛИОТЕКА МАТЕРИАЛОВ <span class="editor-chip">SCENE-WIDE</span></h3>
+      <label for="editorMaterialLibrarySelect">Назначить существующий материал</label>
+      <select id="editorMaterialLibrarySelect"><option value="">Загрузка материалов…</option></select>
+      <div class="editor-split">
+        <button id="assignEditorMaterial" class="secondary" type="button" disabled>НАЗНАЧИТЬ В SLOT</button>
+        <button id="makeEditorMaterialUnique" class="secondary" type="button" disabled>СДЕЛАТЬ УНИКАЛЬНЫМ</button>
+      </div>
+      <div class="editor-hint">Один экземпляр материала может использоваться несколькими mesh slots. Назначение связывает слоты, а «Сделать уникальным» создаёт отдельную копию выбранного слота.</div>
+    </div>
     <div class="editor-split">
       <div><label for="editorBaseColor">Base Color</label><input id="editorBaseColor" type="color" value="#ffffff"/></div>
       <div><label for="editorEmissiveColor">Emissive Color</label><input id="editorEmissiveColor" type="color" value="#000000"/></div>
@@ -1065,4 +1076,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v93.js"></script></body></html>
+<script type="module" src="./app.v94.js"></script></body></html>
