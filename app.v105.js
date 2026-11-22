@@ -197,7 +197,8 @@ setTimeOfDay(state.dayTime);
 
 // Weather controls are deliberately stored separately from client scene.json.
 // Environment preferences belong to this browser, not to imported client assets.
-const WEATHER_STORAGE_KEY = 'grade_optimizer_weather_v1';
+const WEATHER_STORAGE_KEY = 'grade_optimizer_weather_v2';
+const LEGACY_WEATHER_STORAGE_KEY = 'grade_optimizer_weather_v1';
 const weatherPanel = document.getElementById('weatherPanel');
 const weatherToggle = document.getElementById('weatherToggle');
 const weatherClose = document.getElementById('weatherClose');
@@ -358,10 +359,27 @@ document.addEventListener('keydown', event => {
 updateOpticsControls();
 try {
   const savedWeather = JSON.parse(localStorage.getItem(WEATHER_STORAGE_KEY) || 'null');
-  if (savedWeather && savedWeather.preset === 'custom') {
-    weatherSystem.setCustom(savedWeather);
-  } else if (savedWeather && WeatherSystem.PRESETS[savedWeather.preset]) {
-    weatherSystem.setPreset(savedWeather.preset);
+  const legacyWeather = savedWeather ? null : JSON.parse(localStorage.getItem(LEGACY_WEATHER_STORAGE_KEY) || 'null');
+  const weatherToRestore = savedWeather || legacyWeather;
+  if (weatherToRestore) {
+    if (legacyWeather) {
+      const legacyPreset = WeatherSystem.PRESETS[legacyWeather.preset] || {};
+      const legacySnowfall = Number(legacyWeather.snowfall ?? legacyPreset.snowfall ?? 0);
+      if (legacySnowfall > 0) {
+        // Previous test sessions may have left snowfall enabled. Migrate the
+        // other weather choices, but start the new version with snow disabled.
+        weatherSystem.setCustom({ ...legacyWeather, snowfall: 0, preset: 'custom' });
+      } else if (legacyWeather.preset === 'custom') {
+        weatherSystem.setCustom(legacyWeather);
+      } else if (WeatherSystem.PRESETS[legacyWeather.preset]) {
+        weatherSystem.setPreset(legacyWeather.preset);
+      }
+      persistWeatherSettings();
+    } else if (savedWeather.preset === 'custom') {
+      weatherSystem.setCustom(savedWeather);
+    } else if (WeatherSystem.PRESETS[savedWeather.preset]) {
+      weatherSystem.setPreset(savedWeather.preset);
+    }
   }
 } catch (error) {
   console.warn('Не удалось восстановить погоду браузера; используется ясная погода.', error);
