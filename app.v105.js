@@ -141,7 +141,8 @@ function updateDaylight(hours = state.dayTime) {
   weatherSystem.drawSky({
     top, horizon, bottom, sunColor,
     sunDirection: sunDir,
-    sunStrength: sunEnabled ? daylight : 0
+    sunStrength: daylight,
+    sunVisible: sunEnabled
   });
   sun.position.copy(lightingCenter).addScaledVector(sunDir, 1400);
   sun.target.position.copy(lightingCenter);
