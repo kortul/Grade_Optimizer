@@ -2,150 +2,119 @@
 Date: 2026-11-22
 Branch: `main`
 Repository: https://github.com/kortul/Grade_Optimizer
-Latest verified web application commit: `3c7d6995ecc48152ed90463a977c6fa819f544ca`
-Latest Maya plug-in / test fixture commit: `a8f640ba81f74d1daf00b2e8c5eab6f55494bfb7`
-Latest verified validation checkpoint: `fab051529334acbfcf91cad8fc300b4f2666495b`
+Current application source commit: `24b2617072ec929e543e132843c3e0f641747a0c`
+Latest verified web application source: `app.v97.js`
+Latest verified Maya Exporter: `0.2.4`
 
 ## Product direction
 
-The workflow is **one full Maya scene → one FBX → one client scene manifest**. The FBX hierarchy remains the primary scene structure: groups, transforms, mesh nodes and material slots stay individually selectable in the web editor.
+The main pipeline remains **one full Maya scene → one FBX → one client project**. Preserve Maya hierarchy, nested groups / transforms / meshes, material slots, and shared material identity. Do not force the resort into separate mandatory Terrain / Slope / Building files.
 
-Do not force users to split the resort into Terrain / Slope / Building files or impose mandatory classifications. The default role remains General model. Optional node metadata is available as reusable presets in a collapsed Maya UI panel; the last-used preset and project settings persist between launches.
+The web Scene Editor is the main place to configure an individual object after import. Maya is the geometry / hierarchy source and an optional place to assign descriptive Role / Tags, not the place where final collision and forest-exclusion flags must be configured.
 
-Local project folder requested by the user:
-`C:\zGit\GradeOptimizer`
+## Local repository and Maya workflow
 
-GitHub repository:
-`kortul/Grade_Optimizer`
+User's actual Windows Git working copy:
+`C:\zGit\GradeOptimizer\Grade_Optimizer`
 
-The actual local Git working copy is nested at `C:\zGit\GradeOptimizer\Grade_Optimizer`. The local Windows disk is not mounted in the development session. Sync repository changes into this clone using GitHub Desktop.
+Maya exporter source:
+`C:\zGit\GradeOptimizer\Grade_Optimizer\maya\grade_optimizer_exporter.py`
 
-## Current web application — v95
+Run from Maya Python Script Editor / Shelf; installing the native Maya plug-in is optional. The Shelf script must add the folder above to `sys.path`, import / reload `grade_optimizer_exporter`, and call `show()`.
 
-Active entry point: `index.html` → `app.v95.js`.
+Maya Exporter v0.2.4:
+- Default repository path targets the actual nested Git working copy.
+- Remembers repository path, Project ID, last-used metadata preset and optional custom Role / Tags through Maya optionVars.
+- Exports selected objects only by default. Empty selection is blocked; uncheck intentionally to export the whole scene.
+- Writes `clients/<project-id>/models/resort.fbx` and `clients/<project-id>/scene.json`.
+- Ready-made metadata presets fill Role and Tags only.
+- Collision and Forest blocker controls have been removed from Maya. These are configured per node in the Web Editor Inspector.
+- Native Maya plug-in / test fixture files are in `maya/`; actual plug-in installation and a real Maya runtime / FBX round-trip on the user's workstation are still unverified.
+
+Maya test-scene fixture:
+- Nested hierarchy and repeated leaf names in different branches.
+- Shared material assigned across separate mesh objects.
+- Multiple material slots on one mesh.
+- Hidden test object.
+- Descriptive Role / Tags only; Collision / Forest blocker should be tested in Web Editor.
+- Fixture requires confirmation before replacing the current Maya scene.
+
+## Current web application
+
+Active entry point: `index.html` → `app.v97.js`.
 
 Implemented:
-- GLB and FBX import using Three.js loaders.
-- Full recursive Maya-style Outliner for imported models and existing scene geometry.
-- Expand / collapse, recursive search and selection of individual groups, transforms, meshes and material slots.
-- Viewport picking selects the actual nested FBX mesh.
-- Transform editing targets the selected hierarchy node, not only the root asset.
-- Selected-node visibility control and component deletion with shared-resource-aware disposal.
-- Selected-node GLB export.
-- Per-node Role, Tags, Collision hint and Forest blocker hint controls.
-- Per-node metadata participates in Outliner search and appears as the node tag.
-- Per-node metadata is stored in client `scene.json`, restored when a client scene loads, and included in local browser records and Scene Config JSON.
-- Metadata path lookup supports stable child-index paths in web-generated records and Maya hierarchy name paths in Maya-exported manifests.
+- GLB / FBX import, recursive Maya-style Outliner, nested node selection and viewport picking.
+- Per-node transform editing, visibility, Role / Tags, Collision hint and Forest blocker hint. Deletion is supported for imported client models; destructive deletion of built-in base-scene components is disabled because the project manifest cannot rewrite the shipped source model. Hide such components through Visibility instead.
+- Shared material library, assignment / uniqueness controls, PBR editing and user texture import.
+- Imported client models can be exported to GLB on publish after changes, while the manifest records transforms, categories, phases, visibility and node metadata.
+- Local browser IndexedDB is still used for local drafts when not working in a client workspace. This is not cross-device project storage.
 
-Important: per-node Collision / Forest blocker flags are descriptive metadata only. They do not yet change collision simulation, terrain selection or forest generation automatically.
+## Shared project persistence — critical architecture
 
-## Material library
+The desired source of truth is the GitHub project, not IndexedDB in one browser. The normal workflow is now:
 
-Implemented in v94 and active in v95:
-- Scene-wide PBR material library lists materials and the number of slots using each material instance.
-- Assign an existing library material to the selected slot to intentionally share it.
-- Make Slot Unique clones one material and its texture objects so the selected slot can be edited independently.
-- Shared material edits, presets, texture imports and texture removals mark every imported model using that instance as dirty for publishing.
-- Materials are not merged just because their names match; separate Maya materials with the same display name remain distinct.
-- FBXLoader 0.160 creates material instances from FBX material IDs and reuses them for connected mesh assignments. Real Maya export still needs a round-trip check.
+1. Open a Client Workspace by Project ID / client URL.
+2. Connect the GitHub Publisher with a fine-grained token that has Contents read/write access to `kortul/Grade_Optimizer`. The token is held in memory in the current tab; it is not committed or stored in browser storage.
+3. Edit the scene.
+4. Press **SAVE ALL PROJECT CHANGES TO GITHUB**.
+5. The app commits directly to `clients/<slug>/scene.json` and changed model files. There is no need to download and manually copy a config JSON file.
+6. Open the same client URL on another browser / device after GitHub Pages deploys; the workspace loads the committed project settings.
 
-## Native Maya plug-in v0.2.3
+### What is now included in `clients/<slug>/scene.json`
 
-Files in the repository:
-- `maya/plug-ins/grade_optimizer.py` — native Maya Python plug-in entrypoint.
-- `maya/GradeOptimizer.mod` — Maya module descriptor.
-- `maya/install_maya_module.bat` / `maya/install_maya_module.ps1` — current-user Windows module installer.
-- `maya/grade_optimizer_exporter.py` — exporter UI and FBX / manifest writer.
-- `maya/grade_optimizer_test_scene.py` — new deterministic test-scene generator.
-- `maya/README.md` and `docs/MAYA_EXPORT_WORKFLOW.md` — setup and usage.
+- Imported client models: file path, category, phase, root transform, visibility, collision / forest flags.
+- Imported model nested visibility overrides and per-node Role / Tags / Collision / Forest blocker.
+- Built-in application scene objects as `editorSettings.assets`.
+- For built-in scene objects: transforms, root visibility, nested visibility overrides (both hide and unhide), metadata and material settings.
+- PBR values: base color, roughness, metalness, normal scale, AO intensity, emissive, opacity, tiling, transparency, sidedness and wireframe.
+- User-imported texture image data for supported material maps, embedded as data URLs so another browser can reconstruct the texture.
+- Stable IDs for material references, allowing the project loader to restore shared material slots vs unique slots rather than merely copying the same numeric values.
 
-Plug-in behavior:
-- Registers Maya command `gradeOptimizerOpen`.
-- Adds menu actions **Open Exporter…** and **Create FBX Test Scene…**.
-- Uses Maya Python API 2.0 and standard `initializePlugin` / `uninitializePlugin` lifecycle.
-- Exporter defaults to local repo `C:/zGit/GradeOptimizer/Grade_Optimizer`, remembers Project ID and repo path between launches, and exports selected objects only by default.
-- Creates `clients/<client-slug>/models/resort.fbx` and `clients/<client-slug>/scene.json`.
-- Attempts to enable FBX materials and Embed Media.
+### Save / restore implementation
 
-Test-scene fixture:
-- Requires explicit confirmation before replacing the current Maya scene.
-- Creates nested groups / transforms and several mesh objects.
-- Assigns one shared Lambert material to Terrain and Station Roof.
-- Assigns two materials to different faces of one Station_Building mesh.
-- Includes a hidden survey marker.
-- Includes two nodes named `Pylon` under different DAG branches, with different node metadata.
-- Adds example Role, Tags, Collision and Forest blocker metadata.
-- Sets the fixture's linear unit to metres.
+- `collectProjectEditorSettings()` serializes built-in `sourceType === 'scene'` objects.
+- `collectEditorAssetConfig()` serializes node metadata / visibility, PBR state, user textures and shared material IDs.
+- `collectClientManifest()` awaits project settings and includes them under `editorSettings`.
+- `publishClientWorkspace()` commits `scene.json` and any dirty imported model GLBs to GitHub.
+- `openClientWorkspace()` loads manifest model files and restores `manifest.editorSettings` into the built-in scene.
+- A visibility baseline is captured for nodes so the manifest can store explicit `visible: true` overrides as well as hidden nodes. Without this, an unhide override could be lost on another browser.
 
-After syncing the repo, use **Grade Optimizer → Create FBX Test Scene…**, then **Open Exporter…** and export with Client ID `maya-fbx-test`. Inspect the resulting FBX and manifest in the web app before using a real client scene.
+The Scene Editor JSON download is now explicitly labeled as an **optional backup**. It is not the normal save method.
 
-## Maya installation
+### Draft vs committed state
 
-1. Sync the GitHub repository into `C:\zGit\GradeOptimizer` using GitHub Desktop.
-2. Close Maya.
-3. Run `C:\zGit\GradeOptimizer\maya\install_maya_module.bat` (standard user; no admin required).
-4. Start Maya.
-5. Open Windows → Settings/Preferences → Plug-in Manager.
-6. Enable `grade_optimizer.py` under Loaded and Auto load.
-7. Use the **Grade Optimizer** menu.
+Changes in the current tab remain a project draft until the GitHub save action completes successfully. The dirty indicator is updated for transforms, root and nested visibility, node metadata, Collision / Forest flags, category / phase, material parameters, shared-material assignment / uniqueness, texture import / removal, active terrain changes, imported-model / component deletion, and JSON-config import. JSON-config import also marks imported model files dirty so PBR changes are included in the next GLB export. After a successful publish the status reports the GitHub commit and clears the dirty state. Leaving the page with a dirty client project triggers the browser's unsaved-changes warning. Reopening a different client project asks before discarding edits and reloads the base scene so built-in settings from one client cannot bleed into another.
 
-The installer has not yet been run on the user's Windows machine, and the plug-in has not yet been loaded inside Maya. Automated Python syntax checks are not a substitute for a real Maya runtime test.
+Known follow-up / test items:
+- Verify the round-trip in a real second browser / device: edit built-in scene node metadata and visibility, PBR values, shared material assignments and a custom texture; save to GitHub; open the same client URL in a clean browser and confirm every setting restores.
+- Test the dirty-state behavior for every editor control, including shared material assignment, texture removal, active-terrain switching, imported nested-component deletion, whole-model deletion, and loading a JSON backup. These actions are now wired to the project dirty state; validate them in a real browser session.
+- Review large custom textures: data URLs increase the size of `scene.json`; decide whether to impose a size guard or move large media to standalone Git LFS / object storage if needed.
+- Cross-sharing a single material instance between an imported client asset and a built-in scene object is not yet guaranteed across the GLB + `editorSettings` boundary. Shared-vs-unique material identity is recorded for built-in scene assets.
+- The app currently stores Collision / Forest blocker flags as project metadata. Runtime collision behavior and automatic forest exclusion are future implementation work.
 
-## FBX limitations to verify
+## Current verified commits and CI
 
-- FBX materials and embedded media depend on Maya FBX plug-in version and source shader types.
-- Three.js FBXLoader 0.160 handles Lambert / Phong-style FBX material conversion; do not assume complex Arnold or other custom shader networks will round-trip faithfully.
-- Confirm unit conversion, axis orientation, embedded texture extraction, hierarchy names and multi-material slots on a real export.
-- A single FBX should remain below 90 MiB for the current normal Git workflow; larger binary assets need another storage approach.
+Latest application source commit:
+`24b2617072ec929e543e132843c3e0f641747a0c`
 
-## Client editing and publishing
+Quality checks:
+https://github.com/kortul/Grade_Optimizer/actions/runs/45036859148
 
-The client publishing path converts edited imported FBX models to GLB for publication when a model becomes dirty. The manifest keeps the model file path and nested visibility / metadata. Still needs an end-to-end test with a client URL:
-- nested transform changes;
-- node visibility and node metadata;
-- shared material edit used by multiple meshes / models;
-- imported / removed texture maps;
-- publish, reload and verify the client sees the edited result.
+GitHub Pages deployment:
+https://github.com/kortul/Grade_Optimizer/actions/runs/45036859499
 
-Do not claim local browser IndexedDB edits automatically sync across browsers or devices. The Maya → local Git → GitHub Desktop Push path is intended for asset authoring without a browser GitHub token.
+Both checks completed successfully for the v97 application source commit. Validation covers repository assertions, DOM references, JavaScript syntax and Pages build/deployment. It does not replace a real browser round-trip test.
 
-## Latest automated validation
+## Suggested next session sequence
 
-Latest Maya plug-in / test-scene commit before the 0.2.3 UI work: `a8f640ba81f74d1daf00b2e8c5eab6f55494bfb7`
+1. Sync GitHub Desktop (Pull) into `C:\zGit\GradeOptimizer\Grade_Optimizer`.
+2. Confirm the deployed site loads `app.v97.js`.
+3. Open the intended client Project ID and connect GitHub Publisher in the tab used for editing.
+4. Run the cross-browser persistence test described above, starting with one built-in node's Collision / Forest blocker and visibility.
+5. Fix any restore / identity / dirty-state problems found before implementing automatic collision physics or forest exclusion.
+6. Continue real Maya FBX round-trip testing separately; do not claim Maya runtime validation until it has been run on the user's machine.
 
-- Quality checks: **success**
-  https://github.com/kortul/Grade_Optimizer/actions/runs/45026142538
-- GitHub Pages build and deployment: **success**
-  https://github.com/kortul/Grade_Optimizer/actions/runs/45026142372
+## Important honesty / environment notes
 
-The quality workflow validates project structure, Maya menu integration, test-scene source requirements and Python syntax for the exporter, plug-in and test-scene generator. A real Maya runtime / FBX round-trip is still pending; source checks do not prove that Maya actually loaded the plug-in or that a Maya-exported FBX round-trips correctly.
-
-## Next work
-
-1. Sync and install module in Maya.
-2. Generate `maya-fbx-test`, export it and inspect the FBX hierarchy / materials / metadata in the web app.
-3. Fix any Maya FBX export or Three.js FBXLoader mismatches exposed by the fixture.
-4. Verify client publishing and reload of edited models.
-5. Decide which optional metadata should drive actual collision / forest behavior, without making categories mandatory.
-
-## Key files
-
-- `index.html` — web app entry point
-- `app.v95.js` — current application
-- `maya/plug-ins/grade_optimizer.py` — Maya plug-in entrypoint
-- `maya/GradeOptimizer.mod` — Maya module descriptor
-- `maya/install_maya_module.bat` — Windows installer
-- `maya/grade_optimizer_exporter.py` — Maya exporter UI / logic
-- `maya/grade_optimizer_test_scene.py` — FBX test-scene generator
-- `maya/README.md` — Maya plug-in setup
-- `docs/MAYA_EXPORT_WORKFLOW.md` — Maya to GitHub Desktop workflow
-- `scripts/validate-project.mjs` — automated project validation
-
-
-## Maya Exporter usability update — v0.2.3
-
-The metadata panel is collapsed by default and uses ready-made presets instead of requiring Role / Tags to be typed for every use. Presets include Terrain, Building, Station, Lift / Support, Road / Platform, Water, Rock / Obstacle, Vegetation and Other. Each preset fills Role, standard Tags and default Collision / Forest blocker checkboxes. Users can override the flags, apply to selected nodes in bulk, or clear metadata from the selection. Custom Role / extra Tags are still available in a collapsed advanced subsection.
-
-Maya optionVars remember the repository path, Project ID, last-used preset and optional custom metadata across Shelf / Script Editor launches. Project fields should not need to be re-entered unless switching projects.
-
-Version 0.2.3 source and automated checks are in commit to be recorded after this update. Real Maya runtime validation remains pending.
+The user's Windows filesystem and a running Maya instance are not available to this development session. Repository files and GitHub CI can be updated and inspected, but local Maya plugin installation, real Maya FBX export and interactive browser testing on a second device must be performed on the user's side.
