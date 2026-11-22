@@ -58,6 +58,11 @@ assert.match(entrySource, /new THREE\.InstancedMesh\(geometry,material,variantTr
 assert.doesNotMatch(entrySource, /_Cross|geoB\.rotateY\(Math\.PI\s*\*\s*0\.5\)/, 'crossed tree billboards reintroduced');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
+assert.match(entrySource, /drone-controller\\.v69\\.js/, 'active app must use the collision-aware drone controller');
+const droneSource = read('drone-controller.v69.js').toString('utf8');
+assert.match(droneSource, /intersectObject\\(this\\.terrain,true\\)/, 'drone terrain raycast missing');
+assert.match(droneSource, /minimumTerrainClearance=2\\.5/, 'drone terrain clearance missing');
+assert.match(droneSource, /enforceTerrainClearance\\(nextPosition\\)/, 'drone movement collision guard missing');
 pass('forest rendering and asynchronous-load safeguards present');
 
 assert.match(entrySource, /e\\.code==='KeyV'\\|\\|\\(e\\.code==='Tab'&& !focusIsControl\\)/, 'V / TAB mode-switch shortcut missing');
@@ -82,6 +87,11 @@ assert.match(html, /\.mode-hud-collapsible\[hidden\]/, 'collapsed tutorial displ
 assert.match(html, /max-height:calc\(100dvh - 84px\)/, 'viewport-aware HUD sizing missing');
 assert.match(html, /КАК НАЧАТЬ/, 'beginner skier tutorial missing');
 assert.match(html, /КАК УПРАВЛЯТЬ/, 'beginner drone tutorial missing');
+assert.match(html, /id="skierTutorialContent"[^>]*class="mode-hud-collapsible"/, 'skier tutorial wrapper missing');
+assert.match(html, /id="droneTutorialContent"[^>]*class="mode-hud-collapsible"/, 'drone tutorial wrapper missing');
+assert.match(html, /max-height:none!important;height:auto!important;overflow:visible!important/, 'HUD must not scroll or clip vertically');
+assert.match(html, /height:auto!important;overflow:visible!important;padding:0!important;margin:0!important/, 'tutorial content must not scroll');
+assert.match(html, /grid-template-columns:minmax\\(0,\\.88fr\\) minmax\\(0,1\\.12fr\\)/, 'tutorial and key guide must use side-by-side layout');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
 
 const slopeIds = JSON.parse(read('assets/slopes.json').toString('utf8'));
