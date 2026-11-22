@@ -7,7 +7,8 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v102.js`.\n- `github-config.js` is loaded before the app and contains the public GitHub Publisher credential after one-time setup.
+- Current app: `app.v106.js`.
+- Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Skier: `skier-controller.v73.js`.
 - Drone: `drone-controller.v72.js`.
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
@@ -32,7 +33,7 @@ WASD controls use physical key codes, so they also work with a Russian keyboard 
 
 ## Quality checks
 
-GitHub Actions runs `scripts/validate-project.mjs` on pushes and pull requests. It checks the active entrypoint, local imports, JavaScript syntax, HTML IDs and DOM references, the tree atlas, forest safeguards, slope GLTF buffers and profile curves, the scene manifest, Maya exporter and project-save wiring.
+GitHub Actions runs `scripts/validate-project.mjs` on pushes and pull requests. It checks the active entrypoint, local imports, JavaScript syntax, HTML IDs and DOM references, camera-optics GLSL declarations and render fallback, the tree atlas, forest safeguards, slope GLTF buffers and profile curves, the scene manifest, Maya exporter and project-save wiring.
 
 Run locally with Node.js 22 or later:
 

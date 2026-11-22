@@ -4,17 +4,17 @@ The project is hosted as a static GitHub Pages site. A push to `main` triggers t
 
 ## Current release
 
-- Active browser entrypoint: `index.html` → `app.v77.js`.
+- Active browser entrypoint: `index.html` → `app.v106.js`.
 - Previous app releases remain in the repository for rollback.
 - Skier and drone controllers are versioned separately.
 - Generated forest texture: `assets/trees/snowy_conifer_atlas.webp`.
 
 ## Safe release procedure
 
-1. Read the current active module and controllers before editing.
+1. Read the current active module, camera-optics module and controllers before editing.
 2. Create a new versioned app file rather than overwriting the previous release.
-3. Update only the module script in `index.html` to point at the new file.
-4. Run `node scripts/validate-project.mjs`, or let the quality-check workflow run on the commit.
+3. Update only the module script in `index.html` to point at the new file. Keep the previous app and optics modules for rollback.
+4. Run `node scripts/validate-project.mjs`, or let the quality-check workflow run on the commit. This includes a GLSL local-declaration check for the active lens shader.
 5. Confirm both **Grade Optimizer quality checks** and **pages build and deployment** succeed for the same commit SHA.
 6. Hard-refresh the live site with Ctrl + F5 and test overview, skier, drone, mode switching, and slope loading.
 

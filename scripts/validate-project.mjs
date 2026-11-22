@@ -38,6 +38,21 @@ for (const path of modulePaths) {
   pass('JavaScript syntax valid: ' + path);
 }
 
+const opticsPath = 'camera-optics.v2.js';
+assert.match(entrySource, /camera-optics\.v2\.js/, 'active app must load the current camera optics module');
+const opticsSource = read(opticsPath).toString('utf8');
+const lensFragmentMatch = opticsSource.match(/fragmentShader:\s*\x60([\s\S]*?)\x60/);
+assert.ok(lensFragmentMatch, 'lens fragment shader is missing');
+const lensMainMatch = lensFragmentMatch[1].match(/void main\s*\(\s*\)\s*\{([\s\S]*?)\n    \}/);
+assert.ok(lensMainMatch, 'lens fragment shader main() is missing');
+const shaderLocals = [...lensMainMatch[1].matchAll(/\b(?:float|int|bool|vec[234]|mat[234])\s+([A-Za-z_]\w*)\b/g)].map(match => match[1]);
+const duplicateShaderLocals = shaderLocals.filter((name, index) => shaderLocals.indexOf(name) !== index);
+assert.deepEqual([...new Set(duplicateShaderLocals)], [], 'duplicate GLSL local declarations in lens main(): ' + [...new Set(duplicateShaderLocals)].join(', '));
+assert.ok(opticsSource.includes('this._markComposerFailed('), 'post-processing failure fallback is missing');
+assert.ok(opticsSource.includes('if (!this.enabled || this.composerFailed)'), 'camera optics must keep direct rendering available when post-processing fails');
+assert.ok(opticsSource.includes('this.syncComposerSize();'), 'composer size must use the allocation guard');
+pass('camera optics GLSL declarations and direct-render fallback are valid');
+
 const assetPath = 'assets/trees/snowy_conifer_atlas.webp';
 const webp = read(assetPath);
 assert.equal(webp.toString('ascii', 0, 4), 'RIFF', 'tree atlas is not a RIFF image');
