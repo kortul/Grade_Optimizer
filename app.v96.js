@@ -1846,6 +1846,7 @@ const editorMaterialSelect=document.getElementById('editorMaterialSelect');
 let editorSelectedAsset=null;
 let editorSelectedNode=null;
 let editorSelectedMaterialKey='';
+const editorOriginalVisibility=new WeakMap();
 let editorTreeExpanded=new Set();
 let editorTreeInitialized=new Set();
 let editorMaterialTargets=[];
@@ -1956,6 +1957,7 @@ function collectLiveSceneAssets(){
   let meshIndex=0;
   state.root.traverse(object=>{
     if(!object.isMesh||!object.material)return;
+    captureEditorNodeVisibilityDefaults(object);
     const objectName=object.name||('Mesh '+(meshIndex+1));
     const id='scene:'+state.slope+':'+meshIndex+':'+objectName;
     const defaults={
@@ -2569,6 +2571,7 @@ async function importGlbFiles(files){
       const gltf=await parseSceneModel(buffer,file.name);
       const root=gltf.scene||gltf.scenes?.[0];
       if(!root)throw new Error('В GLB не найдена сцена.');
+      captureEditorNodeVisibilityDefaults(root);
       let meshCount=0;
       root.traverse(object=>{
         if(object.isMesh){
@@ -2640,24 +2643,40 @@ function applyClientAssetTransform(root,transform){
   if(Array.isArray(transform?.rotation)&&transform.rotation.length===3)root.rotation.set(transform.rotation[0],transform.rotation[1],transform.rotation[2]);
   if(Array.isArray(transform?.scale)&&transform.scale.length===3)root.scale.fromArray(transform.scale);
 }
+function captureEditorNodeVisibilityDefaults(root){
+  root?.traverse(node=>{
+    if(!editorOriginalVisibility.has(node))editorOriginalVisibility.set(node,!!node.visible);
+  });
+}
 function collectEditorNodeVisibility(root){
   const states=[];
+  if(!root)return states;
+  captureEditorNodeVisibilityDefaults(root);
   function visit(node,path){
-    if(node.visible===false)states.push({path,name:node.name||'',visible:false});
+    const defaultVisible=editorOriginalVisibility.has(node)?editorOriginalVisibility.get(node):true;
+    if(node.visible!==defaultVisible){
+      states.push({path:path.slice(),name:node.name||'',visible:!!node.visible});
+    }
     (node.children||[]).forEach((child,index)=>visit(child,path.concat(index)));
   }
-  (root?.children||[]).forEach((child,index)=>visit(child,[index]));
+  (root.children||[]).forEach((child,index)=>visit(child,[index]));
   return states;
 }
 function applyEditorNodeVisibility(root,states){
+  if(!root)return;
+  captureEditorNodeVisibilityDefaults(root);
+  root.traverse(node=>{
+    if(node===root)return;
+    node.visible=editorOriginalVisibility.get(node)!==false;
+  });
   (states||[]).forEach(state=>{
-    if(!Array.isArray(state.path)||!state.path.length)return;
+    if(!Array.isArray(state.path)||!state.path.length||typeof state.visible!=='boolean')return;
     let node=root;
     for(const index of state.path){
       if(!node?.children||!node.children[index]){node=null;break;}
       node=node.children[index];
     }
-    if(node&&state.visible===false)node.visible=false;
+    if(node)node.visible=state.visible;
   });
 }
 function collectEditorNodeMetadata(root){
@@ -2777,6 +2796,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       const gltf=await parseSceneModel(buffer,item.file,'./clients/'+slug+'/models/');
       const root=gltf.scene||gltf.scenes?.[0];
       if(!root)throw new Error('Модель без сцены: '+item.name);
+      captureEditorNodeVisibilityDefaults(root);
       root.name=item.name||root.name||'Client model';
       applyClientAssetTransform(root,item.transform||{});
       applyEditorNodeVisibility(root,item.nodeVisibility||[]);
@@ -3665,6 +3685,7 @@ async function restoreSceneAssetsLocally(){
       const model=await parseSceneModel(buffer,record.meta?.sourceFile||'model.glb');
       const root=model.scene||model.scenes?.[0];
       if(!root)throw new Error('Модель не содержит сцены.');
+      captureEditorNodeVisibilityDefaults(root);
       const id=entry.key.slice('scene-asset:'.length);
       const meta={...(record.meta||{}),id,name:record.name||root.name||id};
       if(record.transform?.position)root.position.fromArray(record.transform.position);
