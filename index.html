@@ -467,6 +467,102 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   .mode-switch-action{transition:none}
 }
 
+
+/* v0.79 — compact, hideable tutorials with a permanently pinned telemetry strip */
+.mode-hud{
+  width:min(470px,calc(100% - 32px));
+  max-height:min(660px,calc(100dvh - 92px));
+  overflow:hidden;
+  display:none;
+  flex-direction:column;
+  padding:13px;
+}
+#app.skier-mode #skierHud,#app.drone-mode #droneHud{display:flex}
+.mode-hud-header{flex:0 0 auto;gap:8px;margin-bottom:8px}
+.mode-hud-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex:0 0 auto}
+.mode-hud-header-actions .mode-hud-status{padding:6px 8px;font-size:8px}
+.mode-hud-toggle{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  width:auto!important;min-width:82px;min-height:32px;margin:0!important;padding:5px 8px;
+  border:1px solid rgba(198,219,236,.2);border-radius:8px;
+  background:rgba(255,255,255,.07);color:#e7f1f8;font-size:10px;font-weight:750;
+  white-space:nowrap
+}
+.mode-hud-toggle:hover{background:rgba(255,255,255,.13)}
+.mode-hud-toggle kbd{min-width:19px;height:19px;font-size:9px}
+.mode-hud-stats{flex:0 0 auto;gap:7px;margin:0 0 9px}
+.mode-stat{padding:8px 9px}
+.mode-stat>span{font-size:8px;margin-bottom:3px}
+.mode-stat-primary strong{font-size:24px}
+.mode-stat strong{font-size:18px}
+.mode-hud-collapsible{
+  min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:0 4px 3px 0;margin-right:-4px;
+  scrollbar-width:thin;scrollbar-color:rgba(156,190,218,.35) transparent
+}
+.mode-hud-collapsible[hidden]{display:none!important}
+.mode-tutorial,.mode-controls{padding:9px 10px;margin-bottom:7px}
+.mode-section-heading{margin-bottom:7px}
+.tutorial-steps{gap:6px}
+.tutorial-step{gap:8px}
+.step-number{width:21px;height:21px;flex-basis:21px;border-radius:7px}
+.tutorial-step strong,.control-tile strong{font-size:11px}
+.tutorial-step small,.control-tile small{font-size:9px;line-height:1.32}
+.mode-hud kbd{height:21px;min-width:20px;font-size:9px}
+.tutorial-step kbd{height:17px;min-width:17px}
+.control-grid{gap:5px}
+.control-tile{min-height:48px;padding:6px 7px;gap:7px}
+.control-keys{min-width:48px}
+.control-keys-wide{min-width:70px}
+.mode-hud-foot{gap:6px}
+.mode-actions{gap:6px}
+.mode-switch-action,.mode-overview-action{min-height:37px;padding:7px 9px;font-size:10px}
+.mode-lock-hint{font-size:9px}
+.hud-advanced{margin-top:7px;padding:7px 9px}
+#droneHud .mode-hud-stats{margin:0 0 9px}
+#droneHud .drone-intro{font-size:9px;line-height:1.35}
+#droneHud .drone-stats{grid-template-columns:.72fr 1.4fr}
+@media(max-width:720px){
+  .mode-hud{left:8px;bottom:8px;width:calc(100% - 16px);max-height:calc(100dvh - 84px);padding:11px}
+  .mode-hud-title{font-size:17px}
+  .mode-hud-header{margin-bottom:7px}
+  .mode-stat{padding:7px}
+  .mode-stat-primary strong{font-size:22px}
+  .mode-stat strong{font-size:16px}
+  .mode-tutorial,.mode-controls{padding:8px;margin-bottom:6px}
+  .mode-hud .mode-actions button{min-height:36px}
+  .mode-switch-action{min-width:0}
+}
+@media(max-width:390px){
+  .mode-hud{max-height:calc(100dvh - 76px);padding:9px}
+  .mode-hud-header-actions{gap:4px}
+  .mode-hud-header-actions .mode-hud-status{font-size:7px;padding:5px 6px}
+  .mode-hud-toggle{min-width:75px;padding:4px 6px;font-size:9px}
+  .mode-hud-stats{gap:5px}
+  .mode-stat{padding:6px}
+  .mode-stat>span{font-size:7px;letter-spacing:.06em}
+  .mode-stat-primary strong{font-size:19px}
+  .mode-stat strong{font-size:14px}
+  .mode-stat strong small{font-size:8px}
+  .control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .control-tile{min-height:57px;padding:5px;gap:5px}
+  .control-keys{min-width:42px;gap:2px}
+  .control-keys kbd{min-width:18px;padding:0 4px;font-size:8px}
+  .control-keys-wide{min-width:62px}
+  .control-tile strong{font-size:10px}
+  .control-tile small{font-size:8px}
+  .mode-section-note{font-size:7px}
+}
+@media(max-height:700px){
+  .mode-hud{max-height:calc(100dvh - 76px);padding:10px}
+  .mode-hud-header{margin-bottom:6px}
+  .mode-hud-stats{margin-bottom:6px}
+  .mode-tutorial,.mode-controls{padding:7px 8px;margin-bottom:5px}
+  .tutorial-steps{gap:5px}
+  .control-tile{min-height:43px}
+  .mode-hud-foot{gap:4px}
+}
+
 </style>
 </head>
 <body>
@@ -630,15 +726,19 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <span class="mode-hud-symbol" aria-hidden="true">⛷</span>
       <div><div class="mode-hud-eyebrow">РЕЖИМ ЛЫЖНИКА</div><div class="mode-hud-title">Твой первый спуск</div></div>
     </div>
-    <span class="mode-hud-status" id="groundState">НА СНЕГУ</span>
+    <div class="mode-hud-header-actions">
+      <span class="mode-hud-status" id="groundState">НА СНЕГУ</span>
+      <button id="toggleSkierTutorial" class="mode-hud-toggle" type="button" aria-expanded="true" aria-controls="skierTutorialContent" title="Скрыть или показать туториал · H"><span class="tutorial-toggle-label">Скрыть</span><kbd>H</kbd></button>
+    </div>
   </div>
 
   <div class="mode-hud-stats">
     <div class="mode-stat mode-stat-primary"><span>СКОРОСТЬ</span><strong><span id="speedValue">0</span><small>км/ч</small></strong></div>
-    <div class="mode-stat"><span>УКЛОН</span><strong><span id="slopeValue">0</span><small>°</small></strong></div>
+    <div class="mode-stat"><span>УГОЛ СКЛОНА</span><strong><span id="slopeValue">0</span><small>°</small></strong></div>
     <div class="mode-stat"><span>УСКОРЕНИЕ</span><strong><span id="accelerationValue">0.00</span><small>м/с²</small></strong></div>
   </div>
 
+  <div id="skierTutorialContent" class="mode-hud-collapsible">
   <section class="mode-tutorial">
     <div class="mode-section-heading"><span>КАК НАЧАТЬ</span><span class="mode-section-note">ВСЁ ПРОСТО</span></div>
     <div class="tutorial-steps">
@@ -676,6 +776,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <div class="hudSnowScale"><span>Лёд / быстро</span><span>Рыхлый снег / медленнее</span></div>
     </div>
   </details>
+  </div>
 </div>
 
 <div id="droneHud" class="mode-hud drone-hud" role="region" aria-label="Подсказки управления дроном">
@@ -684,7 +785,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <span class="mode-hud-symbol drone-symbol" aria-hidden="true">✥</span>
       <div><div class="mode-hud-eyebrow">РЕЖИМ ДРОНА</div><div class="mode-hud-title">Свободный полёт</div></div>
     </div>
-    <span class="mode-hud-status drone-status">● В ПОЛЁТЕ</span>
+    <div class="mode-hud-header-actions">
+      <span class="mode-hud-status drone-status">● В ПОЛЁТЕ</span>
+      <button id="toggleDroneTutorial" class="mode-hud-toggle drone-hud-toggle" type="button" aria-expanded="true" aria-controls="droneTutorialContent" title="Скрыть или показать туториал · H"><span class="tutorial-toggle-label">Скрыть</span><kbd>H</kbd></button>
+    </div>
   </div>
 
   <div class="mode-hud-stats drone-stats">
@@ -692,6 +796,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="drone-intro">Лети над трассой, осматривай склон и меняй высоту. Вперёд летим туда, куда смотрит камера.</div>
   </div>
 
+  <div id="droneTutorialContent" class="mode-hud-collapsible">
   <section class="mode-tutorial">
     <div class="mode-section-heading"><span>КАК УПРАВЛЯТЬ</span><span class="mode-section-note">3 ПРОСТЫХ ШАГА</span></div>
     <div class="tutorial-steps">
@@ -720,6 +825,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     </div>
     <div id="droneLockHint" class="mode-lock-hint">Кликни по сцене, чтобы включить управление мышью · ESC освобождает курсор</div>
   </div>
+  </div>
 </div>
 <div id="legend">
 <div><span class="sw" style="background:#598cd9"></span>Насыпь</div><div><span class="sw" style="background:#d17a5c"></span>Выемка</div>
@@ -733,4 +839,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v78.js"></script></body></html>
+<script type="module" src="./app.v79.js"></script></body></html>
