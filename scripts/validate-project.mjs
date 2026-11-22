@@ -162,6 +162,13 @@ assert.ok(mayaExporter.includes('text="C:/zGit/GradeOptimizer/Grade_Optimizer"')
 assert.match(mayaExporter, /WINDOW \+ "_selection",\s*label="Export selected objects only",\s*value=True/, 'Maya exporter must default to selected objects only');
 assert.ok(mayaExporter.includes('label="Project ID"'), 'Maya exporter must use the clearer Project ID label');
 assert.ok(mayaExporter.includes('Project ID: латиница'), 'Maya exporter project ID validation message missing');
+assert.ok(mayaExporter.includes('METADATA_PRESETS = {'), 'Maya exporter metadata presets missing');
+assert.ok(mayaExporter.includes('"Рельеф"') && mayaExporter.includes('"Здание"') && mayaExporter.includes('"Подъёмник / опора"'), 'common Maya metadata presets missing');
+assert.ok(mayaExporter.includes('cmds.optionMenuGrp(') && mayaExporter.includes('changeCommand=on_metadata_preset_changed'), 'metadata preset dropdown missing');
+assert.ok(mayaExporter.includes('OPTION_PRESET') && mayaExporter.includes('OPTION_PROJECT') && mayaExporter.includes('remember_export_settings'), 'Maya exporter settings must persist between launches');
+assert.ok(mayaExporter.includes('def clear_metadata_from_selection('), 'clear metadata selection action missing');
+assert.ok(mayaExporter.includes('collapsable=True') && mayaExporter.includes('collapse=True'), 'Maya metadata controls must be collapsed by default');
+assert.ok(!mayaExporter.includes('WINDOW + "_role"') && !mayaExporter.includes('WINDOW + "_tags"'), 'legacy always-visible Role / Tags text fields must not return');
 assert.ok(mayaPlugin.includes('def maya_useNewAPI():'), 'Maya Python API 2.0 marker missing');
 assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
 assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');
