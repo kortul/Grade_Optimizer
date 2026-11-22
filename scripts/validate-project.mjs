@@ -53,6 +53,19 @@ assert.ok(opticsSource.includes('if (!this.enabled || this.composerFailed)'), 'c
 assert.ok(opticsSource.includes('this.syncComposerSize();'), 'composer size must use the allocation guard');
 pass('camera optics GLSL declarations and direct-render fallback are valid');
 
+const sceneLookKeys = ['environment','camera','lens','color','render'];
+assert.ok(html.includes('role="tablist" aria-label="Scene Look categories"'), 'Scene Look tablist is missing');
+for (const key of sceneLookKeys) {
+  assert.ok(html.includes('data-look-tab="' + key + '"'), 'Scene Look tab missing: ' + key);
+  assert.ok(html.includes('data-look-panel="' + key + '"'), 'Scene Look tab panel missing: ' + key);
+}
+assert.ok(html.includes('scene-editor-gear'), 'Scene Editor gear icon is missing');
+assert.ok(html.includes('aria-label="Scene Editor"'), 'Scene Editor icon button needs an accessible label');
+assert.ok(entrySource.includes('function bindSceneLookTabs()'), 'Scene Look tab behavior is missing');
+assert.ok(entrySource.includes("['ArrowLeft','ArrowRight','Home','End']"), 'Scene Look keyboard navigation is missing');
+assert.ok(html.includes('id="sceneQuality"') && html.includes('id="sceneToneMapping"'), 'render settings must remain available in the Render tab');
+pass('Sketchfab-style Scene Look tabs, keyboard navigation and gear button are present');
+
 const assetPath = 'assets/trees/snowy_conifer_atlas.webp';
 const webp = read(assetPath);
 assert.equal(webp.toString('ascii', 0, 4), 'RIFF', 'tree atlas is not a RIFF image');
