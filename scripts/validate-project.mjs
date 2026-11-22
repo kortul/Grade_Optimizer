@@ -11,6 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
+const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
 
@@ -25,7 +26,6 @@ const missingDomRefs = [...new Set(staticDomRefs.filter(id => !ids.includes(id))
 assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missingDomRefs.join(', '));
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
 
-const entrySource = read(entry).toString('utf8');
 const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map(m => m[1]);
 const modulePaths = [entry, ...localImports.map(p => resolve(dirname(entry), p))];
 for (const path of modulePaths) {
