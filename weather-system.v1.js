@@ -6,6 +6,7 @@
 export class WeatherSystem {
   static PRESETS = {
     clear:    { label: 'Ясно', clouds: 0.00, snowfall: 0,    wind: 2,  visibility: 1.00 },
+    light:    { label: 'Ясно · лёгкие облака', clouds: 0.18, snowfall: 0,    wind: 3,  visibility: 0.99 },
     partly:   { label: 'Переменная облачность', clouds: 0.34, snowfall: 0,    wind: 5,  visibility: 0.96 },
     cloudy:   { label: 'Облачно', clouds: 0.66, snowfall: 0,    wind: 9,  visibility: 0.86 },
     overcast: { label: 'Пасмурно', clouds: 0.96, snowfall: 0,    wind: 13, visibility: 0.73 },
@@ -24,7 +25,7 @@ export class WeatherSystem {
     this.sunDirection = new THREE.Vector3(0, 1, 0);
     this.cameraPosition = new THREE.Vector3();
     this.elapsed = 0;
-    this.params = { ...WeatherSystem.PRESETS.clear, preset: 'clear' };
+    this.params = { ...WeatherSystem.PRESETS.light, preset: 'light' };
     this.lastSkyColors = null;
     this.nightCloudColor = new THREE.Color(0x536477);
     this.dayCloudColor = new THREE.Color(0xf2f5f7);
