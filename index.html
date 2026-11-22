@@ -354,6 +354,113 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @keyframes loadMountainFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @media(max-width:620px){#sceneBar .mode-pair{grid-column:span 2;justify-content:center}#sceneBar .mode-pair button{min-width:0}}
 
+
+/* v0.78 — beginner-friendly skier / drone instruction HUD */
+.mode-hud{
+  display:none;position:absolute;left:16px;bottom:16px;z-index:12;
+  width:min(440px,calc(100% - 32px));max-height:min(78vh,700px);
+  overflow-y:auto;overscroll-behavior:contain;padding:18px;
+  border:1px solid rgba(194,220,240,.2);border-radius:18px;
+  background:linear-gradient(145deg,rgba(14,26,38,.96),rgba(7,15,24,.94));
+  color:#f4f8fc;box-shadow:0 18px 60px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.07);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  scrollbar-width:thin;scrollbar-color:rgba(156,190,218,.35) transparent
+}
+#app.skier-mode #skierHud,#app.drone-mode #droneHud{display:block}
+#app.skier-mode #panel,#app.drone-mode #panel{display:none}
+#app.skier-mode #legend,#app.skier-mode #homeBtn,#app.skier-mode #measureBtn,
+#app.drone-mode #legend,#app.drone-mode #homeBtn,#app.drone-mode #measureBtn{display:none}
+.skier-hud{--mode-accent:#57d69a;--mode-accent-soft:rgba(62,194,133,.13)}
+.drone-hud{--mode-accent:#83c8ff;--mode-accent-soft:rgba(83,163,226,.14)}
+.mode-hud-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.mode-hud-identity{display:flex;align-items:center;gap:11px;min-width:0}
+.mode-hud-symbol{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:13px;
+ background:var(--mode-accent-soft);border:1px solid color-mix(in srgb,var(--mode-accent) 30%,transparent);
+ color:var(--mode-accent);font-size:25px}
+.drone-symbol{font-size:28px}
+.mode-hud-eyebrow{font-size:10px;font-weight:800;letter-spacing:.15em;color:var(--mode-accent);margin-bottom:3px}
+.mode-hud-title{font-size:20px;line-height:1.1;font-weight:760;letter-spacing:-.02em;color:#f8fbff}
+.mode-hud-status{flex:0 0 auto;padding:7px 9px;border-radius:999px;border:1px solid rgba(125,213,169,.22);
+ background:rgba(51,154,105,.13);color:#9ce4bd;font-size:9px;font-weight:800;letter-spacing:.07em}
+.drone-status{color:#a8d8ff;background:rgba(62,139,201,.15);border-color:rgba(130,195,244,.23)}
+.mode-hud-stats{display:grid;grid-template-columns:1fr .75fr .9fr;gap:8px;margin-bottom:14px}
+.mode-stat{min-width:0;padding:10px 11px;border:1px solid rgba(193,217,238,.11);border-radius:11px;background:rgba(255,255,255,.045)}
+.mode-stat>span{display:block;font-size:9px;letter-spacing:.1em;color:#9fb2c4;font-weight:800;margin-bottom:4px}
+.mode-stat strong{display:flex;align-items:baseline;gap:4px;color:#fff;font-size:20px;font-weight:760;font-variant-numeric:tabular-nums}
+.mode-stat strong small{font-size:10px;color:#aebdcb;font-weight:600}
+.mode-stat-primary{border-color:color-mix(in srgb,var(--mode-accent) 23%,transparent);background:var(--mode-accent-soft)}
+.mode-stat-primary strong{font-size:27px}
+.mode-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 9px}
+.mode-section-heading>span:first-child{font-size:10px;letter-spacing:.12em;font-weight:850;color:#e7f0f7}
+.mode-section-note{font-size:8px;letter-spacing:.08em;color:#8499ab;text-align:right}
+.mode-tutorial,.mode-controls{padding:12px;margin-bottom:11px;border:1px solid rgba(190,215,236,.1);border-radius:13px;background:rgba(255,255,255,.035)}
+.tutorial-steps{display:grid;gap:9px}
+.tutorial-step{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.step-number{width:23px;height:23px;display:grid;place-items:center;flex:0 0 23px;border-radius:8px;background:var(--mode-accent-soft);color:var(--mode-accent);font-size:11px;font-weight:850}
+.tutorial-step strong,.control-tile strong{display:block;color:#eef5fb;font-size:12px;line-height:1.3;font-weight:730}
+.tutorial-step small,.control-tile small{display:block;margin-top:2px;color:#a6b7c6;font-size:10px;line-height:1.4}
+.mode-hud kbd{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:23px;padding:0 6px;
+ border:1px solid rgba(204,224,240,.24);border-bottom-width:2px;border-radius:6px;
+ background:linear-gradient(180deg,#334657,#253544);color:#f5f9fc;
+ font:800 10px/1 ui-sans-serif,system-ui,sans-serif;white-space:nowrap;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.tutorial-step kbd{height:18px;min-width:18px;padding:0 4px;font-size:9px;border-radius:4px;vertical-align:1px}
+.control-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.control-tile{display:flex;align-items:center;gap:9px;min-width:0;min-height:58px;padding:8px;border:1px solid rgba(190,215,236,.09);border-radius:10px;background:rgba(4,12,20,.28)}
+.control-keys{display:flex;align-items:center;justify-content:center;gap:3px;min-width:53px;flex:0 0 auto;color:#8297a8}
+.control-keys>span{font-size:9px;color:#7990a3}
+.control-keys-wide{gap:3px;min-width:77px}
+.control-keys-wide kbd{font-size:8px;padding:0 4px}
+.mode-hud .key-mouse{min-width:49px;font-size:8px;letter-spacing:.03em}
+.control-tile>div:last-child{min-width:0}
+.control-tile-switch{background:var(--mode-accent-soft);border-color:color-mix(in srgb,var(--mode-accent) 25%,transparent)}
+.mode-hud-foot{display:grid;grid-template-columns:1fr auto;align-items:center;gap:9px;margin-top:2px}
+.mode-foot-tip{display:flex;align-items:center;gap:7px;color:#b8c8d5;font-size:10px;line-height:1.3}
+.mode-foot-tip kbd{min-width:25px;color:#fff}
+.mode-switch-action{display:flex;align-items:center;justify-content:center;gap:10px;width:auto;min-width:176px;min-height:42px;padding:9px 12px;margin:0;
+ border:1px solid rgba(114,223,170,.28);border-radius:10px;background:linear-gradient(135deg,#208d60,#31ae79);
+ color:#fff;font-size:12px;font-weight:800;letter-spacing:0;box-shadow:0 5px 16px rgba(24,143,91,.2)}
+.mode-switch-action:hover{filter:brightness(1.09)}
+.mode-switch-action:focus-visible{outline:3px solid rgba(198,237,255,.8);outline-offset:2px}
+.action-shortcut{padding:4px 6px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(0,0,0,.12);font-size:9px;font-weight:750;white-space:nowrap}
+.drone-switch-action{border-color:rgba(143,205,255,.3);background:linear-gradient(135deg,#286da5,#418fca);box-shadow:0 5px 16px rgba(38,112,174,.2)}
+.mode-lock-hint{grid-column:1/-1;color:#f2d28a;font-size:10px;line-height:1.4}
+.hud-advanced{margin-top:10px;padding:8px 10px;border:1px solid rgba(190,215,236,.1);border-radius:10px;background:rgba(255,255,255,.025)}
+.hud-advanced summary{color:#9fb3c4;font-size:10px;letter-spacing:.04em;text-transform:none}
+.hud-advanced[open] summary{margin-bottom:9px;color:#d5e3ed}
+.hud-advanced .hudSnow{margin:0;padding-top:0;border-top:0}
+.hud-advanced .hudSnowHead{font-size:10px}
+.hud-advanced .hudSnowScale{font-size:9px}
+#droneHud .drone-intro{align-self:center;color:#aebfd0;font-size:10px;line-height:1.45;padding-left:5px}
+#droneHud .drone-stats{grid-template-columns:.8fr 1.4fr}
+#droneHud .mode-hud-stats{margin-bottom:14px}
+@media(max-width:720px){
+  .mode-hud{left:8px;bottom:8px;width:calc(100% - 16px);max-height:min(68vh,620px);padding:13px;border-radius:15px}
+  .mode-hud-header{margin-bottom:10px}
+  .mode-hud-symbol{width:40px;height:40px;flex-basis:40px}
+  .mode-hud-title{font-size:18px}
+  .mode-stat{padding:8px}
+  .mode-stat-primary strong{font-size:24px}
+  .mode-stat strong{font-size:17px}
+  .mode-tutorial,.mode-controls{padding:10px;margin-bottom:8px}
+  .control-grid{gap:5px}
+  .control-tile{min-height:54px;padding:6px;gap:6px}
+  .control-tile strong{font-size:11px}
+  .control-tile small{font-size:9px}
+  .mode-switch-action{min-width:148px;min-height:40px;padding:8px;font-size:11px}
+}
+@media(max-width:390px){
+  .mode-hud{max-height:64vh;padding:11px}
+  .mode-section-note{font-size:7px}
+  .control-grid{grid-template-columns:1fr}
+  .control-tile{min-height:48px}
+  .mode-hud-foot{grid-template-columns:1fr}
+  .mode-switch-action{width:100%}
+  .mode-lock-hint{grid-column:1}
+}
+@media(prefers-reduced-motion:reduce){
+  .mode-switch-action{transition:none}
+}
+
 </style>
 </head>
 <body>
@@ -511,29 +618,98 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <button id="saveSceneConfig" type="button">СОХРАНИТЬ НАСТРОЙКИ СЦЕНЫ · JSON</button>
 </div>
 
-<div id="skierHud">
-  <div class="hudHead"><span>РЕЖИМ ЛЫЖНИКА</span><span class="hudState" id="groundState">НА СНЕГУ</span></div>
-  <div class="hudMetrics">
-    <div class="hudMetric"><strong><span id="speedValue">0</span> <small>км/ч</small></strong>СКОРОСТЬ</div>
-    <div class="hudMetric"><strong><span id="slopeValue">0</span><small>°</small></strong>УКЛОН</div>
-    <div class="hudMetric compact"><strong><span id="accelerationValue">0.00</span> <small>м/с²</small></strong>УСКОРЕНИЕ</div>
+<div id="skierHud" class="mode-hud skier-hud" role="region" aria-label="Подсказки управления лыжником">
+  <div class="mode-hud-header">
+    <div class="mode-hud-identity">
+      <span class="mode-hud-symbol" aria-hidden="true">⛷</span>
+      <div><div class="mode-hud-eyebrow">РЕЖИМ ЛЫЖНИКА</div><div class="mode-hud-title">Твой первый спуск</div></div>
+    </div>
+    <span class="mode-hud-status" id="groundState">НА СНЕГУ</span>
   </div>
-  <div class="hudSnow">
-    <div class="hudSnowHead"><span>СОПРОТИВЛЕНИЕ СНЕГА · μ</span><strong id="snowFrictionValue">0.045</strong></div>
-    <input id="snowFriction" type="range" min="0.02" max="0.14" step="0.001" value="0.045" aria-label="Коэффициент трения снега"/>
-    <div class="hudSnowScale"><span>Лёд / быстрое скольжение</span><span>Мокрый / рыхлый снег</span></div>
+
+  <div class="mode-hud-stats">
+    <div class="mode-stat mode-stat-primary"><span>СКОРОСТЬ</span><strong><span id="speedValue">0</span><small>км/ч</small></strong></div>
+    <div class="mode-stat"><span>УКЛОН</span><strong><span id="slopeValue">0</span><small>°</small></strong></div>
+    <div class="mode-stat"><span>УСКОРЕНИЕ</span><strong><span id="accelerationValue">0.00</span><small>м/с²</small></strong></div>
   </div>
-  <div class="hudControls">W / ↑ — присесть (уменьшить сопротивление воздуха) · S / ↓ — тормоз<br>A / D или ← / → — поворот лыж · Shift / пробел — толчок вперёд и в гору · мышь — обзор</div>
-  <div id="skierLockHint">Кликни по сцене, чтобы захватить мышь</div>
-  <button id="exitSkier" class="secondary" type="button">ВЕРНУТЬСЯ В ОБЗОР · Q</button>
+
+  <section class="mode-tutorial">
+    <div class="mode-section-heading"><span>КАК НАЧАТЬ</span><span class="mode-section-note">ВСЁ ПРОСТО</span></div>
+    <div class="tutorial-steps">
+      <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по склону</strong><small>Мышь начнёт управлять взглядом. Двигай ею, чтобы осмотреться.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">2</span><div><strong>Оттолкнись и поезжай</strong><small>Нажми <kbd>SHIFT</kbd> или <kbd>SPACE</kbd>. На склоне скорость дальше набирается сама.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">3</span><div><strong>Поворачивай и тормози</strong><small><kbd>A</kbd> / <kbd>D</kbd> — поворот, <kbd>S</kbd> — тормоз. Не спеши!</small></div></div>
+    </div>
+  </section>
+
+  <section class="mode-controls">
+    <div class="mode-section-heading"><span>КЛАВИШИ УПРАВЛЕНИЯ</span><span class="mode-section-note">МОЖНО НА РУССКОЙ РАСКЛАДКЕ</span></div>
+    <div class="control-grid">
+      <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>↑</kbd></div><div><strong>Присесть</strong><small>Меньше сопротивление воздуха</small></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>S</kbd><span>/</span><kbd>↓</kbd></div><div><strong>Тормозить</strong><small>Снизить скорость</small></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Поворот</strong><small>Влево / вправо · также ← / →</small></div></div>
+      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SHIFT</kbd><span>или</span><kbd>SPACE</kbd></div><div><strong>Толчок палками</strong><small>Добавить скорость, даже в гору</small></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Осмотреться</strong><small>Поверни камеру движением мыши</small></div></div>
+      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd><span>/</span><kbd>TAB</kbd></div><div><strong>Сменить режим</strong><small>Лыжник ↔ дрон</small></div></div>
+    </div>
+  </section>
+
+  <div class="mode-hud-foot">
+    <div class="mode-foot-tip"><kbd>Q</kbd><span>Вернуться к общему обзору</span></div>
+    <button id="skierSwitchDrone" class="mode-switch-action" type="button"><span>Полететь на дроне</span><span class="action-shortcut">V / TAB&nbsp; ↗</span></button>
+    <div id="skierLockHint" class="mode-lock-hint">Кликни по склону, чтобы включить управление мышью · ESC освобождает курсор</div>
+  </div>
+
+  <details class="hud-advanced">
+    <summary>Дополнительно · скольжение по снегу</summary>
+    <div class="hudSnow">
+      <div class="hudSnowHead"><span>СОПРОТИВЛЕНИЕ СНЕГА · μ</span><strong id="snowFrictionValue">0.045</strong></div>
+      <input id="snowFriction" type="range" min="0.02" max="0.14" step="0.001" value="0.045" aria-label="Коэффициент трения снега"/>
+      <div class="hudSnowScale"><span>Лёд / быстро</span><span>Рыхлый снег / медленнее</span></div>
+    </div>
+  </details>
 </div>
-<div id="droneHud">
-  <div class="drone-hud-title"><span>РЕЖИМ ДРОНА</span><span class="drone-hud-live">● ПОЛЁТ</span></div>
-  <div class="drone-hud-metrics"><span>СКОРОСТЬ</span><strong><span id="droneSpeedValue">0</span> км/ч</strong></div>
-  <div class="hudControls">W / S — вперёд / назад · A / D — в стороны<br>Пробел — вверх · Shift — вниз · Ctrl — ускорение<br>Мышь — направление камеры · Q — в обзор</div>
-  <div id="droneLockHint">Кликни по сцене, чтобы захватить мышь</div>
-  <div class="drone-hud-controls">W / S — вперёд и назад · A / D — в стороны<br/>SPACE / SHIFT — высота · CTRL — ускорение<br/>TAB — переключить лыжник / дрон · Q — обзор</div>
-  <button id="exitDrone" class="secondary" type="button">ВЕРНУТЬСЯ В ОБЗОР · Q</button>
+
+<div id="droneHud" class="mode-hud drone-hud" role="region" aria-label="Подсказки управления дроном">
+  <div class="mode-hud-header">
+    <div class="mode-hud-identity">
+      <span class="mode-hud-symbol drone-symbol" aria-hidden="true">✥</span>
+      <div><div class="mode-hud-eyebrow">РЕЖИМ ДРОНА</div><div class="mode-hud-title">Свободный полёт</div></div>
+    </div>
+    <span class="mode-hud-status drone-status">● В ПОЛЁТЕ</span>
+  </div>
+
+  <div class="mode-hud-stats drone-stats">
+    <div class="mode-stat mode-stat-primary"><span>СКОРОСТЬ</span><strong><span id="droneSpeedValue">0</span><small>км/ч</small></strong></div>
+    <div class="drone-intro">Лети над трассой, осматривай склон и меняй высоту. Вперёд летим туда, куда смотрит камера.</div>
+  </div>
+
+  <section class="mode-tutorial">
+    <div class="mode-section-heading"><span>КАК УПРАВЛЯТЬ</span><span class="mode-section-note">3 ПРОСТЫХ ШАГА</span></div>
+    <div class="tutorial-steps">
+      <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по сцене</strong><small>Захвати мышь, затем двигай ею, чтобы направить камеру.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">2</span><div><strong>Лети вперёд или назад</strong><small><kbd>W</kbd> — вперёд, <kbd>S</kbd> — назад. Полёт идёт в сторону взгляда.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">3</span><div><strong>Меняй высоту</strong><small><kbd>SPACE</kbd> — вверх, <kbd>SHIFT</kbd> — вниз. <kbd>CTRL</kbd> — быстрее.</small></div></div>
+    </div>
+  </section>
+
+  <section class="mode-controls">
+    <div class="mode-section-heading"><span>КЛАВИШИ УПРАВЛЕНИЯ</span><span class="mode-section-note">РАБОТАЕТ И НА РУССКОЙ РАСКЛАДКЕ</span></div>
+    <div class="control-grid">
+      <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>S</kbd></div><div><strong>Вперёд / назад</strong><small>По направлению камеры</small></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Влево / вправо</strong><small>Боковое перемещение</small></div></div>
+      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SPACE</kbd><span>/</span><kbd>SHIFT</kbd></div><div><strong>Выше / ниже</strong><small>Управление высотой</small></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>CTRL</kbd></div><div><strong>Ускорение</strong><small>Более быстрый полёт</small></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Направление</strong><small>Посмотри туда, куда хочешь лететь</small></div></div>
+      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd><span>/</span><kbd>TAB</kbd></div><div><strong>Сменить режим</strong><small>Дрон ↔ лыжник</small></div></div>
+    </div>
+  </section>
+
+  <div class="mode-hud-foot">
+    <div class="mode-foot-tip"><kbd>Q</kbd><span>Вернуться к общему обзору</span></div>
+    <button id="droneSwitchSkier" class="mode-switch-action drone-switch-action" type="button"><span>Встать на лыжи</span><span class="action-shortcut">V / TAB&nbsp; ↗</span></button>
+    <div id="droneLockHint" class="mode-lock-hint">Кликни по сцене, чтобы включить управление мышью · ESC освобождает курсор</div>
+  </div>
 </div>
 <div id="legend">
 <div><span class="sw" style="background:#598cd9"></span>Насыпь</div><div><span class="sw" style="background:#d17a5c"></span>Выемка</div>

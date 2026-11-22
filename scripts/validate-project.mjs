@@ -19,7 +19,7 @@ const duplicateIds = ids.filter((id, i) => ids.indexOf(id) !== i);
 assert.deepEqual([...new Set(duplicateIds)], [], 'duplicate HTML ids: ' + [...new Set(duplicateIds)].join(', '));
 pass('HTML ids are unique (' + ids.length + ')');
 
-const staticDomRefs = [...read('app.v77.js').toString('utf8').matchAll(/getElementById\(['"]([^'"]+)['"]\)/g)].map(m => m[1]);
+const staticDomRefs = [...entrySource.matchAll(/getElementById\(['"]([^'"]+)['"]\)/g)].map(m => m[1]);
 assert.ok(staticDomRefs.length > 0, 'expected to find static DOM lookups in the app');
 const missingDomRefs = [...new Set(staticDomRefs.filter(id => !ids.includes(id)))];
 assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missingDomRefs.join(', '));
@@ -59,6 +59,15 @@ assert.doesNotMatch(entrySource, /_Cross|geoB\.rotateY\(Math\.PI\s*\*\s*0\.5\)/,
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
 pass('forest rendering and asynchronous-load safeguards present');
+
+assert.match(entrySource, /e\\.code==='Tab'\\|\\|e\\.code==='KeyV'/, 'V / TAB mode-switch shortcut missing');
+assert.match(entrySource, /skierSwitchDrone/, 'skier-to-drone HUD button binding missing');
+assert.match(entrySource, /droneSwitchSkier/, 'drone-to-skier HUD button binding missing');
+assert.match(html, /id="skierSwitchDrone"/, 'skier HUD action button missing');
+assert.match(html, /id="droneSwitchSkier"/, 'drone HUD action button missing');
+assert.match(html, /КАК НАЧАТЬ/, 'beginner skier tutorial missing');
+assert.match(html, /КАК УПРАВЛЯТЬ/, 'beginner drone tutorial missing');
+pass('beginner controls, mode toggle and both mode-switch buttons are present');
 
 const slopeIds = JSON.parse(read('assets/slopes.json').toString('utf8'));
 assert.ok(Array.isArray(slopeIds) && slopeIds.length > 0, 'assets/slopes.json must contain at least one slope');
