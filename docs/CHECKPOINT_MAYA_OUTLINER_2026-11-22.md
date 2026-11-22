@@ -2,8 +2,9 @@
 Date: 2026-11-22
 Branch: `main`
 Repository: https://github.com/kortul/Grade_Optimizer
-Latest verified application commit before this update: `3c7d6995ecc48152ed90463a977c6fa819f544ca`
-Latest checkpoint commit before this update: `ffa02f4c8cc724ed7c654970e50d116b6cd9706e`
+Latest verified web application commit: `3c7d6995ecc48152ed90463a977c6fa819f544ca`
+Latest Maya plug-in / test fixture commit: `a8f640ba81f74d1daf00b2e8c5eab6f55494bfb7`
+Checkpoint with Maya test workflow: `9edd689c0333cf301711ac745feecd2e16e1cdc9`
 
 ## Product direction
 
@@ -108,14 +109,16 @@ The client publishing path converts edited imported FBX models to GLB for public
 
 Do not claim local browser IndexedDB edits automatically sync across browsers or devices. The Maya → local Git → GitHub Desktop Push path is intended for asset authoring without a browser GitHub token.
 
-## Validation status before this feature commit
+## Latest automated validation
 
-- Parent commit Quality checks: **success**
-  https://github.com/kortul/Grade_Optimizer/actions/runs/45022835569
-- Parent commit GitHub Pages deployment: **success**
-  https://github.com/kortul/Grade_Optimizer/actions/runs/45022715309
+Latest Maya plug-in / test-scene commit: `a8f640ba81f74d1daf00b2e8c5eab6f55494bfb7`
 
-This update adds source-level Maya fixture tests and Python syntax validation. GitHub Actions will validate the new code after commit. A real Maya runtime / FBX round-trip is still pending.
+- Quality checks: **success**
+  https://github.com/kortul/Grade_Optimizer/actions/runs/45026142538
+- GitHub Pages build and deployment: **success**
+  https://github.com/kortul/Grade_Optimizer/actions/runs/45026142372
+
+The quality workflow validates project structure, Maya menu integration, test-scene source requirements and Python syntax for the exporter, plug-in and test-scene generator. A real Maya runtime / FBX round-trip is still pending; source checks do not prove that Maya actually loaded the plug-in or that a Maya-exported FBX round-trips correctly.
 
 ## Next work
 
