@@ -158,7 +158,7 @@ assert.ok(skierSource.includes('Third_Person_Skier_Avatar'), 'third-person skier
 assert.ok(skierSource.includes('this.skierAvatar.quaternion.copy(this.skiRig.quaternion)'), 'skier avatar must align to ski heading and terrain');
 assert.ok(skierSource.includes('cameraGround.point.y+1.35'), 'third-person camera terrain clearance missing');
 assert.ok(html.includes('id="skierViewStatus"'), 'skier camera view indicator missing');
-assert.ok(html.includes('<kbd>C</kbd>') && html.includes('Камера / 3-е лицо'), 'C key camera control hint missing');
+assert.ok(html.includes('<kbd>C</kbd>') && html.includes('Осмотреться / 3-е лицо'), 'C key camera control hint missing');
 
 
 assert.ok(entrySource.includes("appRoot.classList.toggle('tuck-mode',tuck)"), 'speed tuck CSS state missing');
