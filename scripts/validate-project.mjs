@@ -66,8 +66,8 @@ assert.ok(droneSource.includes('enforceTerrainClearance(nextPosition)'), 'drone 
 assert.ok(droneSource.includes('terrainBoundsMargin=100'), 'drone 100 m terrain bounds margin missing');
 assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'drone entry position is not clamped to the terrain bounds');
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
-assert.match(entrySource, /function fitModeHudToViewport\\(/, 'viewport-aware HUD fitting function missing');
-assert.match(entrySource, /new ResizeObserver\\(scheduleModeHudFit\\)/, 'HUD resize observer missing');
+assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
+assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
 
 assert.match(entrySource, /e\\.code==='KeyV'\\|\\|\\(e\\.code==='Tab'&& !focusIsControl\\)/, 'V / TAB mode-switch shortcut missing');
