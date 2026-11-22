@@ -2,9 +2,9 @@
 Date: 2026-11-22
 Branch: `main`
 Repository: https://github.com/kortul/Grade_Optimizer
-Latest verified web application commit: `3c7d6995ecc48152ed90463a977c6fa819f544ca`
-Latest Maya plug-in / test fixture commit: `a8f640ba81f74d1daf00b2e8c5eab6f55494bfb7`
-Latest verified validation checkpoint: `fab051529334acbfcf91cad8fc300b4f2666495b`
+Latest verified web application / shared Scene Editor persistence commit: `4915ceb1b068e2fa0442b3a09a322e78e3fe40b4`
+Latest Maya plug-in / test fixture commit: `6bd53882f6fb6cedcec1f803005c534d25d32c57`
+Latest verified validation checkpoint: `4915ceb1b068e2fa0442b3a09a322e78e3fe40b4`
 
 ## Product direction
 
@@ -20,9 +20,9 @@ GitHub repository:
 
 The actual local Git working copy is nested at `C:\zGit\GradeOptimizer\Grade_Optimizer`. The local Windows disk is not mounted in the development session. Sync repository changes into this clone using GitHub Desktop.
 
-## Current web application — v95
+## Current web application — v96
 
-Active entry point: `index.html` → `app.v95.js`.
+Active entry point: `index.html` → `app.v96.js`.
 
 Implemented:
 - GLB and FBX import using Three.js loaders.
@@ -41,7 +41,7 @@ Important: per-node Collision / Forest blocker flags are descriptive metadata on
 
 ## Material library
 
-Implemented in v94 and active in v95:
+Implemented in v94 and active in v96:
 - Scene-wide PBR material library lists materials and the number of slots using each material instance.
 - Assign an existing library material to the selected slot to intentionally share it.
 - Make Slot Unique clones one material and its texture objects so the selected slot can be edited independently.
@@ -131,7 +131,7 @@ The quality workflow validates project structure, Maya menu integration, test-sc
 ## Key files
 
 - `index.html` — web app entry point
-- `app.v95.js` — current application
+- `app.v96.js` — current application
 - `maya/plug-ins/grade_optimizer.py` — Maya plug-in entrypoint
 - `maya/GradeOptimizer.mod` — Maya module descriptor
 - `maya/install_maya_module.bat` — Windows installer
@@ -155,7 +155,7 @@ Version 0.2.3 source and automated checks are in commit to be recorded after thi
 
 Maya exporter v0.2.4 no longer writes Collision or Forest blocker flags. Its optional object presets are limited to Role and Tags. These flags are set on individual nodes in the Web Editor Outliner Inspector.
 
-Verified Web Editor route in `app.v95.js`:
+Verified Web Editor route in `app.v96.js`:
 - `saveSelectedNodeMetadata()` writes the per-node flags into `userData.gradeOptimizerMetadata` and marks imported assets dirty.
 - `collectEditorNodeMetadata(root)` serializes Role, Tags, Collision and Forest blocker.
 - `collectClientManifest(slug)` puts these records into each asset's `nodeMetadata` field in `clients/<slug>/scene.json`.
@@ -176,3 +176,10 @@ Important: changes remain session drafts until the explicit **SAVE ALL PROJECT C
 
 
 Project save UX clarified: **SAVE ALL PROJECT CHANGES TO GITHUB** is the normal shared-save path. The JSON config download in the Scene Editor is now labeled as an optional backup, not the normal way to save. The backup loader also accepts built-in scene settings even when no imported GLB model exists.
+
+
+Latest verified project-persistence CI:
+- Quality checks: success — https://github.com/kortul/Grade_Optimizer/actions/runs/45035849924
+- GitHub Pages deployment: success — https://github.com/kortul/Grade_Optimizer/actions/runs/45035849743
+
+Shared Scene Editor project save is implemented in v96. The scene.json manifest includes client model state plus editorSettings.assets for built-in scene objects, including per-node hide/unhide overrides and shared-vs-unique material slot identity. User-imported base-scene textures are carried as data URLs in the manifest. The standard workflow is one explicit SAVE ALL PROJECT CHANGES TO GITHUB action after connecting the fine-grained publisher token; downloaded JSON is only a backup.
