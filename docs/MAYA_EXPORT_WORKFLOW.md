@@ -10,14 +10,14 @@ The exporter is launched directly from Maya Script Editor / Shelf; installing th
 
 Default behavior is **selected objects only**. The checkbox starts enabled every time the exporter opens. If nothing is selected, export is blocked rather than silently exporting the whole resort. Disable the checkbox only when a full-scene export is intentional.
 
-The field shown as **Project ID** is a short project slug (for example `alpine-resort`), not a GitHub account ID. It selects the folder `clients/<slug>/` and the public URL query parameter `?client=<slug>`.
+The field shown as **Project ID** is a short project slug (for example `alpine-resort`), not a GitHub account ID. It selects the folder `clients/<slug>/` and the public URL query parameter `?client=<slug>`. The Project ID and Git repository path are remembered between Maya sessions.
 
 The exporter writes one FBX and one client manifest:
 
 - `clients/<slug>/models/resort.fbx`
 - `clients/<slug>/scene.json`
 
-The additive `nodeMetadata` property stores optional Role, Tags, Collision hint and Forest blocker hint metadata for individual Maya Transform / Group / Mesh nodes. The web editor restores these values by hierarchy path and lets you change them in the Outliner inspector. Existing schema 1.0 client scenes without this property remain compatible.
+The optional collapsible Maya metadata panel applies ready-made object presets to selected nodes. Presets set Role, standard Tags and default Collision / Forest blocker flags; the last preset is remembered between launches. Custom Role and extra Tags remain available in a collapsed advanced subsection. The additive `nodeMetadata` property stores this metadata for individual Maya Transform / Group / Mesh nodes. The web editor restores these values by hierarchy path and lets you change them in the Outliner inspector. Existing schema 1.0 client scenes without this property remain compatible.
 
 The FBX contains hierarchy, transforms, geometry and supported material assignments. Semantic metadata is written to the JSON manifest rather than relying on arbitrary custom Maya attributes to survive FBX export.
 

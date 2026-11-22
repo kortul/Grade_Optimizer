@@ -10,7 +10,7 @@ Latest verified validation checkpoint: `fab051529334acbfcf91cad8fc300b4f2666495b
 
 The workflow is **one full Maya scene → one FBX → one client scene manifest**. The FBX hierarchy remains the primary scene structure: groups, transforms, mesh nodes and material slots stay individually selectable in the web editor.
 
-Do not force users to split the resort into Terrain / Slope / Building files or impose mandatory classifications. The default role remains General model. Optional node metadata is available where it helps describe individual hierarchy nodes.
+Do not force users to split the resort into Terrain / Slope / Building files or impose mandatory classifications. The default role remains General model. Optional node metadata is available as reusable presets in a collapsed Maya UI panel; the last-used preset and project settings persist between launches.
 
 Local project folder requested by the user:
 `C:\zGit\GradeOptimizer`
@@ -49,7 +49,7 @@ Implemented in v94 and active in v95:
 - Materials are not merged just because their names match; separate Maya materials with the same display name remain distinct.
 - FBXLoader 0.160 creates material instances from FBX material IDs and reuses them for connected mesh assignments. Real Maya export still needs a round-trip check.
 
-## Native Maya plug-in v0.2.1
+## Native Maya plug-in v0.2.3
 
 Files in the repository:
 - `maya/plug-ins/grade_optimizer.py` — native Maya Python plug-in entrypoint.
@@ -63,7 +63,7 @@ Plug-in behavior:
 - Registers Maya command `gradeOptimizerOpen`.
 - Adds menu actions **Open Exporter…** and **Create FBX Test Scene…**.
 - Uses Maya Python API 2.0 and standard `initializePlugin` / `uninitializePlugin` lifecycle.
-- Exporter defaults to local repo `C:/zGit/GradeOptimizer/Grade_Optimizer`, client `alpine-resort`, and full-scene FBX export.
+- Exporter defaults to local repo `C:/zGit/GradeOptimizer/Grade_Optimizer`, remembers Project ID and repo path between launches, and exports selected objects only by default.
 - Creates `clients/<client-slug>/models/resort.fbx` and `clients/<client-slug>/scene.json`.
 - Attempts to enable FBX materials and Embed Media.
 
@@ -111,7 +111,7 @@ Do not claim local browser IndexedDB edits automatically sync across browsers or
 
 ## Latest automated validation
 
-Latest Maya plug-in / test-scene commit: `a8f640ba81f74d1daf00b2e8c5eab6f55494bfb7`
+Latest Maya plug-in / test-scene commit before the 0.2.3 UI work: `a8f640ba81f74d1daf00b2e8c5eab6f55494bfb7`
 
 - Quality checks: **success**
   https://github.com/kortul/Grade_Optimizer/actions/runs/45026142538
@@ -140,3 +140,12 @@ The quality workflow validates project structure, Maya menu integration, test-sc
 - `maya/README.md` — Maya plug-in setup
 - `docs/MAYA_EXPORT_WORKFLOW.md` — Maya to GitHub Desktop workflow
 - `scripts/validate-project.mjs` — automated project validation
+
+
+## Maya Exporter usability update — v0.2.3
+
+The metadata panel is collapsed by default and uses ready-made presets instead of requiring Role / Tags to be typed for every use. Presets include Terrain, Building, Station, Lift / Support, Road / Platform, Water, Rock / Obstacle, Vegetation and Other. Each preset fills Role, standard Tags and default Collision / Forest blocker checkboxes. Users can override the flags, apply to selected nodes in bulk, or clear metadata from the selection. Custom Role / extra Tags are still available in a collapsed advanced subsection.
+
+Maya optionVars remember the repository path, Project ID, last-used preset and optional custom metadata across Shelf / Script Editor launches. Project fields should not need to be re-entered unless switching projects.
+
+Version 0.2.3 source and automated checks are in commit to be recorded after this update. Real Maya runtime validation remains pending.

@@ -13,8 +13,56 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 FBX_NAME = "resort.fbx"
+
+# Maya optionVars keep the export settings and last-used metadata preset between
+# Script Editor / Shelf launches, so users do not have to re-enter them.
+OPTION_REPO = "gradeOptimizerRepoPath"
+OPTION_PROJECT = "gradeOptimizerProjectId"
+OPTION_PRESET = "gradeOptimizerMetadataPreset"
+OPTION_CUSTOM_ROLE = "gradeOptimizerCustomRole"
+OPTION_EXTRA_TAGS = "gradeOptimizerExtraTags"
+PRESET_PLACEHOLDER = "— Выбрать тип объекта —"
+
+METADATA_PRESETS = {
+    "Рельеф": {
+        "role": "terrain", "tags": ["terrain", "ground"],
+        "collision": True, "forestBlocker": False
+    },
+    "Здание": {
+        "role": "building", "tags": ["building", "structure"],
+        "collision": True, "forestBlocker": True
+    },
+    "Станция": {
+        "role": "station", "tags": ["station", "building"],
+        "collision": True, "forestBlocker": True
+    },
+    "Подъёмник / опора": {
+        "role": "lift", "tags": ["lift", "transport", "support"],
+        "collision": True, "forestBlocker": True
+    },
+    "Дорога / площадка": {
+        "role": "road", "tags": ["road", "access"],
+        "collision": True, "forestBlocker": True
+    },
+    "Вода": {
+        "role": "water", "tags": ["water"],
+        "collision": True, "forestBlocker": True
+    },
+    "Скала / препятствие": {
+        "role": "obstacle", "tags": ["rock", "obstacle"],
+        "collision": True, "forestBlocker": True
+    },
+    "Растительность": {
+        "role": "vegetation", "tags": ["vegetation"],
+        "collision": True, "forestBlocker": False
+    },
+    "Другое": {
+        "role": "object", "tags": ["object"],
+        "collision": False, "forestBlocker": False
+    }
+}
 
 
 def safe_path(path):
@@ -139,38 +187,119 @@ def _selected_transforms():
     return transforms
 
 
+def _option_string(name, default=""):
+    try:
+        if cmds.optionVar(exists=name):
+            value = cmds.optionVar(query=name)
+            return str(value) if value is not None else default
+    except Exception:
+        pass
+    return default
+
+
+def _remember_option(name, value):
+    try:
+        cmds.optionVar(stringValue=(name, str(value or "")))
+    except Exception as exc:
+        cmds.warning("[Grade Optimizer] Could not remember setting %s: %s" % (name, exc))
+
+
+def remember_export_settings(*_):
+    try:
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        project = cmds.textFieldGrp(WINDOW + "_client", query=True, text=True).strip()
+        _remember_option(OPTION_REPO, repo)
+        _remember_option(OPTION_PROJECT, project)
+    except Exception:
+        pass
+
+
+def remember_custom_metadata(*_):
+    try:
+        custom_role = cmds.textFieldGrp(WINDOW + "_custom_role", query=True, text=True).strip()
+        extra_tags = cmds.textFieldGrp(WINDOW + "_extra_tags", query=True, text=True).strip()
+        _remember_option(OPTION_CUSTOM_ROLE, custom_role)
+        _remember_option(OPTION_EXTRA_TAGS, extra_tags)
+    except Exception:
+        pass
+
+
+def on_metadata_preset_changed(*_):
+    try:
+        label = cmds.optionMenuGrp(WINDOW + "_preset", query=True, value=True)
+        _remember_option(OPTION_PRESET, label)
+        preset = METADATA_PRESETS.get(label)
+        defaults = preset or {"collision": False, "forestBlocker": False}
+        cmds.checkBox(WINDOW + "_node_collision", edit=True, value=defaults["collision"])
+        cmds.checkBox(WINDOW + "_node_forest", edit=True, value=defaults["forestBlocker"])
+    except Exception as exc:
+        cmds.warning("[Grade Optimizer] Metadata preset update failed: " + str(exc))
+
+
 def apply_metadata_to_selection(*_):
     transforms = _selected_transforms()
     if not transforms:
         cmds.confirmDialog(
             title="Grade Optimizer",
-            message="Выдели один или несколько Transform / Group / Mesh объектов.",
+            message="Сначала выдели один или несколько объектов или групп в Maya.",
             button=["OK"]
         )
         return
-    role = cmds.textFieldGrp(WINDOW + "_role", query=True, text=True).strip()
-    tags = cmds.textFieldGrp(WINDOW + "_tags", query=True, text=True).strip()
+
+    preset_label = cmds.optionMenuGrp(WINDOW + "_preset", query=True, value=True)
+    preset = METADATA_PRESETS.get(preset_label)
+    custom_role = cmds.textFieldGrp(WINDOW + "_custom_role", query=True, text=True).strip()
+    extra_tags = cmds.textFieldGrp(WINDOW + "_extra_tags", query=True, text=True).strip()
+    if not preset and not (custom_role or extra_tags):
+        cmds.confirmDialog(
+            title="Grade Optimizer",
+            message="Выбери готовый тип объекта или укажи свои метки в разделе «Дополнительно».",
+            button=["OK"]
+        )
+        return
+
+    # A standard preset always wins. Custom Role is used only with the
+    # placeholder selected, preventing stale custom text from overriding presets.
+    role = (preset or {}).get("role", "") if preset else custom_role
+    tags = list((preset or {}).get("tags", []))
+    tags.extend(item.strip() for item in extra_tags.split(",") if item.strip())
+    tags = list(dict.fromkeys(tags))
     collision = cmds.checkBox(WINDOW + "_node_collision", query=True, value=True)
     forest_blocker = cmds.checkBox(WINDOW + "_node_forest", query=True, value=True)
-    cleared = not (role or tags or collision or forest_blocker)
+
     for node in transforms:
-        if cleared:
-            for attribute in ("goRole", "goTags", "goCollision", "goForestBlocker"):
-                try:
-                    if cmds.attributeQuery(attribute, node=node, exists=True):
-                        cmds.deleteAttr(node, attribute=attribute)
-                except Exception:
-                    pass
-            continue
         _set_string_attribute(node, "goRole", role)
-        _set_string_attribute(node, "goTags", tags)
+        _set_string_attribute(node, "goTags", ",".join(tags))
         _set_bool_attribute(node, "goCollision", collision)
         _set_bool_attribute(node, "goForestBlocker", forest_blocker)
-    message = (
-        "Метаданные применены к %d узлам." % len(transforms)
-        if not cleared else "Метаданные очищены у %d узлов." % len(transforms)
+
+    remember_export_settings()
+    remember_custom_metadata()
+    message = "Пресет «%s» применён к %d выделенным узлам." % (
+        preset_label if preset else "Свои метки", len(transforms)
     )
-    cmds.confirmDialog(title="Grade Optimizer · Node metadata", message=message, button=["OK"])
+    cmds.confirmDialog(title="Grade Optimizer · Metadata", message=message, button=["OK"])
+    print("[Grade Optimizer] " + message)
+
+
+def clear_metadata_from_selection(*_):
+    transforms = _selected_transforms()
+    if not transforms:
+        cmds.confirmDialog(
+            title="Grade Optimizer",
+            message="Сначала выдели объекты или группы, у которых нужно очистить метки.",
+            button=["OK"]
+        )
+        return
+    for node in transforms:
+        for attribute in ("goRole", "goTags", "goCollision", "goForestBlocker"):
+            try:
+                if cmds.attributeQuery(attribute, node=node, exists=True):
+                    cmds.deleteAttr(node, attribute=attribute)
+            except Exception:
+                pass
+    message = "Метки очищены у %d выделенных узлов." % len(transforms)
+    cmds.confirmDialog(title="Grade Optimizer · Metadata", message=message, button=["OK"])
     print("[Grade Optimizer] " + message)
 
 
@@ -237,15 +366,17 @@ def write_manifest(client_dir, slug, components, model_size, node_metadata):
 
 
 def browse_repo(*_):
-    result = cmds.fileDialog2(fileMode=3, caption="Выбери локальную папку GradeOptimizer")
+    result = cmds.fileDialog2(fileMode=3, caption="Выбери корень локального репозитория Grade Optimizer")
     if result:
         cmds.textFieldButtonGrp(WINDOW + "_repo", edit=True, text=result[0])
+        remember_export_settings()
 
 
 def export_scene(*_):
     repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
     slug = cmds.textFieldGrp(WINDOW + "_client", query=True, text=True).strip().lower()
     selected_only = cmds.checkBox(WINDOW + "_selection", query=True, value=True)
+    remember_export_settings()
 
     if not os.path.isdir(repo):
         cmds.confirmDialog(title="Grade Optimizer", message="Укажи существующую локальную папку репозитория.", button=["OK"])
@@ -322,20 +453,38 @@ def export_scene(*_):
 def show():
     if cmds.window(WINDOW, exists=True):
         cmds.deleteUI(WINDOW)
-    cmds.window(WINDOW, title="Grade Optimizer Exporter " + VERSION, sizeable=True, widthHeight=(540, 510))
-    cmds.columnLayout(adjustableColumn=True, rowSpacing=8, columnAttach=("both", 12))
-    cmds.text(label="One Maya scene → one FBX → GitHub Desktop Push", align="left", height=28, font="boldLabelFont")
-    cmds.text(label="Сохраняются полная иерархия, имена mesh и material assignments.", align="left", height=24)
+
+    repo_default = _option_string(OPTION_REPO, "C:/zGit/GradeOptimizer/Grade_Optimizer")
+    project_default = _option_string(OPTION_PROJECT, "alpine-resort")
+    preset_default = _option_string(OPTION_PRESET, PRESET_PLACEHOLDER)
+    if preset_default not in METADATA_PRESETS and preset_default != PRESET_PLACEHOLDER:
+        preset_default = PRESET_PLACEHOLDER
+
+    cmds.window(
+        WINDOW,
+        title="Grade Optimizer Exporter " + VERSION,
+        sizeable=True,
+        widthHeight=(540, 390)
+    )
+    cmds.columnLayout(adjustableColumn=True, rowSpacing=7, columnAttach=("both", 12))
+    cmds.text(label="Maya → FBX → Grade Optimizer", align="left", height=26, font="boldLabelFont")
+    cmds.text(label="Сохраняются иерархия, геометрия и назначения материалов.", align="left", height=22)
+
     cmds.textFieldButtonGrp(
-        WINDOW + "_repo", label="Git repo", text="C:/zGit/GradeOptimizer/Grade_Optimizer",
-        buttonLabel="Browse…", buttonCommand=browse_repo,
+        WINDOW + "_repo",
+        label="Git repo",
+        text=repo_default,
+        buttonLabel="Browse…",
+        buttonCommand=browse_repo,
+        changeCommand=remember_export_settings,
         columnWidth3=(65, 380, 85)
     )
     cmds.textFieldGrp(
         WINDOW + "_client",
         label="Project ID",
-        text="alpine-resort",
-        annotation="Short project slug used in clients/<id>/ and the ?client=<id> website link.",
+        text=project_default,
+        annotation="Короткое имя проекта для папки clients/<id> и ссылки ?client=<id>.",
+        changeCommand=remember_export_settings,
         columnWidth2=(85, 440)
     )
     cmds.checkBox(
@@ -344,25 +493,96 @@ def show():
         value=True
     )
     cmds.text(
-        label="Включено по умолчанию. Сними галочку только для экспорта всей сцены.",
+        label="По умолчанию экспортируются только выделенные объекты и их дочерние узлы.",
         align="left",
         height=22
     )
-    cmds.separator(height=8, style="in")
-    cmds.text(label="OPTIONAL NODE METADATA · selected transforms / groups / meshes", align="left", height=22, font="boldLabelFont")
-    cmds.textFieldGrp(WINDOW + "_role", label="Role", text="", columnWidth2=(65, 460))
-    cmds.textFieldGrp(WINDOW + "_tags", label="Tags", text="", columnWidth2=(65, 460))
+
+    cmds.frameLayout(
+        label="Разметка объектов (необязательно)",
+        collapsable=True,
+        collapse=True,
+        marginWidth=8,
+        marginHeight=7,
+        borderStyle="etchedIn"
+    )
+    cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
+    cmds.text(
+        label="Выдели объекты в Maya → выбери готовый тип → нажми «Применить».",
+        align="left",
+        height=24
+    )
+    preset_menu = cmds.optionMenuGrp(
+        WINDOW + "_preset",
+        label="Тип объекта",
+        columnWidth2=(85, 420),
+        changeCommand=on_metadata_preset_changed
+    )
+    menu_parent = preset_menu + "|OptionMenu"
+    cmds.menuItem(parent=menu_parent, label=PRESET_PLACEHOLDER)
+    for preset_name in METADATA_PRESETS:
+        cmds.menuItem(parent=menu_parent, label=preset_name)
+    cmds.optionMenuGrp(WINDOW + "_preset", edit=True, value=preset_default)
+
     cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(250, 250))
-    cmds.checkBox(WINDOW + "_node_collision", label="Collision hint", value=False)
-    cmds.checkBox(WINDOW + "_node_forest", label="Forest blocker hint", value=False)
+    cmds.checkBox(WINDOW + "_node_collision", label="Collision", value=False)
+    cmds.checkBox(WINDOW + "_node_forest", label="Forest blocker", value=False)
     cmds.setParent("..")
-    cmds.button(label="APPLY METADATA TO SELECTED NODES", height=34, backgroundColor=(0.29, 0.39, 0.52), command=apply_metadata_to_selection)
-    cmds.text(label="Пустые поля + выключенные флаги очищают метаданные выделения.", align="left", height=22)
-    cmds.separator(height=8, style="in")
-    cmds.text(label="clients/<client>/models/resort.fbx + scene.json", align="left", height=24)
-    cmds.text(label="Embed Media включён. Рекомендуемый предел FBX для Git: 90 MiB.", align="left", height=24)
-    cmds.button(label="EXPORT CLIENT SCENE", height=42, backgroundColor=(0.18, 0.48, 0.32), command=export_scene)
-    cmds.text(label="Затем проверь изменения в GitHub Desktop и нажми Push.", align="left", height=24)
+
+    cmds.frameLayout(
+        label="Дополнительно: свои Role / Tags",
+        collapsable=True,
+        collapse=True,
+        marginWidth=6,
+        marginHeight=5,
+        borderStyle="etchedIn"
+    )
+    cmds.columnLayout(adjustableColumn=True, rowSpacing=4)
+    cmds.textFieldGrp(
+        WINDOW + "_custom_role",
+        label="Custom Role",
+        text=_option_string(OPTION_CUSTOM_ROLE, ""),
+        changeCommand=remember_custom_metadata,
+        columnWidth2=(85, 420)
+    )
+    cmds.textFieldGrp(
+        WINDOW + "_extra_tags",
+        label="Extra Tags",
+        text=_option_string(OPTION_EXTRA_TAGS, ""),
+        annotation="Необязательно. Несколько тегов через запятую.",
+        changeCommand=remember_custom_metadata,
+        columnWidth2=(85, 420)
+    )
+    cmds.setParent("..")
+    cmds.setParent("..")
+
+    cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(270, 270))
+    cmds.button(
+        label="ПРИМЕНИТЬ К ВЫДЕЛЕНИЮ",
+        height=32,
+        backgroundColor=(0.24, 0.40, 0.31),
+        command=apply_metadata_to_selection
+    )
+    cmds.button(
+        label="ОЧИСТИТЬ МЕТКИ",
+        height=32,
+        command=clear_metadata_from_selection
+    )
+    cmds.setParent("..")
+    cmds.setParent("..")
+
+    on_metadata_preset_changed()
+
+    cmds.separator(height=7, style="in")
+    cmds.text(label="clients/<project>/models/resort.fbx + scene.json", align="left", height=22)
+    cmds.text(label="Embed Media включён · рекомендуемый предел FBX для Git: 90 MiB.", align="left", height=22)
+    cmds.button(
+        label="EXPORT CLIENT SCENE",
+        height=42,
+        backgroundColor=(0.18, 0.48, 0.32),
+        command=export_scene
+    )
+    cmds.text(label="Затем проверь изменения в GitHub Desktop и нажми Push.", align="left", height=22)
     cmds.showWindow(WINDOW)
     return WINDOW
 
