@@ -129,6 +129,10 @@ assert.ok(html.includes('id="skierSkiModelStatus"'), 'skier ski import status mi
 assert.ok(html.includes('#legend{display:none!important}'), 'legend must be hidden outside slope optimization');
 assert.ok(html.includes('#app.optimizer-open:not(.editor-open):not(.skier-mode):not(.drone-mode) #legend{display:flex!important}'), 'legend must be shown only for slope optimization');
 assert.ok(entrySource.includes('skierController.setSkiModel(model)'), 'Scene Editor must pass imported ski GLB to skier controller');
+assert.ok(entrySource.includes("indexedDB.open(SKIER_SKI_DB_NAME,1)"), 'custom ski model must be persisted in browser IndexedDB');
+assert.ok(entrySource.includes('saveSkierSkiLocally(buffer,file.name)'), 'uploaded ski GLB must be saved locally');
+assert.ok(entrySource.includes('loadSavedSkierSki()'), 'custom ski GLB must be restored on startup');
+assert.ok(entrySource.includes('removeSavedSkierSki()'), 'reset must remove the locally saved custom ski');
 assert.ok(entrySource.includes("if(state.optimizeMode)setOptimizerOpen(false)"), 'Overview must close the optimization panel');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
 
