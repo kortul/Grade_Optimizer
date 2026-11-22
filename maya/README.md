@@ -13,7 +13,7 @@
 5. Открой **Windows → Settings/Preferences → Plug-in Manager**.
 6. Найди `grade_optimizer.py`, включи **Loaded** и **Auto load**.
 
-В верхнем меню Maya появится **Grade Optimizer → Open Exporter…**. Плагин также регистрирует команду `gradeOptimizerOpen`.
+В верхнем меню Maya появится **Grade Optimizer** с командами **Open Exporter…** и **Create FBX Test Scene…**. Плагин также регистрирует команду `gradeOptimizerOpen`.
 
 ## Что входит
 
@@ -21,6 +21,7 @@
 - `GradeOptimizer.mod` — описание Maya module.
 - `install_maya_module.bat` / `install_maya_module.ps1` — установка папки модуля в пользовательский `MAYA_MODULE_PATH`.
 - `grade_optimizer_exporter.py` — UI и экспорт FBX/manifest.
+- `grade_optimizer_test_scene.py` — генератор контрольной Maya-сцены для проверки FBX round-trip.
 
 Путь модуля хранится в пользовательской переменной Windows `MAYA_MODULE_PATH`; установщик добавляет путь и сохраняет существующие Maya module paths.
 
@@ -61,6 +62,21 @@ clients/
 `https://kortul.github.io/Grade_Optimizer/?client=alpine-resort`
 
 Держи FBX меньше 90 MiB для текущего обычного Git workflow.
+
+## Контрольная сцена для проверки FBX
+
+В меню Maya выбери **Grade Optimizer → Create FBX Test Scene…**. Maya предупредит, что текущая сцена будет заменена; генератор продолжит только после явного подтверждения.
+
+Контрольная сцена специально проверяет:
+
+- вложенные группы и Transform hierarchy;
+- один и тот же Lambert material на Terrain и Station Roof;
+- два material slots на одном mesh `Station_Building`;
+- скрытый `Hidden_Survey_Marker`;
+- одинаковое имя `Pylon` в двух разных ветках DAG и разные метаданные на каждом;
+- Role / Tags / Collision / Forest blocker в manifest.
+
+После создания открой Exporter, оставь экспорт всей сцены и укажи Client ID `maya-fbx-test`. После экспорта проверь `clients/maya-fbx-test/scene.json` и импортируй FBX в тестовую страницу. Не отправляй тестовую сцену клиенту: это диагностический fixture.
 
 ## Ручной запуск без plug-in
 

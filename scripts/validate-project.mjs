@@ -162,6 +162,16 @@ assert.ok(mayaPlugin.includes('def maya_useNewAPI():'), 'Maya Python API 2.0 mar
 assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
 assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');
 assert.ok(mayaPlugin.includes('maya_utils.executeDeferred(_build_menu)'), 'Maya menu must be created through deferred UI');
+assert.ok(mayaPlugin.includes('Create FBX Test Scene…'), 'Maya plugin test-scene menu item missing');
+assert.ok(mayaPlugin.includes('grade_optimizer_test_scene'), 'Maya plugin test-scene loader missing');
+const mayaFixture = read('maya/grade_optimizer_test_scene.py').toString('utf8');
+assert.ok(mayaFixture.includes('def create_test_scene():'), 'Maya FBX test-scene builder missing');
+assert.ok(mayaFixture.includes('cmds.file(new=True, force=True)'), 'test scene must explicitly replace the current scene only after confirmation');
+assert.ok(mayaFixture.includes('CONFIRM_BUTTON'), 'test-scene destructive action must require confirmation');
+assert.ok(mayaFixture.includes('GO_Shared_Snow_MAT'), 'shared test material missing');
+assert.ok(mayaFixture.includes('station_body + ".f[0:2]"'), 'test scene must create multiple material slots on one mesh');
+assert.ok(mayaFixture.includes('Hidden_Survey_Marker') && mayaFixture.includes('".visibility", False'), 'hidden test node missing');
+assert.ok(mayaFixture.includes('cmds.rename(south_pylon, "Pylon")'), 'duplicate hierarchy leaf-name test missing');
 assert.ok(read('maya/GradeOptimizer.mod').toString('utf8').includes('MAYA_PLUG_IN_PATH +:= plug-ins'), 'Maya module descriptor missing plug-in path');
 assert.ok(read('maya/install_maya_module.bat').toString('utf8').includes('install_maya_module.ps1'), 'Windows Maya module installer missing');
 assert.ok(html.includes('src="./app.v95.js"'), 'active app must use v95 node metadata module');
@@ -267,7 +277,7 @@ pass('aerodynamic tuck camera, wind effect, avatar crouch and drone handoff are 
 pass('first/third-person skier camera, avatar and C-key UI are present');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
 
-for (const path of ['maya/grade_optimizer_exporter.py','maya/plug-ins/grade_optimizer.py']) {
+for (const path of ['maya/grade_optimizer_exporter.py','maya/plug-ins/grade_optimizer.py','maya/grade_optimizer_test_scene.py']) {
   const syntax = spawnSync('python3', ['-c', 'import ast,sys; ast.parse(sys.stdin.read())'], {
     input: read(path).toString('utf8'), encoding: 'utf8'
   });

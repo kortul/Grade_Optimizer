@@ -12,7 +12,7 @@ import maya.cmds as cmds
 import maya.utils as maya_utils
 import maya.api.OpenMaya as om
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 COMMAND_NAME = "gradeOptimizerOpen"
 MENU_NAME = "gradeOptimizerMenu"
 MENU_LABEL = "Grade Optimizer"
@@ -25,6 +25,15 @@ def maya_useNewAPI():
 
 def _module_root():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _create_test_scene():
+    root = _module_root()
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    module = importlib.import_module("grade_optimizer_test_scene")
+    module = importlib.reload(module)
+    module.create_test_scene()
 
 
 def _show_exporter():
@@ -59,6 +68,11 @@ def _build_menu():
             label="Open Exporter…",
             parent=menu,
             command=lambda *_: cmds.gradeOptimizerOpen()
+        )
+        cmds.menuItem(
+            label="Create FBX Test Scene…",
+            parent=menu,
+            command=lambda *_: _create_test_scene()
         )
         cmds.menuItem(divider=True, parent=menu)
         cmds.menuItem(label="Grade Optimizer " + VERSION, parent=menu, enable=False)

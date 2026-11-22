@@ -13,7 +13,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 FBX_NAME = "resort.fbx"
 
 

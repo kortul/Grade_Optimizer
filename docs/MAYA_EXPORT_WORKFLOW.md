@@ -16,3 +16,7 @@ The additive `nodeMetadata` property stores optional Role, Tags, Collision hint 
 The FBX contains hierarchy, transforms, geometry and supported material assignments. Semantic metadata is written to the JSON manifest rather than relying on arbitrary custom Maya attributes to survive FBX export.
 
 Open GitHub Desktop, review the changed client files, Commit and Push. This local exporter workflow does not need a browser GitHub token.
+
+## Проверка Maya FBX перед рабочей сценой
+
+После загрузки plug-in выбери **Grade Optimizer → Create FBX Test Scene…**. Это создаст контрольную сцену только после подтверждения замены текущей сцены. Экспортируй её под Client ID `maya-fbx-test`, затем проверь вложенную иерархию, повторяющиеся имена, общие материалы, два material slots на Station_Building, скрытый узел и nodeMetadata. Этот fixture проверяет обычный Lambert FBX workflow; он не доказывает поддержку сложных Arnold/custom shader networks.
