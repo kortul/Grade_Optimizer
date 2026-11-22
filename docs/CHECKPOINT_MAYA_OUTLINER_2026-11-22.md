@@ -2,109 +2,138 @@
 Date: 2026-11-22
 Branch: `main`
 Repository: https://github.com/kortul/Grade_Optimizer
+Latest verified application commit: `3c7d6995ecc48152ed90463a977c6fa819f544ca`
 
-## Current direction
+## Product direction
 
-The Maya exporter writes a complete client scene as **one FBX file**, rather than forcing separate Terrain / Slope / Building files. The FBX hierarchy is the source of truth: groups, transforms, mesh nodes and material slots remain nested and individually addressable in the web editor.
+The workflow is **one full Maya scene → one FBX → one client scene manifest**. The FBX hierarchy remains the primary scene structure: groups, transforms, mesh nodes and material slots stay individually selectable in the web editor.
 
-Default import role is `model` / General model. Terrain remains an optional special role for a whole imported asset when it must become the active ground surface.
+Do not force users to split the resort into Terrain / Slope / Building files or impose mandatory classifications. The default role remains General model. Optional node metadata is available where it helps describe individual hierarchy nodes.
 
-## Implemented
+Local project folder requested by the user:
+`C:\zGit\GradeOptimizer`
 
-### Maya → Git workflow
-- Maya exporter: `maya/grade_optimizer_exporter.py`
-- Setup and usage: `maya/README.md`
-- Writes `clients/<client-slug>/models/resort.fbx` and `clients/<client-slug>/scene.json`.
-- Exports the whole scene by default; optional selected-only mode.
-- Attempts to enable FBX materials and embed media.
-- Flow: Maya export → inspect changed files in GitHub Desktop → Commit → Push.
-- No GitHub token is needed by this local exporter workflow.
+GitHub repository:
+`kortul/Grade_Optimizer`
 
-### Web FBX support
-- Active app: `app.v95.js`, loaded from `index.html`.
-- Uses Three.js `FBXLoader`.
-- Existing GLB scenes remain supported.
-- FBX scene manifest entries are accepted by the client scene loader.
+The local folder itself is not mounted in the development session. New plugin files are committed to the GitHub repository and must be synced into that local clone using GitHub Desktop before installing them in Maya.
 
-### Maya-style Outliner
-- Expandable hierarchy for imported models and existing scene content.
-- Transform / Object3D nodes and mesh nodes can be selected independently.
-- Material slots appear under their mesh nodes.
-- Recursive search matches node names, object types, asset names and material names.
-- Expand All / Collapse All controls.
-- Viewport picking selects the actual hit mesh inside an imported FBX, not just the FBX root.
-- Inspector transform controls target the selected hierarchy node.
-- Visibility can be toggled on a selected child node.
-- Components can be removed independently; deletion avoids disposing geometry/material resources still referenced elsewhere.
-- Selected-node GLB export is available.
+## Current web application — v95
 
-### Persistence added
-- Edited imported scene content is serialized before local browser save.
-- Client manifest stores non-visible descendant nodes and restores them when loading a client scene.
-- Local browser records also store descendant visibility state and serialized edits.
-- Shared-material presets, texture imports and texture removals mark all imported models using the same material as dirty.
+Active entry point: `index.html` → `app.v95.js`.
+
+Implemented:
+- GLB and FBX import using Three.js loaders.
+- Full recursive Maya-style Outliner for imported models and existing scene geometry.
+- Expand / collapse, recursive search and selection of individual groups, transforms, meshes and material slots.
+- Viewport picking selects the actual nested FBX mesh.
+- Transform editing targets the selected hierarchy node, not only the root asset.
+- Selected-node visibility control and component deletion with shared-resource-aware disposal.
+- Selected-node GLB export.
+- Per-node Role, Tags, Collision hint and Forest blocker hint controls.
+- Custom free-form Role values with preset suggestions.
+- Per-node metadata participates in Outliner search and appears as the node tag.
+- Per-node metadata is stored in client `scene.json`, restored when a client scene loads, and included in local browser records and Scene Config JSON.
+- Metadata path lookup supports stable child-index paths in web-generated records and Maya hierarchy name paths in Maya-exported manifests.
+
+Important: per-node Collision / Forest blocker flags are descriptive metadata only. They do not yet change collision simulation, terrain selection or forest generation automatically.
+
+## Material library
+
+Implemented in v94 and remains active in v95:
+- Scene-wide PBR material library lists materials and the number of slots using each material instance.
+- Assign an existing library material to the selected slot to intentionally share it.
+- Make Slot Unique clones one material and its texture objects so the selected slot can be edited independently.
+- Shared material edits, presets, texture imports and texture removals mark every imported model using that instance as dirty for publishing.
+- Materials are not merged just because their names match; separate Maya materials with the same display name must remain distinct.
+- FBXLoader 0.160 creates material instances from FBX material IDs and reuses them for connected mesh assignments. Real Maya export still needs a round-trip check.
+
+## Native Maya plug-in v0.2.0
+
+Files committed:
+- `maya/plug-ins/grade_optimizer.py` — native Maya Python plug-in entrypoint.
+- `maya/GradeOptimizer.mod` — Maya module descriptor.
+- `maya/install_maya_module.bat` — double-click installer.
+- `maya/install_maya_module.ps1` — registers the module folder in the current Windows user's `MAYA_MODULE_PATH`.
+- `maya/grade_optimizer_exporter.py` — export UI and FBX/manifest writer.
+- `maya/README.md` — installation and usage instructions.
+
+Plug-in behavior:
+- Registers Maya command `gradeOptimizerOpen`.
+- Adds Maya menu `Grade Optimizer → Open Exporter…`.
+- Uses the Maya Python API 2.0 plug-in marker and standard `initializePlugin` / `uninitializePlugin` lifecycle.
+- Exporter UI defaults to the user's local repository path `C:/zGit/GradeOptimizer`, which can be changed through Browse.
+- Export whole scene by default; optional selected-only export.
+- Attempts to enable FBX materials and Embed Media.
+- Creates:
+  `clients/<client-slug>/models/resort.fbx`
+  `clients/<client-slug>/scene.json`
+- Client manifest schema remains `1.0`; `nodeMetadata` is an additive field.
+
+Maya node metadata:
+- Select Maya Transform / Group / Mesh nodes.
+- Set a free-form Role, Tags, Collision hint and/or Forest blocker hint.
+- Apply metadata to selection.
+- Exporter writes node paths and metadata into the client manifest.
+- The web app restores the metadata on matching hierarchy nodes.
+
+Installation steps after syncing the repository locally:
+1. Close Maya.
+2. Open `C:\zGit\GradeOptimizer\maya`.
+3. Run `install_maya_module.bat` (ordinary user; admin not required).
+4. Start Maya.
+5. Open Windows → Settings/Preferences → Plug-in Manager.
+6. Enable `grade_optimizer.py` under Loaded and Auto load.
+7. Use the **Grade Optimizer** menu.
+
+The installer has not yet been run on the user's Windows machine and the plug-in has not yet been loaded inside Maya. Automated Python syntax checks are not a substitute for a real Maya runtime test.
+
+## Maya / FBX limitations to verify
+
+- FBX materials and embedded media depend on Maya FBX plug-in version and source shader types.
+- Three.js FBXLoader 0.160 handles Lambert / Phong-style FBX material conversion; do not assume complex Arnold or other custom shader networks will round-trip faithfully.
+- Confirm unit conversion, axis orientation, embedded texture extraction, hierarchy names and multi-material mesh slots on a real sample export.
+- A single FBX should remain below 90 MiB for the current normal Git workflow; larger binary assets require a different storage approach.
+
+## Client editing and publishing
+
+The client publishing path converts edited imported FBX models to GLB for publication when a model becomes dirty. The manifest keeps the model file path and nested visibility / metadata. Still needs an end-to-end test with a client URL:
+- nested transform changes;
+- node visibility and node metadata;
+- shared material edit used by multiple meshes / models;
+- imported / removed texture maps;
+- publish, reload and verify the client sees the edited result.
+
+Do not claim local browser IndexedDB edits automatically sync across browsers or devices. The Maya → local Git → GitHub Desktop Push path is intended for asset authoring without a browser GitHub token.
 
 ## Latest validation / deployment
 
-- Latest app and plug-in commit: `fdc68c5e2a0e75967fa905cf6e8cd047018d4c9b`
-- GitHub Actions quality checks: **success**
-  https://github.com/kortul/Grade_Optimizer/actions/runs/45022606286
+Latest verified app commit: `3c7d6995ecc48152ed90463a977c6fa819f544ca`
+
+- Quality checks: **success**
+  https://github.com/kortul/Grade_Optimizer/actions/runs/45022715683
 - GitHub Pages build and deployment: **success**
-  https://github.com/kortul/Grade_Optimizer/actions/runs/45022606742
+  https://github.com/kortul/Grade_Optimizer/actions/runs/45022715309
 
-Automated checks verify active entrypoint, DOM IDs, JavaScript syntax, FBX loader integration, Outliner controls, nested selection, selected-node transforms, nested visibility serialization, scene-wide material assignment, per-slot uniqueness and shared-owner dirty propagation. These checks are not a substitute for loading a representative Maya-exported FBX in a real browser.
+Quality checks include JavaScript validation, active module / DOM checks, metadata persistence checks, Maya plug-in source checks, Maya module / installer presence, and Python syntax parsing for the exporter and plug-in files.
 
-### Maya native plug-in and node metadata
+## Next work — recommended order
 
-- Maya plug-in: `maya/plug-ins/grade_optimizer.py`, registered command `gradeOptimizerOpen`, menu `Grade Optimizer`.
-- Module descriptor: `maya/GradeOptimizer.mod`.
-- Windows installer: `maya/install_maya_module.bat` and `install_maya_module.ps1`; adds the repository's `maya` directory to the user's `MAYA_MODULE_PATH`.
-- Exporter UI: `maya/grade_optimizer_exporter.py`, default local repository `C:/zGit/GradeOptimizer`.
-- Maya nodes can receive optional Role, Tags, Collision hint and Forest blocker hint metadata. The exporter writes this as `nodeMetadata` in the client `scene.json`.
-- Web Outliner v95 restores metadata by Maya `namePath` or hierarchy index path, supports custom free-form roles, and persists metadata through client manifests, local browser records and Scene Config JSON.
-- Metadata is descriptive only at this stage; Collision hint / Forest blocker hint do not yet enable runtime collision or forest-placement behavior.
-
-## Important limitations / next work
-
-1. **Test a real Maya FBX.** No representative binary FBX has yet been round-tripped through Maya → exporter → GitHub Pages. Verify nested groups, names, material assignments, embedded textures, scale/axis orientation and large-scene performance.
-2. **Shared material editing — implemented.** The library is keyed by actual Three.js material instance identity, not by display name. Editing a shared instance changes all its uses. Every imported model using that instance is marked dirty for publishing.
-3. **Scene-wide material library — implemented.** A scene-level list exposes existing materials and slot usage. Assign an existing material to the selected slot to create an intentional link, or use **Make slot unique** to clone that material and its texture objects for independent editing. Different materials with coincidentally equal names are not merged.
-4. **Per-node metadata.** Optional per-node metadata is implemented. Next, decide which metadata roles should drive actual scene behavior (without forcing classifications).
-5. **Client editing and publishing.** Test nested transform/material/visibility edits inside a client URL and verify the publishing flow end-to-end.
-6. **Maya FBX options and shader fidelity.** Verify embedded textures in the target Maya/FBX versions. Three.js FBXLoader 0.160 parses Lambert and Phong material models; complex Maya/Arnold shader networks should not be assumed to round-trip faithfully. See [FBXLoader material parsing](https://github.com/mrdoob/three.js/blob/r160/examples/jsm/loaders/FBXLoader.js#L459-L522).
-
-## Suggested next session sequence
-
-1. Import a real Maya test FBX with 2–3 nested groups, multiple meshes, one shared material, one two-slot mesh and one hidden child.
-2. Verify hierarchy, search, transform edits, node visibility, deletion and reload in a browser.
-3. Check embedded maps, unit scale, axis orientation, material model conversion and large-scene performance.
-4. Round-trip Role / Tags / hints from Maya selection through scene.json into the web Outliner and verify duplicate-name hierarchy paths.
-5. Test client editing, publication and texture persistence end-to-end.
+1. Get a small real Maya FBX test file through the new plug-in and import it into the deployed web app.
+2. Verify 2–3 nested groups, multiple meshes, a shared material, a mesh with 2 material slots, hidden child nodes, FBX embedded textures, scale and axis.
+3. Verify metadata round-trip for nodes with unique and repeated names.
+4. Verify material assign / make-unique / shared edits / texture edits in a real browser.
+5. Verify the client publish → reload cycle preserves nested transforms, visibility, metadata and materials.
+6. Decide which optional Role / Collision / Forest blocker values should drive actual simulation behavior. Keep defaults generic and do not force categories.
 
 ## Key files
 
-- `index.html` — active entry point and UI
-- `app.v95.js` — current app implementation
-- `maya/plug-ins/grade_optimizer.py` — native Maya plug-in entrypoint
+- `index.html` — web app entry point
+- `app.v95.js` — current application
+- `maya/plug-ins/grade_optimizer.py` — Maya plug-in
 - `maya/GradeOptimizer.mod` — Maya module descriptor
-- `maya/grade_optimizer_exporter.py` — Maya exporter
-- `maya/README.md` — exporter usage
-- `scripts/validate-project.mjs` — automated project checks
-- `docs/MAYA_EXPORT_WORKFLOW.md` — Maya → GitHub Desktop workflow
-
-
-## Material library details
-
-- The inspector now contains a scene-wide material selector.
-- **Assign to selected slot** replaces the selected mesh material slot with the chosen material instance. Reusing the same instance intentionally links the slots.
-- **Make slot unique** clones the material and its texture objects, allowing this slot to be edited independently.
-- The PBR inspector indicates whether the selected material instance is shared and how many slots use it.
-- PBR edits, presets, texture imports and texture removals mark every imported asset that uses the material as dirty, so publishing can rebuild every affected model.
-- The library does not merge materials solely because their names match; this avoids accidentally combining distinct Maya materials.
-- FBXLoader 0.160 parses FBX material nodes into a material map keyed by FBX ID, then reuses those mapped instances on connected mesh objects. This preserves intended sharing in the source FBX where the same material ID is connected to multiple meshes: [material map construction](https://github.com/mrdoob/three.js/blob/r160/examples/jsm/loaders/FBXLoader.js#L459-L477), [mesh assignment](https://github.com/mrdoob/three.js/blob/r160/examples/jsm/loaders/FBXLoader.js#L1197-L1226).
-- Active app module: `app.v95.js`.
-
-## Outstanding real-world verification
-
-- A sample FBX exported from Maya is still required to confirm FBXLoader's material identity mapping and embedded texture handling for the target Maya version.
-- Browser-level QA is still needed for assignment, uniqueness, shared edit propagation, local persistence and client publishing.
+- `maya/install_maya_module.bat` — Windows installer
+- `maya/grade_optimizer_exporter.py` — Maya exporter UI / logic
+- `maya/README.md` — Maya plug-in setup
+- `docs/MAYA_EXPORT_WORKFLOW.md` — Maya to GitHub Desktop workflow
+- `scripts/validate-project.mjs` — automated project validation
