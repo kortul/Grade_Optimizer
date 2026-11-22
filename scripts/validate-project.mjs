@@ -88,7 +88,7 @@ assert.ok(html.includes('id="importAssetCategory"'), 'model import category sele
 assert.ok(html.includes('accept=".glb,.fbx'), 'model import input must accept GLB and FBX');
 assert.ok(entrySource.includes("from 'three/addons/loaders/FBXLoader.js'"), 'FBXLoader import missing');
 assert.ok(entrySource.includes("function parseSceneModel("), 'generic GLB/FBX parser missing');
-assert.match(entrySource, /\\.fbx\\$\/i/, 'FBX parser path test missing');
+assert.ok(entrySource.includes('fbxLoader.parse(buffer,resourcePath||\'\')'), 'FBX binary parser call missing');
 assert.ok(html.includes('id="resetTerrainButton"'), 'restore original terrain button missing');
 assert.ok(html.includes('id="editorScaleX"') && html.includes('id="editorScaleY"') && html.includes('id="editorScaleZ"'), 'independent XYZ model scale controls missing');
 assert.ok(html.includes('id="editorRotX"') && html.includes('id="editorRotZ"'), 'full XYZ model rotation controls missing');
