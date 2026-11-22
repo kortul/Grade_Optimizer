@@ -317,7 +317,8 @@ const LEGACY_OPTICS_STORAGE_KEY = 'grade_optimizer_optics_v1';
 const opticsSettings = {
   enabled:true, bloom:58, bloomThreshold:0.78,
   flare:true, flareStrength:70, dirt:38, bokeh:false, focusDistance:48, aperture:4,
-  vignette:24, chromatic:18, grain:4, sharpness:14,
+  vignette:24, chromatic:18, grain:4, sharpness:14, distortion:6,
+  shadowLift:12, highlightCompression:18, focusMode:'target',
   temperature:6500, tint:0, contrast:104, saturation:104, exposure:0,
   cameraFov:55, toneMapping:'aces', quality:'balanced',
   sunIntensity:100, sunRotation:0, ambientFill:100, sunEnabled:true, shadowQuality:1
@@ -330,7 +331,8 @@ try {
     const numericKeys={
       bloom:[0,100],bloomThreshold:[0.1,2],flareStrength:[0,100],dirt:[0,100],
       focusDistance:[5,500],aperture:[1.4,16],vignette:[0,100],chromatic:[0,100],
-      grain:[0,100],sharpness:[0,100],temperature:[3200,9000],tint:[-100,100],
+      grain:[0,100],sharpness:[0,100],distortion:[0,100],shadowLift:[0,100],
+      highlightCompression:[0,100],temperature:[3200,9000],tint:[-100,100],
       contrast:[60,160],saturation:[0,160],exposure:[-2,2],cameraFov:[30,90],
       sunIntensity:[0,300],sunRotation:[0,360],ambientFill:[0,200],shadowQuality:[0,2]
     };
@@ -341,6 +343,7 @@ try {
       if(typeof savedOptics[key]==='boolean')opticsSettings[key]=savedOptics[key];
     });
     if(['aces','agx','reinhard','linear'].includes(savedOptics.toneMapping))opticsSettings.toneMapping=savedOptics.toneMapping;
+    if(['target','manual'].includes(savedOptics.focusMode))opticsSettings.focusMode=savedOptics.focusMode;
     if(['performance','balanced','high','cinematic'].includes(savedOptics.quality))opticsSettings.quality=savedOptics.quality;
     if(!currentOptics&&Number(savedOptics.bloom)===34)opticsSettings.bloom=58;
   }
@@ -368,6 +371,10 @@ function syncSceneLookControls() {
   setValue('sceneChromatic',opticsSettings.chromatic);
   setValue('sceneGrain',opticsSettings.grain);
   setValue('sceneSharpness',opticsSettings.sharpness);
+  setValue('sceneDistortion',opticsSettings.distortion);
+  setValue('sceneShadowLift',opticsSettings.shadowLift);
+  setValue('sceneHighlightCompression',opticsSettings.highlightCompression);
+  setValue('sceneFocusMode',opticsSettings.focusMode);
   setValue('sceneFocusDistance',opticsSettings.focusDistance);
   setValue('sceneAperture',opticsSettings.aperture);
   setValue('sceneQuality',opticsSettings.quality);
@@ -379,6 +386,10 @@ function syncSceneLookControls() {
   setChecked('sceneOpticsEnabled',opticsSettings.enabled);
   setChecked('sceneBokeh',opticsSettings.bokeh);
   setChecked('sceneSunEnabled',opticsSettings.sunEnabled);
+  setChecked('pLightOn',opticsSettings.sunEnabled);
+  setValue('pLight',opticsSettings.sunIntensity/100);
+  setValue('pSunRot',opticsSettings.sunRotation);
+  setValue('pShadow',opticsSettings.shadowQuality);
   const values={
     sceneCameraFovValue:Math.round(opticsSettings.cameraFov)+'°',
     sceneExposureValue:(Number(opticsSettings.exposure)>=0?'+':'')+Number(opticsSettings.exposure).toFixed(2)+' EV',
@@ -394,6 +405,9 @@ function syncSceneLookControls() {
     sceneChromaticValue:Math.round(opticsSettings.chromatic)+'%',
     sceneGrainValue:Math.round(opticsSettings.grain)+'%',
     sceneSharpnessValue:Math.round(opticsSettings.sharpness)+'%',
+    sceneDistortionValue:Math.round(opticsSettings.distortion)+'%',
+    sceneShadowLiftValue:Math.round(opticsSettings.shadowLift)+'%',
+    sceneHighlightCompressionValue:Math.round(opticsSettings.highlightCompression)+'%',
     sceneFocusDistanceValue:Math.round(opticsSettings.focusDistance)+' m',
     sceneApertureValue:'f/'+Number(opticsSettings.aperture).toFixed(1),
     sceneSunIntensityValue:Math.round(opticsSettings.sunIntensity)+'%',
@@ -442,6 +456,10 @@ function updateOpticsControls() {
     chromatic:opticsSettings.chromatic/100,
     grain:opticsSettings.grain/100,
     sharpness:opticsSettings.sharpness/100,
+    distortion:opticsSettings.distortion/100,
+    shadowLift:opticsSettings.shadowLift/100,
+    highlightCompression:opticsSettings.highlightCompression/100,
+    focusMode:opticsSettings.focusMode,
     temperature:opticsSettings.temperature,
     tint:opticsSettings.tint/100,
     contrast:opticsSettings.contrast/100,
@@ -472,8 +490,10 @@ function bindSceneLookControls() {
     sceneTint:'tint',sceneContrast:'contrast',sceneSaturation:'saturation',
     sceneBloom:'bloom',sceneBloomThreshold:'bloomThreshold',sceneFlare:'flareStrength',
     sceneDirt:'dirt',sceneVignette:'vignette',sceneChromatic:'chromatic',
-    sceneGrain:'grain',sceneSharpness:'sharpness',sceneFocusDistance:'focusDistance',
-    sceneAperture:'aperture',sceneSunIntensity:'sunIntensity',sceneSunRotation:'sunRotation',
+    sceneGrain:'grain',sceneSharpness:'sharpness',sceneDistortion:'distortion',
+    sceneShadowLift:'shadowLift',sceneHighlightCompression:'highlightCompression',
+    sceneFocusDistance:'focusDistance',sceneAperture:'aperture',
+    sceneSunIntensity:'sunIntensity',sceneSunRotation:'sunRotation',
     sceneAmbientFill:'ambientFill',sceneShadowQuality:'shadowQuality'
   };
   Object.entries(numeric).forEach(([id,key])=>{
@@ -488,7 +508,7 @@ function bindSceneLookControls() {
       applyOpticsSettings();
     });
   });
-  [['sceneToneMapping','toneMapping'],['sceneQuality','quality']].forEach(([id,key])=>{
+  [['sceneToneMapping','toneMapping'],['sceneQuality','quality'],['sceneFocusMode','focusMode']].forEach(([id,key])=>{
     const input=document.getElementById(id);
     if(input)input.addEventListener('change',()=>{opticsSettings[key]=input.value;applyOpticsSettings();});
   });
@@ -502,7 +522,8 @@ function applyOpticsSettingsFromProject(saved) {
   const numericKeys={
     bloom:[0,100],bloomThreshold:[0.1,2],flareStrength:[0,100],dirt:[0,100],
     focusDistance:[5,500],aperture:[1.4,16],vignette:[0,100],chromatic:[0,100],
-    grain:[0,100],sharpness:[0,100],temperature:[3200,9000],tint:[-100,100],
+    grain:[0,100],sharpness:[0,100],distortion:[0,100],shadowLift:[0,100],
+    highlightCompression:[0,100],temperature:[3200,9000],tint:[-100,100],
     contrast:[60,160],saturation:[0,160],exposure:[-2,2],cameraFov:[30,90],
     sunIntensity:[0,300],sunRotation:[0,360],ambientFill:[0,200],shadowQuality:[0,2]
   };
@@ -511,6 +532,7 @@ function applyOpticsSettingsFromProject(saved) {
   });
   ['enabled','flare','bokeh','sunEnabled'].forEach(key=>{if(typeof saved[key]==='boolean')opticsSettings[key]=saved[key];});
   if(['aces','agx','reinhard','linear'].includes(saved.toneMapping))opticsSettings.toneMapping=saved.toneMapping;
+  if(['target','manual'].includes(saved.focusMode))opticsSettings.focusMode=saved.focusMode;
   if(['performance','balanced','high','cinematic'].includes(saved.quality))opticsSettings.quality=saved.quality;
   applyOpticsSettings({persist:true,markDirty:false});
 }
@@ -535,7 +557,8 @@ bindSceneLookControls();
 document.getElementById('sceneLookReset').addEventListener('click',()=>{
   Object.assign(opticsSettings,{
     enabled:true,bloom:58,bloomThreshold:0.78,flare:true,flareStrength:70,dirt:38,
-    bokeh:false,focusDistance:48,aperture:4,vignette:24,chromatic:18,grain:4,sharpness:14,
+    bokeh:false,focusDistance:48,focusMode:'target',aperture:4,vignette:24,chromatic:18,grain:4,sharpness:14,
+    distortion:6,shadowLift:12,highlightCompression:18,
     temperature:6500,tint:0,contrast:104,saturation:104,exposure:0,cameraFov:55,
     toneMapping:'aces',quality:'balanced',sunIntensity:100,sunRotation:0,
     ambientFill:100,sunEnabled:true,shadowQuality:1
