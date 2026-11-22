@@ -117,8 +117,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v75.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v75.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v76.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v76.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
@@ -141,6 +141,14 @@ assert.ok(skierSource.includes('arm.pole.rotation.x'), 'pole stroke animation is
 assert.ok(skierSource.includes('leg.knee.rotation.x'), 'knee flex animation is missing');
 assert.ok(skierSource.includes('slot.group.rotation.z'), 'ski edging animation is missing');
 assert.ok(skierSource.includes('this.avatarPelvis.rotation.z'), 'pelvis counter-rotation during carving is missing');
+assert.ok(skierSource.includes("smooth('carveWeight'") && skierSource.includes("smooth('turnDirection'"), 'turn compression and direction must be smoothed separately');
+assert.ok(skierSource.includes('const sharedKneeFlex=0.17*carve'), 'both knees must flex under carving load');
+assert.ok(skierSource.includes('const insideKneeFlex=0.27*insideLoad'), 'inside knee must fold deeper in an alpine turn');
+assert.ok(skierSource.includes('const outsideSupport=-0.025*outsideLoad'), 'outside leg must retain a longer support stance');
+assert.ok(skierSource.includes("smooth('kneeX'+index"), 'knee articulation must use damped transitions');
+assert.ok(skierSource.includes('this.avatarPelvis.position.y=this.avatarPelvisBaseY-pelvisCompression'), 'pelvis compression must use a stable base position');
+assert.ok(skierSource.includes("'Kneepad_Upper_Strap'") && skierSource.includes("'Kneepad_Lower_Stitch'"), 'layered knee protection details are missing');
+
 assert.ok(skierSource.includes("smooth('torsoRoll'"), 'damped turn lean animation is missing');
 assert.ok(skierSource.includes("smooth('poleZ'"), 'damped ski-pole turn animation is missing');
 assert.ok(skierSource.includes("this.eyeHeight = 2.05"), 'first-person eye-height correction is missing');
