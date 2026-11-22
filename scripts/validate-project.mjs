@@ -59,7 +59,7 @@ assert.doesNotMatch(entrySource, /_Cross|geoB\.rotateY\(Math\.PI\s*\*\s*0\.5\)/,
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
 assert.ok(entrySource.includes('drone-controller.v70.js'), 'active app must use the bounded drone controller');
-const droneSource = read('drone-controller.v69.js').toString('utf8');
+const droneSource = read('drone-controller.v70.js').toString('utf8');
 assert.ok(droneSource.includes('intersectObject(this.terrain,true)'), 'drone terrain raycast missing');
 assert.ok(droneSource.includes('minimumTerrainClearance=2.5'), 'drone terrain clearance missing');
 assert.ok(droneSource.includes('enforceTerrainClearance(nextPosition)'), 'drone movement collision guard missing');
