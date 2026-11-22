@@ -81,7 +81,7 @@ assert.ok(skierSource.includes('this._tryBumpJump(this.velocity.length())'), 'sk
 assert.ok(skierSource.includes('speed<14.5||this.lastLongitudinalAccel<2.8'), 'bump jump must require high speed and strong acceleration');
 assert.ok(skierSource.includes('this.airborneVelocityY=2.7'), 'bump jump lift must remain small and ballistic');
 assert.ok(skierSource.includes('this.jumpCooldown=1.35'), 'bump jump cooldown missing');
-assert.ok(skierSource.includes('this.camera.position.y+this.eyeHeight+this.airborneHeight'), 'camera must lift during a jump');
+assert.ok(skierSource.includes('this.position.y+this.eyeHeight+this.airborneHeight'), 'camera must lift during a jump');
 assert.ok(skierSource.includes('setSkiModel(source)'), 'skier model replacement API missing');
 assert.ok(skierSource.includes('this.skiSlots.push({group:ski,board,stripe,customMount})'), 'custom ski mounts missing from both ski slots');
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
