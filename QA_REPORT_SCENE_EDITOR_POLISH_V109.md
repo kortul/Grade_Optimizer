@@ -20,6 +20,10 @@
 | Range feedback | Filled slider track responds to user input and restored settings |
 | Persistence | Existing visualSettings and browser backup wiring unchanged |
 
+## Visual cascade guard
+
+- Active FX status badge and header Reset button have explicit selector specificity to override legacy inspector styles.
+
 ## Runtime validation outstanding
 
 Static validation cannot inspect the rendered browser UI or measure WebGL FPS. On the deployed site, check desktop and mobile layout, tab switches, FX / Bokeh states, slider feedback and Reset behavior.

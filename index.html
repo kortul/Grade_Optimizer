@@ -930,6 +930,13 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @media(max-width:700px){#sceneEditorPanel .scene-look-section-head{gap:5px}#sceneEditorPanel .scene-look-section-titles small{font-size:6px;letter-spacing:.8px}#sceneEditorPanel .scene-look-section-actions .editor-chip{display:none}#sceneEditorPanel .scene-look-tabs{top:44px;gap:2px;padding:3px}#sceneEditorPanel .scene-look-tab{min-height:49px}#sceneEditorPanel .scene-look-tab-label{font-size:7px}#sceneEditorPanel .scene-look-panel .scene-look-switches{gap:5px}#sceneEditorPanel .scene-look-panel .scene-look-switches label{padding-left:7px;padding-right:43px;font-size:7px}#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]{right:6px;width:30px}#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]:checked:after{transform:translateX(11px)}#sceneEditorPanel .scene-look-subsection{padding:8px}}
 @media(prefers-reduced-motion:reduce){#sceneEditorPanel .scene-look-tab,#sceneEditorPanel .scene-look-panel .scene-look-switches label,#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox],#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]:after{transition:none}}
 
+
+/* Final specificity guard: live badge and header reset outrank legacy inspector rules. */
+#sceneEditorPanel .scene-look-active-heading .scene-look-live-pill{font-size:7px;letter-spacing:.7px;color:#a9e4c4}
+#sceneEditorPanel .scene-look-active-heading .scene-look-live-pill.is-off{color:#96a6b1}
+#sceneEditorPanel .scene-look-active-heading .scene-look-live-pill.has-dof{color:#c0e5fb}
+#sceneEditorPanel button.scene-look-reset{background:rgba(111,146,169,.1)!important;border:1px solid rgba(155,190,211,.16)!important;color:#a9c2d2!important}
+#sceneEditorPanel button.scene-look-reset:hover{background:rgba(126,171,200,.18)!important;border-color:rgba(157,204,231,.32)!important;color:#e2f3fd!important}
 </style>
 
 </head>
