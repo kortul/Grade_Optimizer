@@ -218,7 +218,13 @@ assert.ok(mayaFixture.includes('cmds.rename(south_pylon, "Pylon")'), 'duplicate 
 assert.ok(mayaFixture.includes('5 верхнеуровневых веток, 7 mesh objects'), 'test-scene summary must match the generated hierarchy and mesh count');
 assert.ok(read('maya/GradeOptimizer.mod').toString('utf8').includes('MAYA_PLUG_IN_PATH +:= plug-ins'), 'Maya module descriptor missing plug-in path');
 assert.ok(read('maya/install_maya_module.bat').toString('utf8').includes('install_maya_module.ps1'), 'Windows Maya module installer missing');
-assert.ok(html.includes('src="./app.v96.js"'), 'active app must use v96 project-persistent editor settings module');
+assert.ok(html.includes('src="./app.v97.js"'), 'active app must use v97 project-persistent editor settings module');
+assert.ok(entrySource.includes("markClientProjectDirty('назначение общего материала')"), 'shared material assignment must mark the client project dirty');
+assert.ok(entrySource.includes("markClientProjectDirty('создание уникального материала')"), 'unique material creation must mark the client project dirty');
+assert.ok(entrySource.includes("markClientProjectDirty('удаление карты текстуры')"), 'texture removal must mark the client project dirty');
+assert.ok(entrySource.includes("markClientProjectDirty('смена активного рельефа')"), 'active terrain selection must mark the client project dirty');
+assert.ok(entrySource.includes("window.addEventListener('beforeunload'"), 'unsaved client project changes must warn before leaving');
+assert.ok(entrySource.includes("removeButton.disabled=asset.sourceType==='scene'"), 'non-persistent built-in scene component deletion must be disabled');
 assert.ok(html.includes('id="editorNodeRole" type="text"'), 'node role must accept custom values');
 assert.ok(html.includes('SAVE ALL PROJECT CHANGES TO GITHUB'), 'Scene Editor must expose one shared project save action');
 assert.ok(html.includes('ЭКСПОРТ JSON-БЭКАПА'), 'manual JSON export must be clearly marked as an optional backup');
