@@ -3240,7 +3240,7 @@ async function connectGitHubPublisher(){
       })
     });
     const verifiedConfig=await githubPublisherRequest('/contents/github-config.js?ref=main');
-    const verifiedSource=atob(String(verifiedConfig.content||'').replace(/\\s/g,''));
+    const verifiedSource=atob(String(verifiedConfig.content||'').replace(/\s/g,''));
     if(!verifiedConfig.sha||!verifiedSource.includes(JSON.stringify(candidate))){
       throw new Error('GitHub не подтвердил сохранение токена в github-config.js.');
     }
