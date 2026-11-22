@@ -9,6 +9,7 @@ import os
 import sys
 
 import maya.cmds as cmds
+import maya.utils as maya_utils
 import maya.api.OpenMaya as om
 
 VERSION = "0.2.0"
@@ -66,7 +67,7 @@ def initializePlugin(plugin_object):
     plugin = om.MFnPlugin(plugin_object, "Grade Optimizer", VERSION, "Any")
     plugin.registerCommand(COMMAND_NAME, GradeOptimizerOpenCommand.creator)
     try:
-        cmds.evalDeferred(_build_menu)
+        maya_utils.executeDeferred(_build_menu)
     except Exception:
         _build_menu()
     om.MGlobal.displayInfo("Grade Optimizer Maya plug-in " + VERSION + " loaded.")

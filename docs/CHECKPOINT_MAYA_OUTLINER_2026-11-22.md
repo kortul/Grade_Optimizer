@@ -21,7 +21,7 @@ Default import role is `model` / General model. Terrain remains an optional spec
 - No GitHub token is needed by this local exporter workflow.
 
 ### Web FBX support
-- Active app: `app.v94.js`, loaded from `index.html`.
+- Active app: `app.v95.js`, loaded from `index.html`.
 - Uses Three.js `FBXLoader`.
 - Existing GLB scenes remain supported.
 - FBX scene manifest entries are accepted by the client scene loader.
@@ -54,12 +54,22 @@ Default import role is `model` / General model. Terrain remains an optional spec
 
 Automated checks verify active entrypoint, DOM IDs, JavaScript syntax, FBX loader integration, Outliner controls, nested selection, selected-node transforms, nested visibility serialization, scene-wide material assignment, per-slot uniqueness and shared-owner dirty propagation. These checks are not a substitute for loading a representative Maya-exported FBX in a real browser.
 
+### Maya native plug-in and node metadata
+
+- Maya plug-in: `maya/plug-ins/grade_optimizer.py`, registered command `gradeOptimizerOpen`, menu `Grade Optimizer`.
+- Module descriptor: `maya/GradeOptimizer.mod`.
+- Windows installer: `maya/install_maya_module.bat` and `install_maya_module.ps1`; adds the repository's `maya` directory to the user's `MAYA_MODULE_PATH`.
+- Exporter UI: `maya/grade_optimizer_exporter.py`, default local repository `C:/zGit/GradeOptimizer`.
+- Maya nodes can receive optional Role, Tags, Collision hint and Forest blocker hint metadata. The exporter writes this as `nodeMetadata` in the client `scene.json`.
+- Web Outliner v95 restores metadata by Maya `namePath` or hierarchy index path, supports custom free-form roles, and persists metadata through client manifests, local browser records and Scene Config JSON.
+- Metadata is descriptive only at this stage; Collision hint / Forest blocker hint do not yet enable runtime collision or forest-placement behavior.
+
 ## Important limitations / next work
 
 1. **Test a real Maya FBX.** No representative binary FBX has yet been round-tripped through Maya → exporter → GitHub Pages. Verify nested groups, names, material assignments, embedded textures, scale/axis orientation and large-scene performance.
 2. **Shared material editing — implemented.** The library is keyed by actual Three.js material instance identity, not by display name. Editing a shared instance changes all its uses. Every imported model using that instance is marked dirty for publishing.
 3. **Scene-wide material library — implemented.** A scene-level list exposes existing materials and slot usage. Assign an existing material to the selected slot to create an intentional link, or use **Make slot unique** to clone that material and its texture objects for independent editing. Different materials with coincidentally equal names are not merged.
-4. **Per-node metadata.** Terrain / active-ground / collision / forest-blocker flags are currently asset-root oriented. Add optional per-node metadata without imposing mandatory categories.
+4. **Per-node metadata.** Optional per-node metadata is implemented. Next, decide which metadata roles should drive actual scene behavior (without forcing classifications).
 5. **Client editing and publishing.** Test nested transform/material/visibility edits inside a client URL and verify the publishing flow end-to-end.
 6. **Maya FBX options and shader fidelity.** Verify embedded textures in the target Maya/FBX versions. Three.js FBXLoader 0.160 parses Lambert and Phong material models; complex Maya/Arnold shader networks should not be assumed to round-trip faithfully. See [FBXLoader material parsing](https://github.com/mrdoob/three.js/blob/r160/examples/jsm/loaders/FBXLoader.js#L459-L522).
 
@@ -74,7 +84,9 @@ Automated checks verify active entrypoint, DOM IDs, JavaScript syntax, FBX loade
 ## Key files
 
 - `index.html` — active entry point and UI
-- `app.v94.js` — current app implementation
+- `app.v95.js` — current app implementation
+- `maya/plug-ins/grade_optimizer.py` — native Maya plug-in entrypoint
+- `maya/GradeOptimizer.mod` — Maya module descriptor
 - `maya/grade_optimizer_exporter.py` — Maya exporter
 - `maya/README.md` — exporter usage
 - `scripts/validate-project.mjs` — automated project checks

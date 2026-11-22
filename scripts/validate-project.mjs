@@ -160,7 +160,11 @@ assert.ok(mayaExporter.includes('"nodeMetadata": node_metadata'), 'Maya manifest
 assert.ok(mayaExporter.includes('def apply_metadata_to_selection('), 'Maya metadata UI action missing');
 assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
 assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');
+assert.ok(mayaPlugin.includes('maya_utils.executeDeferred(_build_menu)'), 'Maya menu must be created through deferred UI');
+assert.ok(read('maya/GradeOptimizer.mod').toString('utf8').includes('MAYA_PLUG_IN_PATH +:= plug-ins'), 'Maya module descriptor missing plug-in path');
+assert.ok(read('maya/install_maya_module.bat').toString('utf8').includes('install_maya_module.ps1'), 'Windows Maya module installer missing');
 assert.ok(html.includes('src="./app.v95.js"'), 'active app must use v95 node metadata module');
+assert.ok(html.includes('id="editorNodeRole" type="text"'), 'node role must accept custom values');
 
 
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');

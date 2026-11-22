@@ -887,18 +887,12 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <div class="editor-section">
     <h3>МЕТАДАННЫЕ УЗЛА <span class="editor-chip">OPTIONAL</span></h3>
     <label for="editorNodeRole">Role / назначение выбранного узла</label>
-    <select id="editorNodeRole">
-      <option value="">Без переопределения</option>
-      <option value="general">General model</option>
-      <option value="terrain">Terrain surface</option>
-      <option value="slope">Slope / piste</option>
-      <option value="building">Building</option>
-      <option value="lift">Lift / ropeway</option>
-      <option value="vegetation">Vegetation</option>
-      <option value="collision-proxy">Collision proxy</option>
-      <option value="forest-blocker">Forest blocker</option>
-      <option value="other">Other</option>
-    </select>
+    <input id="editorNodeRole" type="text" list="editorNodeRoleOptions" placeholder="например: gondola-station, terrain, custom-role"/>
+    <datalist id="editorNodeRoleOptions">
+      <option value="general"></option><option value="terrain"></option><option value="slope"></option>
+      <option value="building"></option><option value="lift"></option><option value="vegetation"></option>
+      <option value="collision-proxy"></option><option value="forest-blocker"></option><option value="other"></option>
+    </datalist>
     <label for="editorNodeTags">Tags · через запятую</label>
     <input id="editorNodeTags" type="text" placeholder="например: gondola, station, phase-2"/>
     <div class="editor-checks">

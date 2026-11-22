@@ -237,7 +237,7 @@ def write_manifest(client_dir, slug, components, model_size, node_metadata):
 
 
 def browse_repo(*_):
-    result = cmds.fileDialog2(fileMode=3, caption="Выбери локальный Grade_Optimizer")
+    result = cmds.fileDialog2(fileMode=3, caption="Выбери локальную папку GradeOptimizer")
     if result:
         cmds.textFieldButtonGrp(WINDOW + "_repo", edit=True, text=result[0])
 
