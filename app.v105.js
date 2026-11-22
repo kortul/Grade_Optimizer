@@ -58,6 +58,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
+const BASE_TONE_MAPPING_EXPOSURE = 1.12;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 view.appendChild(renderer.domElement);
@@ -115,6 +116,7 @@ const lightingCenter = new THREE.Vector3();
 let sunAzimuthOffset = 0;
 let sunIntensityScale = 1;
 let sunEnabled = true;
+let ambientFillScale = 1;
 const daylightColors = {
   nightTop: new THREE.Color(0x071322), nightHorizon: new THREE.Color(0x24384a), nightBottom: new THREE.Color(0x101b29),
   dayTop: new THREE.Color(0x4b83b8), dayHorizon: new THREE.Color(0xd6e5ef), dayBottom: new THREE.Color(0x94a9b8),
@@ -158,7 +160,7 @@ function updateDaylight(hours = state.dayTime) {
   sun.castShadow = sunEnabled && daylight > 0.08;
   hemisphere.color.copy(daylightColors.nightHemisphere).lerp(daylightColors.dayHemisphere, daylight);
   hemisphere.groundColor.copy(daylightColors.nightGround).lerp(daylightColors.dayGround, daylight);
-  hemisphere.intensity = (0.28 + daylight*0.62) * weatherLighting.ambient;
+  hemisphere.intensity = (0.28 + daylight*0.62) * weatherLighting.ambient * ambientFillScale;
   scene.fog.color.copy(horizon);
 }
 function formatClock(hours) {
@@ -197,8 +199,8 @@ setTimeOfDay(state.dayTime);
 
 // Weather controls are deliberately stored separately from client scene.json.
 // Environment preferences belong to this browser, not to imported client assets.
-const WEATHER_STORAGE_KEY = 'grade_optimizer_weather_v2';
-const LEGACY_WEATHER_STORAGE_KEY = 'grade_optimizer_weather_v1';
+const WEATHER_STORAGE_KEY = 'grade_optimizer_weather_v3';
+const LEGACY_WEATHER_STORAGE_KEYS = ['grade_optimizer_weather_v2','grade_optimizer_weather_v1'];
 const weatherPanel = document.getElementById('weatherPanel');
 const weatherToggle = document.getElementById('weatherToggle');
 const weatherClose = document.getElementById('weatherClose');
@@ -219,6 +221,18 @@ function updateWeatherControls() {
   weatherCloudsValue.textContent = weatherCloudsInput.value + '%';
   weatherSnowValue.textContent = weatherSnowInput.value + '%';
   weatherWindValue.textContent = weatherWindInput.value + ' км/ч';
+  const sceneClouds=document.getElementById('sceneClouds');
+  const sceneSnow=document.getElementById('sceneSnow');
+  const sceneWind=document.getElementById('sceneWind');
+  if(sceneClouds)sceneClouds.value=String(Math.round(settings.clouds*100));
+  if(sceneSnow)sceneSnow.value=String(Math.round(settings.snowfall*100));
+  if(sceneWind)sceneWind.value=String(Math.round(settings.wind));
+  const sceneCloudsValue=document.getElementById('sceneCloudsValue');
+  const sceneSnowValue=document.getElementById('sceneSnowValue');
+  const sceneWindValue=document.getElementById('sceneWindValue');
+  if(sceneCloudsValue)sceneCloudsValue.textContent=Math.round(settings.clouds*100)+'%';
+  if(sceneSnowValue)sceneSnowValue.textContent=Math.round(settings.snowfall*100)+'%';
+  if(sceneWindValue)sceneWindValue.textContent=Math.round(settings.wind)+' km/h';
   weatherPresetButtons.forEach(button => {
     const active = button.dataset.weatherPreset === settings.preset;
     button.classList.toggle('active', active);
@@ -245,6 +259,7 @@ function applyWeatherPreset(name) {
   updateDaylight(state.dayTime);
   updateWeatherControls();
   persistWeatherSettings();
+  markClientProjectDirty('погодные настройки');
 }
 
 function applyCustomWeather() {
@@ -255,6 +270,7 @@ function applyCustomWeather() {
   updateDaylight(state.dayTime);
   updateWeatherControls();
   persistWeatherSettings();
+  markClientProjectDirty('погодные настройки');
 }
 
 weatherPresetButtons.forEach(button => {
@@ -273,22 +289,94 @@ const opticsBloomValue = document.getElementById('opticsBloomValue');
 const opticsStatus = document.getElementById('opticsStatus');
 const opticsFlareInput = document.getElementById('opticsFlares');
 const opticsBokehInput = document.getElementById('opticsBokeh');
-const OPTICS_STORAGE_KEY = 'grade_optimizer_optics_v1';
-const opticsSettings = { enabled: true, bloom: 34, flare: true, bokeh: false };
+const OPTICS_STORAGE_KEY = 'grade_optimizer_optics_v2';
+const LEGACY_OPTICS_STORAGE_KEY = 'grade_optimizer_optics_v1';
+const opticsSettings = {
+  enabled:true, bloom:58, bloomThreshold:0.78,
+  flare:true, flareStrength:70, dirt:38, bokeh:false, focusDistance:48, aperture:4,
+  vignette:24, chromatic:18, grain:4, sharpness:14,
+  temperature:6500, tint:0, contrast:104, saturation:104, exposure:0,
+  cameraFov:55, toneMapping:'aces', quality:'balanced',
+  sunIntensity:100, sunRotation:0, ambientFill:100, sunEnabled:true, shadowQuality:1
+};
 try {
-  const savedOptics = JSON.parse(localStorage.getItem(OPTICS_STORAGE_KEY) || 'null');
-  if (savedOptics && typeof savedOptics === 'object') {
-    if (typeof savedOptics.enabled === 'boolean') opticsSettings.enabled = savedOptics.enabled;
-    if (Number.isFinite(Number(savedOptics.bloom))) opticsSettings.bloom = THREE.MathUtils.clamp(Number(savedOptics.bloom), 0, 100);
-    if (typeof savedOptics.flare === 'boolean') opticsSettings.flare = savedOptics.flare;
-    if (typeof savedOptics.bokeh === 'boolean') opticsSettings.bokeh = savedOptics.bokeh;
+  const currentOptics=localStorage.getItem(OPTICS_STORAGE_KEY);
+  const legacyOptics=localStorage.getItem(LEGACY_OPTICS_STORAGE_KEY);
+  const savedOptics=JSON.parse(currentOptics||legacyOptics||'null');
+  if(savedOptics&&typeof savedOptics==='object'){
+    const numericKeys={
+      bloom:[0,100],bloomThreshold:[0.1,2],flareStrength:[0,100],dirt:[0,100],
+      focusDistance:[5,500],aperture:[1.4,16],vignette:[0,100],chromatic:[0,100],
+      grain:[0,100],sharpness:[0,100],temperature:[3200,9000],tint:[-100,100],
+      contrast:[60,160],saturation:[0,160],exposure:[-2,2],cameraFov:[30,90],
+      sunIntensity:[0,300],sunRotation:[0,360],ambientFill:[0,200],shadowQuality:[0,2]
+    };
+    Object.entries(numericKeys).forEach(([key,[min,max]])=>{
+      if(Number.isFinite(Number(savedOptics[key])))opticsSettings[key]=THREE.MathUtils.clamp(Number(savedOptics[key]),min,max);
+    });
+    ['enabled','flare','bokeh','sunEnabled'].forEach(key=>{
+      if(typeof savedOptics[key]==='boolean')opticsSettings[key]=savedOptics[key];
+    });
+    if(['aces','agx','reinhard','linear'].includes(savedOptics.toneMapping))opticsSettings.toneMapping=savedOptics.toneMapping;
+    if(['performance','balanced','high','cinematic'].includes(savedOptics.quality))opticsSettings.quality=savedOptics.quality;
+    if(!currentOptics&&Number(savedOptics.bloom)===34)opticsSettings.bloom=58;
   }
 } catch (error) {
-  console.warn('Не удалось восстановить настройки оптики; используются стандартные.', error);
+  console.warn('Не удалось восстановить настройки камеры; используются стандартные.', error);
 }
 function persistOpticsSettings() {
   try { localStorage.setItem(OPTICS_STORAGE_KEY, JSON.stringify(opticsSettings)); }
-  catch (error) { console.warn('Не удалось сохранить настройки оптики:', error); }
+  catch (error) { console.warn('Не удалось сохранить настройки камеры:', error); }
+}
+function syncSceneLookControls() {
+  const setValue=(id,value)=>{const el=document.getElementById(id);if(el)el.value=String(value);};
+  const setChecked=(id,value)=>{const el=document.getElementById(id);if(el)el.checked=!!value;};
+  setValue('sceneCameraFov',opticsSettings.cameraFov);
+  setValue('sceneExposure',opticsSettings.exposure);
+  setValue('sceneWhiteBalance',opticsSettings.temperature);
+  setValue('sceneTint',opticsSettings.tint);
+  setValue('sceneContrast',opticsSettings.contrast);
+  setValue('sceneSaturation',opticsSettings.saturation);
+  setValue('sceneBloom',opticsSettings.bloom);
+  setValue('sceneBloomThreshold',opticsSettings.bloomThreshold);
+  setValue('sceneFlare',opticsSettings.flareStrength);
+  setValue('sceneDirt',opticsSettings.dirt);
+  setValue('sceneVignette',opticsSettings.vignette);
+  setValue('sceneChromatic',opticsSettings.chromatic);
+  setValue('sceneGrain',opticsSettings.grain);
+  setValue('sceneSharpness',opticsSettings.sharpness);
+  setValue('sceneFocusDistance',opticsSettings.focusDistance);
+  setValue('sceneAperture',opticsSettings.aperture);
+  setValue('sceneQuality',opticsSettings.quality);
+  setValue('sceneToneMapping',opticsSettings.toneMapping);
+  setValue('sceneSunIntensity',opticsSettings.sunIntensity);
+  setValue('sceneSunRotation',opticsSettings.sunRotation);
+  setValue('sceneAmbientFill',opticsSettings.ambientFill);
+  setValue('sceneShadowQuality',opticsSettings.shadowQuality);
+  setChecked('sceneOpticsEnabled',opticsSettings.enabled);
+  setChecked('sceneBokeh',opticsSettings.bokeh);
+  setChecked('sceneSunEnabled',opticsSettings.sunEnabled);
+  const values={
+    sceneExposureValue:(Number(opticsSettings.exposure)>=0?'+':'')+Number(opticsSettings.exposure).toFixed(2)+' EV',
+    sceneWhiteBalanceValue:Math.round(opticsSettings.temperature)+' K',
+    sceneTintValue:Number(opticsSettings.tint).toFixed(0),
+    sceneContrastValue:(Number(opticsSettings.contrast)/100).toFixed(2),
+    sceneSaturationValue:(Number(opticsSettings.saturation)/100).toFixed(2),
+    sceneBloomValue:Math.round(opticsSettings.bloom)+'%',
+    sceneBloomThresholdValue:Number(opticsSettings.bloomThreshold).toFixed(2),
+    sceneFlareValue:Math.round(opticsSettings.flareStrength)+'%',
+    sceneDirtValue:Math.round(opticsSettings.dirt)+'%',
+    sceneVignetteValue:Math.round(opticsSettings.vignette)+'%',
+    sceneChromaticValue:Math.round(opticsSettings.chromatic)+'%',
+    sceneGrainValue:Math.round(opticsSettings.grain)+'%',
+    sceneSharpnessValue:Math.round(opticsSettings.sharpness)+'%',
+    sceneFocusDistanceValue:Math.round(opticsSettings.focusDistance)+' m',
+    sceneApertureValue:'f/'+Number(opticsSettings.aperture).toFixed(1),
+    sceneSunIntensityValue:Math.round(opticsSettings.sunIntensity)+'%',
+    sceneSunRotationValue:Math.round(opticsSettings.sunRotation)+'°',
+    sceneAmbientFillValue:Math.round(opticsSettings.ambientFill)+'%'
+  };
+  Object.entries(values).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.textContent=value;});
 }
 function updateOpticsControls() {
   opticsEnabledInput.checked = opticsSettings.enabled;
@@ -297,28 +385,110 @@ function updateOpticsControls() {
   opticsFlareInput.checked = opticsSettings.flare;
   opticsBokehInput.checked = opticsSettings.bokeh;
   opticsToggle.classList.toggle('active', opticsSettings.enabled);
-  if (opticsStatus) {
-    if (!opticsSettings.enabled) {
-      opticsStatus.textContent = 'Оптика выключена · используется прямой рендер для максимального FPS';
-    } else {
-      const active = [];
-      if (opticsSettings.bloom > 0) active.push('Bloom');
-      if (opticsSettings.flare) active.push('Lens flare + dirt');
-      active.push(opticsSettings.bokeh ? 'Bokeh включён' : 'Bokeh выключен');
-      opticsStatus.textContent = active.join(' · ');
-    }
+  camera.fov=opticsSettings.cameraFov;
+  camera.updateProjectionMatrix();
+  renderer.toneMapping={
+    aces:THREE.ACESFilmicToneMapping,
+    agx:THREE.AgXToneMapping,
+    reinhard:THREE.ReinhardToneMapping,
+    linear:THREE.LinearToneMapping
+  }[opticsSettings.toneMapping]??THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=BASE_TONE_MAPPING_EXPOSURE*Math.pow(2,opticsSettings.exposure);
+  sunIntensityScale=opticsSettings.sunIntensity/100;
+  sunAzimuthOffset=opticsSettings.sunRotation;
+  ambientFillScale=opticsSettings.ambientFill/100;
+  sunEnabled=opticsSettings.sunEnabled;
+  const shadowSizes=[1024,2048,4096];
+  const shadowSize=shadowSizes[opticsSettings.shadowQuality]||2048;
+  if(sun.shadow.mapSize.x!==shadowSize||sun.shadow.mapSize.y!==shadowSize){
+    if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}
+    sun.shadow.mapSize.set(shadowSize,shadowSize);
   }
   cameraOptics.setOptions({
-    enabled: opticsSettings.enabled,
-    bloom: opticsSettings.bloom / 100,
-    flare: opticsSettings.flare,
-    bokeh: opticsSettings.bokeh,
-    intensity: 0.58
+    enabled:opticsSettings.enabled,
+    bloom:opticsSettings.bloom/100,
+    bloomThreshold:opticsSettings.bloomThreshold,
+    flare:opticsSettings.flare,
+    flareStrength:opticsSettings.flareStrength/100,
+    dirt:opticsSettings.dirt/100,
+    bokeh:opticsSettings.bokeh,
+    focusDistance:opticsSettings.focusDistance,
+    aperture:opticsSettings.aperture,
+    vignette:opticsSettings.vignette/100,
+    chromatic:opticsSettings.chromatic/100,
+    grain:opticsSettings.grain/100,
+    sharpness:opticsSettings.sharpness/100,
+    temperature:opticsSettings.temperature,
+    tint:opticsSettings.tint/100,
+    contrast:opticsSettings.contrast/100,
+    saturation:opticsSettings.saturation/100,
+    quality:opticsSettings.quality
+  });
+  if (opticsStatus) {
+    if (!opticsSettings.enabled) opticsStatus.textContent='Оптика выключена · прямой рендер для максимального FPS';
+    else opticsStatus.textContent=[
+      'Bloom '+Math.round(opticsSettings.bloom)+'%',
+      opticsSettings.flare?'Lens flare':'Flare off',
+      'WB '+Math.round(opticsSettings.temperature)+' K',
+      opticsSettings.bokeh?'Bokeh on':'Bokeh off',
+      opticsSettings.quality
+    ].join(' · ');
+  }
+  syncSceneLookControls();
+  updateDaylight(state.dayTime);
+}
+function applyOpticsSettings({persist=true,markDirty=true}={}) {
+  updateOpticsControls();
+  if(persist)persistOpticsSettings();
+  if(markDirty)markClientProjectDirty('настройки камеры и рендеринга');
+}
+function bindSceneLookControls() {
+  const numeric={
+    sceneCameraFov:'cameraFov',sceneExposure:'exposure',sceneWhiteBalance:'temperature',
+    sceneTint:'tint',sceneContrast:'contrast',sceneSaturation:'saturation',
+    sceneBloom:'bloom',sceneBloomThreshold:'bloomThreshold',sceneFlare:'flareStrength',
+    sceneDirt:'dirt',sceneVignette:'vignette',sceneChromatic:'chromatic',
+    sceneGrain:'grain',sceneSharpness:'sharpness',sceneFocusDistance:'focusDistance',
+    sceneAperture:'aperture',sceneSunIntensity:'sunIntensity',sceneSunRotation:'sunRotation',
+    sceneAmbientFill:'ambientFill',sceneShadowQuality:'shadowQuality'
+  };
+  Object.entries(numeric).forEach(([id,key])=>{
+    const input=document.getElementById(id);
+    if(!input)return;
+    input.addEventListener('input',()=>{
+      opticsSettings[key]=Number(input.value);
+      applyOpticsSettings();
+    });
+    input.addEventListener('change',()=>{
+      opticsSettings[key]=Number(input.value);
+      applyOpticsSettings();
+    });
+  });
+  [['sceneToneMapping','toneMapping'],['sceneQuality','quality']].forEach(([id,key])=>{
+    const input=document.getElementById(id);
+    if(input)input.addEventListener('change',()=>{opticsSettings[key]=input.value;applyOpticsSettings();});
+  });
+  [['sceneOpticsEnabled','enabled'],['sceneBokeh','bokeh'],['sceneSunEnabled','sunEnabled']].forEach(([id,key])=>{
+    const input=document.getElementById(id);
+    if(input)input.addEventListener('change',()=>{opticsSettings[key]=input.checked;applyOpticsSettings();});
   });
 }
-function applyOpticsSettings() {
-  updateOpticsControls();
-  persistOpticsSettings();
+function applyOpticsSettingsFromProject(saved) {
+  if(!saved||typeof saved!=='object')return;
+  const numericKeys={
+    bloom:[0,100],bloomThreshold:[0.1,2],flareStrength:[0,100],dirt:[0,100],
+    focusDistance:[5,500],aperture:[1.4,16],vignette:[0,100],chromatic:[0,100],
+    grain:[0,100],sharpness:[0,100],temperature:[3200,9000],tint:[-100,100],
+    contrast:[60,160],saturation:[0,160],exposure:[-2,2],cameraFov:[30,90],
+    sunIntensity:[0,300],sunRotation:[0,360],ambientFill:[0,200],shadowQuality:[0,2]
+  };
+  Object.entries(numericKeys).forEach(([key,[min,max]])=>{
+    if(Number.isFinite(Number(saved[key])))opticsSettings[key]=THREE.MathUtils.clamp(Number(saved[key]),min,max);
+  });
+  ['enabled','flare','bokeh','sunEnabled'].forEach(key=>{if(typeof saved[key]==='boolean')opticsSettings[key]=saved[key];});
+  if(['aces','agx','reinhard','linear'].includes(saved.toneMapping))opticsSettings.toneMapping=saved.toneMapping;
+  if(['performance','balanced','high','cinematic'].includes(saved.quality))opticsSettings.quality=saved.quality;
+  applyOpticsSettings({persist:true,markDirty:false});
 }
 function setOpticsPanelOpen(open) {
   const app = document.getElementById('app');
@@ -337,6 +507,7 @@ opticsEnabledInput.addEventListener('change', () => { opticsSettings.enabled = o
 opticsBloomInput.addEventListener('input', () => { opticsSettings.bloom = Number(opticsBloomInput.value); applyOpticsSettings(); });
 opticsFlareInput.addEventListener('change', () => { opticsSettings.flare = opticsFlareInput.checked; applyOpticsSettings(); });
 opticsBokehInput.addEventListener('change', () => { opticsSettings.bokeh = opticsBokehInput.checked; applyOpticsSettings(); });
+bindSceneLookControls();
 function setWeatherPanelOpen(open) {
   const app = document.getElementById('app');
   if (open) {
@@ -359,30 +530,37 @@ document.addEventListener('keydown', event => {
 updateOpticsControls();
 try {
   const savedWeather = JSON.parse(localStorage.getItem(WEATHER_STORAGE_KEY) || 'null');
-  const legacyWeather = savedWeather ? null : JSON.parse(localStorage.getItem(LEGACY_WEATHER_STORAGE_KEY) || 'null');
-  const weatherToRestore = savedWeather || legacyWeather;
-  if (weatherToRestore) {
-    if (legacyWeather) {
-      const legacyPreset = WeatherSystem.PRESETS[legacyWeather.preset] || {};
-      const legacySnowfall = Number(legacyWeather.snowfall ?? legacyPreset.snowfall ?? 0);
-      if (legacySnowfall > 0) {
-        // Previous test sessions may have left snowfall enabled. Migrate the
-        // other weather choices, but start the new version with snow disabled.
-        weatherSystem.setCustom({ ...legacyWeather, snowfall: 0, preset: 'custom' });
-      } else if (legacyWeather.preset === 'custom') {
+  let legacyWeather=null;
+  if(!savedWeather){
+    for(const legacyKey of LEGACY_WEATHER_STORAGE_KEYS){
+      const stored=JSON.parse(localStorage.getItem(legacyKey)||'null');
+      if(stored){legacyWeather=stored;break;}
+    }
+  }
+  const weatherToRestore=savedWeather||legacyWeather;
+  if(weatherToRestore){
+    if(legacyWeather){
+      const legacyPreset=WeatherSystem.PRESETS[legacyWeather.preset]||{};
+      const legacySnowfall=Number(legacyWeather.snowfall??legacyPreset.snowfall??0);
+      const wasOldDefaultClear=legacyWeather.preset==='clear'&&Number(legacyWeather.clouds??0)<=0.01;
+      if(wasOldDefaultClear){
+        weatherSystem.setPreset('light');
+      }else if(legacySnowfall>0){
+        weatherSystem.setCustom({...legacyWeather,snowfall:0,preset:'custom'});
+      }else if(legacyWeather.preset==='custom'){
         weatherSystem.setCustom(legacyWeather);
-      } else if (WeatherSystem.PRESETS[legacyWeather.preset]) {
+      }else if(WeatherSystem.PRESETS[legacyWeather.preset]){
         weatherSystem.setPreset(legacyWeather.preset);
       }
       persistWeatherSettings();
-    } else if (savedWeather.preset === 'custom') {
+    }else if(savedWeather.preset==='custom'){
       weatherSystem.setCustom(savedWeather);
-    } else if (WeatherSystem.PRESETS[savedWeather.preset]) {
+    }else if(WeatherSystem.PRESETS[savedWeather.preset]){
       weatherSystem.setPreset(savedWeather.preset);
     }
   }
 } catch (error) {
-  console.warn('Не удалось восстановить погоду браузера; используется ясная погода.', error);
+  console.warn('Не удалось восстановить настройки погоды; используется лёгкая облачность.', error);
 }
 updateDaylight(state.dayTime);
 updateWeatherControls();
