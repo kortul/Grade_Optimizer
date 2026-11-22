@@ -226,7 +226,7 @@ assert.ok(entrySource.includes("REQUESTED_PROJECT_ID||'alpine-resort'"), 'primar
 assert.ok(entrySource.includes('await autosaveProjectToBrowser({force:true,silent:true})'), 'opening a project must establish a browser backup');
 assert.ok(entrySource.includes('localBackup.baseUpdatedAt')&&entrySource.includes('localBackup.lastExportedManifestAt'), 'local backup must reconcile unsynced edits across an intervening ZIP publish');
 assert.ok(entrySource.includes('EXPORT PROJECT PACKAGE · ZIP'), 'imported model guidance must explain browser ZIP export');
-assert.ok(entrySource.includes('buffer.byteLength>90*1024*1024'), 'ZIP export must guard regular-Git model file size');
+assert.ok(entrySource.includes('bytes>90*1024*1024'), 'ZIP export must guard regular-Git model file size');
 assert.ok(entrySource.includes('function pulseEditorSelection(target){'), 'scene editor selection pulse effect missing');
 assert.ok(entrySource.includes('updateEditorSelectionPulses(now);'), 'scene editor selection pulse animation must run in the render loop');
 assert.ok(entrySource.includes('color:0xffd52f'), 'selection pulse must use the yellow highlight material');
