@@ -218,7 +218,10 @@ assert.ok(mayaFixture.includes('cmds.rename(south_pylon, "Pylon")'), 'duplicate 
 assert.ok(mayaFixture.includes('5 верхнеуровневых веток, 7 mesh objects'), 'test-scene summary must match the generated hierarchy and mesh count');
 assert.ok(read('maya/GradeOptimizer.mod').toString('utf8').includes('MAYA_PLUG_IN_PATH +:= plug-ins'), 'Maya module descriptor missing plug-in path');
 assert.ok(read('maya/install_maya_module.bat').toString('utf8').includes('install_maya_module.ps1'), 'Windows Maya module installer missing');
-assert.ok(html.includes('src="./app.v97.js"'), 'active app must use v97 project-persistent editor settings module');
+assert.ok(html.includes('src="./app.v98.js"'), 'active app must use v98 project-persistent editor settings module');
+assert.ok(entrySource.includes('function pulseEditorSelection(target){'), 'scene editor selection pulse effect missing');
+assert.ok(entrySource.includes('updateEditorSelectionPulses(now);'), 'scene editor selection pulse animation must run in the render loop');
+assert.ok(entrySource.includes('color:0xffd52f'), 'selection pulse must use the yellow highlight material');
 assert.ok(entrySource.includes("markClientProjectDirty('назначение общего материала')"), 'shared material assignment must mark the client project dirty');
 assert.ok(entrySource.includes("markClientProjectDirty('создание уникального материала')"), 'unique material creation must mark the client project dirty');
 assert.ok(entrySource.includes("markClientProjectDirty('удаление карты текстуры')"), 'texture removal must mark the client project dirty');
