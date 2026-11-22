@@ -81,9 +81,9 @@ def create_test_scene():
     choice = cmds.confirmDialog(
         title="Grade Optimizer · Create FBX Test Scene",
         message=(
-            "Это заменит текущую сцену Maya новой тестовой сценой.\\n\\n"
+            "Это заменит текущую сцену Maya новой тестовой сценой.\n\n"
             "Внутри будут вложенные группы, общие материалы, два material slots, "
-            "скрытый узел и повторяющиеся имена в разных ветках.\\n\\n"
+            "скрытый узел и повторяющиеся имена в разных ветках.\n\n"
             "Продолжить?"
         ),
         button=[CONFIRM_BUTTON, "Cancel"],
@@ -180,11 +180,11 @@ def create_test_scene():
     cmds.select(root, replace=True)
 
     message = (
-        "Тестовая сцена создана.\\n\\n"
-        "Проверь в Outliner: GO_Test_Resort_GRP.\\n"
+        "Тестовая сцена создана.\n\n"
+        "Проверь в Outliner: GO_Test_Resort_GRP.\n"
         "Затем открой Grade Optimizer → Open Exporter… и экспортируй всю сцену "
-        "с Client ID: maya-fbx-test.\\n\\n"
-        "Ожидается: 6 вложенных веток верхнего уровня, 5 mesh objects, "
+        "с Client ID: maya-fbx-test.\n\n"
+        "Ожидается: 5 верхнеуровневых веток, 7 mesh objects, "
         "общий GO_Shared_Snow_MAT на двух mesh, 2 slots на Station_Building, "
         "скрытый Hidden_Survey_Marker и два узла Pylon с разными namePath."
     )
@@ -193,5 +193,5 @@ def create_test_scene():
         message=message,
         button=["OK"]
     )
-    print("[Grade Optimizer] " + message.replace("\\n", " | "))
+    print("[Grade Optimizer] " + message.replace("\n", " | "))
     return root
