@@ -53,15 +53,15 @@ The FBX keeps object hierarchy, mesh names and shared material assignments. The 
 
 Keep the FBX below 90 MiB for the current regular-Git workflow. Use embedded textures so the project remains self-contained.
 
-## Scene Editor: permanent project saving
+## Scene Editor: browser autosave and GitHub Desktop export
 
-There is one administrator/editor: you. Viewers only need the generated viewer link; no client accounts or editing workflow are required. Scene Editor password protection is a separate future task.
+You are the only Scene Editor administrator. Viewers only need the generated viewer link; no client accounts or editing workflow are required.
 
 - The primary Project ID is `alpine-resort` and opens automatically. The Maya Exporter uses the same default.
-- A different project can be selected with `?project=<id>`. Legacy `?client=<id>` links continue to work.
-- One-time setup: paste a fine-grained token into **ONE-TIME · GITHUB PUBLISHER SETUP** and click **SAVE TOKEN IN PUBLIC CODE**. The app writes the token into `github-config.js` in the repository. After GitHub Pages deploys that change, every device automatically loads the token; no repeated connection is needed.\n- This is intentionally public client-side storage: anyone can inspect the token and use its `Contents: Read and write` permission on `kortul/Grade_Optimizer`. Use a fine-grained token restricted to this repository, with an expiration date.
-- Click **SAVE PERMANENTLY TO GITHUB** after editing. The app commits the project manifest to `clients/<id>/scene.json` and changed imported models to the same project folder.
-- The app verifies the new `main` commit and checks that the saved manifest blob is present before clearing the unsaved-changes state.
-- The manifest includes built-in Scene Editor transforms, visibility, Role / Tags, Collision / Forest blocker, PBR materials, shared/unique material identity, and user-imported textures. Imported models include nested visibility and node metadata.
-- Old browser-stored imported models are recovered as drafts only when the default project has not yet been published. They are preserved for migration to GitHub. Browser storage is not the source of truth.
-- A successful GitHub commit is the permanent save. GitHub Pages then deploys the viewer files; that deployment is separate from the save itself.
+- Scene Editor changes are automatically backed up in this browser's IndexedDB. This includes built-in scene settings, transforms, visibility, Role / Tags, Collision / Forest blocker, PBR material values, custom textures, imported model binaries, and per-node settings.
+- On the next visit from the same browser, an unsynced local backup is restored when it is based on the currently deployed project. A newer published GitHub version takes precedence over an outdated local backup. Post-export changes are also retained when the exported package becomes the deployed base.
+- Browser backups are local to that browser and can be lost if site data is cleared. They are not shared with clients or other devices.
+- When editing is complete, use **EXPORT PROJECT PACKAGE · ZIP**. The ZIP contains `clients/<project-id>/scene.json` and every imported model file referenced by that manifest.
+- Extract the ZIP into the root of the local `Grade_Optimizer` repository, merging the `clients/<project-id>` folder. Then commit and push using GitHub Desktop. GitHub Pages deploys the updated viewer files after the push.
+- Use the ZIP export as the intentional publish step; browser autosave alone does not change the live site.
+- Keep each model file below 90 MiB for the current regular-Git workflow. Use embedded textures so each GLB/FBX remains self-contained.
