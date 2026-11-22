@@ -728,6 +728,37 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @keyframes ski-wind-streak{0%{transform:translate3d(-16px,-26px,0) scaleX(.4);opacity:0}18%{opacity:.24}48%{opacity:.9}100%{transform:translate3d(18px,38px,0) scaleX(1.15);opacity:0}}
 @media(prefers-reduced-motion:reduce){#skiWindFx .wind-edge i{animation:none;opacity:.2}}
 </style>
+
+<style id="gradeOptimizerWeatherStyles">
+#weatherToggle{background:#40596d;color:#e4f0fa}
+#app.weather-open #weatherToggle{background:#2ea36a;color:#fff}
+#weatherPanel{
+ display:none;position:absolute;z-index:28;top:112px;left:60px;
+ width:min(350px,calc(100% - 72px));max-height:calc(100% - 132px);
+ overflow:auto;padding:14px;border:1px solid rgba(173,201,225,.2);
+ border-radius:13px;background:rgba(17,25,34,.97);
+ box-shadow:0 18px 48px rgba(0,0,0,.46);backdrop-filter:blur(16px);
+ color:#eaf2f8;overscroll-behavior:contain
+}
+#app.weather-open #weatherPanel{display:block}
+.weather-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.weather-head strong{display:block;font-size:11px;letter-spacing:1px;color:#d9eaf7}
+.weather-head small{display:block;margin-top:3px;font-size:9px;color:#91a7b9}
+#weatherPanel #weatherClose{width:30px;min-width:30px;height:30px;margin:0;padding:0;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:#2b3947;color:#eaf2f8;font-size:20px;line-height:1}
+.weather-preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#weatherPanel .weather-preset{width:100%;min-height:36px;margin:0;padding:8px 6px;border:1px solid rgba(173,201,225,.12);border-radius:7px;background:#263543;color:#d5e3ed;font-size:10px;font-weight:750;letter-spacing:.1px}
+#weatherPanel .weather-preset:hover{background:#34495b}
+#weatherPanel .weather-preset.active{border-color:rgba(95,207,157,.65);background:rgba(46,163,106,.2);color:#a8edc9;box-shadow:inset 0 0 0 1px rgba(95,207,157,.12)}
+.weather-control{padding:10px 1px 2px;margin-top:5px;border-top:1px solid rgba(255,255,255,.08)}
+.weather-control label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;color:#bdcbd7;font-size:10px}
+.weather-control label strong{color:#9edbbd;font-variant-numeric:tabular-nums}
+#weatherPanel input[type=range]{width:100%;margin:8px 0 2px;accent-color:#69c99e}
+#weatherStatus{margin-top:9px;padding:8px 9px;border:1px solid rgba(130,184,226,.12);border-radius:7px;background:rgba(92,145,183,.07);color:#a9c7db;font-size:9px;letter-spacing:.4px}
+#app.skier-mode #weatherPanel,#app.drone-mode #weatherPanel{display:none!important}
+@media(max-width:1180px){#weatherPanel{top:116px;left:12px;width:min(350px,calc(100% - 24px));max-height:calc(100% - 136px)}}
+@media(max-width:620px){#weatherPanel{top:152px;left:8px;right:8px;width:auto;max-height:calc(100% - 164px);padding:11px}.weather-preset-grid{gap:5px}}
+</style>
+
 </head>
 <body>
 <div id="app"><div id="panel">
@@ -777,11 +808,40 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <button id="droneModeButton" type="button" aria-label="Режим дрона" title="Режим дрона"><span class="drone-mode-icon" aria-hidden="true">✥</span> ДРОН</button>
   </div>
     <button id="editorToggle" type="button" aria-expanded="false">SCENE EDITOR</button>
+    <button id="weatherToggle" type="button" aria-expanded="false">ПОГОДА</button>
   </div>
   <div class="dayCycle" id="dayCycle">
     <button id="timeToggle" type="button" aria-expanded="false" aria-label="Показать управление временем" title="Время суток"><span aria-hidden="true">◷</span><strong id="timeCompactValue">13:00</strong></button>
     <div class="timeControls"><span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:00</span><input id="timeOfDay" type="range" min="5" max="22" step="0.25" value="13" aria-label="Время суток"/><button id="autoDay" type="button" title="Автоматическая смена времени">▶</button></div>
   </div>
+</div>
+
+<div id="weatherPanel" role="region" aria-label="Настройки погоды">
+  <div class="weather-head">
+    <div><strong>ПОГОДА И АТМОСФЕРА</strong><small>Освещение, облачность и снегопад</small></div>
+    <button id="weatherClose" type="button" aria-label="Закрыть погоду">×</button>
+  </div>
+  <div class="weather-preset-grid" role="group" aria-label="Погодные пресеты">
+    <button class="weather-preset active" data-weather-preset="clear" type="button">☀ Ясно</button>
+    <button class="weather-preset" data-weather-preset="partly" type="button">🌤 Переменная</button>
+    <button class="weather-preset" data-weather-preset="cloudy" type="button">☁ Облачно</button>
+    <button class="weather-preset" data-weather-preset="overcast" type="button">🌥 Пасмурно</button>
+    <button class="weather-preset" data-weather-preset="snow" type="button">❄ Снегопад</button>
+    <button class="weather-preset" data-weather-preset="blizzard" type="button">🌨 Метель</button>
+  </div>
+  <div class="weather-control">
+    <label for="weatherClouds">Облачность <strong id="weatherCloudsValue">4%</strong></label>
+    <input id="weatherClouds" type="range" min="0" max="100" step="1" value="4"/>
+  </div>
+  <div class="weather-control">
+    <label for="weatherSnow">Интенсивность снегопада <strong id="weatherSnowValue">0%</strong></label>
+    <input id="weatherSnow" type="range" min="0" max="100" step="1" value="0"/>
+  </div>
+  <div class="weather-control">
+    <label for="weatherWind">Скорость ветра <strong id="weatherWindValue">2 км/ч</strong></label>
+    <input id="weatherWind" type="range" min="0" max="60" step="1" value="2"/>
+  </div>
+  <div id="weatherStatus" aria-live="polite">Ясно</div>
 </div>
 
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
@@ -1093,4 +1153,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v104.js"></script></body></html>
+<script type="module" src="./app.v105.js"></script></body></html>
