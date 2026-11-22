@@ -18,6 +18,11 @@ MENU_NAME = "gradeOptimizerMenu"
 MENU_LABEL = "Grade Optimizer"
 
 
+def maya_useNewAPI():
+    """Tell Maya this plug-in uses the Python API 2.0."""
+    pass
+
+
 def _module_root():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

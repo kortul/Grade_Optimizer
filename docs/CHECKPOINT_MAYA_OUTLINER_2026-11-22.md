@@ -46,11 +46,11 @@ Default import role is `model` / General model. Terrain remains an optional spec
 
 ## Latest validation / deployment
 
-- Latest app and validation commit: `97984b7c7f06329fc1e8fefdbd2ac9fb1152ce44`
+- Latest app and plug-in commit: `fdc68c5e2a0e75967fa905cf6e8cd047018d4c9b`
 - GitHub Actions quality checks: **success**
-  https://github.com/kortul/Grade_Optimizer/actions/runs/45021161097
+  https://github.com/kortul/Grade_Optimizer/actions/runs/45022606286
 - GitHub Pages build and deployment: **success**
-  https://github.com/kortul/Grade_Optimizer/actions/runs/45021160484
+  https://github.com/kortul/Grade_Optimizer/actions/runs/45022606742
 
 Automated checks verify active entrypoint, DOM IDs, JavaScript syntax, FBX loader integration, Outliner controls, nested selection, selected-node transforms, nested visibility serialization, scene-wide material assignment, per-slot uniqueness and shared-owner dirty propagation. These checks are not a substitute for loading a representative Maya-exported FBX in a real browser.
 
@@ -78,7 +78,7 @@ Automated checks verify active entrypoint, DOM IDs, JavaScript syntax, FBX loade
 1. Import a real Maya test FBX with 2–3 nested groups, multiple meshes, one shared material, one two-slot mesh and one hidden child.
 2. Verify hierarchy, search, transform edits, node visibility, deletion and reload in a browser.
 3. Check embedded maps, unit scale, axis orientation, material model conversion and large-scene performance.
-4. Add optional per-node tags / metadata while keeping General model as the default.
+4. Round-trip Role / Tags / hints from Maya selection through scene.json into the web Outliner and verify duplicate-name hierarchy paths.
 5. Test client editing, publication and texture persistence end-to-end.
 
 ## Key files
@@ -102,7 +102,7 @@ Automated checks verify active entrypoint, DOM IDs, JavaScript syntax, FBX loade
 - PBR edits, presets, texture imports and texture removals mark every imported asset that uses the material as dirty, so publishing can rebuild every affected model.
 - The library does not merge materials solely because their names match; this avoids accidentally combining distinct Maya materials.
 - FBXLoader 0.160 parses FBX material nodes into a material map keyed by FBX ID, then reuses those mapped instances on connected mesh objects. This preserves intended sharing in the source FBX where the same material ID is connected to multiple meshes: [material map construction](https://github.com/mrdoob/three.js/blob/r160/examples/jsm/loaders/FBXLoader.js#L459-L477), [mesh assignment](https://github.com/mrdoob/three.js/blob/r160/examples/jsm/loaders/FBXLoader.js#L1197-L1226).
-- Active app module: `app.v94.js`.
+- Active app module: `app.v95.js`.
 
 ## Outstanding real-world verification
 
