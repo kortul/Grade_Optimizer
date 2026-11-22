@@ -41,22 +41,31 @@ node scripts/validate-project.mjs
 ```
 
 
-## Maya client-scene export
+## Maya project-scene export
 
-Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor:
+Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor. Its default Project ID is `alpine-resort`, matching the Web Editor's primary workspace.
 
-1. Set the local path to your cloned `Grade_Optimizer` repository and enter the client slug.
-2. Export the entire Maya scene (or the current selection) as one binary `FBX` with embedded media.
-3. The exporter writes `clients/<slug>/models/resort.fbx` and a compatible `clients/<slug>/scene.json`.
-4. Review the changed files in GitHub Desktop and Push. GitHub Pages serves the scene at `?client=<slug>`.
+1. Export the entire Maya scene (or the current selection) as one binary FBX with embedded media.
+2. The exporter writes `clients/<project-id>/models/resort.fbx` and `clients/<project-id>/scene.json` into the local Git working copy.
+3. Push those Maya-exported files to the repository with GitHub Desktop.
+4. Open the site. The primary `alpine-resort` project loads automatically; other projects use `?project=<project-id>`.
 
-The FBX keeps its object hierarchy, mesh names and shared material assignments. The web material inspector lists slots as `mesh name · material name`, so a material can be edited per component without forcing a fixed object-category taxonomy. The default imported category is General model; Terrain and Slope remain optional special roles.
+The FBX keeps object hierarchy, mesh names and shared material assignments. The Web Editor material inspector lists slots as `mesh name · material name`; Terrain and Slope remain optional special roles.
 
-Keep the FBX below 90 MiB for the current regular-Git workflow. Use embedded textures so the client scene remains a self-contained model file.
+Keep the FBX below 90 MiB for the current regular-Git workflow. Use embedded textures so the project remains self-contained.
 
 
 ## Scene Editor: shared project saving
 
-For a client project, enter its Project ID in **Client Workspace** and press **OPEN CLIENT SCENE** first. Wait for the project to load, connect the GitHub Publisher, then press **SAVE ALL PROJECT CHANGES TO GITHUB**. Reuse the same ID when editing an existing client project. This commits directly to the repository; no downloaded settings file has to be copied manually. The same client URL loads the committed scene and editor settings on another device after GitHub Pages deploys.
+For a## Scene Editor: permanent project saving
 
-The shared `clients/<slug>/scene.json` includes imported model state and `editorSettings.assets` for the built-in scene: node transforms / visibility / metadata, PBR values, user-imported textures, and shared vs unique material slot identity. The JSON export button in the editor is only an optional backup.
+You are the only person who edits and publishes scenes. Viewers only need the generated viewer link; no client accounts or editing workflow are required.
+
+- The primary Project ID is `alpine-resort` and opens automatically. The Maya Exporter uses the same default.
+- A different project can be selected with `?project=<id>`; legacy `?client=<id>` links continue to work.
+- Connect GitHub once per browser tab using a fine-grained token with Contents read/write access to `kortul/Grade_Optimizer`. The token is memory-only.
+- Click **SAVE PERMANENTLY TO GITHUB** after editing. The app commits the project manifest to `clients/<id>/scene.json` and changed imported models to the same project folder.
+- The app verifies the new `main` commit and checks that the saved manifest blob is present before clearing the dirty state.
+- Project settings include built-in scene node transforms, visibility, Role / Tags, Collision / Forest blocker, PBR materials, shared/unique material identity, and user-imported texture data. Imported models include nested node visibility and metadata.
+- Browser storage is only a one-time recovery source for older local model drafts when the default project has not yet been published. It is not the source of truth.
+- GitHub Pages deploys the committed files for the viewer link. A successful GitHub commit is the permanent save; the viewer refresh follows deployment.

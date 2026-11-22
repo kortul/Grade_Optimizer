@@ -787,23 +787,24 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
   <div class="hierarchy-header"><div class="hierarchy-title"><strong>SCENE</strong><span id="editorAssetCount" class="editor-chip">0 OBJECTS</span></div></div>
   <div class="client-workspace">
-    <label for="clientWorkspaceId" class="tree-search-label">CLIENT WORKSPACE · PROJECT ID</label>
-    <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="Client ID, e.g. alpine-resort" autocomplete="off" aria-describedby="clientWorkspaceHint"/>
-    <div class="editor-hint" id="clientWorkspaceHint">1. Введи ID проекта (латиница, цифры, дефис). 2. Нажми OPEN CLIENT SCENE. 3. Подключи Publisher и нажми SAVE ALL PROJECT CHANGES TO GITHUB. Для существующего проекта используй прежний ID.</div>
+    <label for="clientWorkspaceId" class="tree-search-label">PROJECT WORKSPACE</label>
+    <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="Project ID · default: alpine-resort" autocomplete="off" aria-describedby="clientWorkspaceHint"/>
+    <div class="editor-hint" id="clientWorkspaceHint">Основной проект <strong>alpine-resort</strong> открывается автоматически. Для другого проекта введи его ID и нажми OPEN PROJECT. Ты редактируешь и сохраняешь проект; клиентам нужна только ссылка для просмотра.</div>
     <div class="editor-split">
-      <button id="openClientWorkspaceButton" class="secondary" type="button">OPEN CLIENT SCENE</button>
-      <button id="shareClientWorkspaceButton" class="secondary" type="button">COPY CLIENT LINK</button>
+      <button id="openClientWorkspaceButton" class="secondary" type="button">OPEN PROJECT</button>
+      <button id="shareClientWorkspaceButton" class="secondary" type="button">COPY VIEWER LINK</button>
     </div>
-    <input id="clientShareLink" type="text" readonly aria-label="Client share URL" placeholder="Client link will appear here"/>
+    <input id="clientShareLink" type="text" readonly aria-label="Project viewer URL" placeholder="Viewer link will appear here"/>
     <details class="client-admin-details">
-      <summary>ADMIN · GITHUB PUBLISHER</summary>
-      <label for="githubPublisherToken">Fine-grained token · Contents read/write</label>
+      <summary>ADMIN · GITHUB ACCESS</summary>
+      <label for="githubPublisherToken">Fine-grained token · Contents read/write · kortul/Grade_Optimizer</label>
       <input id="githubPublisherToken" type="password" autocomplete="off" placeholder="Paste GitHub token (memory only)"/>
-      <button id="connectGitHubPublisherButton" class="secondary" type="button">CONNECT PUBLISHER</button>
-      <button id="publishClientWorkspaceButton" type="button">SAVE ALL PROJECT CHANGES TO GITHUB</button>
-      <div class="editor-hint">Сохраняет модели и все настройки Scene Editor в общий clients/&lt;project&gt;/scene.json. Включая настройки встроенной сцены, трансформации, видимость, Role / Tags, Collision / Forest blocker и параметры материалов. После сохранения проект доступен с других устройств. Токен хранится только в памяти вкладки.</div>
+      <button id="connectGitHubPublisherButton" class="secondary" type="button">CONNECT GITHUB</button>
+      <div class="editor-hint">Токен нужен только тебе для записи в GitHub. Он хранится в памяти текущей вкладки и не попадает в файлы проекта.</div>
     </details>
-    <div id="clientWorkspaceStatus" class="editor-hint" aria-live="polite">Открой сцену клиента, чтобы загружать и публиковать общие модели.</div>
+    <button id="publishClientWorkspaceButton" type="button">SAVE PERMANENTLY TO GITHUB</button>
+    <div class="editor-hint">Создаёт commit в репозитории: <strong>clients/&lt;Project ID&gt;/scene.json</strong> и изменённые модели. Сохраняет встроенную сцену, трансформации, видимость, Role / Tags, Collision / Forest blocker, материалы и пользовательские текстуры. После успешной проверки настройки больше не зависят от браузера. GitHub Pages обновляет ссылку просмотра отдельно.</div>
+    <div id="clientWorkspaceStatus" class="editor-hint" aria-live="polite">Основной проект alpine-resort открывается автоматически. Изменения станут постоянными после SAVE PERMANENTLY TO GITHUB.</div>
   </div>
   <label for="importAssetCategory" class="tree-search-label">IMPORT AS</label>
   <select id="importAssetCategory" aria-label="Категория импортируемой модели">
@@ -1095,4 +1096,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v99.js"></script></body></html>
+<script type="module" src="./app.v100.js"></script></body></html>
