@@ -162,3 +162,14 @@ Verified Web Editor route in `app.v95.js`:
 - `publishClientWorkspace()` commits the updated manifest and any dirty model file to GitHub via the connected GitHub Publisher.
 
 Important limitation: saving the two flags to the project is implemented; the actual physics collision behavior and forest placement exclusion based on these flags are still future functionality.
+
+
+## Shared Scene Editor project persistence — app v96
+
+Active web entrypoint is `index.html` → `app.v96.js`.
+
+The project manifest now includes `editorSettings.assets` for built-in `sourceType === 'scene'` objects. These records preserve transforms, root visibility, per-node visibility, Role / Tags / Collision / Forest blocker metadata, PBR material values, and image data URLs for textures uploaded into built-in scene materials. Client-imported assets continue to be saved as GLB files plus manifest records.
+
+On `openClientWorkspace()`, the editor restores `manifest.editorSettings` into the built-in scene after loading client models. On publish, `collectClientManifest()` serializes these settings and `publishClientWorkspace()` commits the updated `clients/<slug>/scene.json` directly to GitHub. The user does not need to download or manually copy a config JSON file. Publishing requires connecting a fine-grained GitHub Publisher token (Contents read/write), held in memory only.
+
+Important: changes remain session drafts until the explicit **SAVE ALL PROJECT CHANGES TO GITHUB** action succeeds. Once committed, the same client URL on another browser/device reads the shared `scene.json` and model files. Node Collision / Forest blocker flags are stored as project metadata; runtime physics / forest exclusion behavior remains future work.

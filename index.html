@@ -799,8 +799,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <label for="githubPublisherToken">Fine-grained token · Contents read/write</label>
       <input id="githubPublisherToken" type="password" autocomplete="off" placeholder="Paste GitHub token (memory only)"/>
       <button id="connectGitHubPublisherButton" class="secondary" type="button">CONNECT PUBLISHER</button>
-      <button id="publishClientWorkspaceButton" type="button">PUBLISH CLIENT SCENE</button>
-      <div class="editor-hint">Токен не вшивается в сайт и не записывается в хранилище браузера. Нужен доступ Contents: Read and write к kortul/Grade_Optimizer.</div>
+      <button id="publishClientWorkspaceButton" type="button">SAVE ALL PROJECT CHANGES TO GITHUB</button>
+      <div class="editor-hint">Сохраняет модели и все настройки Scene Editor в общий clients/&lt;project&gt;/scene.json. Включая настройки встроенной сцены, трансформации, видимость, Role / Tags, Collision / Forest blocker и параметры материалов. После сохранения проект доступен с других устройств. Токен хранится только в памяти вкладки.</div>
     </details>
     <div id="clientWorkspaceStatus" class="editor-hint" aria-live="polite">Открой сцену клиента, чтобы загружать и публиковать общие модели.</div>
   </div>
@@ -1093,4 +1093,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v95.js"></script></body></html>
+<script type="module" src="./app.v96.js"></script></body></html>

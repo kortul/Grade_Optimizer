@@ -30,3 +30,16 @@ Open GitHub Desktop, review the changed client files, Commit and Push. This loca
 ## Запуск без установки Maya plug-in
 
 Пользователь может запускать exporter прямо из Maya Script Editor / Shelf через импорт `grade_optimizer_exporter`; для этого достаточно добавить локальную папку `C:\zGit\GradeOptimizer\Grade_Optimizer\maya` в `sys.path`. Plug-in Manager, `MAYA_MODULE_PATH` и запуск установщика не требуются. Полный Python snippet и Shelf instructions находятся в `maya/README.md`.
+
+
+## Общие настройки Scene Editor — хранение в проекте
+
+Открой нужную клиентскую сцену по Project ID и подключи GitHub Publisher. Кнопка **SAVE ALL PROJECT CHANGES TO GITHUB** создаёт commit непосредственно в `kortul/Grade_Optimizer`; промежуточный JSON вручную скачивать или копировать не нужно.
+
+В `clients/<slug>/scene.json` хранятся:
+- клиентские модели и их категории, фазы, root transforms, видимость, collision / forest flags;
+- nested node visibility и Role / Tags / Collision / Forest blocker каждого узла;
+- настройки встроенной сцены приложения в `editorSettings.assets`: трансформации, видимость, node metadata, PBR-параметры и пользовательские карты текстур;
+- параметры материалов и загруженные пользователем текстуры.
+
+После commit данные становятся частью проекта в GitHub и загружаются при открытии той же клиентской ссылки в другом браузере / на другом устройстве. Кнопка сохранения требует активного GitHub Publisher token с Contents: Read and write; token хранится только в памяти текущей вкладки. Без нажатия Save/Publish изменения текущего сеанса остаются черновиком браузера.
