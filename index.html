@@ -1023,6 +1023,13 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
             <label for="sceneTint">Green / magenta tint <strong id="sceneTintValue">0</strong></label>
             <input id="sceneTint" type="range" min="-100" max="100" step="1" value="0"/>
           </div>
+          <div class="scene-look-control wide">
+            <label for="sceneFocusMode">Focus mode</label>
+            <select id="sceneFocusMode">
+              <option value="target" selected>Auto · camera target</option>
+              <option value="manual">Manual · focus distance</option>
+            </select>
+          </div>
           <div class="scene-look-control">
             <label for="sceneFocusDistance">Focus distance <strong id="sceneFocusDistanceValue">48 m</strong></label>
             <input id="sceneFocusDistance" type="range" min="5" max="500" step="1" value="48"/>
@@ -1074,6 +1081,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
             <input id="sceneSharpness" type="range" min="0" max="100" step="1" value="14"/>
           </div>
           <div class="scene-look-control">
+            <label for="sceneDistortion">Lens distortion <strong id="sceneDistortionValue">6%</strong></label>
+            <input id="sceneDistortion" type="range" min="0" max="100" step="1" value="6"/>
+          </div>
+          <div class="scene-look-control">
             <label for="sceneQuality">Render quality</label>
             <select id="sceneQuality">
               <option value="performance">Performance</option>
@@ -1098,6 +1109,14 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <details class="scene-look-group">
         <summary>COLOR GRADING</summary>
         <div class="scene-look-grid">
+          <div class="scene-look-control">
+            <label for="sceneShadowLift">Shadow lift / local exposure <strong id="sceneShadowLiftValue">12%</strong></label>
+            <input id="sceneShadowLift" type="range" min="0" max="100" step="1" value="12"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneHighlightCompression">Highlight compression <strong id="sceneHighlightCompressionValue">18%</strong></label>
+            <input id="sceneHighlightCompression" type="range" min="0" max="100" step="1" value="18"/>
+          </div>
           <div class="scene-look-control">
             <label for="sceneContrast">Contrast <strong id="sceneContrastValue">1.04</strong></label>
             <input id="sceneContrast" type="range" min="60" max="160" step="1" value="104"/>
