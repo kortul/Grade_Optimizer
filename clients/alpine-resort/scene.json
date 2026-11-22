@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0",
+  "clientId": "alpine-resort",
+  "updatedAt": "2026-11-22T16:52:09.093Z",
+  "assets": [],
+  "editorSettings": {
+    "schemaVersion": "1.0",
+    "savedAt": "2026-11-22T16:52:09.093Z",
+    "units": "meters",
+    "assets": [
+      {
+        "id": "scene:A1:0:terrainShape",
+        "name": "SCENE · terrainShape",
+        "sourceFile": "A1.gltf",
+        "sourceType": "scene",
+        "category": "terrain",
+        "phase": "always",
+        "visible": true,
+        "collision": true,
+        "forestBlocker": true,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "nodeVisibility": [],
+        "nodeMetadata": [],
+        "materials": [
+          {
+            "materialId": "scene-material-1",
+            "nodeName": "terrainShape",
+            "materialName": "",
+            "baseColor": "#6c3d3d",
+            "roughness": 0.97,
+            "metalness": 0,
+            "normalScale": 1,
+            "aoMapIntensity": 1,
+            "emissive": "#000000",
+            "emissiveIntensity": 1,
+            "opacity": 1,
+            "textureRepeat": 1,
+            "transparent": false,
+            "maps": {
+              "baseColor": true,
+              "normal": false,
+              "roughness": false,
+              "metalness": false,
+              "ao": false,
+              "emissive": false
+            },
+            "textures": {},
+            "doubleSided": true,
+            "wireframe": false
+          }
+        ]
+      }
+    ]
+  }
+}
