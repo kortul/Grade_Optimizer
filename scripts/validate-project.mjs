@@ -58,8 +58,8 @@ assert.match(entrySource, /new THREE\.InstancedMesh\(geometry,material,variantTr
 assert.doesNotMatch(entrySource, /_Cross|geoB\.rotateY\(Math\.PI\s*\*\s*0\.5\)/, 'crossed tree billboards reintroduced');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
-assert.ok(entrySource.includes('drone-controller.v71.js'), 'active app must use the current drone controller');
-const droneSource = read('drone-controller.v71.js').toString('utf8');
+assert.ok(entrySource.includes('drone-controller.v72.js'), 'active app must use the current drone controller');
+const droneSource = read('drone-controller.v72.js').toString('utf8');
 assert.ok(droneSource.includes('intersectObject(this.terrain,true)'), 'drone terrain raycast missing');
 assert.ok(droneSource.includes('minimumTerrainClearance=2.5'), 'drone terrain clearance missing');
 assert.ok(droneSource.includes('enforceTerrainClearance(nextPosition)'), 'drone movement collision guard missing');
@@ -68,8 +68,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v70.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v70.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v71.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v71.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
@@ -134,6 +134,18 @@ assert.ok(entrySource.includes('saveSkierSkiLocally(buffer,file.name)'), 'upload
 assert.ok(entrySource.includes('loadSavedSkierSki()'), 'custom ski GLB must be restored on startup');
 assert.ok(entrySource.includes('removeSavedSkierSki()'), 'reset must remove the locally saved custom ski');
 assert.ok(entrySource.includes("if(state.optimizeMode)setOptimizerOpen(false)"), 'Overview must close the optimization panel');
+
+assert.ok(entrySource.includes('const animateModeTransition='), 'cinematic skier/drone mode transition missing');
+assert.ok(entrySource.includes('camera.quaternion.copy(transition.fromQuaternion).slerp(transition.toQuaternion,eased)'), 'camera orientation must interpolate smoothly during a mode transition');
+assert.ok(entrySource.includes('camera.fov=transition.baseFov+Math.sin(Math.PI*eased)*4.5'), 'cinematic camera FOV easing missing');
+assert.ok(entrySource.includes('if(pathGround!==null)camera.position.y=Math.max(camera.position.y,pathGround+1.55)'), 'mode transition camera must stay above terrain');
+assert.ok(entrySource.includes('skierController.enableInput()') && entrySource.includes('droneController.enableInput()'), 'target mode input must unlock after cinematic transition');
+assert.ok(skierSource.includes('{deferInput=false}={}') && skierSource.includes('this.inputEnabled=!deferInput'), 'skier controller must support deferred input');
+assert.ok(skierSource.includes('enableInput(){'), 'skier controller input handoff missing');
+assert.ok(droneSource.includes('{deferInput=false}={}') && droneSource.includes('this.inputEnabled=!deferInput'), 'drone controller must support deferred input');
+assert.ok(droneSource.includes('enableInput(){'), 'drone controller input handoff missing');
+
+pass('cinematic mode transition, terrain clearance and deferred controls are present');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
 
 const slopeIds = JSON.parse(read('assets/slopes.json').toString('utf8'));
