@@ -86,6 +86,12 @@ assert.ok(skierSource.includes('setSkiModel(source)'), 'skier model replacement 
 assert.ok(skierSource.includes('this.skiSlots.push({group:ski,board,stripe,customMount})'), 'custom ski mounts missing from both ski slots');
 assert.ok(html.includes('id="importAssetCategory"'), 'model import category selector missing');
 assert.ok(html.includes('accept=".glb,.fbx'), 'model import input must accept GLB and FBX');
+assert.ok(html.includes('id="editorTreeExpandAll"') && html.includes('id="editorTreeCollapseAll"'), 'Outliner expand/collapse controls missing');
+assert.ok(entrySource.includes('function selectEditorNode(owner,node'), 'nested Object3D selection missing');
+assert.ok(entrySource.includes('editorNodeKey(owner,node)'), 'hierarchy node identity helper missing');
+assert.ok(entrySource.includes('function editorNodeHasSearchMatch('), 'recursive hierarchy search missing');
+assert.ok(entrySource.includes('selectEditorNode(picked,hit.object)'), 'viewport selection must target the actual nested mesh');
+assert.ok(entrySource.includes('asset.sourceBuffer=await exportAssetForClientPublish(asset)'), 'edited hierarchy must be serialized for local persistence');
 assert.ok(entrySource.includes("from 'three/addons/loaders/FBXLoader.js'"), 'FBXLoader import missing');
 assert.ok(entrySource.includes("function parseSceneModel("), 'generic GLB/FBX parser missing');
 assert.ok(entrySource.includes('fbxLoader.parse(buffer,resourcePath||\'\')'), 'FBX binary parser call missing');
