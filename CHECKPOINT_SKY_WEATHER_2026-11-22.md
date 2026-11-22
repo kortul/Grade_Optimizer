@@ -3,7 +3,7 @@
 **Date:** 2026-11-22  
 **Repository:** `kortul/Grade_Optimizer`  
 **Working branch:** `main` only  
-**Source state before this docs update:** `cf360b79ee2faa94534cea5520a96a7447e978cb`  
+**Code state before this docs update:** `c4af47ffeeb144e504ee8da1e5a4498e3eef3d32`  
 **Scope:** stable procedural sky/weather, visible optional snowfall, first-person avatar visibility fix, and restrained cinematic camera optics.
 
 ## 1. Current application entry point
@@ -22,10 +22,11 @@
 
 File: `weather-system.v1.js`
 
-- Clear weather is the default and snowfall defaults to **0%**.
+- Clear weather is the default and snowfall defaults to **0%**. Weather preferences now use storage key `grade_optimizer_weather_v2`; legacy v1 preferences are migrated once, with any saved snowfall reset to 0% while retaining cloud / wind settings.
 - Weather presets: clear, partly cloudy, cloudy, overcast, snowfall and blizzard.
 - Clouds drift with wind; direct sunlight, ambient fill and fog visibility respond to weather.
 - Invisible cloud sprites skip per-frame world-position updates.
+- The procedural sky canvas only uploads a new texture when its gradient colors change perceptibly; this avoids re-uploading the same sky every animation frame during auto-time. Cloud color objects are reused.
 - Snow is a camera-space layer, initialized inside the viewing frustum so particles stay in front of the camera while looking around.
 - Snowflakes use camera-facing textured `InstancedMesh` quads instead of `PointsMaterial`. The particle layer is one instanced draw call; its instance count follows snowfall intensity.
 - Snow instance matrices are updated only while snowfall is active. Wind streaks are enabled only for sufficiently windy snowfall.
@@ -47,6 +48,7 @@ Implemented in the main render pipeline:
 - `OutputPass` handles final output conversion and tone mapping.
 - A new **ОПТИКА** toolbar panel exposes the master processing toggle, bloom amount, flare / dirt toggle and Bokeh toggle.
 - Turning off the master optics setting returns to direct `renderer.render()`.
+- Lens-flare screen projection is skipped while flares are disabled; focus-distance updates are skipped unless Bokeh is enabled.
 - Post-process render targets are capped at 1.25 device-pixel ratio to limit GPU work.
 - Optics settings persist separately in browser `localStorage` under `grade_optimizer_optics_v1`.
 
