@@ -25,6 +25,10 @@ export class WeatherSystem {
     this.cameraPosition = new THREE.Vector3();
     this.elapsed = 0;
     this.params = { ...WeatherSystem.PRESETS.clear, preset: 'clear' };
+    this.lastSkyColors = null;
+    this.nightCloudColor = new THREE.Color(0x536477);
+    this.dayCloudColor = new THREE.Color(0xf2f5f7);
+    this.mutedCloudColor = new THREE.Color(0xc4d0d9);
 
     this.skyCanvas = document.createElement('canvas');
     this.skyCanvas.width = 1024;
@@ -277,19 +281,33 @@ export class WeatherSystem {
   drawSky({ top, horizon, bottom, sunColor, sunStrength, sunDirection, sunVisible = true }) {
     const ctx = this.skyContext;
     if (!ctx) return;
-    const gradient = ctx.createLinearGradient(0, 0, 0, this.skyCanvas.height);
-    gradient.addColorStop(0, this.colorCss(top));
-    gradient.addColorStop(0.47, this.colorCss(horizon));
-    gradient.addColorStop(0.72, this.colorCss(bottom));
-    gradient.addColorStop(1, this.colorCss(bottom));
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, this.skyCanvas.width, this.skyCanvas.height);
-    this.skyTexture.needsUpdate = true;
+    const last = this.lastSkyColors;
+    const skyColorChanged = !last || Math.max(
+      Math.abs(top.r - last.top.r), Math.abs(top.g - last.top.g), Math.abs(top.b - last.top.b),
+      Math.abs(horizon.r - last.horizon.r), Math.abs(horizon.g - last.horizon.g), Math.abs(horizon.b - last.horizon.b),
+      Math.abs(bottom.r - last.bottom.r), Math.abs(bottom.g - last.bottom.g), Math.abs(bottom.b - last.bottom.b)
+    ) > 0.0018;
+    if (skyColorChanged) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, this.skyCanvas.height);
+      gradient.addColorStop(0, this.colorCss(top));
+      gradient.addColorStop(0.47, this.colorCss(horizon));
+      gradient.addColorStop(0.72, this.colorCss(bottom));
+      gradient.addColorStop(1, this.colorCss(bottom));
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, this.skyCanvas.width, this.skyCanvas.height);
+      this.skyTexture.needsUpdate = true;
+      this.lastSkyColors = {
+        top: top.clone(),
+        horizon: horizon.clone(),
+        bottom: bottom.clone()
+      };
+    }
     this.sunMaterial.color.copy(sunColor);
     this.sunMaterial.opacity = this.THREE.MathUtils.clamp(sunStrength * (1 - this.params.clouds * 0.46), 0, 0.9);
-    const nightCloud = new this.THREE.Color(0x536477);
-    const dayCloud = new this.THREE.Color(0xf2f5f7);
-    this.cloudMaterial.color.copy(nightCloud.lerp(dayCloud, this.THREE.MathUtils.clamp(sunStrength * 1.4 + 0.08, 0.08, 1)));
+    this.cloudMaterial.color.copy(this.nightCloudColor).lerp(
+      this.dayCloudColor,
+      this.THREE.MathUtils.clamp(sunStrength * 1.4 + 0.08, 0.08, 1)
+    );
     this.cloudMaterial.color.lerp(horizon, 0.12 + this.params.clouds * 0.22);
     this.sunGlow.visible = !!sunDirection && sunVisible && sunStrength > 0.025;
     if (sunDirection) {
@@ -325,7 +343,7 @@ export class WeatherSystem {
       cloud.sprite.visible = index < active;
     });
     this.cloudMaterial.opacity = 0.12 + coverage * 0.43;
-    this.cloudMaterial.color.set(0xffffff).lerp(new this.THREE.Color(0xc4d0d9), coverage * 0.42);
+    this.cloudMaterial.color.set(0xffffff).lerp(this.mutedCloudColor, coverage * 0.42);
 
     const flakes = Math.round(this.snowCount * this.params.snowfall);
     this.activeSnowflakes = flakes;
