@@ -115,26 +115,41 @@ export class WeatherSystem {
       this.snowVelocity[i * 2] = 0.55 + random() * 0.8;
       this.snowVelocity[i * 2 + 1] = (random() - 0.5) * 0.45;
     }
-    this.snowGeometry = new THREE.BufferGeometry();
-    this.snowGeometry.setAttribute('position', new THREE.BufferAttribute(this.snowPositions, 3).setUsage(THREE.DynamicDrawUsage));
-    this.activeSnowflakes = 0;
-    this.snowMaterial = new THREE.PointsMaterial({
+    // Instanced textured quads avoid the missing-UV issue with PointsMaterial
+    // and keep all flakes in one draw call.
+    this.snowGeometry = new THREE.PlaneGeometry(1, 1);
+    this.snowMaterial = new THREE.MeshBasicMaterial({
       color: 0xf7fbff,
       map: this.snowTexture,
-      size: 2.5,
       transparent: true,
       opacity: 0.76,
-      alphaTest: 0.035,
+      alphaTest: 0.025,
       depthWrite: false,
       depthTest: true,
-      sizeAttenuation: false,
-      fog: false
+      side: THREE.DoubleSide,
+      fog: false,
+      toneMapped: false
     });
-    this.snow = new THREE.Points(this.snowGeometry, this.snowMaterial);
+    this.snow = new THREE.InstancedMesh(this.snowGeometry, this.snowMaterial, this.snowCount);
     this.snow.name = 'GO_Snowfall';
     this.snow.frustumCulled = false;
     this.snow.renderOrder = 1000;
-    this.snowGeometry.setDrawRange(0, 0);
+    this.snow.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.snowDummy = new THREE.Object3D();
+    this.snowSize = new Float32Array(this.snowCount);
+    for (let i = 0; i < this.snowCount; i++) {
+      const j = i * 3;
+      this.snowSize[i] = 0.65 + random() * 0.9;
+      this.snowDummy.position.set(this.snowPositions[j], this.snowPositions[j + 1], this.snowPositions[j + 2]);
+      const size = -this.snowPositions[j + 2] * 0.0032 * this.snowSize[i];
+      this.snowDummy.scale.set(size, size, 1);
+      this.snowDummy.updateMatrix();
+      this.snow.setMatrixAt(i, this.snowDummy.matrix);
+    }
+    this.snow.instanceMatrix.needsUpdate = true;
+    this.activeSnowflakes = 0;
+    this.snow.count = 0;
+    this.snow.visible = false;
     this.camera.add(this.snow);
 
     this.streakCount = 240;
@@ -314,10 +329,9 @@ export class WeatherSystem {
 
     const flakes = Math.round(this.snowCount * this.params.snowfall);
     this.activeSnowflakes = flakes;
+    this.snow.count = flakes;
     this.snow.visible = flakes > 0;
-    this.snowGeometry.setDrawRange(0, flakes);
-    this.snowMaterial.opacity = 0.56 + this.params.snowfall * 0.30;
-    this.snowMaterial.size = 2.2 + this.params.snowfall * 1.25 + Math.min(0.45, this.params.wind / 130);
+    this.snowMaterial.opacity = 0.58 + this.params.snowfall * 0.28;
     const streakFactor = this.THREE.MathUtils.clamp((this.params.wind - 12) / 42, 0, 1);
     this.activeStreaks = Math.round(this.streakCount * this.params.snowfall * streakFactor);
     this.streaks.visible = this.activeStreaks > 0;
@@ -388,8 +402,17 @@ export class WeatherSystem {
         }
         if (this.snowPositions[j] > halfWidth) this.snowPositions[j] -= halfWidth * 2;
         if (this.snowPositions[j] < -halfWidth) this.snowPositions[j] += halfWidth * 2;
+        this.snowDummy.position.set(
+          this.snowPositions[j],
+          this.snowPositions[j + 1],
+          this.snowPositions[j + 2]
+        );
+        const flakeSize = depth * 0.0032 * this.snowSize[i] * (0.78 + this.params.snowfall * 0.42);
+        this.snowDummy.scale.set(flakeSize, flakeSize, 1);
+        this.snowDummy.updateMatrix();
+        this.snow.setMatrixAt(i, this.snowDummy.matrix);
       }
-      this.snowGeometry.attributes.position.needsUpdate = true;
+      this.snow.instanceMatrix.needsUpdate = true;
 
       if (this.activeStreaks > 0) {
         const streakFall = fall * 1.55;
