@@ -158,6 +158,7 @@ const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
 assert.ok(mayaExporter.includes('def collect_node_metadata(selection_only=False):'), 'Maya metadata exporter missing');
 assert.ok(mayaExporter.includes('"nodeMetadata": node_metadata'), 'Maya manifest must export per-node metadata');
 assert.ok(mayaExporter.includes('def apply_metadata_to_selection('), 'Maya metadata UI action missing');
+assert.ok(mayaExporter.includes('text="C:/zGit/GradeOptimizer/Grade_Optimizer"'), 'Maya exporter default path must target the actual nested local repository root');
 assert.ok(mayaPlugin.includes('def maya_useNewAPI():'), 'Maya Python API 2.0 marker missing');
 assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
 assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');

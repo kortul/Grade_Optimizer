@@ -27,7 +27,7 @@
 
 ## Экспорт сцены
 
-- **Git repo** — по умолчанию `C:/zGit/GradeOptimizer`; можно изменить через Browse.
+- **Git repo** — по умолчанию `C:/zGit/GradeOptimizer/Grade_Optimizer`; можно изменить через Browse.
 - **Client ID** — slug клиента, например `alpine-resort`.
 - По умолчанию экспортируется вся сцена одним FBX с полной иерархией.
 - Включён экспорт материалов и Embed Media.

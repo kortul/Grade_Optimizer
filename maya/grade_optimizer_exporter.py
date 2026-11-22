@@ -327,7 +327,7 @@ def show():
     cmds.text(label="One Maya scene → one FBX → GitHub Desktop Push", align="left", height=28, font="boldLabelFont")
     cmds.text(label="Сохраняются полная иерархия, имена mesh и material assignments.", align="left", height=24)
     cmds.textFieldButtonGrp(
-        WINDOW + "_repo", label="Git repo", text="C:/zGit/GradeOptimizer",
+        WINDOW + "_repo", label="Git repo", text="C:/zGit/GradeOptimizer/Grade_Optimizer",
         buttonLabel="Browse…", buttonCommand=browse_repo,
         columnWidth3=(65, 380, 85)
     )

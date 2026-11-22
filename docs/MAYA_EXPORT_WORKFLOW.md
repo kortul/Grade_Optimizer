@@ -20,3 +20,7 @@ Open GitHub Desktop, review the changed client files, Commit and Push. This loca
 ## Проверка Maya FBX перед рабочей сценой
 
 После загрузки plug-in выбери **Grade Optimizer → Create FBX Test Scene…**. Это создаст контрольную сцену только после подтверждения замены текущей сцены. Экспортируй её под Client ID `maya-fbx-test`, затем проверь вложенную иерархию, повторяющиеся имена, общие материалы, два material slots на Station_Building, скрытый узел и nodeMetadata. Этот fixture проверяет обычный Lambert FBX workflow; он не доказывает поддержку сложных Arnold/custom shader networks.
+
+## запуск без установки Maya plug-in
+
+Пользователь может запускать exporter прямо из Maya Script Editor / Shelf через импорт `grade_optimizer_exporter`; для этого достаточно добавить локальную папку `C:\zGit\GradeOptimizer\Grade_Optimizer\maya` в `sys.path`. Plug-in Manager, `MAYA_MODULE_PATH` и запуск установщика не требуются. Полный Python snippet и Shelf instructions находятся в `maya/README.md`.

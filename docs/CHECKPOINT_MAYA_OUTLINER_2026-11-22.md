@@ -4,7 +4,7 @@ Branch: `main`
 Repository: https://github.com/kortul/Grade_Optimizer
 Latest verified web application commit: `3c7d6995ecc48152ed90463a977c6fa819f544ca`
 Latest Maya plug-in / test fixture commit: `a8f640ba81f74d1daf00b2e8c5eab6f55494bfb7`
-Checkpoint with Maya test workflow: `9edd689c0333cf301711ac745feecd2e16e1cdc9`
+Latest verified validation checkpoint: `fab051529334acbfcf91cad8fc300b4f2666495b`
 
 ## Product direction
 
@@ -18,7 +18,7 @@ Local project folder requested by the user:
 GitHub repository:
 `kortul/Grade_Optimizer`
 
-The local folder itself is not mounted in the development session. New plugin files are committed to GitHub and must be synced into that local clone using GitHub Desktop before installing them in Maya.
+The actual local Git working copy is nested at `C:\zGit\GradeOptimizer\Grade_Optimizer`. The local Windows disk is not mounted in the development session. Sync repository changes into this clone using GitHub Desktop.
 
 ## Current web application — v95
 
@@ -63,7 +63,7 @@ Plug-in behavior:
 - Registers Maya command `gradeOptimizerOpen`.
 - Adds menu actions **Open Exporter…** and **Create FBX Test Scene…**.
 - Uses Maya Python API 2.0 and standard `initializePlugin` / `uninitializePlugin` lifecycle.
-- Exporter defaults to local repo `C:/zGit/GradeOptimizer`, client `alpine-resort`, and full-scene FBX export.
+- Exporter defaults to local repo `C:/zGit/GradeOptimizer/Grade_Optimizer`, client `alpine-resort`, and full-scene FBX export.
 - Creates `clients/<client-slug>/models/resort.fbx` and `clients/<client-slug>/scene.json`.
 - Attempts to enable FBX materials and Embed Media.
 
