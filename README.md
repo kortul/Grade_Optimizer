@@ -7,7 +7,7 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v91.js`.
+- Current app: `app.v99.js`.
 - Skier: `skier-controller.v73.js` (terrain-following physics and first-person ski rig).
 - Drone: `drone-controller.v72.js` (keyboard flight, smooth acceleration and mouse-look).
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
@@ -57,6 +57,6 @@ Keep the FBX below 90 MiB for the current regular-Git workflow. Use embedded tex
 
 ## Scene Editor: shared project saving
 
-For a client project, open the Project ID in **Client Workspace**, connect the GitHub Publisher, then press **SAVE ALL PROJECT CHANGES TO GITHUB**. This commits directly to the repository; no downloaded settings file has to be copied manually. The same client URL loads the committed scene and editor settings on another device after GitHub Pages deploys.
+For a client project, enter its Project ID in **Client Workspace** and press **OPEN CLIENT SCENE** first. Wait for the project to load, connect the GitHub Publisher, then press **SAVE ALL PROJECT CHANGES TO GITHUB**. Reuse the same ID when editing an existing client project. This commits directly to the repository; no downloaded settings file has to be copied manually. The same client URL loads the committed scene and editor settings on another device after GitHub Pages deploys.
 
 The shared `clients/<slug>/scene.json` includes imported model state and `editorSettings.assets` for the built-in scene: node transforms / visibility / metadata, PBR values, user-imported textures, and shared vs unique material slot identity. The JSON export button in the editor is only an optional backup.
