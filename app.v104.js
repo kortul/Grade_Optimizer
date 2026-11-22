@@ -2981,7 +2981,8 @@ async function autosaveProjectToBrowser({force=false,silent=false}={}){
   if(projectAutosaveTimer&&force){clearTimeout(projectAutosaveTimer);projectAutosaveTimer=null;}
   if(projectAutosavePromise){
     await projectAutosavePromise;
-    return autosaveProjectToBrowser({force:false,silent});
+    if(projectAutosavePending)return autosaveProjectToBrowser({force:false,silent});
+    return null;
   }
   const revisionAtStart=projectChangeRevision;
   const operation=(async()=>{
@@ -2995,16 +2996,27 @@ async function autosaveProjectToBrowser({force=false,silent=false}={}){
       if(!asset.sourcePath)asset.sourcePath='models/'+asset.id+'.glb';
     }
     const manifest=await collectClientManifest(currentClientSlug);
-    await writeProjectBrowserBackup(currentClientSlug,manifest,{
-      unsynced:clientProjectDirty,baseUpdatedAt:projectBackupBaseUpdatedAt
-    });
+    if(!clientProjectDirty&&projectDeployedManifestUpdatedAt)manifest.updatedAt=projectDeployedManifestUpdatedAt;
+    await writeProjectBrowserBackup(currentClientSlug,manifest,{unsynced:clientProjectDirty,baseUpdatedAt:projectBackupBaseUpdatedAt});
     projectLastBrowserBackupAt=new Date().toISOString();
+    let folderWritten=false;projectFolderSyncError='';
+    if(projectFolderHandle){
+      try{folderWritten=await writeProjectSnapshotToFolder(currentClientSlug,manifest);}
+      catch(folderError){
+        projectFolderSyncError=folderError?.message||String(folderError);
+        console.error('Local repository folder write failed:',folderError);
+        projectFolderHandle=null;projectFolderPermissionState='prompt';
+      }
+    }
     if(revisionAtStart===projectChangeRevision)projectAutosavePending=false;
     else projectAutosavePending=true;
     if(!silent){
-      setClientWorkspaceStatus('Автосохранено в этом браузере · '+new Date(projectLastBrowserBackupAt).toLocaleTimeString()+'. Файлы записываются в локальную папку репозитория, если она подключена.');
+      if(folderWritten)setClientWorkspaceStatus('Автосохранено в браузере и папке '+(savedProjectFolderHandle?.name||'Grade_Optimizer')+' · clients/'+currentClientSlug+'/. GitHub Desktop увидит изменённые файлы.');
+      else if(projectFolderSyncError)setClientWorkspaceStatus('Браузерный бэкап сохранён, но запись в локальную папку не удалась: '+projectFolderSyncError+'. Нажми CONNECT LOCAL PROJECT FOLDER для восстановления доступа.',true);
+      else if(savedProjectFolderHandle)setClientWorkspaceStatus('Автосохранено в браузере. Папка '+(savedProjectFolderHandle.name||'репозитория')+' привязана, но Chrome просит повторное разрешение. Нажми CONNECT LOCAL PROJECT FOLDER.');
+      else setClientWorkspaceStatus('Автосохранено в браузере. Подключи папку репозитория кнопкой CONNECT LOCAL PROJECT FOLDER, чтобы писать прямо в GitHub Desktop.');
     }
-    return {manifest,savedAt:projectLastBrowserBackupAt};
+    return {manifest,savedAt:projectLastBrowserBackupAt,folderWritten};
   })();
   projectAutosavePromise=operation;
   try{return await operation;}
@@ -3411,64 +3423,6 @@ async function writeProjectSnapshotToFolder(slug,manifest){
   }catch(error){if(error?.name!=='NotFoundError')console.warn('Could not prune old project model files:',error);}
   await writeProjectFileToFolder(projectFolderHandle,'clients/'+slug+'/scene.json',JSON.stringify(manifest,null,2));
   return true;
-}
-async function autosaveProjectToBrowser({force=false,silent=false}={}){
-  if(!currentClientSlug||!clientWorkspaceReady)return null;
-  if(projectAutosaveTimer&&force){clearTimeout(projectAutosaveTimer);projectAutosaveTimer=null;}
-  if(projectAutosavePromise){
-    await projectAutosavePromise;
-    if(projectAutosavePending)return autosaveProjectToBrowser({force:false,silent});
-    return null;
-  }
-  const revisionAtStart=projectChangeRevision;
-  const operation=(async()=>{
-    for(const asset of state.importedAssets){
-      if(asset.meta?.modelDirty){
-        const buffer=await exportAssetForClientPublish(asset);
-        asset.sourceBuffer=buffer;
-        if(!asset.sourcePath||/\.fbx$/i.test(asset.sourcePath))asset.sourcePath='models/'+asset.id+'.glb';
-        asset.meta.modelDirty=false;
-      }
-      if(!asset.sourcePath)asset.sourcePath='models/'+asset.id+'.glb';
-    }
-    const manifest=await collectClientManifest(currentClientSlug);
-    if(!clientProjectDirty&&projectDeployedManifestUpdatedAt)manifest.updatedAt=projectDeployedManifestUpdatedAt;
-    await writeProjectBrowserBackup(currentClientSlug,manifest,{unsynced:clientProjectDirty,baseUpdatedAt:projectBackupBaseUpdatedAt});
-    projectLastBrowserBackupAt=new Date().toISOString();
-    let folderWritten=false;projectFolderSyncError='';
-    if(projectFolderHandle){
-      try{folderWritten=await writeProjectSnapshotToFolder(currentClientSlug,manifest);}
-      catch(folderError){
-        projectFolderSyncError=folderError?.message||String(folderError);
-        console.error('Local repository folder write failed:',folderError);
-        projectFolderHandle=null;projectFolderPermissionState='prompt';
-      }
-    }
-    if(revisionAtStart===projectChangeRevision)projectAutosavePending=false;
-    else projectAutosavePending=true;
-    if(!silent){
-      if(folderWritten)setClientWorkspaceStatus('Автосохранено в браузере и папке '+(savedProjectFolderHandle?.name||'Grade_Optimizer')+' · clients/'+currentClientSlug+'/. GitHub Desktop увидит изменённые файлы.');
-      else if(projectFolderSyncError)setClientWorkspaceStatus('Браузерный бэкап сохранён, но запись в локальную папку не удалась: '+projectFolderSyncError+'. Нажми CONNECT LOCAL PROJECT FOLDER для восстановления доступа.',true);
-      else if(savedProjectFolderHandle)setClientWorkspaceStatus('Автосохранено в браузере. Папка '+(savedProjectFolderHandle.name||'репозитория')+' привязана, но Chrome просит повторное разрешение. Нажми CONNECT LOCAL PROJECT FOLDER.');
-      else setClientWorkspaceStatus('Автосохранено в браузере. Подключи папку репозитория кнопкой CONNECT LOCAL PROJECT FOLDER, чтобы писать прямо в GitHub Desktop.');
-    }
-    return {manifest,savedAt:projectLastBrowserBackupAt,folderWritten};
-  })();
-  projectAutosavePromise=operation;
-  try{return await operation;}
-  catch(error){projectAutosavePending=true;throw error;}
-  finally{
-    projectAutosavePromise=null;
-    if(projectAutosavePending&&!projectAutosaveTimer){
-      projectAutosaveTimer=setTimeout(()=>{
-        projectAutosaveTimer=null;
-        autosaveProjectToBrowser().catch(error=>{
-          console.error('Browser project autosave retry failed:',error);
-          setClientWorkspaceStatus('Не удалось завершить автосохранение: '+(error?.message||String(error)),true);
-        });
-      },1200);
-    }
-  }
 }
 function shareClientWorkspace(){
   const slug=normalizeClientId(currentClientSlug||document.getElementById('clientWorkspaceId').value);
