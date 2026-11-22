@@ -58,8 +58,8 @@ assert.match(entrySource, /new THREE\.InstancedMesh\(geometry,material,variantTr
 assert.doesNotMatch(entrySource, /_Cross|geoB\.rotateY\(Math\.PI\s*\*\s*0\.5\)/, 'crossed tree billboards reintroduced');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
-assert.ok(entrySource.includes('drone-controller.v70.js'), 'active app must use the bounded drone controller');
-const droneSource = read('drone-controller.v70.js').toString('utf8');
+assert.ok(entrySource.includes('drone-controller.v71.js'), 'active app must use the current drone controller');
+const droneSource = read('drone-controller.v71.js').toString('utf8');
 assert.ok(droneSource.includes('intersectObject(this.terrain,true)'), 'drone terrain raycast missing');
 assert.ok(droneSource.includes('minimumTerrainClearance=2.5'), 'drone terrain clearance missing');
 assert.ok(droneSource.includes('enforceTerrainClearance(nextPosition)'), 'drone movement collision guard missing');
@@ -68,10 +68,18 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
+const skierSource = read('skier-controller.v69.js').toString('utf8');
+assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
+assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
+assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
+assert.ok(droneSource.includes("this.keys.has('shift')?this.boostSpeed:this.speed"), 'Shift must activate drone boost');
+assert.ok(droneSource.includes("(this.keys.has('control')?1:0)"), 'Ctrl must control drone descent');
+assert.ok(entrySource.includes("tuck?'НИЗКАЯ СТОЙКА':'В СТОЙКЕ'"), 'skier upright status missing from HUD');
+assert.ok(entrySource.includes("panel.content.style.setProperty('display',visible?'grid':'none','important')"), 'tutorial visibility must force display state');
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
 
-assert.match(entrySource, /e\\.code==='KeyV'\\|\\|\\(e\\.code==='Tab'&& !focusIsControl\\)/, 'V / TAB mode-switch shortcut missing');
-assert.match(entrySource, /focusIsControl/, 'keyboard Tab focus navigation guard missing');
+assert.ok(entrySource.includes("if(e.code==='KeyV'&&(state.mode==='skier'||state.mode==='drone'))"), 'V-only mode switch missing');
+assert.ok(!entrySource.includes("e.code==='Tab'"), 'Tab must not switch between skier and drone');
 assert.match(entrySource, /skierSwitchDrone/, 'skier-to-drone HUD button binding missing');
 assert.match(entrySource, /droneSwitchSkier/, 'drone-to-skier HUD button binding missing');
 assert.match(html, /id="skierSwitchDrone"/, 'skier HUD action button missing');
@@ -82,6 +90,7 @@ assert.match(html, /id="toggleSkierTutorial"/, 'skier tutorial visibility button
 assert.match(html, /id="toggleDroneTutorial"/, 'drone tutorial visibility button missing');
 assert.match(entrySource, /e\.code==='KeyH'/, 'H tutorial visibility shortcut missing');
 assert.match(entrySource, /setTutorialVisible/, 'tutorial visibility handler missing');
+assert.ok(entrySource.includes("if(e.code==='KeyH'&&(state.mode==='skier'||state.mode==='drone'))"), 'H must toggle even when a HUD button has focus');
 const skierHudMarkup = html.slice(html.indexOf('<div id="skierHud"'), html.indexOf('<div id="droneHud"'));
 const droneHudMarkup = html.slice(html.indexOf('<div id="droneHud"'), html.indexOf('<div id="legend"'));
 assert.ok(skierHudMarkup.indexOf('id="speedValue"') < skierHudMarkup.indexOf('id="skierTutorialContent"'), 'skier speed must stay outside collapsible tutorial');
@@ -92,6 +101,13 @@ assert.match(html, /\.mode-hud-collapsible\[hidden\]/, 'collapsed tutorial displ
 assert.match(html, /max-height:calc\(100dvh - 84px\)/, 'viewport-aware HUD sizing missing');
 assert.match(html, /КАК НАЧАТЬ/, 'beginner skier tutorial missing');
 assert.match(html, /КАК УПРАВЛЯТЬ/, 'beginner drone tutorial missing');
+assert.ok(!html.includes('V / TAB') && !html.includes('<kbd>TAB</kbd>'), 'Tab shortcut must be removed from the mode switch UI');
+assert.ok(html.includes('SHIFT</kbd> — ускорение до 120 км/ч'), 'drone tutorial must document Shift boost to 120 km/h');
+assert.ok(html.includes('<kbd>SPACE</kbd><span>/</span><kbd>CTRL</kbd>'), 'drone vertical controls must use Space and Ctrl');
+assert.ok(html.includes('id="groundState">В СТОЙКЕ</span>'), 'skier HUD must show upright stance');
+assert.ok(html.includes('.mode-hud .tutorial-step strong{font-size:11px!important'), 'tutorial headings must be slightly larger');
+assert.ok(html.includes('.mode-hud .tutorial-step small{font-size:9px!important'), 'tutorial descriptions must be slightly larger');
+
 assert.ok(html.includes('id="skierTutorialContent" class="mode-hud-collapsible"'), 'skier tutorial wrapper missing');
 assert.ok(html.includes('id="droneTutorialContent" class="mode-hud-collapsible"'), 'drone tutorial wrapper missing');
 assert.ok(html.includes('max-height:none!important;height:auto!important;overflow:visible!important;'), 'HUD must not scroll or clip vertically');

@@ -676,6 +676,13 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 /* v0.81 — scale the complete HUD to the actual scene viewport; no internal scrolling */
 .mode-hud{transform-origin:bottom left!important;overflow:visible!important}
 .mode-hud-collapsible{overflow:visible!important}
+
+
+/* v0.82 — slightly larger tutorial typography */
+.mode-hud .tutorial-step strong{font-size:11px!important;line-height:1.25!important}
+.mode-hud .tutorial-step small{font-size:9px!important;line-height:1.32!important}
+.mode-hud .tutorial-step kbd{font-size:8px!important;min-width:16px!important;height:17px!important}
+.mode-hud .control-tile strong{font-size:9px!important;line-height:1.2!important}
 </style>
 </head>
 <body>
@@ -840,7 +847,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <div><div class="mode-hud-eyebrow">РЕЖИМ ЛЫЖНИКА</div><div class="mode-hud-title">Твой первый спуск</div></div>
     </div>
     <div class="mode-hud-header-actions">
-      <span class="mode-hud-status" id="groundState">НА СНЕГУ</span>
+      <span class="mode-hud-status" id="groundState">В СТОЙКЕ</span>
       <button id="toggleSkierTutorial" class="mode-hud-toggle" type="button" aria-expanded="true" aria-controls="skierTutorialContent" title="Скрыть или показать туториал · H"><span class="tutorial-toggle-label">Скрыть</span><kbd>H</kbd></button>
     </div>
   </div>
@@ -869,13 +876,13 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Поворот</strong></div></div>
       <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SHIFT</kbd><span>или</span><kbd>SPACE</kbd></div><div><strong>Толчок палками</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Осмотреться</strong></div></div>
-      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd><span>/</span><kbd>TAB</kbd></div><div><strong>Сменить режим</strong></div></div>
+      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd></div><div><strong>Сменить режим</strong></div></div>
     </div>
   </section>
 
   <div class="mode-hud-foot">
     <div class="mode-actions">
-      <button id="skierSwitchDrone" class="mode-switch-action" type="button"><span>Полететь на дроне</span><span class="action-shortcut">V / TAB&nbsp; ↗</span></button>
+      <button id="skierSwitchDrone" class="mode-switch-action" type="button"><span>Полететь на дроне</span><span class="action-shortcut">V&nbsp; ↗</span></button>
       <button id="exitSkier" class="mode-overview-action" type="button"><span>Общий обзор</span><kbd>Q</kbd></button>
     </div>
     <div id="skierLockHint" class="mode-lock-hint">Кликни по склону, чтобы включить управление мышью · ESC освобождает курсор</div>
@@ -915,7 +922,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="tutorial-steps">
       <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по сцене</strong><small>Клик — захват мыши. Мышь задаёт направление.</small></div></div>
       <div class="tutorial-step"><span class="step-number">2</span><div><strong>Лети вперёд или назад</strong><small><kbd>W</kbd> / <kbd>S</kbd> — вперёд / назад по взгляду.</small></div></div>
-      <div class="tutorial-step"><span class="step-number">3</span><div><strong>Меняй высоту</strong><small><kbd>SPACE</kbd> / <kbd>SHIFT</kbd> — высота. <kbd>CTRL</kbd> — быстрее.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">3</span><div><strong>Меняй высоту и ускоряйся</strong><small><kbd>SPACE</kbd> — выше, <kbd>CTRL</kbd> — ниже. <kbd>SHIFT</kbd> — ускорение до 120 км/ч.</small></div></div>
     </div>
   </section>
 
@@ -924,16 +931,16 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="control-grid">
       <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>S</kbd></div><div><strong>Вперёд / назад</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Влево / вправо</strong></div></div>
-      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SPACE</kbd><span>/</span><kbd>SHIFT</kbd></div><div><strong>Выше / ниже</strong></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd>CTRL</kbd></div><div><strong>Ускорение</strong></div></div>
+      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SPACE</kbd><span>/</span><kbd>CTRL</kbd></div><div><strong>Выше / ниже</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>SHIFT</kbd></div><div><strong>Ускорение · 120 км/ч</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Направление</strong></div></div>
-      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd><span>/</span><kbd>TAB</kbd></div><div><strong>Сменить режим</strong></div></div>
+      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd></div><div><strong>Сменить режим</strong></div></div>
     </div>
   </section>
 
   <div class="mode-hud-foot">
     <div class="mode-actions">
-      <button id="droneSwitchSkier" class="mode-switch-action drone-switch-action" type="button"><span>Встать на лыжи</span><span class="action-shortcut">V / TAB&nbsp; ↗</span></button>
+      <button id="droneSwitchSkier" class="mode-switch-action drone-switch-action" type="button"><span>Встать на лыжи</span><span class="action-shortcut">V&nbsp; ↗</span></button>
       <button id="exitDrone" class="mode-overview-action" type="button"><span>Общий обзор</span><kbd>Q</kbd></button>
     </div>
     <div id="droneLockHint" class="mode-lock-hint">Кликни по сцене, чтобы включить управление мышью · ESC освобождает курсор</div>
@@ -952,4 +959,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v81.js"></script></body></html>
+<script type="module" src="./app.v82.js"></script></body></html>
