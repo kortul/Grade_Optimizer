@@ -58,12 +58,17 @@ assert.match(entrySource, /new THREE\.InstancedMesh\(geometry,material,variantTr
 assert.doesNotMatch(entrySource, /_Cross|geoB\.rotateY\(Math\.PI\s*\*\s*0\.5\)/, 'crossed tree billboards reintroduced');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
-assert.ok(entrySource.includes('drone-controller.v69.js'), 'active app must use the collision-aware drone controller');
+assert.ok(entrySource.includes('drone-controller.v70.js'), 'active app must use the bounded drone controller');
 const droneSource = read('drone-controller.v69.js').toString('utf8');
 assert.ok(droneSource.includes('intersectObject(this.terrain,true)'), 'drone terrain raycast missing');
 assert.ok(droneSource.includes('minimumTerrainClearance=2.5'), 'drone terrain clearance missing');
 assert.ok(droneSource.includes('enforceTerrainClearance(nextPosition)'), 'drone movement collision guard missing');
-pass('forest rendering and asynchronous-load safeguards present');
+assert.ok(droneSource.includes('terrainBoundsMargin=100'), 'drone 100 m terrain bounds margin missing');
+assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'drone entry position is not clamped to the terrain bounds');
+assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
+assert.match(entrySource, /function fitModeHudToViewport\\(/, 'viewport-aware HUD fitting function missing');
+assert.match(entrySource, /new ResizeObserver\\(scheduleModeHudFit\\)/, 'HUD resize observer missing');
+pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
 
 assert.match(entrySource, /e\\.code==='KeyV'\\|\\|\\(e\\.code==='Tab'&& !focusIsControl\\)/, 'V / TAB mode-switch shortcut missing');
 assert.match(entrySource, /focusIsControl/, 'keyboard Tab focus navigation guard missing');
@@ -92,6 +97,7 @@ assert.ok(html.includes('id="droneTutorialContent" class="mode-hud-collapsible"'
 assert.ok(html.includes('max-height:none!important;height:auto!important;overflow:visible!important;'), 'HUD must not scroll or clip vertically');
 assert.ok(html.includes('height:auto!important;overflow:visible!important;padding:0!important;margin:0!important;'), 'tutorial content must not scroll');
 assert.ok(html.includes('grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr)'), 'tutorial and key guide must use side-by-side layout');
+assert.ok(html.includes('transform-origin:bottom left!important'), 'HUD must scale from its bottom edge to stay inside the viewport');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
 
 const slopeIds = JSON.parse(read('assets/slopes.json').toString('utf8'));
