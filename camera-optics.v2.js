@@ -346,7 +346,7 @@ export class CameraOptics {
     // EffectComposer.setPixelRatio() already resizes its internal targets.
     // Avoid recreating both buffers on every optics slider input.
     if (ratioChanged) this.composer.setPixelRatio(ratio);
-    if (sizeChanged) this.composer.setSize(this.width, this.height);
+    else if (sizeChanged) this.composer.setSize(this.width, this.height);
 
     this._composerPixelRatio = ratio;
     this._composerWidth = this.width;
