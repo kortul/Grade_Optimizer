@@ -4372,6 +4372,7 @@ function setSceneMode(mode){
   }:null;
   const transitionPose=previousMode==='drone'?{position:camera.position.clone(),yaw:camera.rotation.y,pitch:camera.rotation.x}:null;
   if(mode!=='overview'){
+    if(document.getElementById('app').classList.contains('weather-open'))setWeatherPanelOpen(false);
     if(appRoot.classList.contains('editor-open')){
       appRoot.classList.remove('editor-open');editorToggleButton.classList.remove('active');
       editorToggleButton.setAttribute('aria-expanded','false');if(editorSelectionHelper)editorSelectionHelper.visible=false;
