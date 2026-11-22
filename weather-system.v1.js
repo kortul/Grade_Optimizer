@@ -298,7 +298,11 @@ export class WeatherSystem {
   }
 
   setCustom(values) {
-    this.applyWeather({ ...values, preset: 'custom' });
+    const clouds = this.THREE.MathUtils.clamp(Number(values.clouds ?? this.params.clouds), 0, 1);
+    const snowfall = this.THREE.MathUtils.clamp(Number(values.snowfall ?? this.params.snowfall), 0, 1);
+    const wind = this.THREE.MathUtils.clamp(Number(values.wind ?? this.params.wind), 0, 60);
+    const visibility = Math.max(0.2, 1 - clouds * 0.14 - snowfall * 0.48 - Math.max(0, wind - 8) * 0.003);
+    this.applyWeather({ ...values, clouds, snowfall, wind, visibility, preset: 'custom' });
   }
 
   update(deltaSeconds, cameraPosition) {
