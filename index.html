@@ -238,7 +238,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneHierarchyPanel button:hover{background:#334b5f}
 #sceneHierarchyPanel.drag-over,#sceneEditorPanel.drag-over{border:2px dashed #61c99a;background:rgba(22,53,47,.97)}
 #sceneHierarchyPanel .tree-search-label{font-size:9px;font-weight:800;letter-spacing:1px;color:#8fa9bf;margin:5px 0 0}
-#sceneHierarchyPanel input[type=search]{width:100%;height:34px;padding:7px 9px;border:1px solid #405365;border-radius:7px;background:#111c27;color:#f1f6fb;font-size:11px}
+#sceneHierarchyPanel input[type=search],#sceneHierarchyPanel select{width:100%;height:34px;padding:7px 9px;border:1px solid #405365;border-radius:7px;background:#111c27;color:#f1f6fb;font-size:11px}
+#sceneHierarchyPanel #resetTerrainButton:disabled{opacity:.45;cursor:not-allowed;background:#263541}
 #editorTreeList{display:flex;flex-direction:column;gap:2px;min-height:90px;overflow-y:auto;flex:1}
 .tree-group-title{margin:10px 0 4px;padding:0 6px;color:#7594ad;font-size:9px;font-weight:850;letter-spacing:1.1px}
 .editor-tree-item{display:flex!important;align-items:center;gap:8px;width:100%;min-height:34px!important;padding:7px 8px!important;margin:0!important;text-align:left;border:1px solid transparent!important;border-radius:6px!important;background:transparent!important;color:#c4d3df!important;font-size:11px!important;font-weight:500!important;letter-spacing:0!important}
@@ -764,7 +765,20 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
   <div class="hierarchy-header"><div class="hierarchy-title"><strong>SCENE</strong><span id="editorAssetCount" class="editor-chip">0 OBJECTS</span></div></div>
+  <label for="importAssetCategory" class="tree-search-label">IMPORT AS</label>
+  <select id="importAssetCategory" aria-label="Категория импортируемой модели">
+    <option value="terrain">Terrain · активная поверхность</option>
+    <option value="slope">Slope / Track · трасса</option>
+    <option value="building">Building · здание</option>
+    <option value="lift">Lift · подъёмник</option>
+    <option value="infrastructure">Infrastructure · инфраструктура</option>
+    <option value="lighting">Lighting · фонари</option>
+    <option value="vegetation">Vegetation · растительность</option>
+    <option value="forest">Forest · лес</option>
+    <option value="prop" selected>Prop · объект / снежная пушка</option>
+  </select>
   <button id="importGlbButton" type="button">＋ IMPORT MODEL · GLB</button>
+  <button id="resetTerrainButton" class="secondary" type="button" disabled>↺ RESTORE ORIGINAL TERRAIN</button>
   <input id="glbFileInput" type="file" accept=".glb,model/gltf-binary" multiple hidden/>
   <label for="editorTreeSearch" class="tree-search-label">SCENE HIERARCHY</label>
   <input id="editorTreeSearch" type="search" placeholder="Filter objects…" autocomplete="off"/>
@@ -791,14 +805,24 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <h3>ОБЪЕКТ <span class="editor-chip">TRANSFORM</span></h3>
     <div id="editorSelectedName" class="editor-selected-name">Нет выбранного объекта</div>
     <div class="editor-row">
-      <div><label for="editorPosX">X</label><input id="editorPosX" type="number" step="0.1" value="0"/></div>
-      <div><label for="editorPosY">Y</label><input id="editorPosY" type="number" step="0.1" value="0"/></div>
-      <div><label for="editorPosZ">Z</label><input id="editorPosZ" type="number" step="0.1" value="0"/></div>
+      <div><label for="editorPosX">Position X</label><input id="editorPosX" type="number" step="0.1" value="0"/></div>
+      <div><label for="editorPosY">Position Y</label><input id="editorPosY" type="number" step="0.1" value="0"/></div>
+      <div><label for="editorPosZ">Position Z</label><input id="editorPosZ" type="number" step="0.1" value="0"/></div>
+    </div>
+    <div class="editor-row">
+      <div><label for="editorRotX">Rotation X, °</label><input id="editorRotX" type="number" step="1" value="0"/></div>
+      <div><label for="editorRotY">Rotation Y, °</label><input id="editorRotY" type="number" step="1" value="0"/></div>
+      <div><label for="editorRotZ">Rotation Z, °</label><input id="editorRotZ" type="number" step="1" value="0"/></div>
+    </div>
+    <div class="editor-row">
+      <div><label for="editorScaleX">Scale X</label><input id="editorScaleX" type="number" min="0.001" step="0.01" value="1"/></div>
+      <div><label for="editorScaleY">Scale Y</label><input id="editorScaleY" type="number" min="0.001" step="0.01" value="1"/></div>
+      <div><label for="editorScaleZ">Scale Z</label><input id="editorScaleZ" type="number" min="0.001" step="0.01" value="1"/></div>
     </div>
     <div class="editor-split">
-      <div><label for="editorRotY">Поворот Y, °</label><input id="editorRotY" type="number" step="1" value="0"/></div>
-      <div><label for="editorScale">Масштаб</label><input id="editorScale" type="number" min="0.001" step="0.01" value="1"/></div>
-    </div><input id="editorRotYRange" class="transform-range" type="range" min="-360" max="360" step="0.5" value="0" aria-label="Поворот по Y"/><input id="editorScaleRange" class="transform-range" type="range" min="0.001" max="10" step="0.01" value="1" aria-label="Масштаб объекта"/>
+      <button id="focusSelectedAsset" class="secondary" type="button">FOCUS SELECTED OBJECT</button>
+      <button id="activateSelectedTerrain" type="button">MAKE ACTIVE TERRAIN</button>
+    </div>
     <div class="editor-split">
       <div><label for="editorCategory">Категория</label><select id="editorCategory">
         <option value="terrain">Terrain</option><option value="slope">Slope</option><option value="forest">Forest</option>
@@ -997,4 +1021,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v88.js"></script></body></html>
+<script type="module" src="./app.v89.js"></script></body></html>

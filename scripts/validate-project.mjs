@@ -84,6 +84,20 @@ assert.ok(skierSource.includes('this.jumpCooldown=1.35'), 'bump jump cooldown mi
 assert.ok(skierSource.includes('this.position.y+this.eyeHeight+this.airborneHeight'), 'camera must lift during a jump');
 assert.ok(skierSource.includes('setSkiModel(source)'), 'skier model replacement API missing');
 assert.ok(skierSource.includes('this.skiSlots.push({group:ski,board,stripe,customMount})'), 'custom ski mounts missing from both ski slots');
+assert.ok(html.includes('id="importAssetCategory"'), 'model import category selector missing');
+assert.ok(html.includes('id="resetTerrainButton"'), 'restore original terrain button missing');
+assert.ok(html.includes('id="editorScaleX"') && html.includes('id="editorScaleY"') && html.includes('id="editorScaleZ"'), 'independent XYZ model scale controls missing');
+assert.ok(html.includes('id="editorRotX"') && html.includes('id="editorRotZ"'), 'full XYZ model rotation controls missing');
+assert.ok(entrySource.includes('function activateImportedTerrain('), 'imported terrain activation path missing');
+assert.ok(entrySource.includes('function resetImportedTerrain('), 'original terrain restoration path missing');
+assert.ok(entrySource.includes('function restoreSceneAssetsLocally('), 'local GLB persistence restore path missing');
+assert.ok(entrySource.includes('function saveSceneAssetLocally('), 'local GLB persistence save path missing');
+assert.ok(entrySource.includes('droneController.setTerrain(asset.root)'), 'imported terrain is not connected to drone collision');
+assert.ok(entrySource.includes('state.terrain=asset.root'), 'imported terrain is not connected to skier ground queries');
+assert.ok(entrySource.includes("if(category==='terrain')activateImportedTerrain(asset"), 'Terrain category does not auto-activate as ground');
+assert.ok(entrySource.includes('focusSceneObject(root)'), 'imported models are not framed in the viewport');
+pass('generic GLB model import, persistent local assets, XYZ transforms and active terrain handoff are present');
+
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
 
 assert.ok(entrySource.includes("if(e.code==='KeyV'&&(state.mode==='skier'||state.mode==='drone'))"), 'V-only mode switch missing');
