@@ -226,7 +226,7 @@ export class CameraOptics {
     }
 
     this.camera.updateMatrixWorld();
-    if (sunSprite?.visible) {
+    if (this.flareEnabled && sunSprite?.visible) {
       sunSprite.getWorldPosition(this.sunWorld);
       this.sunClip.copy(this.sunWorld).project(this.camera);
       const onScreen =
@@ -243,7 +243,7 @@ export class CameraOptics {
       this.lensPass.uniforms.uSunStrength.value = 0;
     }
 
-    if (focusTarget) this.setFocusTarget(focusTarget);
+    if (this.bokehPass.enabled && focusTarget) this.setFocusTarget(focusTarget);
     this.composer.render(deltaTime);
   }
 
