@@ -229,10 +229,9 @@ def on_metadata_preset_changed(*_):
         label = cmds.optionMenuGrp(WINDOW + "_preset", query=True, value=True)
         _remember_option(OPTION_PRESET, label)
         preset = METADATA_PRESETS.get(label)
-        if not preset:
-            return
-        cmds.checkBox(WINDOW + "_node_collision", edit=True, value=preset["collision"])
-        cmds.checkBox(WINDOW + "_node_forest", edit=True, value=preset["forestBlocker"])
+        defaults = preset or {"collision": False, "forestBlocker": False}
+        cmds.checkBox(WINDOW + "_node_collision", edit=True, value=defaults["collision"])
+        cmds.checkBox(WINDOW + "_node_forest", edit=True, value=defaults["forestBlocker"])
     except Exception as exc:
         cmds.warning("[Grade Optimizer] Metadata preset update failed: " + str(exc))
 
@@ -259,7 +258,9 @@ def apply_metadata_to_selection(*_):
         )
         return
 
-    role = custom_role or (preset or {}).get("role", "")
+    # A standard preset always wins. Custom Role is used only with the
+    # placeholder selected, preventing stale custom text from overriding presets.
+    role = (preset or {}).get("role", "") if preset else custom_role
     tags = list((preset or {}).get("tags", []))
     tags.extend(item.strip() for item in extra_tags.split(",") if item.strip())
     tags = list(dict.fromkeys(tags))
@@ -511,15 +512,16 @@ def show():
         align="left",
         height=24
     )
-    cmds.optionMenuGrp(
+    preset_menu = cmds.optionMenuGrp(
         WINDOW + "_preset",
         label="Тип объекта",
         columnWidth2=(85, 420),
         changeCommand=on_metadata_preset_changed
     )
-    cmds.menuItem(label=PRESET_PLACEHOLDER)
+    menu_parent = preset_menu + "|OptionMenu"
+    cmds.menuItem(parent=menu_parent, label=PRESET_PLACEHOLDER)
     for preset_name in METADATA_PRESETS:
-        cmds.menuItem(label=preset_name)
+        cmds.menuItem(parent=menu_parent, label=preset_name)
     cmds.optionMenuGrp(WINDOW + "_preset", edit=True, value=preset_default)
 
     cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(250, 250))
