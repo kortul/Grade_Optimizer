@@ -218,7 +218,10 @@ assert.ok(mayaFixture.includes('cmds.rename(south_pylon, "Pylon")'), 'duplicate 
 assert.ok(mayaFixture.includes('5 верхнеуровневых веток, 7 mesh objects'), 'test-scene summary must match the generated hierarchy and mesh count');
 assert.ok(read('maya/GradeOptimizer.mod').toString('utf8').includes('MAYA_PLUG_IN_PATH +:= plug-ins'), 'Maya module descriptor missing plug-in path');
 assert.ok(read('maya/install_maya_module.bat').toString('utf8').includes('install_maya_module.ps1'), 'Windows Maya module installer missing');
-assert.ok(html.includes('src="./app.v98.js"'), 'active app must use v98 project-persistent editor settings module');
+assert.match(entry, /^app\.v\d+\.js$/, 'active app must use a versioned app.vNN.js runtime module');
+assert.ok(html.includes('id="clientWorkspaceHint"') && html.includes('CLIENT WORKSPACE · PROJECT ID'), 'Client Workspace must explain the Project ID and open sequence');
+assert.ok(entrySource.includes("const rawClientId=String(clientIdInput?.value||'').trim()"), 'publisher must validate the explicitly entered Project ID');
+assert.ok(entrySource.includes("currentClientSlug!==slug"), 'publisher must prevent saving to a different active client workspace');
 assert.ok(entrySource.includes('function pulseEditorSelection(target){'), 'scene editor selection pulse effect missing');
 assert.ok(entrySource.includes('updateEditorSelectionPulses(now);'), 'scene editor selection pulse animation must run in the render loop');
 assert.ok(entrySource.includes('color:0xffd52f'), 'selection pulse must use the yellow highlight material');
