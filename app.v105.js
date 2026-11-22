@@ -7,6 +7,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 import { SkierController } from './skier-controller.v73.js';
 import { DroneController } from './drone-controller.v72.js';
 import { WeatherSystem } from './weather-system.v1.js';
+import { CameraOptics } from './camera-optics.v1.js';
 
 let saved=null;
 try{ saved=JSON.parse(localStorage.getItem('ssgo_default_preset')||'null'); }catch(e){}
@@ -103,6 +104,12 @@ const weatherSystem = new WeatherSystem({
   THREE, scene, camera, hemisphere, sun,
   fogNear: 1800, fogFar: 9000
 });
+const cameraOptics = new CameraOptics({
+  renderer, scene, camera,
+  width: view.clientWidth, height: view.clientHeight
+});
+const opticsFocusPoint = new THREE.Vector3();
+const opticsFocusDirection = new THREE.Vector3();
 
 const lightingCenter = new THREE.Vector3();
 let sunAzimuthOffset = 0;
@@ -256,8 +263,74 @@ weatherCloudsInput.addEventListener('input', applyCustomWeather);
 weatherSnowInput.addEventListener('input', applyCustomWeather);
 weatherWindInput.addEventListener('input', applyCustomWeather);
 
+const opticsToggle = document.getElementById('opticsToggle');
+const opticsPanel = document.getElementById('opticsPanel');
+const opticsClose = document.getElementById('opticsClose');
+const opticsEnabledInput = document.getElementById('opticsEnabled');
+const opticsBloomInput = document.getElementById('opticsBloom');
+const opticsBloomValue = document.getElementById('opticsBloomValue');
+const opticsFlareInput = document.getElementById('opticsFlares');
+const opticsBokehInput = document.getElementById('opticsBokeh');
+const OPTICS_STORAGE_KEY = 'grade_optimizer_optics_v1';
+const opticsSettings = { enabled: true, bloom: 34, flare: true, bokeh: false };
+try {
+  const savedOptics = JSON.parse(localStorage.getItem(OPTICS_STORAGE_KEY) || 'null');
+  if (savedOptics && typeof savedOptics === 'object') {
+    if (typeof savedOptics.enabled === 'boolean') opticsSettings.enabled = savedOptics.enabled;
+    if (Number.isFinite(Number(savedOptics.bloom))) opticsSettings.bloom = THREE.MathUtils.clamp(Number(savedOptics.bloom), 0, 100);
+    if (typeof savedOptics.flare === 'boolean') opticsSettings.flare = savedOptics.flare;
+    if (typeof savedOptics.bokeh === 'boolean') opticsSettings.bokeh = savedOptics.bokeh;
+  }
+} catch (error) {
+  console.warn('Не удалось восстановить настройки оптики; используются стандартные.', error);
+}
+function persistOpticsSettings() {
+  try { localStorage.setItem(OPTICS_STORAGE_KEY, JSON.stringify(opticsSettings)); }
+  catch (error) { console.warn('Не удалось сохранить настройки оптики:', error); }
+}
+function updateOpticsControls() {
+  opticsEnabledInput.checked = opticsSettings.enabled;
+  opticsBloomInput.value = String(opticsSettings.bloom);
+  opticsBloomValue.textContent = Math.round(opticsSettings.bloom) + '%';
+  opticsFlareInput.checked = opticsSettings.flare;
+  opticsBokehInput.checked = opticsSettings.bokeh;
+  opticsToggle.classList.toggle('active', opticsSettings.enabled);
+  cameraOptics.setOptions({
+    enabled: opticsSettings.enabled,
+    bloom: opticsSettings.bloom / 100,
+    flare: opticsSettings.flare,
+    bokeh: opticsSettings.bokeh,
+    intensity: 0.58
+  });
+}
+function applyOpticsSettings() {
+  updateOpticsControls();
+  persistOpticsSettings();
+}
+function setOpticsPanelOpen(open) {
+  const app = document.getElementById('app');
+  if (open) {
+    app.classList.remove('weather-open');
+    weatherToggle.classList.remove('active');
+    weatherToggle.setAttribute('aria-expanded', 'false');
+  }
+  app.classList.toggle('optics-open', !!open);
+  opticsToggle.classList.toggle('active', !!open || opticsSettings.enabled);
+  opticsToggle.setAttribute('aria-expanded', String(!!open));
+}
+opticsToggle.addEventListener('click', () => setOpticsPanelOpen(!document.getElementById('app').classList.contains('optics-open')));
+opticsClose.addEventListener('click', () => setOpticsPanelOpen(false));
+opticsEnabledInput.addEventListener('change', () => { opticsSettings.enabled = opticsEnabledInput.checked; applyOpticsSettings(); });
+opticsBloomInput.addEventListener('input', () => { opticsSettings.bloom = Number(opticsBloomInput.value); applyOpticsSettings(); });
+opticsFlareInput.addEventListener('change', () => { opticsSettings.flare = opticsFlareInput.checked; applyOpticsSettings(); });
+opticsBokehInput.addEventListener('change', () => { opticsSettings.bokeh = opticsBokehInput.checked; applyOpticsSettings(); });
 function setWeatherPanelOpen(open) {
   const app = document.getElementById('app');
+  if (open) {
+    app.classList.remove('optics-open');
+    opticsToggle.classList.remove('active');
+    opticsToggle.setAttribute('aria-expanded', 'false');
+  }
   app.classList.toggle('weather-open', !!open);
   weatherToggle.classList.toggle('active', !!open);
   weatherToggle.setAttribute('aria-expanded', String(!!open));
@@ -265,8 +338,12 @@ function setWeatherPanelOpen(open) {
 weatherToggle.addEventListener('click', () => setWeatherPanelOpen(!document.getElementById('app').classList.contains('weather-open')));
 weatherClose.addEventListener('click', () => setWeatherPanelOpen(false));
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && document.getElementById('app').classList.contains('weather-open')) setWeatherPanelOpen(false);
+  if (event.key === 'Escape') {
+    if (document.getElementById('app').classList.contains('weather-open')) setWeatherPanelOpen(false);
+    if (document.getElementById('app').classList.contains('optics-open')) setOpticsPanelOpen(false);
+  }
 });
+updateOpticsControls();
 try {
   const savedWeather = JSON.parse(localStorage.getItem(WEATHER_STORAGE_KEY) || 'null');
   if (savedWeather && savedWeather.preset === 'custom') {
@@ -302,6 +379,7 @@ function syncViewportSize() {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
+  cameraOptics.setSize(width, height);
   labelRenderer.setSize(width, height);
 }
 function scheduleViewportResize() {
@@ -4373,6 +4451,7 @@ function setSceneMode(mode){
   const transitionPose=previousMode==='drone'?{position:camera.position.clone(),yaw:camera.rotation.y,pitch:camera.rotation.x}:null;
   if(mode!=='overview'){
     if(document.getElementById('app').classList.contains('weather-open'))setWeatherPanelOpen(false);
+    if(appRoot.classList.contains('optics-open'))setOpticsPanelOpen(false);
     if(appRoot.classList.contains('editor-open')){
       appRoot.classList.remove('editor-open');editorToggleButton.classList.remove('active');
       editorToggleButton.setAttribute('aria-expanded','false');if(editorSelectionHelper)editorSelectionHelper.visible=false;
@@ -4560,6 +4639,12 @@ let previousFrameTime = performance.now();
   updateEditorSelectionPulses(now);
   weatherSystem.update(dt,camera.position);
   updateForestBillboards();
-  renderer.render(scene,camera);
+  let opticsFocusTarget = controls.target;
+  if (state.mode !== 'overview') {
+    camera.getWorldDirection(opticsFocusDirection);
+    opticsFocusPoint.copy(camera.position).addScaledVector(opticsFocusDirection, state.mode === 'skier' ? 32 : 85);
+    opticsFocusTarget = opticsFocusPoint;
+  }
+  cameraOptics.render(dt, weatherSystem.sunGlow, opticsFocusTarget);
   if(labelRenderer.domElement.style.display !== 'none') labelRenderer.render(scene,camera);
 })();
