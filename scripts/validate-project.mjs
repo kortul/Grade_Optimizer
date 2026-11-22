@@ -97,6 +97,23 @@ assert.ok(entrySource.includes('state.terrain=asset.root'), 'imported terrain is
 assert.ok(entrySource.includes("if(category==='terrain')activateImportedTerrain(asset"), 'Terrain category does not auto-activate as ground');
 assert.ok(entrySource.includes('focusSceneObject(root)'), 'imported models are not framed in the viewport');
 pass('generic GLB model import, persistent local assets, XYZ transforms and active terrain handoff are present');
+assert.ok(html.includes('id="clientWorkspaceId"'), 'client workspace ID field missing');
+assert.ok(html.includes('id="openClientWorkspaceButton"'), 'open client scene control missing');
+assert.ok(html.includes('id="publishClientWorkspaceButton"'), 'publish client scene control missing');
+assert.ok(html.includes('id="githubPublisherToken"'), 'GitHub publisher token field missing');
+assert.ok(entrySource.includes("function openClientWorkspace("), 'remote client scene loader missing');
+assert.ok(entrySource.includes("function publishClientWorkspace("), 'GitHub client scene publisher missing');
+assert.ok(entrySource.includes("function githubPublisherRequest("), 'GitHub REST publishing helper missing');
+assert.ok(entrySource.includes("clients/'+slug+'/scene.json"), 'client scene repository namespace missing');
+assert.ok(entrySource.includes("clients/'+slug+'/'+item.file"), 'client model loading path missing');
+assert.ok(entrySource.includes("'/git/blobs'") && entrySource.includes("'/git/trees'") && entrySource.includes("'/git/commits'"), 'Git object commit flow missing');
+assert.ok(entrySource.includes("'/git/refs/heads/main'"), 'main branch update missing');
+assert.ok(entrySource.includes("await openClientWorkspace(currentClientSlug,{updateUrl:false})"), 'client URL auto-load missing');
+assert.ok(entrySource.includes("Authorization:'Bearer '+githubAdminToken"), 'GitHub publisher authentication missing');
+assert.ok(entrySource.includes("if(currentClientSlug||!asset||asset.sourceType==='scene'||!asset.sourceBuffer)return;"), 'client models still depend on local persistence');
+assert.ok(entrySource.includes("asset.sourceBuffer.byteLength>90*1024*1024"), 'large model upload guard missing');
+pass('shared per-client scene loading and GitHub publishing flow are present');
+
 
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
 

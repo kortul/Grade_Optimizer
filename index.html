@@ -239,6 +239,16 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneHierarchyPanel.drag-over,#sceneEditorPanel.drag-over{border:2px dashed #61c99a;background:rgba(22,53,47,.97)}
 #sceneHierarchyPanel .tree-search-label{font-size:9px;font-weight:800;letter-spacing:1px;color:#8fa9bf;margin:5px 0 0}
 #sceneHierarchyPanel input[type=search],#sceneHierarchyPanel select{width:100%;height:34px;padding:7px 9px;border:1px solid #405365;border-radius:7px;background:#111c27;color:#f1f6fb;font-size:11px}
+#sceneHierarchyPanel #clientWorkspaceId,#sceneHierarchyPanel #githubPublisherToken,#sceneHierarchyPanel #clientShareLink{width:100%;height:34px;padding:7px 9px;border:1px solid #405365;border-radius:7px;background:#111c27;color:#f1f6fb;font-size:11px;min-width:0}
+#sceneHierarchyPanel #clientShareLink{font-size:9px;color:#a8c8dc}
+#sceneHierarchyPanel .client-workspace{padding:8px;margin:0 0 8px;border:1px solid rgba(111,164,202,.18);border-radius:8px;background:rgba(61,107,139,.08)}
+#sceneHierarchyPanel .client-workspace .editor-split{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+#sceneHierarchyPanel .client-admin-details{margin:8px 0 0;padding:7px;background:rgba(0,0,0,.13);border:1px solid rgba(255,255,255,.08);border-radius:7px}
+#sceneHierarchyPanel .client-admin-details summary{font-size:9px;font-weight:800;letter-spacing:.7px;color:#a7c7df;cursor:pointer}
+#sceneHierarchyPanel #clientWorkspaceStatus{font-size:9px;line-height:1.45;padding-top:6px;overflow-wrap:anywhere}
+#sceneHierarchyPanel #clientWorkspaceStatus.error{color:#ffaaa1}
+#sceneHierarchyPanel #publishClientWorkspaceButton:disabled{opacity:.5;cursor:wait}
+
 #sceneHierarchyPanel #resetTerrainButton:disabled{opacity:.45;cursor:not-allowed;background:#263541}
 #editorTreeList{display:flex;flex-direction:column;gap:2px;min-height:90px;overflow-y:auto;flex:1}
 .tree-group-title{margin:10px 0 4px;padding:0 6px;color:#7594ad;font-size:9px;font-weight:850;letter-spacing:1.1px}
@@ -765,6 +775,24 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
   <div class="hierarchy-header"><div class="hierarchy-title"><strong>SCENE</strong><span id="editorAssetCount" class="editor-chip">0 OBJECTS</span></div></div>
+  <div class="client-workspace">
+    <label for="clientWorkspaceId" class="tree-search-label">CLIENT WORKSPACE</label>
+    <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="e.g. alpine-resort" autocomplete="off"/>
+    <div class="editor-split">
+      <button id="openClientWorkspaceButton" class="secondary" type="button">OPEN CLIENT SCENE</button>
+      <button id="shareClientWorkspaceButton" class="secondary" type="button">COPY CLIENT LINK</button>
+    </div>
+    <input id="clientShareLink" type="text" readonly aria-label="Client share URL" placeholder="Client link will appear here"/>
+    <details class="client-admin-details">
+      <summary>ADMIN · GITHUB PUBLISHER</summary>
+      <label for="githubPublisherToken">Fine-grained token · Contents read/write</label>
+      <input id="githubPublisherToken" type="password" autocomplete="off" placeholder="Paste GitHub token (memory only)"/>
+      <button id="connectGitHubPublisherButton" class="secondary" type="button">CONNECT PUBLISHER</button>
+      <button id="publishClientWorkspaceButton" type="button">PUBLISH CLIENT SCENE</button>
+      <div class="editor-hint">Токен не вшивается в сайт и не записывается в хранилище браузера. Нужен доступ Contents: Read and write к kortul/Grade_Optimizer.</div>
+    </details>
+    <div id="clientWorkspaceStatus" class="editor-hint" aria-live="polite">Открой сцену клиента, чтобы загружать и публиковать общие модели.</div>
+  </div>
   <label for="importAssetCategory" class="tree-search-label">IMPORT AS</label>
   <select id="importAssetCategory" aria-label="Категория импортируемой модели">
     <option value="terrain">Terrain · активная поверхность</option>
@@ -1021,4 +1049,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v89.js"></script></body></html>
+<script type="module" src="./app.v90.js"></script></body></html>
