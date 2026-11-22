@@ -2129,6 +2129,7 @@ function applyEditorMaterial(){
   material.side=document.getElementById('editorDoubleSide').checked?THREE.DoubleSide:THREE.FrontSide;
   material.wireframe=document.getElementById('editorWireframe').checked;
   material.needsUpdate=true;
+  if(editorSelectedAsset&&editorSelectedAsset.sourceType!=='scene')editorSelectedAsset.meta.modelDirty=true;
   updateEditorMaterialReadouts();
 }
 function populateEditorAssetControls(asset){
@@ -2226,7 +2227,7 @@ async function importGlbFiles(files){
         id,name:root.name,category,phase:'stage_1',visible:true,
         collision:category==='terrain',
         forestBlocker:['terrain','slope','infrastructure','building','lift'].includes(category),
-        activeTerrain:false,sourceFile:file.name
+        activeTerrain:false,modelDirty:true,sourceFile:file.name
       };
       root.userData.resortAsset={...meta};
       const asset={
@@ -2296,6 +2297,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       if(updateUrl)window.history.replaceState({},'','?client='+encodeURIComponent(slug));
       refreshEditorAssetList();
       updateTerrainResetControl();
+      if(state.terrain)buildTestForest();
       setClientWorkspaceStatus('Новая сцена клиента '+slug+'. Добавь модели и нажми PUBLISH CLIENT SCENE.');
       return true;
     }
@@ -2320,7 +2322,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       const meta={
         id:item.id,name:root.name,category:item.category||'prop',phase:item.phase||'always',
         visible:item.visible!==false,collision:!!item.collision,forestBlocker:!!item.forestBlocker,
-        activeTerrain:!!item.activeTerrain,sourceFile:item.sourceFile||item.file
+        activeTerrain:!!item.activeTerrain,modelDirty:false,sourceFile:item.sourceFile||item.file
       };
       root.visible=meta.visible;
       root.userData.resortAssetId=item.id;
@@ -2400,6 +2402,20 @@ function collectClientManifest(slug){
   });
   return {schemaVersion:'1.0',clientId:slug,updatedAt:new Date().toISOString(),assets};
 }
+
+async function exportAssetForClientPublish(asset){
+  const exportRoot=asset.root.clone(true);
+  exportRoot.position.set(0,0,0);
+  exportRoot.rotation.set(0,0,0);
+  exportRoot.scale.set(1,1,1);
+  exportRoot.updateMatrixWorld(true);
+  const exporter=new GLTFExporter();
+  const result=await new Promise((resolve,reject)=>{
+    exporter.parse(exportRoot,resolve,reject,{binary:true,trs:true,onlyVisible:false});
+  });
+  if(!(result instanceof ArrayBuffer))throw new Error('GLTFExporter не вернул бинарный GLB для '+asset.name);
+  return result;
+}
 async function publishClientWorkspace(){
   const slug=normalizeClientId(currentClientSlug||document.getElementById('clientWorkspaceId').value);
   if(!slug){setClientWorkspaceStatus('Сначала укажи и открой Client ID.',true);return;}
@@ -2417,12 +2433,13 @@ async function publishClientWorkspace(){
     const parent=await githubPublisherRequest('/git/commits/'+parentSha);
     const treeEntries=[];
     for(const asset of state.importedAssets){
-      if(!asset.sourceBuffer)continue;
-      if(asset.sourceBuffer.byteLength>90*1024*1024)throw new Error(asset.name+' превышает лимит 90 MiB. Для очень больших моделей понадобится объектное хранилище.');
+      if(!asset.meta.modelDirty)continue;
+      const buffer=await exportAssetForClientPublish(asset);
+      if(buffer.byteLength>90*1024*1024)throw new Error(asset.name+' превышает лимит 90 MiB. Для очень больших моделей понадобится объектное хранилище.');
       const path='clients/'+slug+'/'+asset.sourcePath;
-      setClientWorkspaceStatus('Загружаю '+asset.name+' …');
+      setClientWorkspaceStatus('Упаковываю и загружаю '+asset.name+' …');
       const blob=await githubPublisherRequest('/git/blobs',{
-        method:'POST',body:JSON.stringify({content:arrayBufferBase64(asset.sourceBuffer),encoding:'base64'})
+        method:'POST',body:JSON.stringify({content:arrayBufferBase64(buffer),encoding:'base64'})
       });
       treeEntries.push({path,mode:'100644',type:'blob',sha:blob.sha});
     }
@@ -2437,7 +2454,7 @@ async function publishClientWorkspace(){
       method:'POST',body:JSON.stringify({message:'Publish Grade Optimizer client scene: '+slug,tree:tree.sha,parents:[parentSha]})
     });
     await githubPublisherRequest('/git/refs/heads/main',{method:'PATCH',body:JSON.stringify({sha:commit.sha,force:false})});
-    state.importedAssets.forEach(asset=>{asset.sourceBuffer=null;});
+    state.importedAssets.forEach(asset=>{asset.sourceBuffer=null;asset.meta.modelDirty=false;});
     setClientWorkspaceStatus('Опубликовано для '+slug+'. Commit '+commit.sha.slice(0,8)+'. GitHub Pages обновит клиентскую ссылку после Deploy.');
     setEditorStatus('Сцена клиента '+slug+' опубликована. Клиент получит обновлённые модели после завершения Deploy.');
   }catch(error){
@@ -2475,7 +2492,7 @@ function shareClientWorkspace(){
   else setClientWorkspaceStatus('Ссылка готова — скопируй её из поля ниже.');
 }
 
-function exportSceneEditorConfig(){function exportSceneEditorConfig(){
+function exportSceneEditorConfig(){
   const payload={
     schemaVersion:'1.0',
     savedAt:new Date().toISOString(),
@@ -2594,6 +2611,7 @@ function importEditorTextureFile(file){
       material.emissiveIntensity=Math.max(1,material.emissiveIntensity||0);
     }
     material.needsUpdate=true;
+    if(editorSelectedAsset&&editorSelectedAsset.sourceType!=='scene')editorSelectedAsset.meta.modelDirty=true;
     loadEditorMaterial(Number(editorMaterialSelect.value));
     setEditorStatus(spec.label+' подключена к '+(material.name||target.mesh.name||'материалу')+'.');
   },undefined,error=>{
@@ -2615,6 +2633,7 @@ function clearEditorTextureMap(){
   if(texture.userData?.editorOwnedTexture)texture.dispose();
   material[spec.property]=null;
   material.needsUpdate=true;
+  if(editorSelectedAsset&&editorSelectedAsset.sourceType!=='scene')editorSelectedAsset.meta.modelDirty=true;
   setEditorStatus('Карта '+spec.label+' удалена.');
 }
 

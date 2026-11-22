@@ -111,7 +111,10 @@ assert.ok(entrySource.includes("'/git/refs/heads/main'"), 'main branch update mi
 assert.ok(entrySource.includes("await openClientWorkspace(currentClientSlug,{updateUrl:false})"), 'client URL auto-load missing');
 assert.ok(entrySource.includes("Authorization:'Bearer '+githubAdminToken"), 'GitHub publisher authentication missing');
 assert.ok(entrySource.includes("if(currentClientSlug||!asset||asset.sourceType==='scene'||!asset.sourceBuffer)return;"), 'client models still depend on local persistence');
-assert.ok(entrySource.includes("asset.sourceBuffer.byteLength>90*1024*1024"), 'large model upload guard missing');
+assert.ok(entrySource.includes("buffer.byteLength>90*1024*1024"), 'large model upload guard missing');
+assert.ok(entrySource.includes('function exportAssetForClientPublish('), 'GLB export for changed client models missing');
+assert.ok(entrySource.includes('editorSelectedAsset.meta.modelDirty=true'), 'PBR changes are not marked for publish');
+assert.ok(entrySource.includes('if(!asset.meta.modelDirty)continue'), 'unchanged models should not be uploaded again');
 pass('shared per-client scene loading and GitHub publishing flow are present');
 
 
