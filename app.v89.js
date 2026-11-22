@@ -1851,6 +1851,7 @@ function activateImportedTerrain(asset,{rebuildForest=true,refreshList=true}={})
       other.meta.activeTerrain=false;
       other.meta.visible=false;
       other.root.visible=false;
+      persistImportedEditorAsset(other).catch(error=>console.warn('Не удалось сохранить переключение рельефа:',error));
     }
   });
   if(state.baseTerrain)state.baseTerrain.visible=false;
@@ -2562,7 +2563,11 @@ document.getElementById('editorCategory').addEventListener('change',event=>{
   }
 });
 document.getElementById('editorPhase').addEventListener('change',event=>{
-  if(editorSelectedAsset){editorSelectedAsset.meta.phase=event.target.value;editorSelectedAsset.root.userData.resortAsset.phase=event.target.value;}
+  if(editorSelectedAsset){
+    editorSelectedAsset.meta.phase=event.target.value;
+    editorSelectedAsset.root.userData.resortAsset.phase=event.target.value;
+    persistImportedEditorAsset(editorSelectedAsset).catch(error=>console.warn('Не удалось сохранить очередь объекта:',error));
+  }
 });
 document.getElementById('editorVisible').addEventListener('change',event=>{
   if(editorSelectedAsset){
@@ -2573,10 +2578,18 @@ document.getElementById('editorVisible').addEventListener('change',event=>{
   }
 });
 document.getElementById('editorCollision').addEventListener('change',event=>{
-  if(editorSelectedAsset){editorSelectedAsset.meta.collision=event.target.checked;editorSelectedAsset.root.userData.resortAsset.collision=event.target.checked;}
+  if(editorSelectedAsset){
+    editorSelectedAsset.meta.collision=event.target.checked;
+    editorSelectedAsset.root.userData.resortAsset.collision=event.target.checked;
+    persistImportedEditorAsset(editorSelectedAsset).catch(error=>console.warn('Не удалось сохранить флаг коллизии:',error));
+  }
 });
 document.getElementById('editorForestBlocker').addEventListener('change',event=>{
-  if(editorSelectedAsset){editorSelectedAsset.meta.forestBlocker=event.target.checked;editorSelectedAsset.root.userData.resortAsset.forestBlocker=event.target.checked;}
+  if(editorSelectedAsset){
+    editorSelectedAsset.meta.forestBlocker=event.target.checked;
+    editorSelectedAsset.root.userData.resortAsset.forestBlocker=event.target.checked;
+    persistImportedEditorAsset(editorSelectedAsset).catch(error=>console.warn('Не удалось сохранить блокировку леса:',error));
+  }
 });
 ['editorBaseColor','editorEmissiveColor','editorRoughness','editorMetalness','editorNormalScale','editorAo',
  'editorEmissive','editorTiling','editorOpacity','editorDoubleSide','editorWireframe'].forEach(id=>{
