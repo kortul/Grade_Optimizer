@@ -2,9 +2,15 @@
 
 The native Maya Python plug-in is delivered as an installable Maya module for the local project folder:
 
-`C:\zGit\GradeOptimizer`
+`C:\zGit\GradeOptimizer\Grade_Optimizer`
 
 Run `maya/install_maya_module.bat` once, restart Maya, then enable `grade_optimizer.py` with **Loaded** and **Auto load** in Plug-in Manager. The **Grade Optimizer** menu opens the exporter.
+
+The exporter is launched directly from Maya Script Editor / Shelf; installing the native plug-in is optional.
+
+Default behavior is **selected objects only**. The checkbox starts enabled every time the exporter opens. If nothing is selected, export is blocked rather than silently exporting the whole resort. Disable the checkbox only when a full-scene export is intentional.
+
+The field shown as **Project ID** is a short project slug (for example `alpine-resort`), not a GitHub account ID. It selects the folder `clients/<slug>/` and the public URL query parameter `?client=<slug>`.
 
 The exporter writes one FBX and one client manifest:
 

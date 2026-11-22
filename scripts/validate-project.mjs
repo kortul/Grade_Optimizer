@@ -159,6 +159,9 @@ assert.ok(mayaExporter.includes('def collect_node_metadata(selection_only=False)
 assert.ok(mayaExporter.includes('"nodeMetadata": node_metadata'), 'Maya manifest must export per-node metadata');
 assert.ok(mayaExporter.includes('def apply_metadata_to_selection('), 'Maya metadata UI action missing');
 assert.ok(mayaExporter.includes('text="C:/zGit/GradeOptimizer/Grade_Optimizer"'), 'Maya exporter default path must target the actual nested local repository root');
+assert.match(mayaExporter, /WINDOW \+ "_selection",\s*label="Export selected objects only",\s*value=True/, 'Maya exporter must default to selected objects only');
+assert.ok(mayaExporter.includes('label="Project ID"'), 'Maya exporter must use the clearer Project ID label');
+assert.ok(mayaExporter.includes('Project ID: латиница'), 'Maya exporter project ID validation message missing');
 assert.ok(mayaPlugin.includes('def maya_useNewAPI():'), 'Maya Python API 2.0 marker missing');
 assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
 assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');
