@@ -7,7 +7,7 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v101.js`.
+- Current app: `app.v102.js`.\n- `github-config.js` is loaded before the app and contains the public GitHub Publisher credential after one-time setup.
 - Skier: `skier-controller.v73.js`.
 - Drone: `drone-controller.v72.js`.
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
@@ -59,7 +59,7 @@ There is one administrator/editor: you. Viewers only need the generated viewer l
 
 - The primary Project ID is `alpine-resort` and opens automatically. The Maya Exporter uses the same default.
 - A different project can be selected with `?project=<id>`. Legacy `?client=<id>` links continue to work.
-- Connect GitHub in the current browser tab using a fine-grained token with Contents read/write access to `kortul/Grade_Optimizer`. The token is memory-only and must be reconnected in a new tab/session.
+- One-time setup: paste a fine-grained token into **ONE-TIME · GITHUB PUBLISHER SETUP** and click **SAVE TOKEN IN PUBLIC CODE**. The app writes the token into `github-config.js` in the repository. After GitHub Pages deploys that change, every device automatically loads the token; no repeated connection is needed.\n- This is intentionally public client-side storage: anyone can inspect the token and use its `Contents: Read and write` permission on `kortul/Grade_Optimizer`. Use a fine-grained token restricted to this repository, with an expiration date.
 - Click **SAVE PERMANENTLY TO GITHUB** after editing. The app commits the project manifest to `clients/<id>/scene.json` and changed imported models to the same project folder.
 - The app verifies the new `main` commit and checks that the saved manifest blob is present before clearing the unsaved-changes state.
 - The manifest includes built-in Scene Editor transforms, visibility, Role / Tags, Collision / Forest blocker, PBR materials, shared/unique material identity, and user-imported textures. Imported models include nested visibility and node metadata.

@@ -1,0 +1,1 @@
+// PUBLIC BY DESIGN: one-time GitHub Publisher token is stored here after setup.\nwindow.GRADE_OPTIMIZER_GITHUB_TOKEN = '';\n

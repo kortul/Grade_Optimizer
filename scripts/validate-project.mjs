@@ -159,7 +159,7 @@ pass('generic GLB model import, persistent local assets, XYZ transforms and acti
 assert.ok(html.includes('id="clientWorkspaceId"'), 'client workspace ID field missing');
 assert.ok(html.includes('id="openClientWorkspaceButton"'), 'open client scene control missing');
 assert.ok(html.includes('id="publishClientWorkspaceButton"'), 'publish client scene control missing');
-assert.ok(html.includes('id="githubPublisherToken"'), 'GitHub publisher token field missing');
+assert.ok(html.includes('id="githubPublisherToken"'), 'one-time GitHub publisher token input missing');\nassert.ok(html.includes('<script src="./github-config.js"></script>'), 'public GitHub token config must load before the app module');\nconst publisherConfig = read('github-config.js').toString('utf8');\nassert.ok(publisherConfig.includes("window.GRADE_OPTIMIZER_GITHUB_TOKEN = '';"), 'publisher config must start with an empty one-time token slot');\nassert.ok(entrySource.includes("String(window.GRADE_OPTIMIZER_GITHUB_TOKEN||'').trim()"), 'app must auto-load the persisted public publisher token');\nassert.ok(entrySource.includes("'/contents/github-config.js'") && entrySource.includes("method:'PUT'"), 'one-time token setup must persist the token into the repository config');
 assert.ok(entrySource.includes("function openClientWorkspace("), 'remote client scene loader missing');
 assert.ok(entrySource.includes("function publishClientWorkspace("), 'GitHub client scene publisher missing');
 assert.ok(entrySource.includes("function githubPublisherRequest("), 'GitHub REST publishing helper missing');
@@ -223,7 +223,7 @@ assert.ok(html.includes('id="clientWorkspaceHint"') && html.includes('PROJECT WO
 assert.ok(entrySource.includes("WORKSPACE_QUERY.get('project')||WORKSPACE_QUERY.get('client')||''"), 'project query must be supported with legacy client URL compatibility');
 assert.ok(entrySource.includes("REQUESTED_PROJECT_ID||'alpine-resort'"), 'primary alpine-resort workspace must open automatically');
 assert.ok(entrySource.includes("'/contents/clients/'+slug+'/scene.json?ref=main'"), 'publisher must verify the saved manifest is present in main');
-assert.ok(entrySource.includes("tokenInput?.closest('details')?.setAttribute('open','')"), 'save action must reveal the GitHub token field when it is required');
+assert.ok(entrySource.includes("tokenInput?.closest('details')?.setAttribute('open','')"), 'save action must reveal the one-time GitHub setup when no token is configured');\nassert.ok(html.includes('SAVE TOKEN IN PUBLIC CODE'), 'one-time setup must clearly explain that the token is stored in public code');
 assert.ok(entrySource.includes('SAVE PERMANENTLY TO GITHUB'), 'imported model guidance must use the permanent GitHub save action');
 assert.ok(entrySource.includes("const rawClientId=String(clientIdInput?.value||'').trim()"), 'publisher must validate the explicitly entered Project ID');
 assert.ok(entrySource.includes("currentClientSlug!==slug"), 'publisher must prevent saving to a different active client workspace');
