@@ -98,28 +98,36 @@ export class WeatherSystem {
     }
 
     this.snowTexture = this.makeSnowTexture();
-    this.snowCount = 2200;
+    // Particles live in camera space and are seeded inside the visible frustum.
+    // This keeps snowfall visible from every camera angle without a large world-space volume.
+    this.snowCount = 1500;
     this.snowPositions = new Float32Array(this.snowCount * 3);
     this.snowVelocity = new Float32Array(this.snowCount * 2);
+    const snowTanHalfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
     for (let i = 0; i < this.snowCount; i++) {
       const j = i * 3;
-      this.snowPositions[j] = (random() - 0.5) * 360;
-      this.snowPositions[j + 1] = (random() - 0.5) * 260;
-      this.snowPositions[j + 2] = (random() - 0.5) * 360;
-      this.snowVelocity[i * 2] = 0.65 + random() * 0.9;
-      this.snowVelocity[i * 2 + 1] = (random() - 0.5) * 0.6;
+      const depth = 8 + random() * 62;
+      const halfHeight = depth * snowTanHalfFov * 0.92;
+      const halfWidth = halfHeight * (camera.aspect || 1) * 0.92;
+      this.snowPositions[j] = (random() * 2 - 1) * halfWidth;
+      this.snowPositions[j + 1] = (random() * 2 - 1) * halfHeight;
+      this.snowPositions[j + 2] = -depth;
+      this.snowVelocity[i * 2] = 0.55 + random() * 0.8;
+      this.snowVelocity[i * 2 + 1] = (random() - 0.5) * 0.45;
     }
     this.snowGeometry = new THREE.BufferGeometry();
     this.snowGeometry.setAttribute('position', new THREE.BufferAttribute(this.snowPositions, 3).setUsage(THREE.DynamicDrawUsage));
+    this.activeSnowflakes = 0;
     this.snowMaterial = new THREE.PointsMaterial({
       color: 0xf7fbff,
       map: this.snowTexture,
       size: 2.5,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.76,
+      alphaTest: 0.035,
       depthWrite: false,
       depthTest: true,
-      sizeAttenuation: true,
+      sizeAttenuation: false,
       fog: false
     });
     this.snow = new THREE.Points(this.snowGeometry, this.snowMaterial);
@@ -129,19 +137,22 @@ export class WeatherSystem {
     this.snowGeometry.setDrawRange(0, 0);
     this.camera.add(this.snow);
 
-    this.streakCount = 360;
+    this.streakCount = 240;
     this.streakPositions = new Float32Array(this.streakCount * 6);
     for (let i = 0; i < this.streakCount; i++) {
       const j = i * 6;
-      const x = (random() - 0.5) * 340;
-      const y = (random() - 0.5) * 260;
-      const z = (random() - 0.5) * 340;
+      const depth = 9 + random() * 60;
+      const halfHeight = depth * snowTanHalfFov * 0.90;
+      const halfWidth = halfHeight * (camera.aspect || 1) * 0.90;
+      const x = (random() * 2 - 1) * halfWidth;
+      const y = (random() * 2 - 1) * halfHeight;
+      const z = -depth;
       this.streakPositions[j] = x;
       this.streakPositions[j + 1] = y;
       this.streakPositions[j + 2] = z;
-      this.streakPositions[j + 3] = x + 3;
-      this.streakPositions[j + 4] = y + 8;
-      this.streakPositions[j + 5] = z + 1;
+      this.streakPositions[j + 3] = x + 0.12;
+      this.streakPositions[j + 4] = y + 0.55;
+      this.streakPositions[j + 5] = z;
     }
     this.streakGeometry = new THREE.BufferGeometry();
     this.streakGeometry.setAttribute('position', new THREE.BufferAttribute(this.streakPositions, 3).setUsage(THREE.DynamicDrawUsage));
@@ -302,14 +313,16 @@ export class WeatherSystem {
     this.cloudMaterial.color.set(0xffffff).lerp(new this.THREE.Color(0xc4d0d9), coverage * 0.42);
 
     const flakes = Math.round(this.snowCount * this.params.snowfall);
+    this.activeSnowflakes = flakes;
+    this.snow.visible = flakes > 0;
     this.snowGeometry.setDrawRange(0, flakes);
-    this.snowMaterial.opacity = 0.32 + this.params.snowfall * 0.48;
-    this.snowMaterial.size = 1.9 + this.params.snowfall * 2.2 + Math.min(1.2, this.params.wind / 45);
+    this.snowMaterial.opacity = 0.56 + this.params.snowfall * 0.30;
+    this.snowMaterial.size = 2.2 + this.params.snowfall * 1.25 + Math.min(0.45, this.params.wind / 130);
     const streakFactor = this.THREE.MathUtils.clamp((this.params.wind - 12) / 42, 0, 1);
     this.activeStreaks = Math.round(this.streakCount * this.params.snowfall * streakFactor);
     this.streaks.visible = this.activeStreaks > 0;
     this.streakGeometry.setDrawRange(0, this.activeStreaks * 2);
-    this.streakMaterial.opacity = 0.12 + streakFactor * 0.3;
+    this.streakMaterial.opacity = 0.14 + streakFactor * 0.24;
     const fog = this.scene.fog;
     if (fog && fog.isFog) {
       const visibility = this.params.visibility * (1 - coverage * 0.12) * (1 - this.params.snowfall * 0.42);
@@ -349,49 +362,54 @@ export class WeatherSystem {
       if (cloud.offset.x < -10400) cloud.offset.x += 20800;
       if (cloud.offset.z > 10400) cloud.offset.z -= 20800;
       if (cloud.offset.z < -10400) cloud.offset.z += 20800;
-      cloud.sprite.position.copy(this.cameraPosition).add(cloud.offset);
+      if (cloud.sprite.visible) cloud.sprite.position.copy(this.cameraPosition).add(cloud.offset);
     }
 
-    if (this.params.snowfall > 0) {
-      // Cancel the camera's pitch/yaw on the particle container so flakes fall
-      // vertically in world space while the weather volume follows the viewer.
-      this.snow.quaternion.copy(this.camera.quaternion).invert();
-      this.streaks.quaternion.copy(this.camera.quaternion).invert();
-      const fall = (38 + this.params.snowfall * 75 + wind * 0.55) * dt;
-      const lateral = (wind * 0.7 + 1.5) * dt;
-      for (let i = 0; i < this.snowCount; i++) {
+    // Snow is a camera-space layer: every active flake starts in front of the lens
+    // and remains inside the view frustum. This avoids invisible particles behind
+    // the camera and keeps the effect stable while skiing or flying.
+    if (this.activeSnowflakes > 0) {
+      this.snow.quaternion.identity();
+      this.streaks.quaternion.identity();
+      const fall = (10 + this.params.snowfall * 17 + wind * 0.12) * dt;
+      const lateral = (wind * 0.035 + 0.012) * dt;
+      const tanHalfFov = Math.tan(this.THREE.MathUtils.degToRad(this.camera.fov * 0.5));
+      const aspect = this.camera.aspect || 1;
+      for (let i = 0; i < this.activeSnowflakes; i++) {
         const j = i * 3;
+        const depth = Math.max(8, -this.snowPositions[j + 2]);
+        const halfHeight = depth * tanHalfFov * 0.92;
+        const halfWidth = halfHeight * aspect * 0.92;
         this.snowPositions[j] += lateral * this.snowVelocity[i * 2];
         this.snowPositions[j + 1] -= fall;
-        this.snowPositions[j + 2] += lateral * this.snowVelocity[i * 2 + 1];
-        if (this.snowPositions[j + 1] < -145) {
-          this.snowPositions[j + 1] = 145 + Math.random() * 90;
-          this.snowPositions[j] = (Math.random() - 0.5) * 360;
-          this.snowPositions[j + 2] = (Math.random() - 0.5) * 360;
+        if (this.snowPositions[j + 1] < -halfHeight) {
+          this.snowPositions[j + 1] = halfHeight;
+          this.snowPositions[j] = (Math.random() * 2 - 1) * halfWidth;
         }
-        if (this.snowPositions[j] > 190) this.snowPositions[j] -= 380;
-        if (this.snowPositions[j] < -190) this.snowPositions[j] += 380;
-        if (this.snowPositions[j + 2] > 190) this.snowPositions[j + 2] -= 380;
-        if (this.snowPositions[j + 2] < -190) this.snowPositions[j + 2] += 380;
+        if (this.snowPositions[j] > halfWidth) this.snowPositions[j] -= halfWidth * 2;
+        if (this.snowPositions[j] < -halfWidth) this.snowPositions[j] += halfWidth * 2;
       }
       this.snowGeometry.attributes.position.needsUpdate = true;
 
       if (this.activeStreaks > 0) {
-        const streakFall = fall * 1.35;
+        const streakFall = fall * 1.55;
         for (let i = 0; i < this.activeStreaks; i++) {
           const j = i * 6;
-          this.streakPositions[j] += lateral * 1.5;
+          const depth = Math.max(9, -this.streakPositions[j + 2]);
+          const halfHeight = depth * tanHalfFov * 0.90;
+          const halfWidth = halfHeight * aspect * 0.90;
+          this.streakPositions[j] += lateral * 1.6;
           this.streakPositions[j + 1] -= streakFall;
-          this.streakPositions[j + 2] += lateral * 0.12;
-          if (this.streakPositions[j + 1] < -145) {
-            this.streakPositions[j] = (Math.random() - 0.5) * 340;
-            this.streakPositions[j + 1] = 155 + Math.random() * 80;
-            this.streakPositions[j + 2] = (Math.random() - 0.5) * 340;
+          if (this.streakPositions[j + 1] < -halfHeight) {
+            this.streakPositions[j + 1] = halfHeight;
+            this.streakPositions[j] = (Math.random() * 2 - 1) * halfWidth;
           }
-          const streakLength = 7 + wind * 0.3;
-          this.streakPositions[j + 3] = this.streakPositions[j] + 2 + wind * 0.15;
+          if (this.streakPositions[j] > halfWidth) this.streakPositions[j] -= halfWidth * 2;
+          if (this.streakPositions[j] < -halfWidth) this.streakPositions[j] += halfWidth * 2;
+          const streakLength = 0.7 + wind * 0.018;
+          this.streakPositions[j + 3] = this.streakPositions[j] + 0.10 + wind * 0.002;
           this.streakPositions[j + 4] = this.streakPositions[j + 1] + streakLength;
-          this.streakPositions[j + 5] = this.streakPositions[j + 2] + 1 + wind * 0.025;
+          this.streakPositions[j + 5] = this.streakPositions[j + 2];
         }
         this.streakGeometry.attributes.position.needsUpdate = true;
       }
