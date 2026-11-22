@@ -94,6 +94,13 @@ assert.ok(entrySource.includes('selectEditorNode(picked,hit.object)'), 'viewport
 assert.ok(entrySource.includes('asset.sourceBuffer=await exportAssetForClientPublish(asset)'), 'edited hierarchy must be serialized for local persistence');
 assert.ok(entrySource.includes('const asset=editorSelectedAsset,root=editorSelectedNode'), 'transform inspector must edit the selected hierarchy node');
 assert.ok(entrySource.includes('nodeVisibility:collectEditorNodeVisibility(root)'), 'nested visibility must be stored in client manifest');
+assert.ok(entrySource.includes('function collectEditorNodeMetadata(root)'), 'per-node metadata collector missing');
+assert.ok(entrySource.includes('function applyEditorNodeMetadata(root,records)'), 'per-node metadata restore missing');
+assert.ok(entrySource.includes('nodeMetadata:collectEditorNodeMetadata(root)'), 'per-node metadata must be stored in client manifest');
+assert.ok(entrySource.includes('applyEditorNodeMetadata(root,item.nodeMetadata||[])'), 'client scene must restore per-node metadata');
+assert.ok(html.includes('id="editorNodeRole"') && html.includes('id="editorNodeTags"'), 'per-node role / tags controls missing');
+assert.ok(html.includes('id="editorNodeCollision"') && html.includes('id="editorNodeForestBlocker"'), 'per-node semantic flags missing');
+assert.ok(entrySource.includes('saveSelectedNodeMetadata'), 'per-node metadata edit handler missing');
 assert.ok(entrySource.includes('applyEditorNodeVisibility(root,item.nodeVisibility||[])'), 'nested visibility must be restored for client scenes');
 assert.ok(entrySource.includes('function disposeEditorComponent(root)'), 'shared material-safe component deletion missing');
 assert.ok(entrySource.includes("from 'three/addons/loaders/FBXLoader.js'"), 'FBXLoader import missing');
@@ -145,6 +152,15 @@ assert.ok(entrySource.includes('function exportAssetForClientPublish('), 'GLB ex
 assert.ok(entrySource.includes('editorSelectedAsset.meta.modelDirty=true'), 'PBR changes are not marked for publish');
 assert.ok(entrySource.includes('if(!asset.meta.modelDirty)continue'), 'unchanged models should not be uploaded again');
 pass('shared per-client scene loading and GitHub publishing flow are present');
+
+const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
+const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
+assert.ok(mayaExporter.includes('def collect_node_metadata(selection_only=False):'), 'Maya metadata exporter missing');
+assert.ok(mayaExporter.includes('"nodeMetadata": node_metadata'), 'Maya manifest must export per-node metadata');
+assert.ok(mayaExporter.includes('def apply_metadata_to_selection('), 'Maya metadata UI action missing');
+assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
+assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');
+assert.ok(html.includes('src="./app.v95.js"'), 'active app must use v95 node metadata module');
 
 
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
@@ -245,6 +261,14 @@ assert.ok(html.includes('id="groundState">Обычная езда</span>'), 'def
 pass('aerodynamic tuck camera, wind effect, avatar crouch and drone handoff are present');
 pass('first/third-person skier camera, avatar and C-key UI are present');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
+
+for (const path of ['maya/grade_optimizer_exporter.py','maya/plug-ins/grade_optimizer.py']) {
+  const syntax = spawnSync('python3', ['-c', 'import ast,sys; ast.parse(sys.stdin.read())'], {
+    input: read(path).toString('utf8'), encoding: 'utf8'
+  });
+  assert.equal(syntax.status, 0, 'Python syntax error in ' + path + ':\n' + (syntax.stderr || syntax.stdout));
+  pass('Python syntax valid: ' + path);
+}
 
 const slopeIds = JSON.parse(read('assets/slopes.json').toString('utf8'));
 assert.ok(Array.isArray(slopeIds) && slopeIds.length > 0, 'assets/slopes.json must contain at least one slope');

@@ -54,7 +54,7 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 .editor-section{padding:10px;margin:9px 0;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);border-radius:8px}
 .editor-section h3{font-size:11px;margin:0 0 8px;color:#a9c6df;text-transform:uppercase;letter-spacing:.8px}
 #sceneEditorPanel label{display:block;margin:8px 0 3px;font-size:11px;color:#bdc9d6}
-#sceneEditorPanel select,#sceneEditorPanel input[type=number]{
+#sceneEditorPanel select,#sceneEditorPanel input[type=number],#sceneEditorPanel input[type=text]{
  width:100%;padding:7px 8px;border:1px solid #475360;border-radius:6px;
  background:#202832;color:#edf3f8;font-size:12px
 }
@@ -135,7 +135,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneEditorPanel .editor-section{padding:12px;margin:10px 0;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.075);border-radius:11px}
 #sceneEditorPanel .editor-section h3{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:1px;color:#a9c8df}
 #sceneEditorPanel label{font-size:11px;color:#c5d3df}
-#sceneEditorPanel select,#sceneEditorPanel input[type=number]{min-height:34px;border:1px solid #425263;border-radius:7px;background:#17222d;color:#eff5fa;transition:border-color .15s ease}
+#sceneEditorPanel select,#sceneEditorPanel input[type=number],#sceneEditorPanel input[type=text]{min-height:34px;border:1px solid #425263;border-radius:7px;background:#17222d;color:#eff5fa;transition:border-color .15s ease}
 #sceneEditorPanel select:hover,#sceneEditorPanel input[type=number]:hover{border-color:#66809a}
 #sceneEditorPanel input[type=color]{height:34px;border-radius:7px;cursor:pointer}
 #sceneEditorPanel input[type=range]{accent-color:#63c69a}
@@ -879,10 +879,33 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     </div>
     <div class="editor-checks">
       <label><input type="checkbox" id="editorVisible" checked/> Видимый</label>
-      <label><input type="checkbox" id="editorCollision"/> Коллизия</label>
-      <label><input type="checkbox" id="editorForestBlocker"/> Блокировать деревья</label>
+      <label><input type="checkbox" id="editorCollision"/> Коллизия (модель)</label>
+      <label><input type="checkbox" id="editorForestBlocker"/> Блокировать деревья (модель)</label>
     </div>
     <button id="removeImportedAsset" class="secondary" type="button">УДАЛИТЬ ВЫБРАННЫЙ ОБЪЕКТ</button>
+  </div>
+  <div class="editor-section">
+    <h3>МЕТАДАННЫЕ УЗЛА <span class="editor-chip">OPTIONAL</span></h3>
+    <label for="editorNodeRole">Role / назначение выбранного узла</label>
+    <select id="editorNodeRole">
+      <option value="">Без переопределения</option>
+      <option value="general">General model</option>
+      <option value="terrain">Terrain surface</option>
+      <option value="slope">Slope / piste</option>
+      <option value="building">Building</option>
+      <option value="lift">Lift / ropeway</option>
+      <option value="vegetation">Vegetation</option>
+      <option value="collision-proxy">Collision proxy</option>
+      <option value="forest-blocker">Forest blocker</option>
+      <option value="other">Other</option>
+    </select>
+    <label for="editorNodeTags">Tags · через запятую</label>
+    <input id="editorNodeTags" type="text" placeholder="например: gondola, station, phase-2"/>
+    <div class="editor-checks">
+      <label><input type="checkbox" id="editorNodeCollision"/> Collision hint</label>
+      <label><input type="checkbox" id="editorNodeForestBlocker"/> Forest blocker hint</label>
+    </div>
+    <div class="editor-hint">Метки относятся только к выбранному узлу и сохраняются в клиентском manifest. Они не меняют физику или классификацию автоматически.</div>
   </div>
 
   <div class="editor-section">
@@ -1076,4 +1099,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v94.js"></script></body></html>
+<script type="module" src="./app.v95.js"></script></body></html>
