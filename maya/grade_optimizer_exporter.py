@@ -13,7 +13,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 FBX_NAME = "resort.fbx"
 
 # Maya optionVars keep the export settings and last-used metadata preset between
@@ -27,40 +27,31 @@ PRESET_PLACEHOLDER = "— Выбрать тип объекта —"
 
 METADATA_PRESETS = {
     "Рельеф": {
-        "role": "terrain", "tags": ["terrain", "ground"],
-        "collision": True, "forestBlocker": False
+        "role": "terrain", "tags": ["terrain", "ground"]
     },
     "Здание": {
-        "role": "building", "tags": ["building", "structure"],
-        "collision": True, "forestBlocker": True
+        "role": "building", "tags": ["building", "structure"]
     },
     "Станция": {
-        "role": "station", "tags": ["station", "building"],
-        "collision": True, "forestBlocker": True
+        "role": "station", "tags": ["station", "building"]
     },
     "Подъёмник / опора": {
-        "role": "lift", "tags": ["lift", "transport", "support"],
-        "collision": True, "forestBlocker": True
+        "role": "lift", "tags": ["lift", "transport", "support"]
     },
     "Дорога / площадка": {
-        "role": "road", "tags": ["road", "access"],
-        "collision": True, "forestBlocker": True
+        "role": "road", "tags": ["road", "access"]
     },
     "Вода": {
-        "role": "water", "tags": ["water"],
-        "collision": True, "forestBlocker": True
+        "role": "water", "tags": ["water"]
     },
     "Скала / препятствие": {
-        "role": "obstacle", "tags": ["rock", "obstacle"],
-        "collision": True, "forestBlocker": True
+        "role": "obstacle", "tags": ["rock", "obstacle"]
     },
     "Растительность": {
-        "role": "vegetation", "tags": ["vegetation"],
-        "collision": True, "forestBlocker": False
+        "role": "vegetation", "tags": ["vegetation"]
     },
     "Другое": {
-        "role": "object", "tags": ["object"],
-        "collision": False, "forestBlocker": False
+        "role": "object", "tags": ["object"]
     }
 }
 
@@ -140,17 +131,14 @@ def collect_node_metadata(selection_only=False):
         role = str(_attribute_value(node, "goRole", "") or "").strip()
         raw_tags = str(_attribute_value(node, "goTags", "") or "")
         tags = [item.strip() for item in raw_tags.split(",") if item.strip()]
-        collision = bool(_attribute_value(node, "goCollision", False))
-        forest_blocker = bool(_attribute_value(node, "goForestBlocker", False))
-        if not (role or tags or collision or forest_blocker):
+        # Collision and Forest blocker are configured per node in the Web Editor.
+        if not (role or tags):
             continue
         records.append({
             "name": node.rsplit("|", 1)[-1],
             "namePath": _node_name_path(node),
             "role": role,
-            "tags": tags,
-            "collision": collision,
-            "forestBlocker": forest_blocker
+            "tags": tags
         })
     return records
 
@@ -159,12 +147,6 @@ def _set_string_attribute(node, attribute, value):
     if not cmds.attributeQuery(attribute, node=node, exists=True):
         cmds.addAttr(node, longName=attribute, dataType="string")
     cmds.setAttr(node + "." + attribute, str(value or ""), type="string")
-
-
-def _set_bool_attribute(node, attribute, value):
-    if not cmds.attributeQuery(attribute, node=node, exists=True):
-        cmds.addAttr(node, longName=attribute, attributeType="bool")
-    cmds.setAttr(node + "." + attribute, bool(value))
 
 
 def _selected_transforms():
@@ -228,10 +210,8 @@ def on_metadata_preset_changed(*_):
     try:
         label = cmds.optionMenuGrp(WINDOW + "_preset", query=True, value=True)
         _remember_option(OPTION_PRESET, label)
-        preset = METADATA_PRESETS.get(label)
-        defaults = preset or {"collision": False, "forestBlocker": False}
-        cmds.checkBox(WINDOW + "_node_collision", edit=True, value=defaults["collision"])
-        cmds.checkBox(WINDOW + "_node_forest", edit=True, value=defaults["forestBlocker"])
+        # Presets define Role / Tags only; simulation hints are edited in Web Editor.
+        pass
     except Exception as exc:
         cmds.warning("[Grade Optimizer] Metadata preset update failed: " + str(exc))
 
@@ -264,14 +244,9 @@ def apply_metadata_to_selection(*_):
     tags = list((preset or {}).get("tags", []))
     tags.extend(item.strip() for item in extra_tags.split(",") if item.strip())
     tags = list(dict.fromkeys(tags))
-    collision = cmds.checkBox(WINDOW + "_node_collision", query=True, value=True)
-    forest_blocker = cmds.checkBox(WINDOW + "_node_forest", query=True, value=True)
-
     for node in transforms:
         _set_string_attribute(node, "goRole", role)
         _set_string_attribute(node, "goTags", ",".join(tags))
-        _set_bool_attribute(node, "goCollision", collision)
-        _set_bool_attribute(node, "goForestBlocker", forest_blocker)
 
     remember_export_settings()
     remember_custom_metadata()
@@ -508,7 +483,7 @@ def show():
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
     cmds.text(
-        label="Выдели объекты в Maya → выбери готовый тип → нажми «Применить».",
+        label="Выдели объекты в Maya → выбери тип → нажми «Применить». Collision и Forest blocker настраиваются в Web Editor.",
         align="left",
         height=24
     )
@@ -523,11 +498,6 @@ def show():
     for preset_name in METADATA_PRESETS:
         cmds.menuItem(parent=menu_parent, label=preset_name)
     cmds.optionMenuGrp(WINDOW + "_preset", edit=True, value=preset_default)
-
-    cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(250, 250))
-    cmds.checkBox(WINDOW + "_node_collision", label="Collision", value=False)
-    cmds.checkBox(WINDOW + "_node_forest", label="Forest blocker", value=False)
-    cmds.setParent("..")
 
     cmds.frameLayout(
         label="Дополнительно: свои Role / Tags",
@@ -558,7 +528,7 @@ def show():
 
     cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(270, 270))
     cmds.button(
-        label="ПРИМЕНИТЬ К ВЫДЕЛЕНИЮ",
+        label="ПРИМЕНИТЬ ROLE / TAGS К ВЫДЕЛЕНИЮ",
         height=32,
         backgroundColor=(0.24, 0.40, 0.31),
         command=apply_metadata_to_selection

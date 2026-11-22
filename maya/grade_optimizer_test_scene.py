@@ -49,17 +49,10 @@ def _add_string(node, attribute, value):
     cmds.setAttr(node + "." + attribute, value, type="string")
 
 
-def _add_bool(node, attribute, value):
-    if not cmds.attributeQuery(attribute, node=node, exists=True):
-        cmds.addAttr(node, longName=attribute, attributeType="bool")
-    cmds.setAttr(node + "." + attribute, bool(value))
-
-
-def _metadata(node, role="", tags="", collision=False, forest_blocker=False):
+def _metadata(node, role="", tags=""):
+    # Collision and Forest blocker are configured later in the Web Editor.
     _add_string(node, "goRole", role)
     _add_string(node, "goTags", tags)
-    _add_bool(node, "goCollision", collision)
-    _add_bool(node, "goForestBlocker", forest_blocker)
 
 
 def _cube(name, parent, size, position, shading_group=None):
@@ -120,7 +113,7 @@ def create_test_scene():
     terrain = _parent(terrain, terrain_group)
     _place(terrain, (0, -0.5, 0))
     _assign(snow_sg, terrain)
-    _metadata(terrain_group, "terrain", "test,ground", collision=True)
+    _metadata(terrain_group, "terrain", "test,ground")
 
     north_group = _group("North_Row_GRP", lift_group)
     south_group = _group("South_Row_GRP", lift_group)
@@ -134,8 +127,8 @@ def create_test_scene():
     # The same leaf name in separate DAG branches checks namePath metadata matching.
     south_pylon = cmds.rename(south_pylon, "Pylon")
     _metadata(lift_group, "lift", "test,gondola")
-    _metadata(north_pylon, "lift-support", "test,north", collision=True)
-    _metadata(south_pylon, "lift-support", "test,south", collision=True)
+    _metadata(north_pylon, "lift-support", "test,north")
+    _metadata(south_pylon, "lift-support", "test,south")
 
     upper_station_group = _group("Upper_Station_GRP", station_group)
     station_body = _cube(
@@ -157,7 +150,7 @@ def create_test_scene():
         (2.5, 2, 2.5), (4, 1, 12), concrete_sg
     )
     _metadata(blocker_group, "forest-blockers", "test,environment")
-    _metadata(blocker, "rock-obstacle", "test,forest-blocker", forest_blocker=True)
+    _metadata(blocker, "rock-obstacle", "test,forest-blocker")
 
     hidden_marker = cmds.polySphere(
         name="Hidden_Survey_Marker",
