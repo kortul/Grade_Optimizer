@@ -683,6 +683,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 .mode-hud .tutorial-step small{font-size:9px!important;line-height:1.32!important}
 .mode-hud .tutorial-step kbd{font-size:8px!important;min-width:16px!important;height:17px!important}
 .mode-hud .control-tile strong{font-size:9px!important;line-height:1.2!important}
+
+/* v0.83 — top-right scene controls belong only to slope optimization */
+#legend{display:none!important}
+#app.optimizer-open:not(.editor-open):not(.skier-mode):not(.drone-mode) #legend{display:flex!important}
 </style>
 </head>
 <body>
@@ -749,6 +753,17 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="sceneEditorPanel" aria-label="Scene and material inspector">
   <div id="editorHeader"><div class="editor-heading"><strong>INSPECTOR</strong><span class="editor-chip">SCENE / MATERIAL</span></div><button class="secondary closeEditor" id="closeEditor" type="button" title="Закрыть">×</button></div>
   <div id="editorStatus">Выбери объект в сцене, чтобы редактировать его свойства и материалы.</div>
+
+  <div class="editor-section ski-replacement-section">
+    <h3>ЗАМЕНА ЛЫЖ ЛЫЖНИКА <span class="editor-chip">SKIER RIG</span></h3>
+    <div class="editor-hint">Загрузи GLB одной лыжи. Модель автоматически подгоняется по длине и ориентации, затем устанавливается парой на лыжника. Крепления остаются на месте.</div>
+    <input id="skierSkiFileInput" type="file" accept=".glb,model/gltf-binary" hidden/>
+    <div class="editor-split">
+      <button id="importSkierSkiButton" type="button">＋ ЗАГРУЗИТЬ ОДНУ ЛЫЖУ · GLB</button>
+      <button id="resetSkierSkiButton" class="secondary" type="button">ВЕРНУТЬ СТАНДАРТНЫЕ</button>
+    </div>
+    <div id="skierSkiModelStatus" class="editor-hint" aria-live="polite">Используются стандартные лыжи.</div>
+  </div>
   <select id="editorObjectSelect" hidden aria-hidden="true"><option value="">Сцена загружается…</option></select>
   <div class="editor-section">
     <h3>ОБЪЕКТ <span class="editor-chip">TRANSFORM</span></h3>

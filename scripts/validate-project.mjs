@@ -68,7 +68,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-const skierSource = read('skier-controller.v69.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v70.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v70.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
@@ -76,6 +77,13 @@ assert.ok(droneSource.includes("this.keys.has('shift')?this.boostSpeed:this.spee
 assert.ok(droneSource.includes("(this.keys.has('control')?1:0)"), 'Ctrl must control drone descent');
 assert.ok(entrySource.includes("tuck?'НИЗКАЯ СТОЙКА':'В СТОЙКЕ'"), 'skier upright status missing from HUD');
 assert.ok(entrySource.includes("panel.content.style.setProperty('display',visible?'grid':'none','important')"), 'tutorial visibility must force display state');
+assert.ok(skierSource.includes('this._tryBumpJump(this.velocity.length())'), 'skier bump jump must be integrated into movement');
+assert.ok(skierSource.includes('speed<14.5||this.lastLongitudinalAccel<2.8'), 'bump jump must require high speed and strong acceleration');
+assert.ok(skierSource.includes('this.airborneVelocityY=2.7'), 'bump jump lift must remain small and ballistic');
+assert.ok(skierSource.includes('this.jumpCooldown=1.35'), 'bump jump cooldown missing');
+assert.ok(skierSource.includes('this.camera.position.y+this.eyeHeight+this.airborneHeight'), 'camera must lift during a jump');
+assert.ok(skierSource.includes('setSkiModel(source)'), 'skier model replacement API missing');
+assert.ok(skierSource.includes('this.skiSlots.push({group:ski,board,stripe,customMount})'), 'custom ski mounts missing from both ski slots');
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
 
 assert.ok(entrySource.includes("if(e.code==='KeyV'&&(state.mode==='skier'||state.mode==='drone'))"), 'V-only mode switch missing');
@@ -114,6 +122,14 @@ assert.ok(html.includes('max-height:none!important;height:auto!important;overflo
 assert.ok(html.includes('height:auto!important;overflow:visible!important;padding:0!important;margin:0!important;'), 'tutorial content must not scroll');
 assert.ok(html.includes('grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr)'), 'tutorial and key guide must use side-by-side layout');
 assert.ok(html.includes('transform-origin:bottom left!important'), 'HUD must scale from its bottom edge to stay inside the viewport');
+assert.ok(html.includes('id="skierSkiFileInput"'), 'skier ski GLB input missing');
+assert.ok(html.includes('id="importSkierSkiButton"'), 'skier ski import button missing');
+assert.ok(html.includes('id="resetSkierSkiButton"'), 'skier ski reset button missing');
+assert.ok(html.includes('id="skierSkiModelStatus"'), 'skier ski import status missing');
+assert.ok(html.includes('#legend{display:none!important}'), 'legend must be hidden outside slope optimization');
+assert.ok(html.includes('#app.optimizer-open:not(.editor-open):not(.skier-mode):not(.drone-mode) #legend{display:flex!important}'), 'legend must be shown only for slope optimization');
+assert.ok(entrySource.includes('skierController.setSkiModel(model)'), 'Scene Editor must pass imported ski GLB to skier controller');
+assert.ok(entrySource.includes("if(state.optimizeMode)setOptimizerOpen(false)"), 'Overview must close the optimization panel');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
 
 const slopeIds = JSON.parse(read('assets/slopes.json').toString('utf8'));
