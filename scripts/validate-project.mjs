@@ -60,7 +60,8 @@ assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-loa
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
 pass('forest rendering and asynchronous-load safeguards present');
 
-assert.match(entrySource, /e\\.code==='Tab'\\|\\|e\\.code==='KeyV'/, 'V / TAB mode-switch shortcut missing');
+assert.match(entrySource, /e\\.code==='KeyV'\\|\\|\\(e\\.code==='Tab'&& !focusIsControl\\)/, 'V / TAB mode-switch shortcut missing');
+assert.match(entrySource, /focusIsControl/, 'keyboard Tab focus navigation guard missing');
 assert.match(entrySource, /skierSwitchDrone/, 'skier-to-drone HUD button binding missing');
 assert.match(entrySource, /droneSwitchSkier/, 'drone-to-skier HUD button binding missing');
 assert.match(html, /id="skierSwitchDrone"/, 'skier HUD action button missing');

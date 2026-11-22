@@ -2617,7 +2617,9 @@ document.getElementById('exitDrone').addEventListener('click',()=>setSceneMode('
 document.getElementById('skierSwitchDrone').addEventListener('click',()=>setSceneMode('drone'));
 document.getElementById('droneSwitchSkier').addEventListener('click',()=>setSceneMode('skier'));
 document.addEventListener('keydown',e=>{
-  if((e.code==='Tab'||e.code==='KeyV')&&(state.mode==='skier'||state.mode==='drone')){
+  const target=e.target;
+  const focusIsControl=target instanceof Element&&!!target.closest('button,input,select,textarea,a,summary,[contenteditable="true"]');
+  if((e.code==='KeyV'||(e.code==='Tab'&&!focusIsControl))&&(state.mode==='skier'||state.mode==='drone')){
     e.preventDefault();e.stopPropagation();
     if(!e.repeat)setSceneMode(state.mode==='skier'?'drone':'skier');
     return;
