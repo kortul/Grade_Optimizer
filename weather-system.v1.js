@@ -56,7 +56,7 @@ export class WeatherSystem {
       opacity: 0.8,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       fog: false,
       toneMapped: false
     });
@@ -73,7 +73,7 @@ export class WeatherSystem {
       transparent: true,
       opacity: 0.38,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       fog: false,
       toneMapped: false
     });
@@ -126,7 +126,7 @@ export class WeatherSystem {
       transparent: true,
       opacity: 0.72,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       sizeAttenuation: true,
       fog: false
     });
