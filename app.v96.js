@@ -29,6 +29,7 @@ const CLIENT_REPO_OWNER='kortul',CLIENT_REPO_NAME='Grade_Optimizer';
 const CLIENT_ID_FROM_URL=new URLSearchParams(window.location.search).get('client')||'';
 let currentClientSlug=CLIENT_ID_FROM_URL;
 let clientWorkspaceReady=false;
+let clientProjectDirty=false;
 let githubAdminToken='';
 
 
@@ -2445,6 +2446,7 @@ function applyEditorMaterial(){
   material.wireframe=document.getElementById('editorWireframe').checked;
   material.needsUpdate=true;
   markEditorMaterialOwnersDirty(material);
+  markClientProjectDirty('параметры и назначения материалов');
   updateEditorMaterialReadouts();
 }
 function editorObjectPath(owner,node){
@@ -2532,7 +2534,12 @@ function saveSelectedNodeMetadata(){
     persistImportedEditorAsset(owner).catch(error=>console.warn('Не удалось сохранить метаданные узла:',error));
   }
   renderEditorTree(getAllEditorAssets(),editorSelectionKey());
-  setEditorStatus('Метаданные сохранены для узла: '+editorObjectPath(owner,node)+'.');
+  if(currentClientSlug){
+    markClientProjectDirty('метки и флаги узла');
+    setEditorStatus('Настройки узла изменены: '+editorObjectPath(owner,node)+'. Нажми SAVE ALL PROJECT CHANGES TO GITHUB.');
+  }else{
+    setEditorStatus('Метаданные изменены для узла: '+editorObjectPath(owner,node)+'.');
+  }
 }
 
 
@@ -2553,6 +2560,7 @@ function applyEditorTransform(){
   );
   if(asset&&root===asset.root)syncActiveTerrainTransform(asset,false);
   if(asset&&asset.sourceType==='imported')asset.meta.modelDirty=true;
+  markClientProjectDirty('трансформации и масштаб объектов');
 }
 async function importGlbFiles(files){
   const valid=Array.from(files||[]);
@@ -2598,6 +2606,7 @@ async function importGlbFiles(files){
       };
       scene.add(root);
       state.importedAssets.push(asset);
+      markClientProjectDirty('импорт новой модели');
       if(category==='slope')applyImportedSlopeDepthBias(root,-1,-1);
       if(category==='terrain')activateImportedTerrain(asset,{rebuildForest:true,refreshList:false,persist:!currentClientSlug});
       refreshEditorAssetList(id);
@@ -2626,6 +2635,11 @@ function normalizeClientId(value){
 function setClientWorkspaceStatus(message,isError=false){
   const el=document.getElementById('clientWorkspaceStatus');
   if(el){el.textContent=message;el.classList.toggle('error',isError);}
+}
+function markClientProjectDirty(reason='изменения Scene Editor'){
+  if(!currentClientSlug||!clientWorkspaceReady)return;
+  clientProjectDirty=true;
+  setClientWorkspaceStatus('Черновик проекта '+currentClientSlug+': '+reason+'. Не забудь нажать SAVE ALL PROJECT CHANGES TO GITHUB, чтобы изменения стали общими.');
 }
 function clearImportedClientAssets(){
   if(state.activeTerrainAssetId)resetImportedTerrain({rebuildForest:false,persist:false});
@@ -2765,6 +2779,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
   if(!slug){setClientWorkspaceStatus('Client ID: латиница, цифры и дефис; 1–40 символов.',true);return false;}
   currentClientSlug=slug;
   clientWorkspaceReady=false;
+  clientProjectDirty=false;
   const input=document.getElementById('clientWorkspaceId');
   if(input)input.value=slug;
   setClientWorkspaceStatus('Загружаю общую сцену клиента '+slug+' …');
@@ -2777,7 +2792,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       refreshEditorAssetList();
       updateTerrainResetControl();
       if(state.terrain)buildTestForest();
-      setClientWorkspaceStatus('Новая сцена клиента '+slug+'. Добавь модели и нажми PUBLISH CLIENT SCENE.');
+      setClientWorkspaceStatus('Новый проект '+slug+'. Настрой сцену и нажми SAVE ALL PROJECT CHANGES TO GITHUB, чтобы сохранить её в GitHub.');
       return true;
     }
     if(!response.ok)throw new Error('HTTP '+response.status+' при загрузке scene.json');
@@ -2835,7 +2850,8 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
     if(updateUrl)window.history.replaceState({},'','?client='+encodeURIComponent(slug));
     const focus=activeTerrain?.root||state.importedAssets[0]?.root||state.root;
     if(focus)focusSceneObject(focus);
-    setClientWorkspaceStatus('Сцена '+slug+' загружена: '+loaded+' моделей. Изменения публикуются отдельно.');
+    clientProjectDirty=false;
+    setClientWorkspaceStatus('Проект '+slug+' загружен: '+loaded+' моделей. После редактирования нажми SAVE ALL PROJECT CHANGES TO GITHUB — настройки будут доступны на других устройствах.');
     return true;
   }catch(error){
     console.error(error);
@@ -3023,7 +3039,8 @@ async function publishClientWorkspace(){
     });
     await githubPublisherRequest('/git/refs/heads/main',{method:'PATCH',body:JSON.stringify({sha:commit.sha,force:false})});
     state.importedAssets.forEach(asset=>{asset.sourceBuffer=null;asset.meta.modelDirty=false;});
-    setClientWorkspaceStatus('Опубликовано для '+slug+'. Commit '+commit.sha.slice(0,8)+'. GitHub Pages обновит клиентскую ссылку после Deploy.');
+    clientProjectDirty=false;
+    setClientWorkspaceStatus('Все изменения проекта '+slug+' сохранены в GitHub. Commit '+commit.sha.slice(0,8)+'. После Deploy они загрузятся на других устройствах.');
     setEditorStatus('Сцена клиента '+slug+' опубликована. Клиент получит обновлённые модели после завершения Deploy.');
   }catch(error){
     console.error(error);
@@ -3164,6 +3181,7 @@ function importEditorTextureFile(file){
     }
     material.needsUpdate=true;
     const affected=markEditorMaterialOwnersDirty(material);
+    markClientProjectDirty('пользовательская текстура');
     affected.forEach(asset=>persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить общую текстуру:',error)));
     refreshEditorMaterialLibrary(material.uuid);
     loadEditorMaterial(Number(editorMaterialSelect.value));
@@ -3436,6 +3454,7 @@ document.getElementById('editorCategory').addEventListener('change',event=>{
   const next=event.target.value;
   asset.meta.category=next;
   asset.root.userData.resortAsset.category=next;
+  markClientProjectDirty('категория объекта');
   if(asset.sourceType==='imported'){
     if(next==='terrain')activateImportedTerrain(asset);
     else if(asset.id===state.activeTerrainAssetId){
@@ -3450,6 +3469,7 @@ document.getElementById('editorPhase').addEventListener('change',event=>{
   if(editorSelectedAsset&&editorSelectedNode===editorSelectedAsset.root){
     editorSelectedAsset.meta.phase=event.target.value;
     editorSelectedAsset.root.userData.resortAsset.phase=event.target.value;
+    markClientProjectDirty('фаза объекта');
     persistImportedEditorAsset(editorSelectedAsset).catch(error=>console.warn('Не удалось сохранить очередь объекта:',error));
   }
 });
@@ -3460,6 +3480,7 @@ document.getElementById('editorVisible').addEventListener('change',event=>{
       editorSelectedAsset.meta.visible=event.target.checked;
       if(editorSelectedAsset.id===state.activeTerrainAssetId)state.terrainVisible=event.target.checked;
     }
+    markClientProjectDirty('видимость объекта или узла');
     if(editorSelectedAsset.sourceType==='imported')editorSelectedAsset.meta.modelDirty=true;
     persistImportedEditorAsset(editorSelectedAsset).catch(error=>console.warn('Не удалось сохранить видимость модели:',error));
   }
@@ -3468,6 +3489,7 @@ document.getElementById('editorCollision').addEventListener('change',event=>{
   if(editorSelectedAsset&&editorSelectedNode===editorSelectedAsset.root){
     editorSelectedAsset.meta.collision=event.target.checked;
     editorSelectedAsset.root.userData.resortAsset.collision=event.target.checked;
+    markClientProjectDirty('Collision модели');
     persistImportedEditorAsset(editorSelectedAsset).catch(error=>console.warn('Не удалось сохранить флаг коллизии:',error));
   }
 });
@@ -3475,6 +3497,7 @@ document.getElementById('editorForestBlocker').addEventListener('change',event=>
   if(editorSelectedAsset&&editorSelectedNode===editorSelectedAsset.root){
     editorSelectedAsset.meta.forestBlocker=event.target.checked;
     editorSelectedAsset.root.userData.resortAsset.forestBlocker=event.target.checked;
+    markClientProjectDirty('Forest blocker модели');
     persistImportedEditorAsset(editorSelectedAsset).catch(error=>console.warn('Не удалось сохранить блокировку леса:',error));
   }
 });
