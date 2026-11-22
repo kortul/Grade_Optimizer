@@ -2,8 +2,8 @@
 Date: 2026-11-22
 Branch: `main`
 Repository: https://github.com/kortul/Grade_Optimizer
-Current repository head before this checkpoint: `126d84d746896e71858757f257c19bc245b7e8c3`
-Latest verified web application source: `app.v96.js`
+Current application source commit: `24b2617072ec929e543e132843c3e0f641747a0c`
+Latest verified web application source: `app.v97.js`
 Latest verified Maya Exporter: `0.2.4`
 
 ## Product direction
@@ -41,11 +41,11 @@ Maya test-scene fixture:
 
 ## Current web application
 
-Active entry point: `index.html` → `app.v96.js`.
+Active entry point: `index.html` → `app.v97.js`.
 
 Implemented:
 - GLB / FBX import, recursive Maya-style Outliner, nested node selection and viewport picking.
-- Per-node transform editing, deletion, visibility, Role / Tags, Collision hint and Forest blocker hint.
+- Per-node transform editing, visibility, Role / Tags, Collision hint and Forest blocker hint. Deletion is supported for imported client models; destructive deletion of built-in base-scene components is disabled because the project manifest cannot rewrite the shipped source model. Hide such components through Visibility instead.
 - Shared material library, assignment / uniqueness controls, PBR editing and user texture import.
 - Imported client models can be exported to GLB on publish after changes, while the manifest records transforms, categories, phases, visibility and node metadata.
 - Local browser IndexedDB is still used for local drafts when not working in a client workspace. This is not cross-device project storage.
@@ -84,32 +84,32 @@ The Scene Editor JSON download is now explicitly labeled as an **optional backup
 
 ### Draft vs committed state
 
-Changes in the current tab remain a project draft until the GitHub save action completes successfully. The UI now marks important edits as unsaved and tells the user to commit them. After a successful publish the status reports the GitHub commit and clears the dirty state.
+Changes in the current tab remain a project draft until the GitHub save action completes successfully. The dirty indicator is updated for transforms, root and nested visibility, node metadata, Collision / Forest flags, category / phase, material parameters, shared-material assignment / uniqueness, texture import / removal, active terrain changes, imported-model / component deletion, and JSON-config import. JSON-config import also marks imported model files dirty so PBR changes are included in the next GLB export. After a successful publish the status reports the GitHub commit and clears the dirty state. Leaving the page with a dirty client project triggers the browser's unsaved-changes warning. Reopening a different client project asks before discarding edits and reloads the base scene so built-in settings from one client cannot bleed into another.
 
 Known follow-up / test items:
 - Verify the round-trip in a real second browser / device: edit built-in scene node metadata and visibility, PBR values, shared material assignments and a custom texture; save to GitHub; open the same client URL in a clean browser and confirm every setting restores.
-- Confirm all edit types mark the project as dirty. In particular, inspect deletion of an individual nested node / entire imported asset and any edge-case actions that may not yet update the dirty-status indicator even though the Publish action serializes current state.
+- Test the dirty-state behavior for every editor control, including shared material assignment, texture removal, active-terrain switching, imported nested-component deletion, whole-model deletion, and loading a JSON backup. These actions are now wired to the project dirty state; validate them in a real browser session.
 - Review large custom textures: data URLs increase the size of `scene.json`; decide whether to impose a size guard or move large media to standalone Git LFS / object storage if needed.
 - Cross-sharing a single material instance between an imported client asset and a built-in scene object is not yet guaranteed across the GLB + `editorSettings` boundary. Shared-vs-unique material identity is recorded for built-in scene assets.
 - The app currently stores Collision / Forest blocker flags as project metadata. Runtime collision behavior and automatic forest exclusion are future implementation work.
 
 ## Current verified commits and CI
 
-Latest source commit containing the shared Scene Editor persistence changes:
-`126d84d746896e71858757f257c19bc245b7e8c3`
+Latest application source commit:
+`24b2617072ec929e543e132843c3e0f641747a0c`
 
 Quality checks:
-https://github.com/kortul/Grade_Optimizer/actions/runs/45036111134
+https://github.com/kortul/Grade_Optimizer/actions/runs/45036859148
 
 GitHub Pages deployment:
-https://github.com/kortul/Grade_Optimizer/actions/runs/45036110736
+https://github.com/kortul/Grade_Optimizer/actions/runs/45036859499
 
-Both checks completed successfully for source commit `126d84d746896e71858757f257c19bc245b7e8c3`. This verifies project validation / JavaScript syntax and Pages deployment, not a live multi-browser runtime acceptance test.
+Both checks completed successfully for the v97 application source commit. Validation covers repository assertions, DOM references, JavaScript syntax and Pages build/deployment. It does not replace a real browser round-trip test.
 
 ## Suggested next session sequence
 
 1. Sync GitHub Desktop (Pull) into `C:\zGit\GradeOptimizer\Grade_Optimizer`.
-2. Confirm the deployed site loads `app.v96.js`.
+2. Confirm the deployed site loads `app.v97.js`.
 3. Open the intended client Project ID and connect GitHub Publisher in the tab used for editing.
 4. Run the cross-browser persistence test described above, starting with one built-in node's Collision / Forest blocker and visibility.
 5. Fix any restore / identity / dirty-state problems found before implementing automatic collision physics or forest exclusion.
