@@ -22,6 +22,9 @@ const LENS_SHADER = {
     uTint: { value: 0 },
     uContrast: { value: 1.04 },
     uSaturation: { value: 1.04 },
+    uShadowLift: { value: 0.12 },
+    uHighlightCompression: { value: 0.18 },
+    uDistortion: { value: 0.00008 },
     uTexelSize: { value: new THREE.Vector2(1 / 1280, 1 / 720) },
     uAspect: { value: 1 }
   },
@@ -47,6 +50,9 @@ const LENS_SHADER = {
     uniform float uTint;
     uniform float uContrast;
     uniform float uSaturation;
+    uniform float uShadowLift;
+    uniform float uHighlightCompression;
+    uniform float uDistortion;
     uniform vec2 uTexelSize;
     uniform float uAspect;
     varying vec2 vUv;
@@ -63,19 +69,20 @@ const LENS_SHADER = {
     void main() {
       vec2 uv = vUv;
       vec2 radial = (uv - 0.5) * vec2(uAspect, 1.0);
+      vec2 lensUv = uv + (uv - 0.5) * dot(radial, radial) * uDistortion;
       vec2 aberration = radial * uChromaticStrength;
       vec3 color;
-      color.r = texture2D(tDiffuse, uv + aberration).r;
-      color.g = texture2D(tDiffuse, uv).g;
-      color.b = texture2D(tDiffuse, uv - aberration).b;
+      color.r = texture2D(tDiffuse, lensUv + aberration).r;
+      color.g = texture2D(tDiffuse, lensUv).g;
+      color.b = texture2D(tDiffuse, lensUv - aberration).b;
 
       // Restrained micro-sharpening restores fine terrain detail after bloom.
       if (uSharpness > 0.001) {
         vec3 neighbours =
-          texture2D(tDiffuse, uv + vec2(uTexelSize.x, 0.0)).rgb +
-          texture2D(tDiffuse, uv - vec2(uTexelSize.x, 0.0)).rgb +
-          texture2D(tDiffuse, uv + vec2(0.0, uTexelSize.y)).rgb +
-          texture2D(tDiffuse, uv - vec2(0.0, uTexelSize.y)).rgb;
+          texture2D(tDiffuse, lensUv + vec2(uTexelSize.x, 0.0)).rgb +
+          texture2D(tDiffuse, lensUv - vec2(uTexelSize.x, 0.0)).rgb +
+          texture2D(tDiffuse, lensUv + vec2(0.0, uTexelSize.y)).rgb +
+          texture2D(tDiffuse, lensUv - vec2(0.0, uTexelSize.y)).rgb;
         color += (color - neighbours * 0.25) * uSharpness;
       }
 
@@ -88,6 +95,11 @@ const LENS_SHADER = {
       float luminance = dot(max(color, vec3(0.0)), vec3(0.2126, 0.7152, 0.0722));
       color = mix(vec3(luminance), color, uSaturation);
       color = (color - vec3(0.18)) * uContrast + vec3(0.18);
+
+      float shadowMask = 1.0 - smoothstep(0.045, 0.48, luminance);
+      color += vec3(1.0, 0.98, 0.94) * shadowMask * uShadowLift * 0.16;
+      float highlightMask = smoothstep(0.42, 0.96, luminance);
+      color *= 1.0 - highlightMask * uHighlightCompression * 0.12;
 
       float edge = smoothstep(0.22, 1.08, length(radial));
       color *= 1.0 - edge * uVignetteStrength;
@@ -151,7 +163,11 @@ export class CameraOptics {
     this.tint = 0;
     this.contrast = 1.04;
     this.saturation = 1.04;
+    this.shadowLift = 0.12;
+    this.highlightCompression = 0.18;
+    this.distortion = 0.06;
     this.focusDistance = 48;
+    this.focusMode = 'target';
     this.apertureFStop = 4;
     this.quality = 'balanced';
     this.sunWorld = new THREE.Vector3();
@@ -260,7 +276,11 @@ export class CameraOptics {
     if (Number.isFinite(Number(options.tint))) this.tint = THREE.MathUtils.clamp(Number(options.tint), -1, 1);
     if (Number.isFinite(Number(options.contrast))) this.contrast = THREE.MathUtils.clamp(Number(options.contrast), 0.6, 1.6);
     if (Number.isFinite(Number(options.saturation))) this.saturation = THREE.MathUtils.clamp(Number(options.saturation), 0, 1.6);
+    if (Number.isFinite(Number(options.shadowLift))) this.shadowLift = THREE.MathUtils.clamp(Number(options.shadowLift), 0, 1);
+    if (Number.isFinite(Number(options.highlightCompression))) this.highlightCompression = THREE.MathUtils.clamp(Number(options.highlightCompression), 0, 1);
+    if (Number.isFinite(Number(options.distortion))) this.distortion = THREE.MathUtils.clamp(Number(options.distortion), 0, 1);
     if (Number.isFinite(Number(options.focusDistance))) this.focusDistance = THREE.MathUtils.clamp(Number(options.focusDistance), 5, 500);
+    if (options.focusMode === 'manual' || options.focusMode === 'target') this.focusMode = options.focusMode;
     if (Number.isFinite(Number(options.aperture))) this.apertureFStop = THREE.MathUtils.clamp(Number(options.aperture), 1.4, 16);
     if (typeof options.quality === 'string' && ['performance', 'balanced', 'high', 'cinematic'].includes(options.quality)) this.quality = options.quality;
 
@@ -284,6 +304,9 @@ export class CameraOptics {
     u.uTint.value = this.tint;
     u.uContrast.value = this.contrast;
     u.uSaturation.value = this.saturation;
+    u.uShadowLift.value = this.shadowLift;
+    u.uHighlightCompression.value = this.highlightCompression;
+    u.uDistortion.value = this.distortion * 0.0014;
 
     const ratio = this.qualityPixelRatio();
     this.composer.setPixelRatio(ratio);
@@ -334,7 +357,8 @@ export class CameraOptics {
       this.lensPass.uniforms.uSunStrength.value = 0;
     }
 
-    if (this.bokehPass.enabled && focusTarget && this.focusDistance < 0) this.setFocusTarget(focusTarget);
+    if (this.bokehPass.enabled && this.focusMode === 'target' && focusTarget) this.setFocusTarget(focusTarget);
+    else if (this.bokehPass.enabled) this.bokehPass.uniforms.focus.value = this.focusDistance;
     this.composer.render(deltaTime);
   }
 
