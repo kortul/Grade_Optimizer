@@ -98,6 +98,15 @@ assert.ok(entrySource.includes('applyEditorNodeVisibility(root,item.nodeVisibili
 assert.ok(entrySource.includes('function disposeEditorComponent(root)'), 'shared material-safe component deletion missing');
 assert.ok(entrySource.includes("from 'three/addons/loaders/FBXLoader.js'"), 'FBXLoader import missing');
 assert.ok(entrySource.includes("function parseSceneModel("), 'generic GLB/FBX parser missing');
+assert.ok(entrySource.includes('function collectEditorMaterialLibrary('), 'scene-wide material library missing');
+assert.ok(entrySource.includes('function assignEditorLibraryMaterial('), 'material library assignment action missing');
+assert.ok(entrySource.includes('function makeEditorMaterialUnique('), 'make-unique material action missing');
+assert.ok(entrySource.includes('markEditorMaterialOwnersDirty(material)'), 'shared material edits must dirty all imported model owners');
+assert.ok(entrySource.includes('updateEditorMaterialLinkStatus()'), 'shared material link status indicator missing');
+assert.ok(html.includes('id="editorMaterialLibrarySelect"'), 'material library selector missing');
+assert.ok(html.includes('id="assignEditorMaterial"'), 'material assign button missing');
+assert.ok(html.includes('id="makeEditorMaterialUnique"'), 'make-unique material button missing');
+assert.ok(html.includes('id="editorMaterialLinkStatus"'), 'shared material status indicator missing');
 assert.ok(entrySource.includes('fbxLoader.parse(buffer,resourcePath||\'\')'), 'FBX binary parser call missing');
 assert.ok(html.includes('id="resetTerrainButton"'), 'restore original terrain button missing');
 assert.ok(html.includes('id="editorScaleX"') && html.includes('id="editorScaleY"') && html.includes('id="editorScaleZ"'), 'independent XYZ model scale controls missing');
