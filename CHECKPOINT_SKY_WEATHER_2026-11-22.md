@@ -1,92 +1,102 @@
-# CHECKPOINT — Grade Optimizer: Weather, Snow & Camera Optics
+# CHECKPOINT — Grade Optimizer: Scene Look, Weather & Camera Optics
 
 **Date:** 2026-11-22  
 **Repository:** `kortul/Grade_Optimizer`  
 **Working branch:** `main` only  
-**Code state before this docs update:** `c4af47ffeeb144e504ee8da1e5a4498e3eef3d32`  
-**Scope:** stable procedural sky/weather, visible optional snowfall, first-person avatar visibility fix, and restrained cinematic camera optics.
+**Code state:** `b294f6a990735d74ba3eb45a1edc95fa598343d2`
 
-## 1. Current application entry point
+## 1. Main architecture
 
 - `index.html` loads `app.v105.js`.
-- Three.js is pinned to `0.160.0` through the import map.
-- All work for this checkpoint is on `main`. No separate development branch is used.
+- Three.js is pinned to `0.160.0`.
+- All implementation is committed to `main`; no separate feature branch is used.
+- Existing Scene Editor, object hierarchy, PBR materials, imported assets, client project manifests and browser/local-folder autosave remain the persistence foundation.
 
-## 2. Camera / black sphere issue
+## 2. Environment defaults
 
-- Removed the spherical sky mesh completely. The sky gradient is supplied through the scene background texture.
-- The first-person black sphere was not the sky dome: the skier avatar's helmet / body could remain in front of the first-person camera during its visibility crossfade.
-- `skier-controller.v73.js` now hides the skier avatar immediately when first-person is requested. Third-person and drone presentation remain supported.
+- Default weather preset: `light` — sunny sky, **18% cloud cover**, 0% snowfall, 3 km/h wind.
+- `clear` remains an explicitly available cloud-free preset.
+- Weather browser storage uses `grade_optimizer_weather_v3`; old v1 / v2 values migrate. Previous saved fully-clear defaults migrate to the new light-cloud default; previously enabled legacy snowfall is reset to zero.
+- Weather controls are available in the quick Weather panel and Scene Editor → Scene Look.
 
-## 3. Weather and snowfall
+## 3. Scene Editor — global Scene Look
 
-File: `weather-system.v1.js`
+A new global section appears at the top of the Scene Editor inspector. It is grouped and collapsible.
 
-- Clear weather is the default and snowfall defaults to **0%**. Weather preferences now use storage key `grade_optimizer_weather_v2`; legacy v1 preferences are migrated once, with any saved snowfall reset to 0% while retaining cloud / wind settings.
-- Weather presets: clear, partly cloudy, cloudy, overcast, snowfall and blizzard.
-- Clouds drift with wind; direct sunlight, ambient fill and fog visibility respond to weather.
-- Invisible cloud sprites skip per-frame world-position updates.
-- The procedural sky canvas only uploads a new texture when its gradient colors change perceptibly; this avoids re-uploading the same sky every animation frame during auto-time. Cloud color objects are reused.
-- Snow is a camera-space layer, initialized inside the viewing frustum so particles stay in front of the camera while looking around.
-- Snowflakes use camera-facing textured `InstancedMesh` quads instead of `PointsMaterial`. The particle layer is one instanced draw call; its instance count follows snowfall intensity.
-- Snow instance matrices are updated only while snowfall is active. Wind streaks are enabled only for sufficiently windy snowfall.
-- The clear preset does not render snow. Snowfall / blizzard can be selected manually from the weather panel.
+### Environment & Lighting
+- Cloud coverage, snowfall, wind.
+- Sun on/off, intensity, rotation / azimuth.
+- Ambient fill.
+- Shadow-map resolution: 1024, 2048, 4096.
 
-## 4. Camera optics / post-processing
+### Camera & Exposure
+- FOV and exposure bias in EV.
+- White balance in Kelvin and green/magenta tint.
+- Auto focus to the camera target or manual focus distance.
+- Focus distance and aperture f-stop.
 
-Files:
-- `camera-optics.v1.js`
-- `app.v105.js`
-- `index.html`
+### Lens & Post
+- Master post-processing.
+- Bloom / halation and threshold.
+- Lens flare, lens ghosts, anamorphic streak and lens dirt.
+- Vignette, chromatic aberration, film grain, sharpening and lens distortion.
+- Optional Bokeh / depth of field.
 
-Implemented in the main render pipeline:
-- `EffectComposer` + `RenderPass`.
-- Subtle `UnrealBloomPass` for highlight bloom / halation.
-- A custom lens pass for restrained vignette, minimal chromatic aberration, screen-space optical ghosts, a very subtle anamorphic streak, and procedural lens dirt that responds to highlights.
-- Flares are positioned from the projected sun location and are suppressed when the sun is not visible or outside the camera frame.
-- Optional `BokehPass` / depth of field, disabled by default due to GPU cost.
-- `OutputPass` handles final output conversion and tone mapping.
-- A new **ОПТИКА** toolbar panel exposes the master processing toggle, bloom amount, flare / dirt toggle and Bokeh toggle.
-- Turning off the master optics setting returns to direct `renderer.render()`.
-- Lens-flare screen projection is skipped while flares are disabled; focus-distance updates are skipped unless Bokeh is enabled.
-- Post-process render targets are capped at 1.25 device-pixel ratio to limit GPU work.
-- Optics settings persist separately in browser `localStorage` under `grade_optimizer_optics_v1`.
+### Color Grading
+- Contrast and saturation.
+- Shadow lift / local exposure.
+- Highlight compression.
 
-## 5. Preservation
+### Render quality
+- Performance, Balanced, High and Cinematic.
+- ACES Filmic, AgX, Reinhard and Linear tone mapping.
 
-The changes are limited to:
-- `weather-system.v1.js` — snow rendering and weather update optimisation.
-- `camera-optics.v1.js` — new optics / post-processing pipeline.
-- `app.v105.js` — optics integration, panel controls, resize and render calls.
-- `index.html` — optics toolbar button and controls panel.
-- `skier-controller.v73.js` — immediate first-person avatar hiding.
-- This checkpoint and the QA report.
+A Reset Look button restores the shipped default look and light-cloud weather. The old bottom-toolbar sun and shadow controls are synchronized to the same settings object.
 
-The scene optimizer, existing terrain / material editing, imported scene assets, Scene Editor and client workspace saving flows were not intentionally rewritten in this pass.
+## 4. Camera optics module
 
-## 6. Static QA
+File: `camera-optics.v1.js`
 
-- JavaScript syntax check passed for `app.v105.js`, `weather-system.v1.js`, `camera-optics.v1.js` and `skier-controller.v73.js` after stripping module imports / exports for parser-only validation.
-- HTML optics-control IDs were checked against app bindings; no duplicate IDs or missing optics IDs were found.
-- Confirmed the main render loop uses CameraOptics and the camera-optics panel is connected.
-- Confirmed clear preset snow is zero, the snow renderer is InstancedMesh-based, snowfall controls the active instance count, and Bokeh starts disabled.
+- EffectComposer pipeline: RenderPass → optional BokehPass → UnrealBloomPass → custom lens pass → OutputPass.
+- Lens shader features include bloom support, screen-space optical ghosts and horizontal streak from the visible sun, highlight-sensitive lens dirt, vignette, chromatic aberration, film grain, sharpness, lens distortion, shadow lift / highlight compression, white balance, tint, contrast and saturation.
+- Auto focus uses the camera target; manual mode uses configured focus distance. Aperture is controlled as f-stop.
+- The master post-processing switch bypasses the composer to direct renderer output.
+- Render quality profiles adjust the composer's pixel ratio; Bokeh remains opt-in because it adds a depth pass.
+
+## 5. Project persistence
+
+- `collectProjectEditorSettings()` now stores `visualSettings` and `weatherSettings` alongside per-asset editor settings.
+- These values are written into client `scene.json`, browser project backups and manual Scene Config exports.
+- Project loading applies global settings even if `editorSettings.assets` is empty.
+- Scene Look and weather edits mark the project dirty and use existing debounced autosave.
+- Browser-only preferences remain separate fallbacks; the published project settings are portable across devices.
+
+## 6. Other completed visual fixes retained
+
+- Black first-person sphere issue fixed by hiding the skier avatar immediately in first-person view.
+- Sky sphere geometry removed; procedural gradient is rendered as scene background.
+- Snow is zero by default and uses camera-space instanced textured quads. Particle updates are skipped while snowfall is disabled.
+- Sky texture upload is throttled to actual gradient changes rather than re-uploading every frame.
+
+## 7. Static checks
+
+- JavaScript parser checks pass for app, weather and optics modules.
+- All app DOM lookups were checked against HTML; no missing IDs or duplicate IDs.
+- Light weather preset is 18% clouds / zero snow.
+- The new Scene Look controls are connected to runtime values, project serialization and project restore.
+- Legacy sun / rotation / shadow controls remain synchronized.
+- Scene Config export/import includes visual and weather settings.
 
 See `QA_REPORT_SKY_WEATHER_V105.md` for the detailed checklist.
 
-## 7. Live browser checks still required
+## 8. Live browser checks still required
 
-This update was statically validated but not run in an actual browser/WebGL session. Still to verify on the deployed page:
-- Snowflake density / readability in overview, skier first-person and drone views.
-- Whether bloom, lens dirt and sun ghosts are subtle enough with the actual scene materials and sky.
-- Bokeh focus / depth quality at the real scene scale.
-- Actual FPS with optics enabled versus disabled, and with snowfall / blizzard.
+No actual browser/WebGL session was available for this update. Still to test on the deployed page:
+- Visual quality and intensity of bloom, flares, ghosts, dirt, distortion and grading.
+- Auto vs manual focus and Bokeh aperture at the model's real scale.
+- Weather cloud appearance.
+- Measured FPS at each render quality and with Bokeh.
+- Cross-device project save / restore after publishing.
 - Browser console and WebGL runtime errors.
 
-Do not describe FPS as improved or the visual result as fully tested until those live checks are performed.
-
-## 8. Suggested next test
-
-1. Hard-refresh the deployed site with `Ctrl+F5`.
-2. In **ПОГОДА**, select **Снегопад**; then switch between overview, skier first-person and drone to confirm flakes stay visible.
-3. In **ОПТИКА**, compare Bloom / Lens Flare with the master toggle off, then enable Bokeh separately.
-4. If frame rate drops, switch off the optics master toggle first. That bypasses the entire post-processing chain.
+Static syntax / wiring checks are not a substitute for live visual and performance QA.
