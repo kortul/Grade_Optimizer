@@ -5,7 +5,7 @@
  */
 export class WeatherSystem {
   static PRESETS = {
-    clear:    { label: 'Ясно', clouds: 0.04, snowfall: 0,    wind: 2,  visibility: 1.00 },
+    clear:    { label: 'Ясно', clouds: 0.00, snowfall: 0,    wind: 2,  visibility: 1.00 },
     partly:   { label: 'Переменная облачность', clouds: 0.34, snowfall: 0,    wind: 5,  visibility: 0.96 },
     cloudy:   { label: 'Облачно', clouds: 0.66, snowfall: 0,    wind: 9,  visibility: 0.86 },
     overcast: { label: 'Пасмурно', clouds: 0.96, snowfall: 0,    wind: 13, visibility: 0.73 },
@@ -137,6 +137,33 @@ export class WeatherSystem {
     this.snowGeometry.setDrawRange(0, 0);
     this.camera.add(this.snow);
 
+    this.streakCount = 360;
+    this.streakPositions = new Float32Array(this.streakCount * 6);
+    for (let i = 0; i < this.streakCount; i++) {
+      const j = i * 6;
+      const x = (random() - 0.5) * 340;
+      const y = (random() - 0.5) * 260;
+      const z = (random() - 0.5) * 340;
+      this.streakPositions[j] = x;
+      this.streakPositions[j + 1] = y;
+      this.streakPositions[j + 2] = z;
+      this.streakPositions[j + 3] = x + 3;
+      this.streakPositions[j + 4] = y + 8;
+      this.streakPositions[j + 5] = z + 1;
+    }
+    this.streakGeometry = new THREE.BufferGeometry();
+    this.streakGeometry.setAttribute('position', new THREE.BufferAttribute(this.streakPositions, 3).setUsage(THREE.DynamicDrawUsage));
+    this.streakMaterial = new THREE.LineBasicMaterial({
+      color: 0xf4f9ff, transparent: true, opacity: 0.28,
+      depthWrite: false, depthTest: true, fog: false
+    });
+    this.streaks = new THREE.LineSegments(this.streakGeometry, this.streakMaterial);
+    this.streaks.name = 'GO_WindDrivenSnowStreaks';
+    this.streaks.frustumCulled = false;
+    this.streaks.renderOrder = 1001;
+    this.streakGeometry.setDrawRange(0, 0);
+    this.camera.add(this.streaks);
+
     this.applyWeather(this.params);
     this.drawSky({
       top: new THREE.Color(0x4b83b8),
@@ -242,6 +269,10 @@ export class WeatherSystem {
     this.skyTexture.needsUpdate = true;
     this.sunMaterial.color.copy(sunColor);
     this.sunMaterial.opacity = this.THREE.MathUtils.clamp(sunStrength * (1 - this.params.clouds * 0.46), 0, 0.9);
+    const nightCloud = new this.THREE.Color(0x536477);
+    const dayCloud = new this.THREE.Color(0xf2f5f7);
+    this.cloudMaterial.color.copy(nightCloud.lerp(dayCloud, this.THREE.MathUtils.clamp(sunStrength * 1.4 + 0.08, 0.08, 1)));
+    this.cloudMaterial.color.lerp(horizon, 0.12);
     this.sunGlow.visible = !!sunDirection && sunStrength > 0.025;
     if (sunDirection) {
       this.sunDirection.copy(sunDirection).normalize();
@@ -282,6 +313,11 @@ export class WeatherSystem {
     this.snowGeometry.setDrawRange(0, flakes);
     this.snowMaterial.opacity = 0.32 + this.params.snowfall * 0.48;
     this.snowMaterial.size = 1.9 + this.params.snowfall * 2.2 + Math.min(1.2, this.params.wind / 45);
+    const streakFactor = this.THREE.MathUtils.clamp((this.params.wind - 12) / 42, 0, 1);
+    this.activeStreaks = Math.round(this.streakCount * this.params.snowfall * streakFactor);
+    this.streaks.visible = this.activeStreaks > 0;
+    this.streakGeometry.setDrawRange(0, this.activeStreaks * 2);
+    this.streakMaterial.opacity = 0.12 + streakFactor * 0.3;
     const fog = this.scene.fog;
     if (fog && fog.isFog) {
       const visibility = this.params.visibility * (1 - coverage * 0.12) * (1 - this.params.snowfall * 0.42);
@@ -347,13 +383,33 @@ export class WeatherSystem {
         if (this.snowPositions[j + 2] < -190) this.snowPositions[j + 2] += 380;
       }
       this.snowGeometry.attributes.position.needsUpdate = true;
+
+      if (this.activeStreaks > 0) {
+        const streakFall = fall * 1.35;
+        for (let i = 0; i < this.activeStreaks; i++) {
+          const j = i * 6;
+          this.streakPositions[j] += lateral * 1.5;
+          this.streakPositions[j + 1] -= streakFall;
+          this.streakPositions[j + 2] += lateral * 0.12;
+          if (this.streakPositions[j + 1] < -145) {
+            this.streakPositions[j] = (Math.random() - 0.5) * 340;
+            this.streakPositions[j + 1] = 155 + Math.random() * 80;
+            this.streakPositions[j + 2] = (Math.random() - 0.5) * 340;
+          }
+          const streakLength = 7 + wind * 0.3;
+          this.streakPositions[j + 3] = this.streakPositions[j] + 2 + wind * 0.15;
+          this.streakPositions[j + 4] = this.streakPositions[j + 1] + streakLength;
+          this.streakPositions[j + 5] = this.streakPositions[j + 2] + 1 + wind * 0.025;
+        }
+        this.streakGeometry.attributes.position.needsUpdate = true;
+      }
     }
   }
 
   dispose() {
     this.scene.remove(this.sky, this.sunGlow);
     this.clouds.forEach(({ sprite }) => this.scene.remove(sprite));
-    this.camera.remove(this.snow);
+    this.camera.remove(this.snow, this.streaks);
     this.sky.geometry.dispose();
     this.skyMaterial.dispose();
     this.skyTexture.dispose();
@@ -364,5 +420,7 @@ export class WeatherSystem {
     this.snowGeometry.dispose();
     this.snowMaterial.dispose();
     this.snowTexture.dispose();
+    this.streakGeometry.dispose();
+    this.streakMaterial.dispose();
   }
 }
