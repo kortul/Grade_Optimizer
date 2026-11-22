@@ -68,14 +68,14 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v72.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v72.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v73.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v73.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
 assert.ok(droneSource.includes("this.keys.has('shift')?this.boostSpeed:this.speed"), 'Shift must activate drone boost');
 assert.ok(droneSource.includes("(this.keys.has('control')?1:0)"), 'Ctrl must control drone descent');
-assert.ok(entrySource.includes("tuck?'НИЗКАЯ СТОЙКА':'В СТОЙКЕ'"), 'skier upright status missing from HUD');
+assert.ok(entrySource.includes("tuck?'Скоростная стойка':'Обычная езда'"), 'ordinary skiing / speed tuck status labels missing from HUD');
 assert.ok(entrySource.includes("panel.content.style.setProperty('display',visible?'grid':'none','important')"), 'tutorial visibility must force display state');
 assert.ok(skierSource.includes('this._tryBumpJump(this.velocity.length())'), 'skier bump jump must be integrated into movement');
 assert.ok(skierSource.includes('speed<14.5||this.lastLongitudinalAccel<2.8'), 'bump jump must require high speed and strong acceleration');
@@ -160,6 +160,26 @@ assert.ok(skierSource.includes('cameraGround.point.y+1.35'), 'third-person camer
 assert.ok(html.includes('id="skierViewStatus"'), 'skier camera view indicator missing');
 assert.ok(html.includes('<kbd>C</kbd>') && html.includes('Камера / 3-е лицо'), 'C key camera control hint missing');
 
+
+assert.ok(entrySource.includes("appRoot.classList.toggle('tuck-mode',tuck)"), 'speed tuck CSS state missing');
+assert.ok(entrySource.includes("appRoot.style.setProperty('--ski-wind-opacity'"), 'speed-dependent wind effect intensity missing');
+assert.ok(entrySource.includes('skierController.showForDrone()'), 'first-person skier must be shown to the drone during handoff');
+assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='drone'})"), 'skier model must remain in the scene when entering drone mode');
+assert.ok(entrySource.includes("if(mode==='overview')skierController.hideForOverview()"), 'skier model must be hidden when leaving drone for overview');
+assert.ok(skierSource.includes('0.48*this.stanceCameraBlend'), 'first-person camera lowering in speed tuck missing');
+assert.ok(skierSource.includes('0.085*this.stanceCameraBlend'), 'camera pitch adjustment in speed tuck missing');
+assert.ok(skierSource.includes('this.avatarLegs.forEach'), 'third-person skier legs must bend into speed tuck');
+assert.ok(skierSource.includes('0.46*this.stanceCameraBlend'), 'third-person skier torso must lean into speed tuck');
+assert.ok(skierSource.includes('showForDrone(){'), 'skier avatar forced visibility handoff missing');
+assert.ok(skierSource.includes('_updateSkierAvatar(true)'), 'skier avatar handoff must force full opacity');
+assert.ok(skierSource.includes('hideForOverview(){'), 'external skier avatar cleanup missing');
+assert.ok(skierSource.includes('stop({keepSceneModel=false}={})'), 'skier stop must optionally preserve model in scene');
+assert.ok(html.includes('id="skiWindFx"'), 'peripheral wind visual overlay missing');
+assert.ok(html.includes('#app.skier-mode.tuck-mode #skiWindFx'), 'wind overlay must appear only in skier speed stance');
+assert.ok(html.includes('Скоростная стойка'), 'speed tuck help text missing');
+assert.ok(html.includes('id="groundState">Обычная езда</span>'), 'default skiing status label missing');
+
+pass('aerodynamic tuck camera, wind effect, avatar crouch and drone handoff are present');
 pass('first/third-person skier camera, avatar and C-key UI are present');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
 

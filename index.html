@@ -688,6 +688,23 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 /* v0.83 — top-right scene controls belong only to slope optimization */
 #legend{display:none!important}
 #app.optimizer-open:not(.editor-open):not(.skier-mode):not(.drone-mode) #legend{display:flex!important}
+/* v0.88 — aerodynamic tuck camera and peripheral snow-wind streaks */
+#skiWindFx{position:absolute;inset:0;z-index:4;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .24s ease}
+#app.skier-mode.tuck-mode #skiWindFx{opacity:var(--ski-wind-opacity,.28)}
+#skiWindFx .wind-edge{position:absolute;top:-6%;bottom:-6%;width:16%;overflow:hidden;mix-blend-mode:screen;filter:blur(.4px);mask-image:linear-gradient(180deg,transparent 0%,#000 14%,#000 86%,transparent 100%)}
+#skiWindFx .wind-edge-left{left:0;background:linear-gradient(90deg,rgba(163,218,255,.2),rgba(163,218,255,.045) 54%,transparent)}
+#skiWindFx .wind-edge-right{right:0;background:linear-gradient(270deg,rgba(163,218,255,.2),rgba(163,218,255,.045) 54%,transparent)}
+#skiWindFx .wind-edge i{position:absolute;display:block;height:1.5px;border-radius:50%;background:linear-gradient(90deg,transparent,rgba(224,245,255,.12) 12%,rgba(230,247,255,.94) 66%,transparent);box-shadow:0 0 7px rgba(178,224,255,.52);opacity:0;animation:ski-wind-streak var(--ski-wind-duration,.8s) linear infinite}
+#skiWindFx .wind-edge-right i{background:linear-gradient(270deg,transparent,rgba(224,245,255,.12) 12%,rgba(230,247,255,.94) 66%,transparent)}
+#skiWindFx .wind-edge i:nth-child(1){top:13%;left:7%;width:58%;animation-delay:-.12s}
+#skiWindFx .wind-edge i:nth-child(2){top:25%;left:22%;width:73%;animation-delay:-.48s}
+#skiWindFx .wind-edge i:nth-child(3){top:39%;left:4%;width:82%;animation-delay:-.27s}
+#skiWindFx .wind-edge i:nth-child(4){top:53%;left:16%;width:68%;animation-delay:-.66s}
+#skiWindFx .wind-edge i:nth-child(5){top:68%;left:2%;width:91%;animation-delay:-.35s}
+#skiWindFx .wind-edge i:nth-child(6){top:82%;left:19%;width:70%;animation-delay:-.54s}
+#skiWindFx .wind-edge i:nth-child(7){top:92%;left:8%;width:54%;animation-delay:-.2s}
+@keyframes ski-wind-streak{0%{transform:translate3d(-16px,-26px,0) scaleX(.4);opacity:0}18%{opacity:.24}48%{opacity:.9}100%{transform:translate3d(18px,38px,0) scaleX(1.15);opacity:0}}
+@media(prefers-reduced-motion:reduce){#skiWindFx .wind-edge i{animation:none;opacity:.2}}
 </style>
 </head>
 <body>
@@ -725,6 +742,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <button id="save">Скачать параметры (JSON)</button><button class="secondary" id="reset">Сбросить</button>
 </div>
 <div id="view">
+<div id="skiWindFx" aria-hidden="true">
+  <div class="wind-edge wind-edge-left"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="wind-edge wind-edge-right"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+</div>
 <div id="sceneBar">
   <div class="sceneMode">
     <button id="optimizerToggle" type="button" aria-expanded="false">ОПТИМИЗАЦИЯ СКЛОНОВ</button>
@@ -864,7 +885,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     </div>
     <div class="mode-hud-header-actions">
       <span class="mode-hud-view-label" id="skierViewStatus">1-Е ЛИЦО</span>
-      <span class="mode-hud-status" id="groundState">В СТОЙКЕ</span>
+      <span class="mode-hud-status" id="groundState">Обычная езда</span>
       <button id="toggleSkierTutorial" class="mode-hud-toggle" type="button" aria-expanded="true" aria-controls="skierTutorialContent" title="Скрыть или показать туториал · H"><span class="tutorial-toggle-label">Скрыть</span><kbd>H</kbd></button>
     </div>
   </div>
@@ -888,11 +909,11 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <section class="mode-controls">
     <div class="mode-section-heading"><span>КЛАВИШИ УПРАВЛЕНИЯ</span><span class="mode-section-note">МОЖНО НА РУССКОЙ РАСКЛАДКЕ</span></div>
     <div class="control-grid">
-      <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>↑</kbd></div><div><strong>Присесть</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>↑</kbd></div><div><strong>Скоростная стойка</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd>S</kbd><span>/</span><kbd>↓</kbd></div><div><strong>Тормозить</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Поворот</strong></div></div>
       <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SHIFT</kbd><span>или</span><kbd>SPACE</kbd></div><div><strong>Толчок палками</strong></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd><span>/</span><kbd>C</kbd></div><div><strong>Камера / 3-е лицо</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd><span>/</span><kbd>C</kbd></div><div><strong>Осмотреться / 3-е лицо</strong></div></div>
       <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd></div><div><strong>Сменить режим</strong></div></div>
     </div>
   </section>
@@ -976,4 +997,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v87.js"></script></body></html>
+<script type="module" src="./app.v88.js"></script></body></html>
