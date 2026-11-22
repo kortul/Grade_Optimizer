@@ -256,7 +256,7 @@ export class WeatherSystem {
     return texture;
   }
 
-  drawSky({ top, horizon, bottom, sunColor, sunStrength, sunDirection }) {
+  drawSky({ top, horizon, bottom, sunColor, sunStrength, sunDirection, sunVisible = true }) {
     const ctx = this.skyContext;
     if (!ctx) return;
     const gradient = ctx.createLinearGradient(0, 0, 0, this.skyCanvas.height);
@@ -272,8 +272,8 @@ export class WeatherSystem {
     const nightCloud = new this.THREE.Color(0x536477);
     const dayCloud = new this.THREE.Color(0xf2f5f7);
     this.cloudMaterial.color.copy(nightCloud.lerp(dayCloud, this.THREE.MathUtils.clamp(sunStrength * 1.4 + 0.08, 0.08, 1)));
-    this.cloudMaterial.color.lerp(horizon, 0.12);
-    this.sunGlow.visible = !!sunDirection && sunStrength > 0.025;
+    this.cloudMaterial.color.lerp(horizon, 0.12 + this.params.clouds * 0.22);
+    this.sunGlow.visible = !!sunDirection && sunVisible && sunStrength > 0.025;
     if (sunDirection) {
       this.sunDirection.copy(sunDirection).normalize();
       this.sunGlow.position.copy(this.camera.position).addScaledVector(this.sunDirection, 10600);
@@ -365,6 +365,7 @@ export class WeatherSystem {
       // Cancel the camera's pitch/yaw on the particle container so flakes fall
       // vertically in world space while the weather volume follows the viewer.
       this.snow.quaternion.copy(this.camera.quaternion).invert();
+      this.streaks.quaternion.copy(this.camera.quaternion).invert();
       const fall = (38 + this.params.snowfall * 75 + wind * 0.55) * dt;
       const lateral = (wind * 0.7 + 1.5) * dt;
       for (let i = 0; i < this.snowCount; i++) {
