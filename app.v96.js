@@ -2890,7 +2890,7 @@ async function editorTextureToDataUrl(texture){
   return dataUrl;
 }
 
-async function collectEditorAssetConfig(asset,textureCache=new Map()){
+async function collectEditorAssetConfig(asset,textureCache=new Map(),materialIds=new Map()){
   const root=asset.root;
   const materials=[];
   for(const target of collectEditorMaterials(asset)){
@@ -2903,7 +2903,9 @@ async function collectEditorAssetConfig(asset,textureCache=new Map()){
       if(!textureCache.has(key))textureCache.set(key,await editorTextureToDataUrl(texture));
       textures[property]=textureCache.get(key);
     }
+    if(!materialIds.has(material))materialIds.set(material,'scene-material-'+(materialIds.size+1));
     materials.push({
+      materialId:materialIds.get(material),
       nodeName:target.mesh.name||target.mesh.type,
       materialName:material.name||'',
       baseColor:material.color?.getHexString?('#'+material.color.getHexString()):null,
@@ -2932,10 +2934,10 @@ async function collectEditorAssetConfig(asset,textureCache=new Map()){
 }
 
 async function collectProjectEditorSettings(){
-  const textureCache=new Map();
+  const textureCache=new Map(),materialIds=new Map();
   const assets=[];
   for(const asset of getAllEditorAssets().filter(item=>item.sourceType==='scene')){
-    assets.push(await collectEditorAssetConfig(asset,textureCache));
+    assets.push(await collectEditorAssetConfig(asset,textureCache,materialIds));
   }
   return {schemaVersion:'1.0',savedAt:new Date().toISOString(),units:'meters',assets};
 }
@@ -3058,8 +3060,8 @@ function shareClientWorkspace(){
 
 async function exportSceneEditorConfig(){
   try{
-    const textureCache=new Map(),assets=[];
-    for(const asset of getAllEditorAssets())assets.push(await collectEditorAssetConfig(asset,textureCache));
+    const textureCache=new Map(),materialIds=new Map(),assets=[];
+    for(const asset of getAllEditorAssets())assets.push(await collectEditorAssetConfig(asset,textureCache,materialIds));
     const payload={schemaVersion:'1.0',savedAt:new Date().toISOString(),units:'meters',assets};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
@@ -3206,6 +3208,7 @@ async function loadEditorTextureDataUrl(dataUrl,property,repeat){
 async function applySceneEditorConfig(payload,{quiet=false}={}){
   if(!payload||!Array.isArray(payload.assets))throw new Error('JSON не содержит массива assets.');
   let matchedAssets=0,matchedMaterials=0,skippedAssets=0;
+  const sharedEditorMaterials=new Map(),editorMaterialSavedIds=new WeakMap();
   for(const savedAsset of payload.assets){
     const asset=getAllEditorAssets().find(item=>
       item.id===savedAsset.id||
@@ -3239,7 +3242,27 @@ async function applySceneEditorConfig(payload,{quiet=false}={}){
       if(index<0)index=targets.findIndex((target,i)=>!used.has(i)&&target.mesh.name===(savedMaterial.nodeName||''));
       if(index<0)continue;
       used.add(index);
-      const material=targets[index].material;
+      const target=targets[index];
+      let material=target.material;
+      if(savedMaterial.materialId){
+        if(sharedEditorMaterials.has(savedMaterial.materialId)){
+          material=sharedEditorMaterials.get(savedMaterial.materialId);
+          if(target.material!==material)replaceEditorMaterialTarget(target,material);
+        }else{
+          if(editorMaterialSavedIds.has(material)&&editorMaterialSavedIds.get(material)!==savedMaterial.materialId){
+            const clone=material.clone();
+            const textureProperties=['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','bumpMap',
+              'displacementMap','alphaMap','lightMap','envMap','specularMap','clearcoatMap','clearcoatNormalMap',
+              'clearcoatRoughnessMap','transmissionMap','thicknessMap','sheenColorMap','sheenRoughnessMap',
+              'iridescenceMap','iridescenceThicknessMap','anisotropyMap'];
+            textureProperties.forEach(property=>{if(material[property]?.isTexture)clone[property]=material[property].clone();});
+            material=clone;
+            replaceEditorMaterialTarget(target,material);
+          }
+          sharedEditorMaterials.set(savedMaterial.materialId,material);
+          editorMaterialSavedIds.set(material,savedMaterial.materialId);
+        }
+      }
       if(savedMaterial.baseColor&&material.color)material.color.set(savedMaterial.baseColor);
       if(Number.isFinite(savedMaterial.roughness)&&'roughness' in material)material.roughness=savedMaterial.roughness;
       if(Number.isFinite(savedMaterial.metalness)&&'metalness' in material)material.metalness=savedMaterial.metalness;
