@@ -2156,7 +2156,7 @@ function assignEditorLibraryMaterial(){
   refreshEditorMaterialLibrary(libraryItem.id);
   renderEditorTree(getAllEditorAssets(),editorSelectionKey());
   affected.forEach(asset=>persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить назначение общего материала:',error)));
-  setEditorStatus('Материал «'+(libraryItem.material.name||'Material')+'» назначен слоту «'+(target.mesh.name||'Mesh')+'». Используется в '+libraryItem.targets.length+' слотах до назначения.');
+  setEditorStatus('Материал «'+(libraryItem.material.name||'Material')+'» назначен слоту «'+(target.mesh.name||'Mesh')+'». Теперь он связан как минимум с '+(libraryItem.targets.length+1)+' слотами.');
 }
 function makeEditorMaterialUnique(){
   const target=selectedEditorMaterial();
@@ -2946,6 +2946,8 @@ function applyEditorMaterialPreset(){
   document.getElementById('editorDoubleSide').checked=!!preset.doubleSide;
   document.getElementById('editorWireframe').checked=false;
   applyEditorMaterial();
+  const affected=markEditorMaterialOwnersDirty(target.material);
+  affected.forEach(asset=>persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить материал после применения пресета:',error)));
   setEditorStatus('Применён профиль: '+preset.label+'. Карты текстур сохранены.');
 }
 
@@ -2989,9 +2991,12 @@ function importEditorTextureFile(file){
       material.emissiveIntensity=Math.max(1,material.emissiveIntensity||0);
     }
     material.needsUpdate=true;
-    if(editorSelectedAsset&&editorSelectedAsset.sourceType!=='scene')editorSelectedAsset.meta.modelDirty=true;
+    const affected=markEditorMaterialOwnersDirty(material);
+    affected.forEach(asset=>persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить общую текстуру:',error)));
+    refreshEditorMaterialLibrary(material.uuid);
     loadEditorMaterial(Number(editorMaterialSelect.value));
-    setEditorStatus(spec.label+' подключена к '+(material.name||target.mesh.name||'материалу')+'.');
+    updateEditorMaterialLinkStatus();
+    setEditorStatus(spec.label+' подключена к '+(material.name||target.mesh.name||'материалу')+'. Общий материал обновлён во всех связанных слотах.');
   },undefined,error=>{
     URL.revokeObjectURL(url);
     console.error(error);
@@ -3011,8 +3016,9 @@ function clearEditorTextureMap(){
   if(texture.userData?.editorOwnedTexture)texture.dispose();
   material[spec.property]=null;
   material.needsUpdate=true;
-  if(editorSelectedAsset&&editorSelectedAsset.sourceType!=='scene')editorSelectedAsset.meta.modelDirty=true;
-  setEditorStatus('Карта '+spec.label+' удалена.');
+  const affected=markEditorMaterialOwnersDirty(material);
+  affected.forEach(asset=>persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить удаление общей текстуры:',error)));
+  setEditorStatus('Карта '+spec.label+' удалена во всех слотах, использующих этот материал.');
 }
 
 function applySceneEditorConfig(payload){

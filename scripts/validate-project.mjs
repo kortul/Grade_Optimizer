@@ -101,6 +101,12 @@ assert.ok(entrySource.includes("function parseSceneModel("), 'generic GLB/FBX pa
 assert.ok(entrySource.includes('function collectEditorMaterialLibrary('), 'scene-wide material library missing');
 assert.ok(entrySource.includes('function assignEditorLibraryMaterial('), 'material library assignment action missing');
 assert.ok(entrySource.includes('function makeEditorMaterialUnique('), 'make-unique material action missing');
+const textureImportSource = entrySource.slice(entrySource.indexOf('function importEditorTextureFile('), entrySource.indexOf('function clearEditorTextureMap('));
+const textureClearSource = entrySource.slice(entrySource.indexOf('function clearEditorTextureMap('), entrySource.indexOf('function applySceneEditorConfig('));
+assert.ok(textureImportSource.includes('markEditorMaterialOwnersDirty(material)'), 'texture import must dirty all shared material owners');
+assert.ok(textureClearSource.includes('markEditorMaterialOwnersDirty(material)'), 'texture removal must dirty all shared material owners');
+const presetSource = entrySource.slice(entrySource.indexOf('function applyEditorMaterialPreset('), entrySource.indexOf('function ensureEditorAoUv('));
+assert.ok(presetSource.includes('markEditorMaterialOwnersDirty(target.material)'), 'material presets must dirty all shared material owners');
 assert.ok(entrySource.includes('markEditorMaterialOwnersDirty(material)'), 'shared material edits must dirty all imported model owners');
 assert.ok(entrySource.includes('updateEditorMaterialLinkStatus()'), 'shared material link status indicator missing');
 assert.ok(html.includes('id="editorMaterialLibrarySelect"'), 'material library selector missing');
