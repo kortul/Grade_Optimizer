@@ -7,10 +7,10 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v78.js`.
-- Skier: `skier-controller.v68.js` (terrain-following physics and first-person ski rig).
-- Drone: `drone-controller.v68.js` (keyboard flight, smooth acceleration and mouse-look).
-- Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime.
+- Current app: `app.v91.js`.
+- Skier: `skier-controller.v73.js` (terrain-following physics and first-person ski rig).
+- Drone: `drone-controller.v72.js` (keyboard flight, smooth acceleration and mouse-look).
+- Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
 
 For a new release, create a new `app.vNN.js` file, update `index.html`, and keep the previous app file for rollback.
 
@@ -39,3 +39,17 @@ Run locally with Node.js 22 or later:
 ```bash
 node scripts/validate-project.mjs
 ```
+
+
+## Maya client-scene export
+
+Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor:
+
+1. Set the local path to your cloned `Grade_Optimizer` repository and enter the client slug.
+2. Export the entire Maya scene (or the current selection) as one binary `FBX` with embedded media.
+3. The exporter writes `clients/<slug>/models/resort.fbx` and a compatible `clients/<slug>/scene.json`.
+4. Review the changed files in GitHub Desktop and Push. GitHub Pages serves the scene at `?client=<slug>`.
+
+The FBX keeps its object hierarchy, mesh names and shared material assignments. The web material inspector lists slots as `mesh name · material name`, so a material can be edited per component without forcing a fixed object-category taxonomy. The default imported category is General model; Terrain and Slope remain optional special roles.
+
+Keep the FBX below 90 MiB for the current regular-Git workflow. Use embedded textures so the client scene remains a self-contained model file.
