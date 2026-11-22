@@ -53,15 +53,15 @@ The FBX keeps object hierarchy, mesh names and shared material assignments. The 
 
 Keep the FBX below 90 MiB for the current regular-Git workflow. Use embedded textures so the project remains self-contained.
 
-## Scene Editor: browser autosave and GitHub Desktop export
+## Scene Editor: browser autosave and direct local repository sync
 
 You are the only Scene Editor administrator. Viewers only need the generated viewer link; no client accounts or editing workflow are required.
 
 - The primary Project ID is `alpine-resort` and opens automatically. The Maya Exporter uses the same default.
-- Scene Editor changes are automatically backed up in this browser's IndexedDB. This includes built-in scene settings, transforms, visibility, Role / Tags, Collision / Forest blocker, PBR material values, custom textures, imported model binaries, and per-node settings.
-- On the next visit from the same browser, an unsynced local backup is restored when it is based on the currently deployed project. A newer published GitHub version takes precedence over an outdated local backup. Post-export changes are also retained when the exported package becomes the deployed base.
-- Browser backups are local to that browser and can be lost if site data is cleared. They are not shared with clients or other devices.
-- When editing is complete, use **EXPORT PROJECT PACKAGE · ZIP**. The ZIP contains `clients/<project-id>/scene.json` and every imported model file referenced by that manifest.
-- Extract the ZIP into the root of the local `Grade_Optimizer` repository, merging the `clients/<project-id>` folder. Then commit and push using GitHub Desktop. GitHub Pages deploys the updated viewer files after the push.
-- Use the ZIP export as the intentional publish step; browser autosave alone does not change the live site.
-- Keep each model file below 90 MiB for the current regular-Git workflow. Use embedded textures so each GLB/FBX remains self-contained.
+- Scene Editor changes are automatically backed up in this browser's IndexedDB. This includes built-in scene settings, transforms, visibility, Role / Tags, Collision / Forest blocker, PBR values, custom textures, imported model binaries, and per-node settings.
+- In Chrome or Edge, select the local Git repository root once with **CONNECT LOCAL PROJECT FOLDER**. The folder handle is stored in IndexedDB. After write access is granted, project autosave writes changed model files and `clients/<project-id>/scene.json` directly into that folder.
+- The chosen folder must be the local `Grade_Optimizer` repository root (the folder containing `index.html`, `README.md`, and `maya/`). GitHub Desktop then detects the changed files; commit and push as usual.
+- On subsequent browser launches Chrome may ask for renewed permission to the stored folder. Click **CONNECT LOCAL PROJECT FOLDER** to re-authorize the saved handle; you normally do not need to browse for the folder again.
+- Browser IndexedDB remains a fallback backup. It is local to that browser and can be lost if site data is cleared; it is not cross-device sync.
+- The runtime needs `scene.json` plus separate binary GLB model files under `clients/<project-id>/models/`. The app writes them automatically; you do not manage them manually.
+- Keep individual model files below 90 MiB for the current regular-Git workflow. Larger assets require Git LFS or another storage strategy.

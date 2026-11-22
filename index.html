@@ -247,7 +247,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneHierarchyPanel .client-admin-details summary{font-size:9px;font-weight:800;letter-spacing:.7px;color:#a7c7df;cursor:pointer}
 #sceneHierarchyPanel #clientWorkspaceStatus{font-size:9px;line-height:1.45;padding-top:6px;overflow-wrap:anywhere}
 #sceneHierarchyPanel #clientWorkspaceStatus.error{color:#ffaaa1}
-#sceneHierarchyPanel #exportProjectBackupButton:disabled{opacity:.5;cursor:wait}
+#sceneHierarchyPanel #connectProjectFolderButton:disabled{opacity:.5;cursor:wait}
 
 #sceneHierarchyPanel #resetTerrainButton:disabled{opacity:.45;cursor:not-allowed;background:#263541}
 #editorTreeList{display:flex;flex-direction:column;gap:1px;min-height:90px;overflow-y:auto;flex:1}
@@ -796,10 +796,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     </div>
     <input id="clientShareLink" type="text" readonly aria-label="Project viewer URL" placeholder="Viewer link will appear here"/>
     <div class="editor-section">
-      <h3>BROWSER BACKUP · AUTO-SAVE</h3>
-      <div class="editor-hint">Все изменения Scene Editor автоматически сохраняются в IndexedDB этого браузера, включая настройки встроенной сцены, материалы, текстуры и бинарные файлы импортированных моделей. Эта копия доступна только в этом браузере и может быть удалена очисткой данных сайта.</div>
-      <button id="exportProjectBackupButton" type="button">EXPORT PROJECT PACKAGE · ZIP</button>
-      <div class="editor-hint">Когда закончишь работу, скачай ZIP, распакуй его в корень локального репозитория <strong>Grade_Optimizer</strong> с объединением папок и сделай Commit + Push в GitHub Desktop. Архив содержит <strong>clients/&lt;Project ID&gt;/scene.json</strong> и все модели, используемые проектом.</div>
+      <h3>LOCAL REPOSITORY · AUTO-SYNC</h3>
+      <div class="editor-hint">Выбери корень локального репозитория <strong>C:\zGit\GradeOptimizer\Grade_Optimizer</strong>. Grade Optimizer будет напрямую записывать туда scene.json и изменённые GLB-модели после каждого изменения сцены. GitHub Desktop автоматически увидит эти файлы.</div>
+      <button id="connectProjectFolderButton" type="button">CONNECT LOCAL PROJECT FOLDER</button>
+      <div class="editor-hint">ZIP не нужен. Браузерная копия в IndexedDB остаётся резервной. При новом запуске Chrome может попросить повторно разрешить доступ к уже выбранной папке.</div>
     </div>
     <div id="clientWorkspaceStatus" class="editor-hint" aria-live="polite">Основной проект alpine-resort открывается автоматически. Автосохранение в этом браузере включено после загрузки проекта.</div>
   </div>
@@ -1093,4 +1093,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v103.js"></script></body></html>
+<script type="module" src="./app.v104.js"></script></body></html>
