@@ -7,9 +7,9 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v108.js`.
+- Current app: `app.v109.js`.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
-- Scene Look uses tabbed inspector pages: Environment, Camera, Lens, Color and Render.
+- Scene Look uses five inspector tabs with grouped Lens controls, live post-processing status and precision range feedback.
 - Skier: `skier-controller.v73.js`.
 - Drone: `drone-controller.v72.js`.
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.

@@ -63,6 +63,16 @@ assert.ok(html.includes('scene-editor-gear'), 'Scene Editor gear icon is missing
 assert.ok(html.includes('aria-label="Scene Editor"'), 'Scene Editor icon button needs an accessible label');
 assert.ok(entrySource.includes('function bindSceneLookTabs()'), 'Scene Look tab behavior is missing');
 assert.ok(html.includes('id="sceneLookPanelTitle"') && html.includes('id="sceneLookPanelSubtitle"'), 'active Scene Look tab heading must stay visible above panels');
+assert.ok(html.includes('id="sceneLookFxStatus"'), 'live post-processing status badge is missing');
+assert.ok(html.includes('class="scene-look-reset"'), 'Scene Look reset action should be accessible from the section header');
+assert.ok(html.includes('scene-look-subsection'), 'Lens controls need grouped inspector sections');
+assert.ok(entrySource.includes('function updateSceneLookRangeFill()'), 'scene look range feedback is missing');
+assert.ok(entrySource.includes('fxStatus.textContent=live?'), 'live post-processing status must reflect runtime settings');
+assert.ok(html.includes('scene-look-tab-icon" aria-hidden="true"><svg'), 'Scene Look tabs must use consistent inline SVG icons');
+assert.ok(html.includes('scene-look-switches input[type=checkbox]:checked'), 'Scene Look toggles need styled on/off states');
+assert.ok(html.includes('class="editor-section scene-look-section" aria-label="Global Scene Look"'), 'Scene Look should not require a nested accordion');
+pass('Scene Look finishing polish, live status, grouped Lens controls and range feedback are present');
+
 assert.ok(entrySource.includes("['ArrowLeft','ArrowRight','Home','End']"), 'Scene Look keyboard navigation is missing');
 assert.ok(html.includes('id="sceneQuality"') && html.includes('id="sceneToneMapping"'), 'render settings must remain available in the Render tab');
 pass('Sketchfab-style Scene Look tabs, keyboard navigation and gear button are present');

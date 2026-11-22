@@ -4,7 +4,7 @@ The project is hosted as a static GitHub Pages site. A push to `main` triggers t
 
 ## Current release
 
-- Active browser entrypoint: `index.html` → `app.v108.js`.
+- Active browser entrypoint: `index.html` → `app.v109.js`.
 - Previous app releases remain in the repository for rollback.
 - Skier and drone controllers are versioned separately.
 - Generated forest texture: `assets/trees/snowy_conifer_atlas.webp`.
