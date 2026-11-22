@@ -30,23 +30,15 @@ export class WeatherSystem {
     this.skyCanvas.width = 1024;
     this.skyCanvas.height = 512;
     this.skyContext = this.skyCanvas.getContext('2d', { alpha: false });
+    // Use the equirectangular canvas directly as the scene background.
+    // There is deliberately no sky-dome mesh or enclosing sphere geometry.
     this.skyTexture = new THREE.CanvasTexture(this.skyCanvas);
     this.skyTexture.colorSpace = THREE.SRGBColorSpace;
+    this.skyTexture.mapping = THREE.EquirectangularReflectionMapping;
     this.skyTexture.minFilter = THREE.LinearFilter;
     this.skyTexture.magFilter = THREE.LinearFilter;
-    this.skyMaterial = new THREE.MeshBasicMaterial({
-      map: this.skyTexture,
-      side: THREE.BackSide,
-      depthWrite: false,
-      depthTest: false,
-      fog: false,
-      toneMapped: false
-    });
-    this.sky = new THREE.Mesh(new THREE.SphereGeometry(12000, 64, 32), this.skyMaterial);
-    this.sky.name = 'GO_ProceduralSky';
-    this.sky.frustumCulled = false;
-    this.sky.renderOrder = -1000;
-    this.scene.add(this.sky);
+    this.previousSceneBackground = this.scene.background;
+    this.scene.background = this.skyTexture;
 
     this.sunTexture = this.makeSunTexture();
     this.sunMaterial = new THREE.SpriteMaterial({
@@ -345,7 +337,6 @@ export class WeatherSystem {
     const dt = Math.min(Math.max(deltaSeconds || 0, 0), 0.05);
     this.elapsed += dt;
     if (cameraPosition) this.cameraPosition.copy(cameraPosition);
-    this.sky.position.copy(this.cameraPosition);
     this.sunGlow.position.copy(this.cameraPosition).addScaledVector(this.sunDirection, 10600);
 
     const wind = this.params.wind;
@@ -408,11 +399,12 @@ export class WeatherSystem {
   }
 
   dispose() {
-    this.scene.remove(this.sky, this.sunGlow);
+    this.scene.remove(this.sunGlow);
     this.clouds.forEach(({ sprite }) => this.scene.remove(sprite));
     this.camera.remove(this.snow, this.streaks);
-    this.sky.geometry.dispose();
-    this.skyMaterial.dispose();
+    if (this.scene.background === this.skyTexture) {
+      this.scene.background = this.previousSceneBackground ?? null;
+    }
     this.skyTexture.dispose();
     this.sunMaterial.dispose();
     this.sunTexture.dispose();
