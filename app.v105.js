@@ -272,6 +272,29 @@ function applyCustomWeather() {
   persistWeatherSettings();
   markClientProjectDirty('погодные настройки');
 }
+function applyWeatherSettingsFromProject(saved) {
+  if(!saved||typeof saved!=='object')return;
+  if(saved.preset==='custom')weatherSystem.setCustom(saved);
+  else if(WeatherSystem.PRESETS[saved.preset])weatherSystem.setPreset(saved.preset);
+  else weatherSystem.setPreset('light');
+  updateDaylight(state.dayTime);
+  updateWeatherControls();
+  persistWeatherSettings();
+}
+function applySceneWeatherControls() {
+  const clouds=Number(document.getElementById('sceneClouds').value)/100;
+  const snowfall=Number(document.getElementById('sceneSnow').value)/100;
+  const wind=Number(document.getElementById('sceneWind').value);
+  weatherSystem.setCustom({clouds,snowfall,wind});
+  updateDaylight(state.dayTime);
+  updateWeatherControls();
+  persistWeatherSettings();
+  markClientProjectDirty('погодные настройки Scene Editor');
+}
+['sceneClouds','sceneSnow','sceneWind'].forEach(id=>{
+  const input=document.getElementById(id);
+  if(input)input.addEventListener('input',applySceneWeatherControls);
+});
 
 weatherPresetButtons.forEach(button => {
   button.addEventListener('click', () => applyWeatherPreset(button.dataset.weatherPreset));
@@ -508,6 +531,20 @@ opticsBloomInput.addEventListener('input', () => { opticsSettings.bloom = Number
 opticsFlareInput.addEventListener('change', () => { opticsSettings.flare = opticsFlareInput.checked; applyOpticsSettings(); });
 opticsBokehInput.addEventListener('change', () => { opticsSettings.bokeh = opticsBokehInput.checked; applyOpticsSettings(); });
 bindSceneLookControls();
+document.getElementById('sceneLookReset').addEventListener('click',()=>{
+  Object.assign(opticsSettings,{
+    enabled:true,bloom:58,bloomThreshold:0.78,flare:true,flareStrength:70,dirt:38,
+    bokeh:false,focusDistance:48,aperture:4,vignette:24,chromatic:18,grain:4,sharpness:14,
+    temperature:6500,tint:0,contrast:104,saturation:104,exposure:0,cameraFov:55,
+    toneMapping:'aces',quality:'balanced',sunIntensity:100,sunRotation:0,
+    ambientFill:100,sunEnabled:true,shadowQuality:1
+  });
+  applyOpticsSettings();
+  weatherSystem.setPreset('light');
+  updateWeatherControls();
+  persistWeatherSettings();
+  markClientProjectDirty('сброс Scene Look');
+});
 function setWeatherPanelOpen(open) {
   const app = document.getElementById('app');
   if (open) {
@@ -3497,7 +3534,10 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       if(state.baseTerrain)state.baseTerrain.visible=true;
       droneController.setTerrain(state.terrain);
     }
-    if(Array.isArray(manifest.editorSettings?.assets)&&manifest.editorSettings.assets.length){
+    if(manifest.editorSettings&&(
+      (Array.isArray(manifest.editorSettings.assets)&&manifest.editorSettings.assets.length)||
+      manifest.editorSettings.visualSettings||manifest.editorSettings.weatherSettings
+    )){
       await applySceneEditorConfig(manifest.editorSettings,{quiet:true});
     }
     clearTestForest();
@@ -3603,7 +3643,11 @@ async function collectProjectEditorSettings(){
   for(const asset of getAllEditorAssets().filter(item=>item.sourceType==='scene')){
     assets.push(await collectEditorAssetConfig(asset,textureCache,materialIds));
   }
-  return {schemaVersion:'1.0',savedAt:new Date().toISOString(),units:'meters',assets};
+  return {
+    schemaVersion:'1.0',savedAt:new Date().toISOString(),units:'meters',assets,
+    visualSettings:{...opticsSettings},
+    weatherSettings:weatherSystem.getSettings()
+  };
 }
 
 async function collectClientManifest(slug){
@@ -3786,7 +3830,10 @@ async function exportSceneEditorConfig(){
   try{
     const textureCache=new Map(),materialIds=new Map(),assets=[];
     for(const asset of getAllEditorAssets())assets.push(await collectEditorAssetConfig(asset,textureCache,materialIds));
-    const payload={schemaVersion:'1.0',savedAt:new Date().toISOString(),units:'meters',assets};
+    const payload={
+      schemaVersion:'1.0',savedAt:new Date().toISOString(),units:'meters',assets,
+      visualSettings:{...opticsSettings},weatherSettings:weatherSystem.getSettings()
+    };
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const anchor=document.createElement('a');anchor.href=url;
@@ -4031,11 +4078,13 @@ async function applySceneEditorConfig(payload,{quiet=false}={}){
       persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить импортированную JSON-конфигурацию модели:',error));
     }
   }
+  if(payload.visualSettings)applyOpticsSettingsFromProject(payload.visualSettings);
+  if(payload.weatherSettings)applyWeatherSettingsFromProject(payload.weatherSettings);
   if(editorSelectedAsset)populateEditorAssetControls(editorSelectedAsset,editorSelectedNode||editorSelectedAsset.root);
   refreshEditorMaterialList(Number(editorMaterialSelect.value)||0);
   if(!quiet){
     setEditorStatus('Конфигурация загружена: объектов '+matchedAssets+', материалов '+matchedMaterials+', не найдены объекты '+skippedAssets+'.');
-    if(matchedAssets||matchedMaterials)markClientProjectDirty('импорт JSON-конфигурации');
+    if(matchedAssets||matchedMaterials||payload.visualSettings||payload.weatherSettings)markClientProjectDirty('импорт JSON-конфигурации');
   }
   return {matchedAssets,matchedMaterials,skippedAssets};
 }
