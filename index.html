@@ -795,6 +795,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   </div>
   <label for="importAssetCategory" class="tree-search-label">IMPORT AS</label>
   <select id="importAssetCategory" aria-label="Категория импортируемой модели">
+    <option value="model" selected>General model · без категории</option>
     <option value="terrain">Terrain · активная поверхность</option>
     <option value="slope">Slope / Track · трасса</option>
     <option value="building">Building · здание</option>
@@ -803,15 +804,15 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <option value="lighting">Lighting · фонари</option>
     <option value="vegetation">Vegetation · растительность</option>
     <option value="forest">Forest · лес</option>
-    <option value="prop" selected>Prop · объект / снежная пушка</option>
+    <option value="prop">Prop · объект / снежная пушка</option>
   </select>
-  <button id="importGlbButton" type="button">＋ IMPORT MODEL · GLB</button>
+  <button id="importGlbButton" type="button">＋ IMPORT MODEL · GLB / FBX</button>
   <button id="resetTerrainButton" class="secondary" type="button" disabled>↺ RESTORE ORIGINAL TERRAIN</button>
-  <input id="glbFileInput" type="file" accept=".glb,model/gltf-binary" multiple hidden/>
+  <input id="glbFileInput" type="file" accept=".glb,.fbx,model/gltf-binary,application/octet-stream" multiple hidden/>
   <label for="editorTreeSearch" class="tree-search-label">SCENE HIERARCHY</label>
   <input id="editorTreeSearch" type="search" placeholder="Filter objects…" autocomplete="off"/>
   <div id="editorTreeList" role="list" aria-label="Объекты сцены"></div>
-  <div class="editor-hint">Выбери объект здесь или кликни по нему в 3D-окне. GLB можно перетащить в панель.</div>
+  <div class="editor-hint">Выбери объект здесь или кликни по нему в 3D-окне. GLB или FBX можно перетащить в панель. В FBX сохраняются имена объектов и material slots.</div>
 </div>
 
 <div id="sceneEditorPanel" aria-label="Scene and material inspector">
@@ -853,7 +854,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     </div>
     <div class="editor-split">
       <div><label for="editorCategory">Категория</label><select id="editorCategory">
-        <option value="terrain">Terrain</option><option value="slope">Slope</option><option value="forest">Forest</option>
+        <option value="model">General model</option><option value="terrain">Terrain</option><option value="slope">Slope</option><option value="forest">Forest</option>
         <option value="building">Building</option><option value="lift">Lift</option><option value="infrastructure">Infrastructure</option>
         <option value="vegetation">Vegetation</option><option value="prop" selected>Prop</option><option value="lighting">Lighting</option>
       </select></div>
@@ -871,7 +872,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 
   <div class="editor-section">
     <h3>Материал / PBR <span id="editorMaterialCount" class="editor-chip">0 SLOTS</span></h3>
-    <label for="editorMaterialSelect">Mesh / Material Slot</label>
+    <label for="editorMaterialSelect">Component / Material Slot</label>
     <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
     <div class="editor-split">
       <div><label for="editorBaseColor">Base Color</label><input id="editorBaseColor" type="color" value="#ffffff"/></div>
@@ -1049,4 +1050,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v90.js"></script></body></html>
+<script type="module" src="./app.v91.js"></script></body></html>
