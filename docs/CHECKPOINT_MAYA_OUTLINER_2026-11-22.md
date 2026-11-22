@@ -49,7 +49,7 @@ Implemented in v94 and active in v95:
 - Materials are not merged just because their names match; separate Maya materials with the same display name remain distinct.
 - FBXLoader 0.160 creates material instances from FBX material IDs and reuses them for connected mesh assignments. Real Maya export still needs a round-trip check.
 
-## Native Maya plug-in v0.2.3
+## Native Maya plug-in v0.2.4
 
 Files in the repository:
 - `maya/plug-ins/grade_optimizer.py` — native Maya Python plug-in entrypoint.
@@ -63,7 +63,7 @@ Plug-in behavior:
 - Registers Maya command `gradeOptimizerOpen`.
 - Adds menu actions **Open Exporter…** and **Create FBX Test Scene…**.
 - Uses Maya Python API 2.0 and standard `initializePlugin` / `uninitializePlugin` lifecycle.
-- Exporter defaults to local repo `C:/zGit/GradeOptimizer/Grade_Optimizer`, remembers Project ID and repo path between launches, and exports selected objects only by default.
+- Exporter defaults to local repo `C:/zGit/GradeOptimizer/Grade_Optimizer`, remembers Project ID and repo path between launches, and exports selected objects only by default. Maya metadata presets assign only Role / Tags; Collision and Forest blocker flags are configured in the Web Editor.
 - Creates `clients/<client-slug>/models/resort.fbx` and `clients/<client-slug>/scene.json`.
 - Attempts to enable FBX materials and Embed Media.
 
@@ -74,7 +74,7 @@ Test-scene fixture:
 - Assigns two materials to different faces of one Station_Building mesh.
 - Includes a hidden survey marker.
 - Includes two nodes named `Pylon` under different DAG branches, with different node metadata.
-- Adds example Role, Tags, Collision and Forest blocker metadata.
+- Adds example Role / Tags metadata. Collision and Forest blocker flags are configured separately in Web Editor.
 - Sets the fixture's linear unit to metres.
 
 After syncing the repo, use **Grade Optimizer → Create FBX Test Scene…**, then **Open Exporter…** and export with Client ID `maya-fbx-test`. Inspect the resulting FBX and manifest in the web app before using a real client scene.
@@ -149,3 +149,16 @@ The metadata panel is collapsed by default and uses ready-made presets instead o
 Maya optionVars remember the repository path, Project ID, last-used preset and optional custom metadata across Shelf / Script Editor launches. Project fields should not need to be re-entered unless switching projects.
 
 Version 0.2.3 source and automated checks are in commit to be recorded after this update. Real Maya runtime validation remains pending.
+
+
+## Collision / Forest blocker ownership update — Maya / Web Editor split
+
+Maya exporter v0.2.4 no longer writes Collision or Forest blocker flags. Its optional object presets are limited to Role and Tags. These flags are set on individual nodes in the Web Editor Outliner Inspector.
+
+Verified Web Editor route in `app.v95.js`:
+- `saveSelectedNodeMetadata()` writes the per-node flags into `userData.gradeOptimizerMetadata` and marks imported assets dirty.
+- `collectEditorNodeMetadata(root)` serializes Role, Tags, Collision and Forest blocker.
+- `collectClientManifest(slug)` puts these records into each asset's `nodeMetadata` field in `clients/<slug>/scene.json`.
+- `publishClientWorkspace()` commits the updated manifest and any dirty model file to GitHub via the connected GitHub Publisher.
+
+Important limitation: saving the two flags to the project is implemented; the actual physics collision behavior and forest placement exclusion based on these flags are still future functionality.
