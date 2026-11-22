@@ -173,3 +173,6 @@ The project manifest now includes `editorSettings.assets` for built-in `sourceTy
 On `openClientWorkspace()`, the editor restores `manifest.editorSettings` into the built-in scene after loading client models. On publish, `collectClientManifest()` serializes these settings and `publishClientWorkspace()` commits the updated `clients/<slug>/scene.json` directly to GitHub. The user does not need to download or manually copy a config JSON file. Publishing requires connecting a fine-grained GitHub Publisher token (Contents read/write), held in memory only.
 
 Important: changes remain session drafts until the explicit **SAVE ALL PROJECT CHANGES TO GITHUB** action succeeds. Once committed, the same client URL on another browser/device reads the shared `scene.json` and model files. Node Collision / Forest blocker flags are stored as project metadata; runtime physics / forest exclusion behavior remains future work.
+
+
+Project save UX clarified: **SAVE ALL PROJECT CHANGES TO GITHUB** is the normal shared-save path. The JSON config download in the Scene Editor is now labeled as an optional backup, not the normal way to save. The backup loader also accepts built-in scene settings even when no imported GLB model exists.

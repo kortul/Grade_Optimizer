@@ -103,6 +103,9 @@ assert.ok(entrySource.includes('await applySceneEditorConfig(manifest.editorSett
 assert.ok(entrySource.includes('async function collectEditorAssetConfig('), 'shared Scene Editor configuration serializer missing');
 assert.ok(entrySource.includes("materialId:materialIds.get(material)"), 'project config must preserve shared material slot identity');
 assert.ok(entrySource.includes('const sharedEditorMaterials=new Map()'), 'project config loader must restore shared material identity');
+assert.ok(entrySource.includes('materialId:materialIds.get(material)'), 'shared material configuration must have persistent material IDs');
+assert.ok(entrySource.includes("id==='scene:'")===false, 'scene editor persistence must not depend on an invalid synthetic ID comparison');
+
 assert.ok(entrySource.includes('const editorMaterialSavedIds=new WeakMap()'), 'project config loader must preserve unique material slots');
 assert.ok(entrySource.includes('editorTextureDataUrlPromise'), 'custom texture bytes must be retained for project persistence');
 assert.ok(entrySource.includes('async function loadEditorTextureDataUrl('), 'client workspace must restore user-imported base scene textures');
@@ -219,6 +222,9 @@ assert.ok(read('maya/GradeOptimizer.mod').toString('utf8').includes('MAYA_PLUG_I
 assert.ok(read('maya/install_maya_module.bat').toString('utf8').includes('install_maya_module.ps1'), 'Windows Maya module installer missing');
 assert.ok(html.includes('src="./app.v96.js"'), 'active app must use v96 project-persistent editor settings module');
 assert.ok(html.includes('id="editorNodeRole" type="text"'), 'node role must accept custom values');
+assert.ok(html.includes('SAVE ALL PROJECT CHANGES TO GITHUB'), 'Scene Editor must expose one shared project save action');
+assert.ok(html.includes('ЭКСПОРТ JSON-БЭКАПА'), 'manual JSON export must be clearly marked as an optional backup');
+
 
 
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');

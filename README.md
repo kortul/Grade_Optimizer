@@ -53,3 +53,10 @@ Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor:
 The FBX keeps its object hierarchy, mesh names and shared material assignments. The web material inspector lists slots as `mesh name · material name`, so a material can be edited per component without forcing a fixed object-category taxonomy. The default imported category is General model; Terrain and Slope remain optional special roles.
 
 Keep the FBX below 90 MiB for the current regular-Git workflow. Use embedded textures so the client scene remains a self-contained model file.
+
+
+## Scene Editor: shared project saving
+
+For a client project, open the Project ID in **Client Workspace**, connect the GitHub Publisher, then press **SAVE ALL PROJECT CHANGES TO GITHUB**. This commits directly to the repository; no downloaded settings file has to be copied manually. The same client URL loads the committed scene and editor settings on another device after GitHub Pages deploys.
+
+The shared `clients/<slug>/scene.json` includes imported model state and `editorSettings.assets` for the built-in scene: node transforms / visibility / metadata, PBR values, user-imported textures, and shared vs unique material slot identity. The JSON export button in the editor is only an optional backup.

@@ -2873,7 +2873,9 @@ async function editorTextureToDataUrl(texture){
   if(!texture?.userData?.editorOwnedTexture)return null;
   if(texture.userData.editorTextureDataUrl)return texture.userData.editorTextureDataUrl;
   if(texture.userData.editorTextureDataUrlPromise){
-    const value=await texture.userData.editorTextureDataUrlPromise;
+    const pending=texture.userData.editorTextureDataUrlPromise;
+    const value=await pending;
+    delete texture.userData.editorTextureDataUrlPromise;
     if(value){texture.userData.editorTextureDataUrl=value;return value;}
   }
   const image=texture.image;
@@ -3145,12 +3147,14 @@ function importEditorTextureFile(file){
     if(previous?.userData?.editorOwnedTexture)previous.dispose();
     texture.userData.editorOwnedTexture=true;
     texture.userData.editorObjectUrl=url;
-    texture.userData.editorTextureDataUrlPromise=new Promise((resolve,reject)=>{
+    const textureDataUrlPromise=new Promise((resolve,reject)=>{
       const reader=new FileReader();
       reader.onload=()=>resolve(String(reader.result||""));
       reader.onerror=()=>reject(reader.error||new Error("Не удалось прочитать файл текстуры."));
       reader.readAsDataURL(file);
     });
+    textureDataUrlPromise.catch(()=>{});
+    texture.userData.editorTextureDataUrlPromise=textureDataUrlPromise;
     material[spec.property]=texture;
 
     if(spec.property==='aoMap')ensureEditorAoUv(target.mesh);
@@ -3307,8 +3311,8 @@ async function applySceneEditorConfig(payload,{quiet=false}={}){
 
 async function loadSceneEditorConfigFile(file){
   if(!file)return;
-  if(!state.importedAssets.length){
-    setEditorStatus('Сначала импортируйте соответствующие GLB-модели, затем загрузите JSON.',true);
+  if(!getAllEditorAssets().length){
+    setEditorStatus('Сначала дождись загрузки сцены, затем загрузи JSON.',true);
     return;
   }
   try{
