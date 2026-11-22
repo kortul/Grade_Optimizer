@@ -136,6 +136,7 @@ assert.ok(entrySource.includes('removeSavedSkierSki()'), 'reset must remove the 
 assert.ok(entrySource.includes("if(state.optimizeMode)setOptimizerOpen(false)"), 'Overview must close the optimization panel');
 
 assert.ok(entrySource.includes('const animateModeTransition='), 'cinematic skier/drone mode transition missing');
+assert.ok(entrySource.includes('camera.position.y+=3'), 'drone must start exactly 3 m above the skier camera when switching from skier mode');
 assert.ok(entrySource.includes('camera.quaternion.copy(transition.fromQuaternion).slerp(transition.toQuaternion,eased)'), 'camera orientation must interpolate smoothly during a mode transition');
 assert.ok(entrySource.includes('camera.fov=transition.baseFov+Math.sin(Math.PI*eased)*4.5'), 'cinematic camera FOV easing missing');
 assert.ok(entrySource.includes('if(pathGround!==null)camera.position.y=Math.max(camera.position.y,pathGround+1.55)'), 'mode transition camera must stay above terrain');
