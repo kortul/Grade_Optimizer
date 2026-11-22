@@ -383,7 +383,7 @@ assert.ok(entrySource.includes("if(mode==='overview')skierController.hideForOver
 assert.ok(skierSource.includes('0.48*this.stanceCameraBlend'), 'first-person camera lowering in speed tuck missing');
 assert.ok(skierSource.includes('0.085*this.stanceCameraBlend'), 'camera pitch adjustment in speed tuck missing');
 assert.ok(skierSource.includes('this.avatarLegs.forEach'), 'third-person skier legs must bend into speed tuck');
-assert.ok(skierSource.includes('0.46*this.stanceCameraBlend'), 'third-person skier torso must lean into speed tuck');
+assert.ok(skierSource.includes('0.43*tuck'), 'third-person skier torso must lean into speed tuck');
 assert.ok(skierSource.includes('showForDrone(){'), 'skier avatar forced visibility handoff missing');
 assert.ok(skierSource.includes('_updateSkierAvatar(true)'), 'skier avatar handoff must force full opacity');
 assert.ok(skierSource.includes('hideForOverview(){'), 'external skier avatar cleanup missing');
