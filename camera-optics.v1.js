@@ -12,10 +12,17 @@ const LENS_SHADER = {
     uDirtMap: { value: null },
     uSunUv: { value: new THREE.Vector2(-2, -2) },
     uSunStrength: { value: 0 },
-    uFlareStrength: { value: 0.12 },
-    uDirtStrength: { value: 0.045 },
-    uVignetteStrength: { value: 0.10 },
-    uChromaticStrength: { value: 0.00045 },
+    uFlareStrength: { value: 0.48 },
+    uDirtStrength: { value: 0.12 },
+    uVignetteStrength: { value: 0.12 },
+    uChromaticStrength: { value: 0.0008 },
+    uGrainStrength: { value: 0.0015 },
+    uSharpness: { value: 0.08 },
+    uTemperature: { value: 6500 },
+    uTint: { value: 0 },
+    uContrast: { value: 1.04 },
+    uSaturation: { value: 1.04 },
+    uTexelSize: { value: new THREE.Vector2(1 / 1280, 1 / 720) },
     uAspect: { value: 1 }
   },
   vertexShader: `
@@ -34,51 +41,88 @@ const LENS_SHADER = {
     uniform float uDirtStrength;
     uniform float uVignetteStrength;
     uniform float uChromaticStrength;
+    uniform float uGrainStrength;
+    uniform float uSharpness;
+    uniform float uTemperature;
+    uniform float uTint;
+    uniform float uContrast;
+    uniform float uSaturation;
+    uniform vec2 uTexelSize;
     uniform float uAspect;
     varying vec2 vUv;
 
     float softGhost(vec2 uv, vec2 center, vec2 radius) {
       vec2 d = (uv - center) / radius;
-      return exp(-dot(d, d) * 1.7);
+      return exp(-dot(d, d) * 1.65);
+    }
+
+    float hashNoise(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
     }
 
     void main() {
       vec2 uv = vUv;
       vec2 radial = (uv - 0.5) * vec2(uAspect, 1.0);
       vec2 aberration = radial * uChromaticStrength;
-
       vec3 color;
       color.r = texture2D(tDiffuse, uv + aberration).r;
       color.g = texture2D(tDiffuse, uv).g;
       color.b = texture2D(tDiffuse, uv - aberration).b;
 
-      float edge = smoothstep(0.26, 1.05, length(radial));
-      color *= 1.0 - edge * uVignetteStrength;
-
-      if (uSunStrength > 0.001) {
-        vec2 axis = vec2(0.5) - uSunUv;
-        vec2 ghostA = uSunUv + axis * 0.56;
-        vec2 ghostB = uSunUv + axis * 1.08;
-        vec2 ghostC = uSunUv - axis * 0.28;
-
-        float ghosts =
-          softGhost(uv, ghostA, vec2(0.052, 0.085)) * 0.52 +
-          softGhost(uv, ghostB, vec2(0.026, 0.043)) * 0.30 +
-          softGhost(uv, ghostC, vec2(0.075, 0.035)) * 0.22;
-
-        vec2 sunDelta = uv - uSunUv;
-        float horizontalStreak =
-          exp(-abs(sunDelta.y) * 430.0) *
-          exp(-abs(sunDelta.x) * 7.0) * 0.11;
-
-        color += vec3(0.72, 0.82, 1.0) * ghosts * uSunStrength * uFlareStrength;
-        color += vec3(1.0, 0.91, 0.76) * horizontalStreak * uSunStrength * uFlareStrength;
+      // Restrained micro-sharpening restores fine terrain detail after bloom.
+      if (uSharpness > 0.001) {
+        vec3 neighbours =
+          texture2D(tDiffuse, uv + vec2(uTexelSize.x, 0.0)).rgb +
+          texture2D(tDiffuse, uv - vec2(uTexelSize.x, 0.0)).rgb +
+          texture2D(tDiffuse, uv + vec2(0.0, uTexelSize.y)).rgb +
+          texture2D(tDiffuse, uv - vec2(0.0, uTexelSize.y)).rgb;
+        color += (color - neighbours * 0.25) * uSharpness;
       }
 
+      // White balance and tint are camera-level controls, not material edits.
+      float temperatureShift = clamp((uTemperature - 6500.0) / 3500.0, -1.0, 1.0);
+      color.r *= 1.0 + temperatureShift * 0.13;
+      color.g *= 1.0 - abs(temperatureShift) * 0.018 + uTint * 0.045;
+      color.b *= 1.0 - temperatureShift * 0.16;
+
       float luminance = dot(max(color, vec3(0.0)), vec3(0.2126, 0.7152, 0.0722));
-      float highlightMask = smoothstep(0.42, 1.08, luminance);
+      color = mix(vec3(luminance), color, uSaturation);
+      color = (color - vec3(0.18)) * uContrast + vec3(0.18);
+
+      float edge = smoothstep(0.22, 1.08, length(radial));
+      color *= 1.0 - edge * uVignetteStrength;
+
+      if (uSunStrength > 0.001 && uFlareStrength > 0.001) {
+        vec2 axis = vec2(0.5) - uSunUv;
+        vec2 ghostA = uSunUv + axis * 0.38;
+        vec2 ghostB = uSunUv + axis * 0.72;
+        vec2 ghostC = uSunUv + axis * 1.10;
+        vec2 ghostD = uSunUv - axis * 0.22;
+        float ghosts =
+          softGhost(uv, ghostA, vec2(0.046, 0.072)) * 0.62 +
+          softGhost(uv, ghostB, vec2(0.024, 0.038)) * 0.48 +
+          softGhost(uv, ghostC, vec2(0.060, 0.090)) * 0.34 +
+          softGhost(uv, ghostD, vec2(0.082, 0.032)) * 0.28;
+
+        vec2 sunDelta = uv - uSunUv;
+        float anamorphicStreak =
+          exp(-abs(sunDelta.y) * 270.0) *
+          exp(-abs(sunDelta.x) * 3.9) * 0.19;
+        float coreGlow = exp(-dot(sunDelta * vec2(1.0, 1.35), sunDelta * vec2(1.0, 1.35)) * 950.0);
+
+        color += vec3(0.68, 0.80, 1.0) * ghosts * uSunStrength * uFlareStrength;
+        color += vec3(1.0, 0.91, 0.78) * anamorphicStreak * uSunStrength * uFlareStrength;
+        color += vec3(1.0, 0.94, 0.82) * coreGlow * uSunStrength * uFlareStrength * 0.42;
+      }
+
+      float highlightMask = smoothstep(0.34, 0.98, luminance);
       float dirt = texture2D(uDirtMap, uv).r;
       color += vec3(1.0, 0.97, 0.91) * dirt * highlightMask * uDirtStrength;
+
+      if (uGrainStrength > 0.00001) {
+        float noise = hashNoise(gl_FragCoord.xy) - 0.5;
+        color += noise * uGrainStrength;
+      }
 
       gl_FragColor = vec4(max(color, vec3(0.0)), 1.0);
     }
@@ -95,22 +139,31 @@ export class CameraOptics {
     this.enabled = true;
     this.flareEnabled = true;
     this.bokehEnabled = false;
-    this.bloomAmount = 0.34;
-    this.intensity = 0.58;
+    this.bloomAmount = 0.58;
+    this.bloomThreshold = 0.78;
+    this.flareStrength = 0.68;
+    this.dirtStrength = 0.38;
+    this.vignetteStrength = 0.24;
+    this.chromaticStrength = 0.18;
+    this.grainStrength = 0.04;
+    this.sharpness = 0.12;
+    this.temperature = 6500;
+    this.tint = 0;
+    this.contrast = 1.04;
+    this.saturation = 1.04;
+    this.focusDistance = 48;
+    this.apertureFStop = 4;
+    this.quality = 'balanced';
     this.sunWorld = new THREE.Vector3();
     this.sunClip = new THREE.Vector3();
     this.focusView = new THREE.Vector3();
 
     this.dirtTexture = this.makeDirtTexture();
     this.composer = new EffectComposer(renderer);
-    // The post stack renders at a restrained internal resolution to protect FPS.
-    this.composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
-    this.composer.setSize(this.width, this.height);
-
     this.renderPass = new RenderPass(scene, camera);
     this.bokehPass = new BokehPass(scene, camera, {
-      focus: 70,
-      aperture: 0.000055,
+      focus: this.focusDistance,
+      aperture: this.apertureValue(),
       maxblur: 0.006,
       width: this.width,
       height: this.height
@@ -119,9 +172,9 @@ export class CameraOptics {
 
     this.bloomPass = new UnrealBloomPass(
       new THREE.Vector2(this.width, this.height),
-      0.17,
-      0.32,
-      0.88
+      0.48,
+      0.48,
+      this.bloomThreshold
     );
     this.lensPass = new ShaderPass(LENS_SHADER);
     this.lensPass.uniforms.uDirtMap.value = this.dirtTexture;
@@ -137,6 +190,15 @@ export class CameraOptics {
     this.setSize(this.width, this.height);
   }
 
+  apertureValue() {
+    return 0.00022 / THREE.MathUtils.clamp(this.apertureFStop, 1.4, 16);
+  }
+
+  qualityPixelRatio() {
+    const values = { performance: 0.85, balanced: 1.10, high: 1.25, cinematic: 1.5 };
+    return Math.min(window.devicePixelRatio || 1, values[this.quality] || values.balanced, 1.75);
+  }
+
   makeDirtTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = 512;
@@ -150,25 +212,24 @@ export class CameraOptics {
       return seed / 4294967296;
     };
 
-    // Fine dust and a few soft smudges, visible only over strong highlights.
-    for (let i = 0; i < 210; i++) {
+    for (let i = 0; i < 260; i++) {
       const x = random() * 512;
       const y = random() * 512;
-      const radius = 0.45 + random() * 2.1;
-      const alpha = 0.10 + random() * 0.34;
+      const radius = 0.55 + random() * 2.6;
+      const alpha = 0.12 + random() * 0.48;
       ctx.fillStyle = `rgba(255,255,255,${alpha})`;
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
     }
-    for (let i = 0; i < 13; i++) {
+    for (let i = 0; i < 22; i++) {
       const x = random() * 512;
       const y = random() * 512;
-      const rx = 9 + random() * 24;
-      const ry = 5 + random() * 15;
+      const rx = 7 + random() * 34;
+      const ry = 4 + random() * 19;
       const gradient = ctx.createRadialGradient(x, y, 0, x, y, Math.max(rx, ry));
-      gradient.addColorStop(0, 'rgba(255,255,255,0.075)');
-      gradient.addColorStop(0.62, 'rgba(255,255,255,0.026)');
+      gradient.addColorStop(0, `rgba(255,255,255,${0.07 + random() * 0.13})`);
+      gradient.addColorStop(0.58, 'rgba(255,255,255,0.04)');
       gradient.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = gradient;
       ctx.beginPath();
@@ -188,18 +249,46 @@ export class CameraOptics {
     if (typeof options.flare === 'boolean') this.flareEnabled = options.flare;
     if (typeof options.bokeh === 'boolean') this.bokehEnabled = options.bokeh;
     if (Number.isFinite(Number(options.bloom))) this.bloomAmount = THREE.MathUtils.clamp(Number(options.bloom), 0, 1);
-    if (Number.isFinite(Number(options.intensity))) this.intensity = THREE.MathUtils.clamp(Number(options.intensity), 0, 1);
+    if (Number.isFinite(Number(options.bloomThreshold))) this.bloomThreshold = THREE.MathUtils.clamp(Number(options.bloomThreshold), 0.1, 2);
+    if (Number.isFinite(Number(options.flareStrength))) this.flareStrength = THREE.MathUtils.clamp(Number(options.flareStrength), 0, 1);
+    if (Number.isFinite(Number(options.dirt))) this.dirtStrength = THREE.MathUtils.clamp(Number(options.dirt), 0, 1);
+    if (Number.isFinite(Number(options.vignette))) this.vignetteStrength = THREE.MathUtils.clamp(Number(options.vignette), 0, 1);
+    if (Number.isFinite(Number(options.chromatic))) this.chromaticStrength = THREE.MathUtils.clamp(Number(options.chromatic), 0, 1);
+    if (Number.isFinite(Number(options.grain))) this.grainStrength = THREE.MathUtils.clamp(Number(options.grain), 0, 1);
+    if (Number.isFinite(Number(options.sharpness))) this.sharpness = THREE.MathUtils.clamp(Number(options.sharpness), 0, 1);
+    if (Number.isFinite(Number(options.temperature))) this.temperature = THREE.MathUtils.clamp(Number(options.temperature), 3200, 9000);
+    if (Number.isFinite(Number(options.tint))) this.tint = THREE.MathUtils.clamp(Number(options.tint), -1, 1);
+    if (Number.isFinite(Number(options.contrast))) this.contrast = THREE.MathUtils.clamp(Number(options.contrast), 0.6, 1.6);
+    if (Number.isFinite(Number(options.saturation))) this.saturation = THREE.MathUtils.clamp(Number(options.saturation), 0, 1.6);
+    if (Number.isFinite(Number(options.focusDistance))) this.focusDistance = THREE.MathUtils.clamp(Number(options.focusDistance), 5, 500);
+    if (Number.isFinite(Number(options.aperture))) this.apertureFStop = THREE.MathUtils.clamp(Number(options.aperture), 1.4, 16);
+    if (typeof options.quality === 'string' && ['performance', 'balanced', 'high', 'cinematic'].includes(options.quality)) this.quality = options.quality;
 
-    this.bloomPass.enabled = this.enabled && this.bloomAmount > 0.01;
-    this.bloomPass.strength = this.bloomAmount * 0.52;
+    this.bloomPass.enabled = this.enabled && this.bloomAmount > 0.001;
+    this.bloomPass.strength = this.bloomAmount * 0.88;
+    this.bloomPass.threshold = this.bloomThreshold;
+    this.bloomPass.radius = 0.52;
     this.bokehPass.enabled = this.enabled && this.bokehEnabled;
+    this.bokehPass.uniforms.focus.value = this.focusDistance;
+    this.bokehPass.uniforms.aperture.value = this.apertureValue();
     this.lensPass.enabled = this.enabled;
 
     const u = this.lensPass.uniforms;
-    u.uFlareStrength.value = this.flareEnabled ? 0.19 * this.intensity : 0;
-    u.uDirtStrength.value = this.flareEnabled ? 0.075 * this.intensity : 0;
-    u.uVignetteStrength.value = 0.16 * this.intensity;
-    u.uChromaticStrength.value = 0.00072 * this.intensity;
+    u.uFlareStrength.value = this.flareEnabled ? 0.78 * this.flareStrength : 0;
+    u.uDirtStrength.value = this.dirtStrength * 0.34;
+    u.uVignetteStrength.value = this.vignetteStrength * 0.48;
+    u.uChromaticStrength.value = this.chromaticStrength * 0.0034;
+    u.uGrainStrength.value = this.grainStrength * 0.032;
+    u.uSharpness.value = this.sharpness * 0.48;
+    u.uTemperature.value = this.temperature;
+    u.uTint.value = this.tint;
+    u.uContrast.value = this.contrast;
+    u.uSaturation.value = this.saturation;
+
+    const ratio = this.qualityPixelRatio();
+    this.composer.setPixelRatio(ratio);
+    this.composer.setSize(this.width, this.height);
+    u.uTexelSize.value.set(1 / Math.max(1, this.width * ratio), 1 / Math.max(1, this.height * ratio));
   }
 
   setFocusTarget(target) {
@@ -215,7 +304,9 @@ export class CameraOptics {
     this.height = Math.max(1, Math.round(height || 1));
     this.composer?.setSize(this.width, this.height);
     if (this.lensPass) {
+      const ratio = this.qualityPixelRatio();
       this.lensPass.uniforms.uAspect.value = this.width / this.height;
+      this.lensPass.uniforms.uTexelSize.value.set(1 / Math.max(1, this.width * ratio), 1 / Math.max(1, this.height * ratio));
     }
   }
 
@@ -243,7 +334,7 @@ export class CameraOptics {
       this.lensPass.uniforms.uSunStrength.value = 0;
     }
 
-    if (this.bokehPass.enabled && focusTarget) this.setFocusTarget(focusTarget);
+    if (this.bokehPass.enabled && focusTarget && this.focusDistance < 0) this.setFocusTarget(focusTarget);
     this.composer.render(deltaTime);
   }
 
