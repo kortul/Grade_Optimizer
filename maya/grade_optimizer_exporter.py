@@ -13,7 +13,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 FBX_NAME = "resort.fbx"
 
 
@@ -251,7 +251,7 @@ def export_scene(*_):
         cmds.confirmDialog(title="Grade Optimizer", message="Укажи существующую локальную папку репозитория.", button=["OK"])
         return
     if not re.match(r"^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$", slug):
-        cmds.confirmDialog(title="Grade Optimizer", message="Client ID: латиница, цифры и дефис; 1–40 символов.", button=["OK"])
+        cmds.confirmDialog(title="Grade Optimizer", message="Project ID: латиница, цифры и дефис; 1–40 символов.", button=["OK"])
         return
     if selected_only and not (cmds.ls(selection=True, long=True) or []):
         cmds.confirmDialog(title="Grade Optimizer", message="Сначала выдели объекты.", button=["OK"])
@@ -327,12 +327,27 @@ def show():
     cmds.text(label="One Maya scene → one FBX → GitHub Desktop Push", align="left", height=28, font="boldLabelFont")
     cmds.text(label="Сохраняются полная иерархия, имена mesh и material assignments.", align="left", height=24)
     cmds.textFieldButtonGrp(
-        WINDOW + "_repo", label="Git repo", text="C:/zGit/GradeOptimizer",
+        WINDOW + "_repo", label="Git repo", text="C:/zGit/GradeOptimizer/Grade_Optimizer",
         buttonLabel="Browse…", buttonCommand=browse_repo,
         columnWidth3=(65, 380, 85)
     )
-    cmds.textFieldGrp(WINDOW + "_client", label="Client ID", text="alpine-resort", columnWidth2=(65, 460))
-    cmds.checkBox(WINDOW + "_selection", label="Export selected objects only (default: entire scene)", value=False)
+    cmds.textFieldGrp(
+        WINDOW + "_client",
+        label="Project ID",
+        text="alpine-resort",
+        annotation="Short project slug used in clients/<id>/ and the ?client=<id> website link.",
+        columnWidth2=(85, 440)
+    )
+    cmds.checkBox(
+        WINDOW + "_selection",
+        label="Export selected objects only",
+        value=True
+    )
+    cmds.text(
+        label="Включено по умолчанию. Сними галочку только для экспорта всей сцены.",
+        align="left",
+        height=22
+    )
     cmds.separator(height=8, style="in")
     cmds.text(label="OPTIONAL NODE METADATA · selected transforms / groups / meshes", align="left", height=22, font="boldLabelFont")
     cmds.textFieldGrp(WINDOW + "_role", label="Role", text="", columnWidth2=(65, 460))
