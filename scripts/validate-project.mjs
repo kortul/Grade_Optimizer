@@ -145,7 +145,7 @@ assert.ok(skierSource.includes("smooth('carveWeight'") && skierSource.includes("
 assert.ok(skierSource.includes('const sharedKneeFlex=0.17*carve'), 'both knees must flex under carving load');
 assert.ok(skierSource.includes('const insideKneeFlex=0.27*insideLoad'), 'inside knee must fold deeper in an alpine turn');
 assert.ok(skierSource.includes('const outsideSupport=-0.025*outsideLoad'), 'outside leg must retain a longer support stance');
-assert.ok(skierSource.includes("smooth('kneeX'+index"), 'knee articulation must use damped transitions');
+assert.ok(/smooth\(\s*'kneeX'\+index,[\s\S]{0,260}?6\.2\s*\)/.test(skierSource), 'knee articulation must use damped transitions');
 assert.ok(skierSource.includes('this.avatarPelvis.position.y=this.avatarPelvisBaseY-pelvisCompression'), 'pelvis compression must use a stable base position');
 assert.ok(skierSource.includes("'Kneepad_Upper_Strap'") && skierSource.includes("'Kneepad_Lower_Stitch'"), 'layered knee protection details are missing');
 
