@@ -1,38 +1,31 @@
-# Grade Optimizer — Checkpoint: GitHub-backed primary project
+# Grade Optimizer — Checkpoint: permanent GitHub save
 
 Date: 2026-11-22
 Branch: `main`
-Parent runtime: `app.v99.js`
-Active runtime: `app.v100.js`
+Active runtime: `app.v101.js`
 
-## Product direction
+## Primary project and access
 
-There is one administrator/editor: the project owner. Clients/viewers do not need accounts and do not need to edit. Scene Editor password protection is a separate future task; this checkpoint does not claim to implement authentication.
+- The single administrator/editor is the project owner. Clients/viewers do not need accounts or edit access.
+- The default Project ID is `alpine-resort`, matching Maya Exporter.
+- The default project opens automatically.
+- `?project=<id>` selects another project. Legacy `?client=<id>` URLs remain supported.
+- Scene Editor password protection remains a separate future task.
 
-## Primary project
+## Save flow
 
-- Default Project ID: `alpine-resort`.
-- This matches the existing Maya Exporter default Project ID.
-- The primary workspace opens automatically when the site is opened without query parameters.
-- `?project=<id>` selects another project. Legacy `?client=<id>` links remain supported.
-- UI terminology is now Project Workspace / Project ID / Viewer Link. Internal folder layout remains `clients/<id>/` for backward compatibility.
-
-## Permanent save flow
-
-- The save action is visible outside the collapsed GitHub access details.
-- The administrator connects a fine-grained token with Contents read/write access to `kortul/Grade_Optimizer`. It stays in tab memory.
-- Save builds a manifest containing imported model settings and built-in Scene Editor settings, commits the manifest and changed model GLBs directly to `main`, then verifies the updated branch ref and `clients/<id>/scene.json` blob.
-- The dirty state is cleared only after the verification passes.
-- A successful GitHub commit is the permanent save. GitHub Pages deployment subsequently refreshes the viewer URL.
-- Legacy browser-stored imported models are recovered as drafts only for an unpublished default workspace, then marked dirty so they can be migrated to GitHub. A remote manifest always takes precedence over local drafts.
-
-## Stored content
-
-- Imported model files and per-asset transforms / visibility / category / phase / Collision / Forest blocker.
-- Nested imported node visibility and Role / Tags / Collision / Forest blocker.
-- Built-in scene node transforms, visibility and metadata.
-- PBR material values, shared/unique material identity, and imported texture data URLs.
+- The permanent save button is visible independently of the collapsed GitHub access panel.
+- If no token is connected, clicking Save expands ADMIN · GITHUB ACCESS and focuses the token field.
+- Fine-grained token requires Contents read/write access to `kortul/Grade_Optimizer`; it remains in tab memory.
+- Save commits `clients/<id>/scene.json` and modified imported model GLBs to `main`.
+- After updating main, the app verifies the new branch SHA and confirms the manifest blob SHA through the GitHub Contents API.
+- Only after both checks pass are dirty flags cleared.
+- GitHub Pages deploys the committed viewer files after the permanent repository save.
+- Legacy local model drafts are recovered only when opening the default project without an explicit project query; if the remote manifest is missing, the drafts are marked dirty for migration to GitHub. If a remote manifest exists, it replaces browser drafts.
 
 ## Validation
 
-GitHub Actions validates active entrypoint, unique DOM IDs, DOM references, JS syntax, project save assertions and Maya exporter files. Manual browser round-trip with the administrator's fine-grained token remains required to confirm live API writes and cross-device restoration.
+- Active entrypoint: `app.v101.js`.
+- GitHub Actions quality check validates JS syntax, DOM bindings, permanent save wiring and matching Maya Exporter defaults.
+- GitHub Pages deploy is checked separately.
+- A real token-backed save and cross-device reload still requires manual verification in the browser.

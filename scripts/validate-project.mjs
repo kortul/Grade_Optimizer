@@ -223,6 +223,8 @@ assert.ok(html.includes('id="clientWorkspaceHint"') && html.includes('PROJECT WO
 assert.ok(entrySource.includes("WORKSPACE_QUERY.get('project')||WORKSPACE_QUERY.get('client')||''"), 'project query must be supported with legacy client URL compatibility');
 assert.ok(entrySource.includes("REQUESTED_PROJECT_ID||'alpine-resort'"), 'primary alpine-resort workspace must open automatically');
 assert.ok(entrySource.includes("'/contents/clients/'+slug+'/scene.json?ref=main'"), 'publisher must verify the saved manifest is present in main');
+assert.ok(entrySource.includes("tokenInput?.closest('details')?.setAttribute('open','')"), 'save action must reveal the GitHub token field when it is required');
+assert.ok(entrySource.includes('SAVE PERMANENTLY TO GITHUB'), 'imported model guidance must use the permanent GitHub save action');
 assert.ok(entrySource.includes("const rawClientId=String(clientIdInput?.value||'').trim()"), 'publisher must validate the explicitly entered Project ID');
 assert.ok(entrySource.includes("currentClientSlug!==slug"), 'publisher must prevent saving to a different active client workspace');
 assert.ok(entrySource.includes('function pulseEditorSelection(target){'), 'scene editor selection pulse effect missing');
@@ -238,6 +240,7 @@ assert.ok(entrySource.includes("persistImportedEditorAsset(asset).catch(error=>c
 assert.ok(html.includes('id="editorNodeRole" type="text"'), 'node role must accept custom values');
 assert.ok(html.includes('SAVE PERMANENTLY TO GITHUB'), 'Scene Editor must expose a permanent GitHub save action outside the collapsed admin token details');
 assert.ok(html.indexOf('id="publishClientWorkspaceButton"')>html.indexOf('</details>'), 'permanent save action must remain visible when GitHub token details are collapsed');
+assert.ok(read('maya/grade_optimizer_exporter.py').toString('utf8').includes('_option_string(OPTION_PROJECT, "alpine-resort")'), 'Maya Exporter default Project ID must match the Web Editor default');
 assert.ok(html.includes('ЭКСПОРТ JSON-БЭКАПА'), 'manual JSON export must be clearly marked as an optional backup');
 
 
