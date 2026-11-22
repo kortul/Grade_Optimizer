@@ -380,6 +380,7 @@ function syncSceneLookControls() {
   setChecked('sceneBokeh',opticsSettings.bokeh);
   setChecked('sceneSunEnabled',opticsSettings.sunEnabled);
   const values={
+    sceneCameraFovValue:Math.round(opticsSettings.cameraFov)+'°',
     sceneExposureValue:(Number(opticsSettings.exposure)>=0?'+':'')+Number(opticsSettings.exposure).toFixed(2)+' EV',
     sceneWhiteBalanceValue:Math.round(opticsSettings.temperature)+' K',
     sceneTintValue:Number(opticsSettings.tint).toFixed(0),
@@ -2157,16 +2158,16 @@ document.getElementById('pTerrainSlopes').addEventListener('change',e=>{
   state.terrainSlopesVisible=e.target.checked;scheduleRebuild(50);
 });
 document.getElementById('pLight').addEventListener('input',e=>{
-  sunIntensityScale=parseFloat(e.target.value); updateDaylight(state.dayTime);
+  opticsSettings.sunIntensity=THREE.MathUtils.clamp(parseFloat(e.target.value)*100,0,300);
+  applyOpticsSettings();
 });
 document.getElementById('pSunRot').addEventListener('input',e=>{
-  sunAzimuthOffset=parseFloat(e.target.value); updateDaylight(state.dayTime);
+  opticsSettings.sunRotation=THREE.MathUtils.clamp(parseFloat(e.target.value),0,360);
+  applyOpticsSettings();
 });
-const shadowSizes=[1024,2048,4096,8192];
 document.getElementById('pShadow').addEventListener('input',e=>{
-  const s=shadowSizes[parseInt(e.target.value)];
-  if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}
-  sun.shadow.mapSize.set(s,s);
+  opticsSettings.shadowQuality=THREE.MathUtils.clamp(parseInt(e.target.value,10),0,2);
+  applyOpticsSettings();
 });
 document.getElementById('pLabelOp').addEventListener('input',e=>{
   state.labelOpacity=parseFloat(e.target.value)/100;
@@ -2174,7 +2175,8 @@ document.getElementById('pLabelOp').addEventListener('input',e=>{
   applyLabelOpacity();
 });
 document.getElementById('pLightOn').addEventListener('change',e=>{
-  sunEnabled=e.target.checked; updateDaylight(state.dayTime);
+  opticsSettings.sunEnabled=e.target.checked;
+  applyOpticsSettings();
 });
 
 document.querySelectorAll('.slope-btn').forEach(b=>b.addEventListener('click',()=>{
