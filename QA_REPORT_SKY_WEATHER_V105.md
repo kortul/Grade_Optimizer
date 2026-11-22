@@ -3,7 +3,7 @@
 **Date:** 2026-11-22  
 **Repository:** `kortul/Grade_Optimizer`  
 **Branch:** `main`  
-**Code state:** `b294f6a990735d74ba3eb45a1edc95fa598343d2`
+**Code state:** `0383605724b2d6b9248c7d45a3e5dda1c7991917`
 
 ## 1. Environment defaults
 
