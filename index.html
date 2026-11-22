@@ -783,6 +783,30 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #opticsStatus{margin-top:9px;padding:8px 9px;border:1px solid rgba(130,184,226,.12);border-radius:7px;background:rgba(92,145,183,.07);color:#a9c7db;font-size:9px;letter-spacing:.25px;line-height:1.5}
 @media(max-width:1180px){#opticsPanel{top:116px;left:12px;width:min(350px,calc(100% - 24px));max-height:calc(100% - 136px)}}
 @media(max-width:620px){#opticsPanel{top:152px;left:8px;right:8px;width:auto;max-height:calc(100% - 164px);padding:11px}}
+#sceneEditorPanel .scene-look-section{border-color:rgba(143,190,220,.28);background:linear-gradient(180deg,rgba(86,128,157,.12),rgba(255,255,255,.018))}
+#sceneEditorPanel .scene-look-section>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none;cursor:pointer}
+#sceneEditorPanel .scene-look-section>summary::-webkit-details-marker,
+#sceneEditorPanel .scene-look-group>summary::-webkit-details-marker{display:none}
+#sceneEditorPanel .scene-look-section>summary:after{content:'⌄';color:#9abbd0;font-size:16px}
+#sceneEditorPanel .scene-look-section:not([open])>summary:after{content:'›'}
+#sceneEditorPanel .scene-look-title{font-size:11px;font-weight:800;letter-spacing:.9px;color:#e3f0f7}
+#sceneEditorPanel .scene-look-group{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.09)}
+#sceneEditorPanel .scene-look-group>summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;color:#bad3e3;font-size:10px;font-weight:800;letter-spacing:.65px}
+#sceneEditorPanel .scene-look-group>summary:after{content:'+';color:#8ba7b8;font-size:15px}
+#sceneEditorPanel .scene-look-group[open]>summary:after{content:'−'}
+#sceneEditorPanel .scene-look-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;margin-top:9px}
+#sceneEditorPanel .scene-look-control{min-width:0}
+#sceneEditorPanel .scene-look-control.wide{grid-column:1/-1}
+#sceneEditorPanel .scene-look-control label{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:0 0 3px;color:#b9c9d5;font-size:9px}
+#sceneEditorPanel .scene-look-control label strong{flex:0 0 auto;color:#c5e0ef;font-size:9px;font-variant-numeric:tabular-nums}
+#sceneEditorPanel .scene-look-control input[type=range]{width:100%;height:15px;margin:2px 0 0;accent-color:#9bc6df}
+#sceneEditorPanel .scene-look-control select{width:100%;height:31px;margin:2px 0 0;padding:4px 6px;font-size:10px}
+#sceneEditorPanel .scene-look-switches{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+#sceneEditorPanel .scene-look-switches label{display:flex;align-items:center;gap:6px;margin:0;padding:7px;border:1px solid rgba(255,255,255,.08);border-radius:6px;background:rgba(255,255,255,.025);color:#c5d4df;font-size:9px}
+#sceneEditorPanel .scene-look-switches input{accent-color:#a6cfe6}
+#sceneEditorPanel .scene-look-note{margin-top:8px;padding:7px 8px;border-radius:6px;background:rgba(101,145,175,.08);color:#91aabc;font-size:9px;line-height:1.45}
+#sceneEditorPanel .scene-look-actions{display:flex;justify-content:flex-end;margin-top:8px}
+#sceneEditorPanel .scene-look-actions button{width:auto;min-width:110px}
 </style>
 
 </head>
@@ -849,7 +873,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <button id="weatherClose" type="button" aria-label="Закрыть погоду">×</button>
   </div>
   <div class="weather-preset-grid" role="group" aria-label="Погодные пресеты">
-    <button class="weather-preset active" data-weather-preset="clear" type="button">☀ Ясно</button>
+    <button class="weather-preset active" data-weather-preset="light" type="button">☀ Лёгкие облака</button>
+    <button class="weather-preset" data-weather-preset="clear" type="button">☀ Без облаков</button>
     <button class="weather-preset" data-weather-preset="partly" type="button">🌤 Переменная</button>
     <button class="weather-preset" data-weather-preset="cloudy" type="button">☁ Облачно</button>
     <button class="weather-preset" data-weather-preset="overcast" type="button">🌥 Пасмурно</button>
@@ -868,7 +893,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <label for="weatherWind">Скорость ветра <strong id="weatherWindValue">2 км/ч</strong></label>
     <input id="weatherWind" type="range" min="0" max="60" step="1" value="2"/>
   </div>
-  <div id="weatherStatus" aria-live="polite">Ясно</div>
+  <div id="weatherStatus" aria-live="polite">Ясно · лёгкие облака</div>
 </div>
 
 <div id="opticsPanel" role="region" aria-label="Настройки оптики камеры">
@@ -934,6 +959,159 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="sceneEditorPanel" aria-label="Scene and material inspector">
   <div id="editorHeader"><div class="editor-heading"><strong>INSPECTOR</strong><span class="editor-chip">SCENE / MATERIAL</span></div><button class="secondary closeEditor" id="closeEditor" type="button" title="Закрыть">×</button></div>
   <div id="editorStatus">Выбери объект в сцене, чтобы редактировать его свойства и материалы.</div>
+
+  <details class="editor-section scene-look-section" open>
+    <summary><span class="scene-look-title">SCENE LOOK · ENVIRONMENT / CAMERA / POST</span><span class="editor-chip">GLOBAL</span></summary>
+    <div class="scene-look-body">
+      <details class="scene-look-group" open>
+        <summary>ENVIRONMENT & LIGHTING</summary>
+        <div class="scene-look-grid">
+          <div class="scene-look-control wide">
+            <label for="sceneClouds">Cloud coverage <strong id="sceneCloudsValue">18%</strong></label>
+            <input id="sceneClouds" type="range" min="0" max="100" step="1" value="18"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSnow">Snowfall <strong id="sceneSnowValue">0%</strong></label>
+            <input id="sceneSnow" type="range" min="0" max="100" step="1" value="0"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneWind">Wind <strong id="sceneWindValue">3 km/h</strong></label>
+            <input id="sceneWind" type="range" min="0" max="60" step="1" value="3"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSunIntensity">Sun intensity <strong id="sceneSunIntensityValue">100%</strong></label>
+            <input id="sceneSunIntensity" type="range" min="0" max="300" step="1" value="100"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSunRotation">Sun rotation <strong id="sceneSunRotationValue">0°</strong></label>
+            <input id="sceneSunRotation" type="range" min="0" max="360" step="1" value="0"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneAmbientFill">Ambient fill <strong id="sceneAmbientFillValue">100%</strong></label>
+            <input id="sceneAmbientFill" type="range" min="0" max="200" step="1" value="100"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneShadowQuality">Shadow map quality</label>
+            <select id="sceneShadowQuality">
+              <option value="0">Low · 1024</option>
+              <option value="1" selected>High · 2048</option>
+              <option value="2">Ultra · 4096</option>
+            </select>
+          </div>
+        </div>
+        <div class="scene-look-switches">
+          <label for="sceneSunEnabled"><input id="sceneSunEnabled" type="checkbox" checked/> Directional sun</label>
+        </div>
+      </details>
+
+      <details class="scene-look-group" open>
+        <summary>CAMERA & EXPOSURE</summary>
+        <div class="scene-look-grid">
+          <div class="scene-look-control">
+            <label for="sceneCameraFov">Field of view <strong id="sceneCameraFovValue">55°</strong></label>
+            <input id="sceneCameraFov" type="range" min="30" max="90" step="1" value="55"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneExposure">Exposure bias <strong id="sceneExposureValue">+0.00 EV</strong></label>
+            <input id="sceneExposure" type="range" min="-2" max="2" step="0.05" value="0"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneWhiteBalance">White balance <strong id="sceneWhiteBalanceValue">6500 K</strong></label>
+            <input id="sceneWhiteBalance" type="range" min="3200" max="9000" step="50" value="6500"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneTint">Green / magenta tint <strong id="sceneTintValue">0</strong></label>
+            <input id="sceneTint" type="range" min="-100" max="100" step="1" value="0"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneFocusDistance">Focus distance <strong id="sceneFocusDistanceValue">48 m</strong></label>
+            <input id="sceneFocusDistance" type="range" min="5" max="500" step="1" value="48"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneAperture">Lens aperture <strong id="sceneApertureValue">f/4.0</strong></label>
+            <input id="sceneAperture" type="range" min="1.4" max="16" step="0.1" value="4"/>
+          </div>
+        </div>
+      </details>
+
+      <details class="scene-look-group" open>
+        <summary>LENS & POST-PROCESSING</summary>
+        <div class="scene-look-switches">
+          <label for="sceneOpticsEnabled"><input id="sceneOpticsEnabled" type="checkbox" checked/> Post-processing enabled</label>
+          <label for="sceneBokeh"><input id="sceneBokeh" type="checkbox"/> Depth of field / Bokeh</label>
+        </div>
+        <div class="scene-look-grid">
+          <div class="scene-look-control">
+            <label for="sceneBloom">Bloom <strong id="sceneBloomValue">58%</strong></label>
+            <input id="sceneBloom" type="range" min="0" max="100" step="1" value="58"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneBloomThreshold">Bloom threshold <strong id="sceneBloomThresholdValue">0.78</strong></label>
+            <input id="sceneBloomThreshold" type="range" min="0.1" max="2" step="0.01" value="0.78"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneFlare">Lens flare <strong id="sceneFlareValue">70%</strong></label>
+            <input id="sceneFlare" type="range" min="0" max="100" step="1" value="70"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneDirt">Lens dirt <strong id="sceneDirtValue">38%</strong></label>
+            <input id="sceneDirt" type="range" min="0" max="100" step="1" value="38"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneVignette">Vignette <strong id="sceneVignetteValue">24%</strong></label>
+            <input id="sceneVignette" type="range" min="0" max="100" step="1" value="24"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneChromatic">Chromatic aberration <strong id="sceneChromaticValue">18%</strong></label>
+            <input id="sceneChromatic" type="range" min="0" max="100" step="1" value="18"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneGrain">Film grain <strong id="sceneGrainValue">4%</strong></label>
+            <input id="sceneGrain" type="range" min="0" max="100" step="1" value="4"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSharpness">Sharpness <strong id="sceneSharpnessValue">14%</strong></label>
+            <input id="sceneSharpness" type="range" min="0" max="100" step="1" value="14"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneQuality">Render quality</label>
+            <select id="sceneQuality">
+              <option value="performance">Performance</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="high">High</option>
+              <option value="cinematic">Cinematic</option>
+            </select>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneToneMapping">Tone mapping</label>
+            <select id="sceneToneMapping">
+              <option value="aces" selected>ACES Filmic</option>
+              <option value="agx">AgX</option>
+              <option value="reinhard">Reinhard</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+        </div>
+        <div class="scene-look-note">Bokeh и повышенное качество рендера требуют дополнительных ресурсов GPU. Для сравнения производительности переключи Render quality на Performance или отключи Post-processing.</div>
+      </details>
+
+      <details class="scene-look-group">
+        <summary>COLOR GRADING</summary>
+        <div class="scene-look-grid">
+          <div class="scene-look-control">
+            <label for="sceneContrast">Contrast <strong id="sceneContrastValue">1.04</strong></label>
+            <input id="sceneContrast" type="range" min="60" max="160" step="1" value="104"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSaturation">Saturation <strong id="sceneSaturationValue">1.04</strong></label>
+            <input id="sceneSaturation" type="range" min="0" max="160" step="1" value="104"/>
+          </div>
+        </div>
+      </details>
+      <div class="scene-look-actions"><button id="sceneLookReset" class="secondary" type="button">RESET LOOK</button></div>
+      <div class="scene-look-note">Настройки сцены, погоды и камеры входят в Scene Config и clients/&lt;project&gt;/scene.json. Они будут восстановлены вместе с проектом на другом устройстве.</div>
+    </div>
+  </details>
 
   <div class="editor-section ski-replacement-section">
     <h3>ЗАМЕНА ЛЫЖ ЛЫЖНИКА <span class="editor-chip">SKIER RIG</span></h3>
