@@ -112,7 +112,7 @@ const clientManifestSource = entrySource.slice(entrySource.indexOf('function col
 assert.ok(clientManifestSource.includes('nodeMetadata:collectEditorNodeMetadata(root)'), 'client manifest must persist per-node metadata');
 const nodeMetadataSaveSource = entrySource.slice(entrySource.indexOf('function saveSelectedNodeMetadata()'), entrySource.indexOf('function applyEditorTransform()'));
 assert.ok(nodeMetadataSaveSource.includes('owner.meta.modelDirty=true'), 'editing node Collision / Forest blocker must mark imported client model dirty');
-const localFolderWriter = entrySource.slice(entrySource.indexOf('async function writeProjectSnapshotToFolder('), entrySource.indexOf('async function autosaveProjectToBrowser('));
+const localFolderWriter = entrySource.slice(entrySource.indexOf('async function writeProjectSnapshotToFolder('), entrySource.indexOf('function shareClientWorkspace()'));
 assert.ok(localFolderWriter.includes("clients/'+slug+'/scene.json'"), 'direct local save must write the project manifest at the GitHub Pages path');
 assert.ok(localFolderWriter.includes('asset.sourceBuffer'), 'direct local save must write imported model binary files');
 
