@@ -1,104 +1,90 @@
-# CHECKPOINT — Grade Optimizer: Sky, Lighting & Weather
+# CHECKPOINT — Grade Optimizer: Weather, Snow & Camera Optics
 
 **Date:** 2026-11-22  
 **Repository:** `kortul/Grade_Optimizer`  
-**Working branch:** `feature/sky-weather-v105`  
-**Base branch:** `main`  
-**Current working commit:** `a85ed65a823ac3740edc5207abed879f00a67530`  
-**Scope:** remove the black procedural sky failure and introduce a first complete procedural weather layer without disturbing the existing editor or project saving.
+**Working branch:** `main` only  
+**Source state before this docs update:** `cf360b79ee2faa94534cea5520a96a7447e978cb`  
+**Scope:** stable procedural sky/weather, visible optional snowfall, first-person avatar visibility fix, and restrained cinematic camera optics.
 
-## 1. Source baseline
+## 1. Current application entry point
 
-- The current site before this work loaded `app.v104.js` from `index.html`.
-- Baseline app SHA: `ff8938ab8388d2498e4eb4b145455cb15d6dc178`.
-- Work is isolated on `feature/sky-weather-v105`; `main` has not been modified.
-- `index.html` on the feature branch now loads `app.v105.js`.
+- `index.html` loads `app.v105.js`.
+- Three.js is pinned to `0.160.0` through the import map.
+- All work for this checkpoint is on `main`. No separate development branch is used.
 
-## 2. Black sphere finding and fix
+## 2. Camera / black sphere issue
 
-The v104 source created a 12,000-unit sphere named `skyDome` with a custom `THREE.ShaderMaterial`, used as the procedural sky. It was moved with the camera every frame. This is the source-level match for the huge black spherical shape in the supplied screenshot. The precise shader failure has not been confirmed in a live browser, but the fragile custom GLSL sky path has now been removed from v105.
+- Removed the spherical sky mesh completely. The sky gradient is supplied through the scene background texture.
+- The first-person black sphere was not the sky dome: the skier avatar's helmet / body could remain in front of the first-person camera during its visibility crossfade.
+- `skier-controller.v73.js` now hides the skier avatar immediately when first-person is requested. Third-person and drone presentation remain supported.
 
-Replacement:
-- Large sky sphere with a locally generated CanvasTexture gradient and ordinary `MeshBasicMaterial`.
-- No custom GLSL / `ShaderMaterial` in the v105 app or weather module.
-- The sky follows the camera and remains behind the scene geometry.
-- A soft sun-glow sprite is driven by the existing day cycle and sunlight checkbox.
+## 3. Weather and snowfall
 
-## 3. Implemented files
+File: `weather-system.v1.js`
 
-### `weather-system.v1.js`
-- Procedural sky gradient generated locally on canvas.
-- Soft sun glow.
-- Procedural soft cloud texture and 48 moving cloud sprites.
-- Six weather presets: clear, partly cloudy, cloudy, overcast, snowfall, blizzard.
-- 2,200 camera-following snow particles.
-- Wind-driven snow streaks for stronger snowfall / blizzard.
-- Wind-driven cloud drift.
-- Weather-dependent direct-light reduction and ambient-light adjustment.
-- Weather-dependent fog distance / visibility.
-- Standard Three.js materials only.
+- Clear weather is the default and snowfall defaults to **0%**.
+- Weather presets: clear, partly cloudy, cloudy, overcast, snowfall and blizzard.
+- Clouds drift with wind; direct sunlight, ambient fill and fog visibility respond to weather.
+- Invisible cloud sprites skip per-frame world-position updates.
+- Snow is a camera-space layer, initialized inside the viewing frustum so particles stay in front of the camera while looking around.
+- Snowflakes use camera-facing textured `InstancedMesh` quads instead of `PointsMaterial`. The particle layer is one instanced draw call; its instance count follows snowfall intensity.
+- Snow instance matrices are updated only while snowfall is active. Wind streaks are enabled only for sufficiently windy snowfall.
+- The clear preset does not render snow. Snowfall / blizzard can be selected manually from the weather panel.
 
-### `app.v105.js`
-- Imports and instantiates `WeatherSystem`.
-- Existing time-of-day control updates the sky, sun and weather lighting.
-- Weather updates run in the existing render loop in overview, skier and drone modes.
-- The weather panel closes when entering immersive skier / drone modes.
-- Browser-local weather preferences use the separate key `grade_optimizer_weather_v1`.
+## 4. Camera optics / post-processing
 
-### `index.html`
-- Adds a ПОГОДА toolbar button and weather panel.
-- Six preset buttons and controls for cloud coverage, snowfall intensity and wind speed.
-- Loads `app.v105.js`.
+Files:
+- `camera-optics.v1.js`
+- `app.v105.js`
+- `index.html`
 
-## 4. Weather behavior
+Implemented in the main render pipeline:
+- `EffectComposer` + `RenderPass`.
+- Subtle `UnrealBloomPass` for highlight bloom / halation.
+- A custom lens pass for restrained vignette, minimal chromatic aberration, screen-space optical ghosts, a very subtle anamorphic streak, and procedural lens dirt that responds to highlights.
+- Flares are positioned from the projected sun location and are suppressed when the sun is not visible or outside the camera frame.
+- Optional `BokehPass` / depth of field, disabled by default due to GPU cost.
+- `OutputPass` handles final output conversion and tone mapping.
+- A new **ОПТИКА** toolbar panel exposes the master processing toggle, bloom amount, flare / dirt toggle and Bokeh toggle.
+- Turning off the master optics setting returns to direct `renderer.render()`.
+- Post-process render targets are capped at 1.25 device-pixel ratio to limit GPU work.
+- Optics settings persist separately in browser `localStorage` under `grade_optimizer_optics_v1`.
 
-| Preset | Cloud cover | Snow | Wind |
-|---|---:|---:|---:|
-| Clear | 0% | 0% | 2 km/h |
-| Partly cloudy | 34% | 0% | 5 km/h |
-| Cloudy | 66% | 0% | 9 km/h |
-| Overcast | 96% | 0% | 13 km/h |
-| Snowfall | 76% | 38% | 18 km/h |
-| Blizzard | 100% | 100% | 46 km/h |
+## 5. Preservation
 
-The sliders convert a preset into a custom configuration. Cloud cover dims direct sunlight and softens / increases ambient fill. Snowfall and wind reduce visibility through fog. Strong wind adds visible streaks.
+The changes are limited to:
+- `weather-system.v1.js` — snow rendering and weather update optimisation.
+- `camera-optics.v1.js` — new optics / post-processing pipeline.
+- `app.v105.js` — optics integration, panel controls, resize and render calls.
+- `index.html` — optics toolbar button and controls panel.
+- `skier-controller.v73.js` — immediate first-person avatar hiding.
+- This checkpoint and the QA report.
 
-## 5. Preservation and isolation
+The scene optimizer, existing terrain / material editing, imported scene assets, Scene Editor and client workspace saving flows were not intentionally rewritten in this pass.
 
-- A reverse-diff reconstruction test confirmed `app.v105.js`, after removing only the deliberate weather insertions, matches the original `app.v104.js` **byte-for-byte**.
-- The original slope optimizer, red-snow material test, terrain materials, model import, Scene Editor, hierarchy, client workspace, GitHub saving and local-folder auto-sync code remain unchanged.
-- Weather preferences are kept in browser `localStorage`; they are intentionally not written into client `scene.json` in this first pass.
-- No user scene objects, models, collision data, or imported assets are created or changed by the weather module.
+## 6. Static QA
 
-## 6. Static validation performed
+- JavaScript syntax check passed for `app.v105.js`, `weather-system.v1.js`, `camera-optics.v1.js` and `skier-controller.v73.js` after stripping module imports / exports for parser-only validation.
+- HTML optics-control IDs were checked against app bindings; no duplicate IDs or missing optics IDs were found.
+- Confirmed the main render loop uses CameraOptics and the camera-optics panel is connected.
+- Confirmed clear preset snow is zero, the snow renderer is InstancedMesh-based, snowfall controls the active instance count, and Bokeh starts disabled.
 
-- JavaScript syntax parse: `app.v105.js` — PASS (imports stripped for parser-only check).
-- JavaScript syntax parse: `weather-system.v1.js` — PASS (module export stripped for parser-only check).
-- App imports the weather module — PASS.
-- Old sky shader references removed from v105 app — PASS.
-- Sky CanvasTexture + MeshBasicMaterial present — PASS.
-- Cloud sprites, snow particle system, blizzard streaks present — PASS.
-- All six preset buttons and corresponding presets present — PASS.
-- Weather UI element IDs match app bindings — PASS.
-- Weather localStorage key exists and is separate from scene project serialization — PASS.
-- Existing app preservation audit — PASS (byte-for-byte reconstruction).
+See `QA_REPORT_SKY_WEATHER_V105.md` for the detailed checklist.
 
-## 7. Remaining validation before merge to main
+## 7. Live browser checks still required
 
-- [ ] Open the feature build in a real browser and inspect sky rendering / horizon mapping.
-- [ ] Confirm the black sphere is gone in the original camera view.
-- [ ] Test all six presets at normal and maximum slider values.
-- [ ] Test sunrise / noon / sunset / night with clouds.
-- [ ] Test fog and snow visibility at low altitude, in overview, skier and drone modes.
-- [ ] Check FPS and visual density with maximum blizzard.
-- [ ] Confirm sunlight toggle and sun rotation controls still behave as expected.
-- [ ] Inspect browser console for WebGL / runtime errors.
-- [ ] Only after live validation, consider merging v105 into `main`.
+This update was statically validated but not run in an actual browser/WebGL session. Still to verify on the deployed page:
+- Snowflake density / readability in overview, skier first-person and drone views.
+- Whether bloom, lens dirt and sun ghosts are subtle enough with the actual scene materials and sky.
+- Bokeh focus / depth quality at the real scene scale.
+- Actual FPS with optics enabled versus disabled, and with snowfall / blizzard.
+- Browser console and WebGL runtime errors.
 
-## 8. Current status
+Do not describe FPS as improved or the visual result as fully tested until those live checks are performed.
 
-**Implemented and committed on the feature branch:** v105 app integration, procedural sky replacement, clouds, presets, snowfall, wind streaks, fog response, separate browser persistence, and UI.
+## 8. Suggested next test
 
-**Not yet done:** live browser rendering / performance validation. This environment has not run the Three.js app in an actual browser, so visual quality and FPS are not claimed as verified.
-
-**Next action:** run the feature branch in the user's browser, fix any visual issues found, then update the QA report and decide whether to merge to `main`.
+1. Hard-refresh the deployed site with `Ctrl+F5`.
+2. In **ПОГОДА**, select **Снегопад**; then switch between overview, skier first-person and drone to confirm flakes stay visible.
+3. In **ОПТИКА**, compare Bloom / Lens Flare with the master toggle off, then enable Bokeh separately.
+4. If frame rate drops, switch off the optics master toggle first. That bypasses the entire post-processing chain.
