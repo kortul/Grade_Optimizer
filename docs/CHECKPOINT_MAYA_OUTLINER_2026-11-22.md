@@ -3,7 +3,7 @@ Date: 2026-11-22
 Branch: `main`
 Repository: https://github.com/kortul/Grade_Optimizer
 Current application source commit: `24b2617072ec929e543e132843c3e0f641747a0c`
-Latest verified web application source: `app.v97.js`
+Latest verified web application source: `app.v98.js`
 Latest verified Maya Exporter: `0.2.4`
 
 ## Product direction
@@ -41,12 +41,13 @@ Maya test-scene fixture:
 
 ## Current web application
 
-Active entry point: `index.html` → `app.v97.js`.
+Active entry point: `index.html` → `app.v98.js`.
 
 Implemented:
 - GLB / FBX import, recursive Maya-style Outliner, nested node selection and viewport picking.
 - Per-node transform editing, visibility, Role / Tags, Collision hint and Forest blocker hint. Deletion is supported for imported client models; destructive deletion of built-in base-scene components is disabled because the project manifest cannot rewrite the shipped source model. Hide such components through Visibility instead.
 - Shared material library, assignment / uniqueness controls, PBR editing and user texture import.
+- Sketchfab-style yellow selection pulse: clicking a model / node in the viewport, Outliner, object dropdown or material-slot dropdown triggers a smooth ~1.1-second yellow highlight on a separate overlay mesh. Original materials and saved PBR data are not modified.
 - Imported client models can be exported to GLB on publish after changes, while the manifest records transforms, categories, phases, visibility and node metadata.
 - Local browser IndexedDB is still used for local drafts when not working in a client workspace. This is not cross-device project storage.
 
@@ -96,20 +97,20 @@ Known follow-up / test items:
 ## Current verified commits and CI
 
 Latest application source commit:
-`24b2617072ec929e543e132843c3e0f641747a0c`
+`3317b46118ac36fff9d1395463ff6d77f329b6ec`
 
 Quality checks:
-https://github.com/kortul/Grade_Optimizer/actions/runs/45036859148
+https://github.com/kortul/Grade_Optimizer/actions/runs/45037785894
 
 GitHub Pages deployment:
-https://github.com/kortul/Grade_Optimizer/actions/runs/45036859499
+https://github.com/kortul/Grade_Optimizer/actions/runs/45037785687
 
-Both checks completed successfully for the v97 application source commit. Validation covers repository assertions, DOM references, JavaScript syntax and Pages build/deployment. It does not replace a real browser round-trip test.
+Quality validation completed successfully and the Pages build completed successfully for v98. Verify the final Deploy job status in Actions; visual behavior still needs browser testing.
 
 ## Suggested next session sequence
 
 1. Sync GitHub Desktop (Pull) into `C:\zGit\GradeOptimizer\Grade_Optimizer`.
-2. Confirm the deployed site loads `app.v97.js`.
+2. Confirm the deployed site loads `app.v98.js`.
 3. Open the intended client Project ID and connect GitHub Publisher in the tab used for editing.
 4. Run the cross-browser persistence test described above, starting with one built-in node's Collision / Forest blocker and visibility.
 5. Fix any restore / identity / dirty-state problems found before implementing automatic collision physics or forest exclusion.

@@ -458,7 +458,7 @@ def show():
         WINDOW + "_client",
         label="Project ID",
         text=project_default,
-        annotation="Короткое имя проекта для папки clients/<id> и ссылки ?client=<id>.",
+        annotation="Project ID для папки clients/<id> и ссылки ?project=<id>.",
         changeCommand=remember_export_settings,
         columnWidth2=(85, 440)
     )
