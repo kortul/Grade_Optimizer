@@ -263,13 +263,19 @@ export class SkierController {
 
   _updateSkierAvatar(forceVisible=false) {
     if(!this.skierAvatar||!this.skiRig)return;
-    const blend = forceVisible?1:THREE.MathUtils.clamp((this.viewBlend-0.035)/0.65,0,1);
-    this.skierAvatar.visible = forceVisible || this.viewBlend>0.015 || this.viewBlendTarget>0.015;
-    for(const mat of this.avatarFadeMaterials||[]) mat.opacity=blend;
+    // The avatar must never sit in front of the first-person camera.
+    // Fade it only while entering third person; hide it immediately when
+    // the user switches back to first person.
+    const thirdPersonRequested=this.viewBlendTarget>0.5;
+    const showAvatar=forceVisible||thirdPersonRequested;
+    const blend=forceVisible?1:(thirdPersonRequested
+      ?THREE.MathUtils.clamp((this.viewBlend-0.035)/0.65,0,1)
+      :0);
+    this.skierAvatar.visible=showAvatar;
+    for(const mat of this.avatarFadeMaterials||[])mat.opacity=blend;
     this.skierAvatar.position.copy(this.skiRig.position);
     this.skierAvatar.quaternion.copy(this.skiRig.quaternion);
     if(this.avatarTorso){
-      const tuck=this.keys.has('w')||this.keys.has('arrowup');
       const speed=THREE.MathUtils.clamp(this.velocity.length()/38,0,1);
       this.avatarTorso.rotation.x=-0.10-speed*0.10-0.46*this.stanceCameraBlend;
       this.avatarTorso.rotation.z=-this.skiSteerAngle*0.34;
@@ -279,10 +285,6 @@ export class SkierController {
         leg.rotation.z=-side*0.035*this.stanceCameraBlend;
       });
       this.avatarTorso.rotation.y=Math.sin(this.pushCooldown*8)*0.025;
-    }
-    if(!forceVisible&&this.viewBlend<=0.015&&this.viewBlendTarget<=0.015){
-      this.skierAvatar.visible=false;
-      for(const mat of this.avatarFadeMaterials||[])mat.opacity=0;
     }
   }
 
