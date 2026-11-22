@@ -848,6 +848,9 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @media(max-width:700px){#sceneEditorPanel .scene-look-tabs{top:48px;margin-left:-1px;margin-right:-1px;gap:2px;padding:4px}#sceneEditorPanel .scene-look-tab{min-height:48px;font-size:8px!important}#sceneEditorPanel .scene-look-tab-icon{font-size:15px}#sceneEditorPanel .scene-look-panel .scene-look-grid{gap:9px 8px}}
 @media(prefers-reduced-motion:reduce){#sceneEditorPanel .scene-look-panel:not([hidden]){animation:none}#sceneBar #editorToggle .scene-editor-gear{transition:none}}
 
+
+#sceneEditorPanel .scene-look-active-heading{margin:1px 0 8px;padding:1px 1px 8px}
+#sceneEditorPanel .scene-look-active-heading span{font-size:8px;letter-spacing:.8px;color:#71899c}
 </style>
 
 </head>
@@ -1015,6 +1018,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
         <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true">◐</span><span class="scene-look-tab-label">Color</span></button>
         <button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true">▦</span><span class="scene-look-tab-label">Render</span></button>
       </div>
+      <div class="scene-look-panel-heading scene-look-active-heading">
+        <strong id="sceneLookPanelTitle">LENS & POST</strong>
+        <span id="sceneLookPanelSubtitle">OPTICAL EFFECTS & DEPTH OF FIELD</span>
+      </div>
       <div class="scene-look-panels">
       <section class="scene-look-panel scene-look-panel--environment" id="sceneLookPanel-environment" data-look-panel="environment" role="tabpanel" aria-labelledby="sceneLookTab-environment" hidden>
         
@@ -1095,7 +1102,6 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       </section>
 
       <section class="scene-look-panel scene-look-panel--lens" id="sceneLookPanel-lens" data-look-panel="lens" role="tabpanel" aria-labelledby="sceneLookTab-lens">
-        <div class="scene-look-panel-heading"><strong id="sceneLookPanelTitle">LENS & POST</strong><span>CAMERA EFFECTS</span></div>
         
         <div class="scene-look-switches">
           <label for="sceneOpticsEnabled"><input id="sceneOpticsEnabled" type="checkbox" checked/> Post-processing enabled</label>
@@ -1456,4 +1462,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v107.js"></script></body></html>
+<script type="module" src="./app.v108.js"></script></body></html>

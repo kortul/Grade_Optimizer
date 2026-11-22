@@ -62,6 +62,7 @@ for (const key of sceneLookKeys) {
 assert.ok(html.includes('scene-editor-gear'), 'Scene Editor gear icon is missing');
 assert.ok(html.includes('aria-label="Scene Editor"'), 'Scene Editor icon button needs an accessible label');
 assert.ok(entrySource.includes('function bindSceneLookTabs()'), 'Scene Look tab behavior is missing');
+assert.ok(html.includes('id="sceneLookPanelTitle"') && html.includes('id="sceneLookPanelSubtitle"'), 'active Scene Look tab heading must stay visible above panels');
 assert.ok(entrySource.includes("['ArrowLeft','ArrowRight','Home','End']"), 'Scene Look keyboard navigation is missing');
 assert.ok(html.includes('id="sceneQuality"') && html.includes('id="sceneToneMapping"'), 'render settings must remain available in the Render tab');
 pass('Sketchfab-style Scene Look tabs, keyboard navigation and gear button are present');
