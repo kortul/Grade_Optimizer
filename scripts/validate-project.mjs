@@ -107,8 +107,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v73.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v73.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v74.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v74.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
@@ -122,6 +122,16 @@ assert.ok(skierSource.includes('this.airborneVelocityY=2.7'), 'bump jump lift mu
 assert.ok(skierSource.includes('this.jumpCooldown=1.35'), 'bump jump cooldown missing');
 assert.ok(skierSource.includes('this.position.y+this.eyeHeight+this.airborneHeight'), 'camera must lift during a jump');
 assert.ok(skierSource.includes('setSkiModel(source)'), 'skier model replacement API missing');
+assert.ok(skierSource.includes("'Helmet_Shell'"), 'detailed skier helmet shell is missing');
+assert.ok(skierSource.includes("'Goggle_Lens'"), 'reflective skier goggles are missing');
+assert.ok(skierSource.includes("this.avatarArms.push({shoulder:armRoot,elbow:elbowPivot,pole:poleRoot,side})"), 'articulated ski-pole arms are missing');
+assert.ok(skierSource.includes("this.avatarLegs.push({hip:leg,knee:lowerLeg,side})"), 'articulated knee rig is missing');
+assert.ok(skierSource.includes('this.avatarPushPulse=1'), 'pole-push animation trigger is missing');
+assert.ok(skierSource.includes('arm.pole.rotation.x'), 'pole stroke animation is missing');
+assert.ok(skierSource.includes('leg.knee.rotation.x'), 'knee flex animation is missing');
+assert.ok(skierSource.includes('slot.group.rotation.z'), 'ski edging animation is missing');
+pass('detailed skier equipment, articulated limbs, pole strokes and carving animation are present');
+
 assert.ok(skierSource.includes('this.skiSlots.push({group:ski,board,stripe,customMount})'), 'custom ski mounts missing from both ski slots');
 assert.ok(html.includes('id="importAssetCategory"'), 'model import category selector missing');
 assert.ok(html.includes('accept=".glb,.fbx'), 'model import input must accept GLB and FBX');
