@@ -563,6 +563,116 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   .mode-hud-foot{gap:4px}
 }
 
+
+/* v0.80 — all tutorial content visible at once, no inner scrolling */
+.mode-hud{
+  width:min(520px,calc(100% - 32px))!important;
+  max-height:none!important;height:auto!important;overflow:visible!important;
+  padding:11px!important;gap:0!important;
+}
+.mode-hud-collapsible{
+  display:grid!important;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
+  align-items:stretch;gap:7px;min-height:0!important;max-height:none!important;
+  height:auto!important;overflow:visible!important;padding:0!important;margin:0!important;
+}
+.mode-hud-collapsible[hidden]{display:none!important}
+.mode-tutorial,.mode-controls{min-width:0;min-height:0;margin:0 0 6px!important;padding:8px!important}
+.mode-section-heading{gap:4px;margin-bottom:6px}
+.mode-section-heading>span:first-child{font-size:9px}
+.mode-section-note{font-size:7px;line-height:1.15}
+.tutorial-steps{gap:7px}
+.tutorial-step{gap:6px}
+.step-number{width:19px;height:19px;flex-basis:19px;font-size:9px}
+.tutorial-step strong{font-size:10px;line-height:1.2}
+.tutorial-step small{font-size:8px;line-height:1.25;margin-top:2px}
+.mode-hud kbd{height:18px;min-width:18px;padding:0 4px;font-size:8px;border-radius:5px}
+.tutorial-step kbd{height:15px;min-width:15px;font-size:7px}
+.control-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.control-tile{display:flex;min-width:0;min-height:36px;padding:5px;gap:5px;border-radius:7px}
+.control-keys{min-width:40px;gap:2px}
+.control-keys-wide{min-width:57px}
+.control-keys kbd{min-width:17px;height:17px;padding:0 3px;font-size:7px}
+.control-keys-wide kbd{font-size:7px}
+.control-tile>div:last-child{min-width:0}
+.control-tile strong{font-size:9px;line-height:1.15;overflow-wrap:anywhere}
+.control-tile small{display:none!important}
+.mode-hud-foot,.hud-advanced{grid-column:1/-1;min-width:0}
+.mode-hud-foot{gap:4px;margin-top:0}
+.mode-actions{gap:5px}
+.mode-switch-action,.mode-overview-action{min-height:34px;padding:6px 8px;font-size:9px}
+.action-shortcut{font-size:8px;padding:3px 4px}
+.mode-lock-hint{font-size:8px;line-height:1.2}
+.hud-advanced{margin:4px 0 0!important;padding:6px 8px!important}
+.hud-advanced summary{font-size:9px}
+.hud-advanced[open] summary{margin-bottom:5px}
+.hud-advanced .hudSnowHead{font-size:9px}
+.hud-advanced .hudSnowScale{font-size:8px}
+.mode-hud-header{margin-bottom:6px;gap:6px}
+.mode-hud-symbol{width:36px;height:36px;flex-basis:36px;font-size:21px}
+.mode-hud-title{font-size:16px}
+.mode-hud-eyebrow{font-size:8px}
+.mode-hud-header-actions{gap:5px}
+.mode-hud-header-actions .mode-hud-status{font-size:7px;padding:5px 6px}
+.mode-hud-toggle{min-width:72px;min-height:28px;padding:4px 6px;font-size:8px}
+.mode-hud-toggle kbd{height:16px;min-width:16px}
+.mode-hud-stats{gap:5px;margin:0 0 7px!important}
+.mode-stat{padding:6px}
+.mode-stat>span{font-size:7px;letter-spacing:.06em;margin-bottom:2px}
+.mode-stat-primary strong{font-size:21px}
+.mode-stat strong{font-size:15px}
+.mode-stat strong small{font-size:8px}
+#droneHud .mode-hud-stats{grid-template-columns:.7fr 1.3fr;margin:0 0 7px!important}
+#droneHud .drone-intro{font-size:8px;line-height:1.25;padding-left:2px}
+@media(max-width:720px){
+  .mode-hud{left:8px!important;bottom:8px!important;width:calc(100% - 16px)!important;padding:9px!important}
+  .mode-hud-collapsible{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:5px}
+  .mode-tutorial,.mode-controls{padding:6px!important}
+  .tutorial-steps{gap:6px}
+  .tutorial-step small{font-size:7px}
+  .mode-section-heading>span:first-child{font-size:8px}
+  .mode-section-note{font-size:6px}
+  .control-tile{min-height:34px;padding:4px;gap:3px}
+  .control-keys{min-width:36px}
+  .control-keys-wide{min-width:52px}
+  .control-keys kbd{font-size:6px;min-width:15px}
+  .control-tile strong{font-size:8px}
+  .mode-lock-hint{font-size:7px}
+  .mode-switch-action,.mode-overview-action{min-height:31px;font-size:8px}
+}
+@media(max-width:390px){
+  .mode-hud{padding:7px!important}
+  .mode-hud-collapsible{grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:4px}
+  .mode-tutorial,.mode-controls{padding:5px!important}
+  .mode-hud-title{font-size:14px}
+  .mode-hud-symbol{width:31px;height:31px;flex-basis:31px}
+  .mode-hud-stats{gap:3px}
+  .mode-stat{padding:5px 4px}
+  .mode-stat>span{font-size:6px}
+  .mode-stat-primary strong{font-size:18px}
+  .mode-stat strong{font-size:13px}
+  .mode-stat strong small{font-size:7px}
+  .tutorial-step strong{font-size:9px}
+  .tutorial-step small{font-size:6.5px}
+  .control-grid{gap:3px}
+  .control-tile{min-height:32px;padding:3px;gap:2px}
+  .control-keys{min-width:32px}
+  .control-keys-wide{min-width:48px}
+  .control-keys kbd{min-width:14px;height:15px;font-size:6px}
+  .control-tile strong{font-size:7px}
+  .mode-hud-toggle{min-width:66px}
+}
+@media(max-height:620px){
+  .mode-hud{padding:7px!important}
+  .mode-hud-header{margin-bottom:4px}
+  .mode-hud-stats{margin-bottom:4px!important}
+  .mode-tutorial,.mode-controls{padding:5px!important;margin-bottom:4px!important}
+  .tutorial-steps{gap:4px}
+  .tutorial-step small{font-size:7px}
+  .control-tile{min-height:30px;padding:3px}
+  .mode-hud-foot{gap:2px}
+  .hud-advanced{margin-top:2px!important;padding:4px 6px!important}
+}
+
 </style>
 </head>
 <body>
@@ -742,21 +852,21 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <section class="mode-tutorial">
     <div class="mode-section-heading"><span>КАК НАЧАТЬ</span><span class="mode-section-note">ВСЁ ПРОСТО</span></div>
     <div class="tutorial-steps">
-      <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по склону</strong><small>Мышь начнёт управлять взглядом. Двигай ею, чтобы осмотреться.</small></div></div>
-      <div class="tutorial-step"><span class="step-number">2</span><div><strong>Оттолкнись и поезжай</strong><small>Нажми <kbd>SHIFT</kbd> или <kbd>SPACE</kbd>. На склоне скорость дальше набирается сама.</small></div></div>
-      <div class="tutorial-step"><span class="step-number">3</span><div><strong>Поворачивай и тормози</strong><small><kbd>A</kbd> / <kbd>D</kbd> — поворот, <kbd>S</kbd> — тормоз. Не спеши!</small></div></div>
+      <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по склону</strong><small>Клик — захват мыши. Двигай мышью, чтобы осмотреться.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">2</span><div><strong>Оттолкнись и поезжай</strong><small><kbd>SHIFT</kbd> / <kbd>SPACE</kbd> — толчок. Дальше разгоняешься сам.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">3</span><div><strong>Поворачивай и тормози</strong><small><kbd>A</kbd> / <kbd>D</kbd> — поворот. <kbd>S</kbd> — тормоз.</small></div></div>
     </div>
   </section>
 
   <section class="mode-controls">
     <div class="mode-section-heading"><span>КЛАВИШИ УПРАВЛЕНИЯ</span><span class="mode-section-note">МОЖНО НА РУССКОЙ РАСКЛАДКЕ</span></div>
     <div class="control-grid">
-      <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>↑</kbd></div><div><strong>Присесть</strong><small>Меньше сопротивление воздуха</small></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd>S</kbd><span>/</span><kbd>↓</kbd></div><div><strong>Тормозить</strong><small>Снизить скорость</small></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Поворот</strong><small>Влево / вправо · также ← / →</small></div></div>
-      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SHIFT</kbd><span>или</span><kbd>SPACE</kbd></div><div><strong>Толчок палками</strong><small>Добавить скорость, даже в гору</small></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Осмотреться</strong><small>Поверни камеру движением мыши</small></div></div>
-      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd><span>/</span><kbd>TAB</kbd></div><div><strong>Сменить режим</strong><small>Лыжник ↔ дрон</small></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>↑</kbd></div><div><strong>Присесть</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>S</kbd><span>/</span><kbd>↓</kbd></div><div><strong>Тормозить</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Поворот</strong></div></div>
+      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SHIFT</kbd><span>или</span><kbd>SPACE</kbd></div><div><strong>Толчок палками</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Осмотреться</strong></div></div>
+      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd><span>/</span><kbd>TAB</kbd></div><div><strong>Сменить режим</strong></div></div>
     </div>
   </section>
 
@@ -800,21 +910,21 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <section class="mode-tutorial">
     <div class="mode-section-heading"><span>КАК УПРАВЛЯТЬ</span><span class="mode-section-note">3 ПРОСТЫХ ШАГА</span></div>
     <div class="tutorial-steps">
-      <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по сцене</strong><small>Захвати мышь, затем двигай ею, чтобы направить камеру.</small></div></div>
-      <div class="tutorial-step"><span class="step-number">2</span><div><strong>Лети вперёд или назад</strong><small><kbd>W</kbd> — вперёд, <kbd>S</kbd> — назад. Полёт идёт в сторону взгляда.</small></div></div>
-      <div class="tutorial-step"><span class="step-number">3</span><div><strong>Меняй высоту</strong><small><kbd>SPACE</kbd> — вверх, <kbd>SHIFT</kbd> — вниз. <kbd>CTRL</kbd> — быстрее.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по сцене</strong><small>Клик — захват мыши. Мышь задаёт направление.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">2</span><div><strong>Лети вперёд или назад</strong><small><kbd>W</kbd> / <kbd>S</kbd> — вперёд / назад по взгляду.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">3</span><div><strong>Меняй высоту</strong><small><kbd>SPACE</kbd> / <kbd>SHIFT</kbd> — высота. <kbd>CTRL</kbd> — быстрее.</small></div></div>
     </div>
   </section>
 
   <section class="mode-controls">
     <div class="mode-section-heading"><span>КЛАВИШИ УПРАВЛЕНИЯ</span><span class="mode-section-note">РАБОТАЕТ И НА РУССКОЙ РАСКЛАДКЕ</span></div>
     <div class="control-grid">
-      <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>S</kbd></div><div><strong>Вперёд / назад</strong><small>По направлению камеры</small></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Влево / вправо</strong><small>Боковое перемещение</small></div></div>
-      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SPACE</kbd><span>/</span><kbd>SHIFT</kbd></div><div><strong>Выше / ниже</strong><small>Управление высотой</small></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd>CTRL</kbd></div><div><strong>Ускорение</strong><small>Более быстрый полёт</small></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Направление</strong><small>Посмотри туда, куда хочешь лететь</small></div></div>
-      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd><span>/</span><kbd>TAB</kbd></div><div><strong>Сменить режим</strong><small>Дрон ↔ лыжник</small></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>S</kbd></div><div><strong>Вперёд / назад</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Влево / вправо</strong></div></div>
+      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SPACE</kbd><span>/</span><kbd>SHIFT</kbd></div><div><strong>Выше / ниже</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>CTRL</kbd></div><div><strong>Ускорение</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Направление</strong></div></div>
+      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd><span>/</span><kbd>TAB</kbd></div><div><strong>Сменить режим</strong></div></div>
     </div>
   </section>
 
@@ -839,4 +949,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v79.js"></script></body></html>
+<script type="module" src="./app.v80.js"></script></body></html>
