@@ -758,6 +758,32 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @media(max-width:1180px){#weatherPanel{top:116px;left:12px;width:min(350px,calc(100% - 24px));max-height:calc(100% - 136px)}}
 @media(max-width:620px){#weatherPanel{top:152px;left:8px;right:8px;width:auto;max-height:calc(100% - 164px);padding:11px}.weather-preset-grid{gap:5px}}
 </style>
+<style id="gradeOptimizerOpticsStyles">
+#opticsToggle{background:#3d4d60;color:#e5eef5}
+#app.optics-open #opticsToggle{background:#617a8b;color:#fff}
+#opticsPanel{
+ display:none;position:absolute;z-index:29;top:112px;left:60px;
+ width:min(350px,calc(100% - 72px));max-height:calc(100% - 132px);
+ overflow:auto;padding:14px;border:1px solid rgba(173,201,225,.2);
+ border-radius:13px;background:rgba(17,25,34,.97);
+ box-shadow:0 18px 48px rgba(0,0,0,.46);backdrop-filter:blur(16px);
+ color:#eaf2f8;overscroll-behavior:contain
+}
+#app.optics-open #opticsPanel{display:block}
+.optics-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.optics-head strong{display:block;font-size:11px;letter-spacing:1px;color:#d9eaf7}
+.optics-head small{display:block;margin-top:4px;font-size:9px;color:#91a7b9;line-height:1.5}
+#opticsPanel #opticsClose{width:30px;min-width:30px;height:30px;margin:0;padding:0;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:#2b3947;color:#eaf2f8;font-size:20px;line-height:1}
+.optics-option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 1px;border-top:1px solid rgba(255,255,255,.075);color:#c7d4de;font-size:10px}
+.optics-option input[type=checkbox]{width:15px;height:15px;margin:0;accent-color:#9db9c9}
+.optics-control{padding:10px 1px 2px;border-top:1px solid rgba(255,255,255,.075)}
+.optics-control label{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#bdcbd7;font-size:10px}
+.optics-control label strong{color:#c1d9e7;font-variant-numeric:tabular-nums}
+#opticsPanel input[type=range]{width:100%;margin:8px 0 2px;accent-color:#a7c7d9}
+#opticsStatus{margin-top:9px;padding:8px 9px;border:1px solid rgba(130,184,226,.12);border-radius:7px;background:rgba(92,145,183,.07);color:#a9c7db;font-size:9px;letter-spacing:.25px;line-height:1.5}
+@media(max-width:1180px){#opticsPanel{top:116px;left:12px;width:min(350px,calc(100% - 24px));max-height:calc(100% - 136px)}}
+@media(max-width:620px){#opticsPanel{top:152px;left:8px;right:8px;width:auto;max-height:calc(100% - 164px);padding:11px}}
+</style>
 
 </head>
 <body>
@@ -809,6 +835,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   </div>
     <button id="editorToggle" type="button" aria-expanded="false">SCENE EDITOR</button>
     <button id="weatherToggle" type="button" aria-expanded="false">ПОГОДА</button>
+    <button id="opticsToggle" type="button" aria-expanded="false">ОПТИКА</button>
   </div>
   <div class="dayCycle" id="dayCycle">
     <button id="timeToggle" type="button" aria-expanded="false" aria-label="Показать управление временем" title="Время суток"><span aria-hidden="true">◷</span><strong id="timeCompactValue">13:00</strong></button>
@@ -842,6 +869,21 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <input id="weatherWind" type="range" min="0" max="60" step="1" value="2"/>
   </div>
   <div id="weatherStatus" aria-live="polite">Ясно</div>
+</div>
+
+<div id="opticsPanel" role="region" aria-label="Настройки оптики камеры">
+  <div class="optics-head">
+    <div><strong>КАМЕРА · CINEMATIC LENS</strong><small>Тонкая оптическая обработка вместо заметных фильтров</small></div>
+    <button id="opticsClose" type="button" aria-label="Закрыть настройки оптики">×</button>
+  </div>
+  <label class="optics-option" for="opticsEnabled"><span>Оптическая обработка</span><input id="opticsEnabled" type="checkbox" checked/></label>
+  <div class="optics-control">
+    <label for="opticsBloom">Bloom / halation <strong id="opticsBloomValue">34%</strong></label>
+    <input id="opticsBloom" type="range" min="0" max="75" step="1" value="34"/>
+  </div>
+  <label class="optics-option" for="opticsFlares"><span>Lens flare · ghosts · lens dirt</span><input id="opticsFlares" type="checkbox" checked/></label>
+  <label class="optics-option" for="opticsBokeh"><span>Depth of field · Bokeh <small style="display:block;margin-top:3px;color:#8399aa">Дополнительная нагрузка на GPU</small></span><input id="opticsBokeh" type="checkbox"/></label>
+  <div id="opticsStatus" aria-live="polite">Bloom и мягкая оптика включены · глубина резкости выключена</div>
 </div>
 
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
