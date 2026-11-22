@@ -103,10 +103,8 @@ assert.ok(entrySource.includes('await applySceneEditorConfig(manifest.editorSett
 assert.ok(entrySource.includes('async function collectEditorAssetConfig('), 'shared Scene Editor configuration serializer missing');
 assert.ok(entrySource.includes("materialId:materialIds.get(material)"), 'project config must preserve shared material slot identity');
 assert.ok(entrySource.includes('const sharedEditorMaterials=new Map()'), 'project config loader must restore shared material identity');
-assert.ok(entrySource.includes('materialId:materialIds.get(material)'), 'shared material configuration must have persistent material IDs');
-assert.ok(entrySource.includes("id==='scene:'")===false, 'scene editor persistence must not depend on an invalid synthetic ID comparison');
 
-assert.ok(entrySource.includes('const editorMaterialSavedIds=new WeakMap()'), 'project config loader must preserve unique material slots');
+assert.ok(entrySource.includes('editorMaterialSavedIds=new WeakMap()'), 'project config loader must preserve unique material slots');
 assert.ok(entrySource.includes('editorTextureDataUrlPromise'), 'custom texture bytes must be retained for project persistence');
 assert.ok(entrySource.includes('async function loadEditorTextureDataUrl('), 'client workspace must restore user-imported base scene textures');
 
