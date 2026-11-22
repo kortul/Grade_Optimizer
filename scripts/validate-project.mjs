@@ -68,8 +68,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v71.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v71.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v72.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v72.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
@@ -147,6 +147,20 @@ assert.ok(droneSource.includes('{deferInput=false}={}') && droneSource.includes(
 assert.ok(droneSource.includes('enableInput(){'), 'drone controller input handoff missing');
 
 pass('cinematic mode transition, terrain clearance and deferred controls are present');
+
+assert.ok(skierSource.includes("if (e.code === 'KeyC')"), 'C key third-person camera toggle missing');
+assert.ok(skierSource.includes("toggleCameraView()"), 'camera view toggle method missing');
+assert.ok(skierSource.includes("this.viewBlendTarget < 0.5 ? 1 : 0"), 'first/third-person camera switch state missing');
+assert.ok(skierSource.includes('this.camera.position.copy(this.firstPersonPosition).lerp('), 'camera must smoothly blend between first and third person positions');
+assert.ok(skierSource.includes('this.camera.quaternion.slerp(this.thirdPersonCameraQuaternion,this.viewBlend)'), 'camera rotation must smoothly blend between views');
+assert.ok(skierSource.includes('_createSkierAvatar()'), 'third-person skier avatar is missing');
+assert.ok(skierSource.includes('Third_Person_Skier_Avatar'), 'third-person skier avatar group is missing');
+assert.ok(skierSource.includes('this.skierAvatar.quaternion.copy(this.skiRig.quaternion)'), 'skier avatar must align to ski heading and terrain');
+assert.ok(skierSource.includes('cameraGround.point.y+1.35'), 'third-person camera terrain clearance missing');
+assert.ok(html.includes('id="skierViewStatus"'), 'skier camera view indicator missing');
+assert.ok(html.includes('<kbd>C</kbd>') && html.includes('Камера / 3-е лицо'), 'C key camera control hint missing');
+
+pass('first/third-person skier camera, avatar and C-key UI are present');
 pass('beginner controls, mode toggle and both mode-switch buttons are present');
 
 const slopeIds = JSON.parse(read('assets/slopes.json').toString('utf8'));
