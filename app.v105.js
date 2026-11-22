@@ -269,6 +269,7 @@ const opticsClose = document.getElementById('opticsClose');
 const opticsEnabledInput = document.getElementById('opticsEnabled');
 const opticsBloomInput = document.getElementById('opticsBloom');
 const opticsBloomValue = document.getElementById('opticsBloomValue');
+const opticsStatus = document.getElementById('opticsStatus');
 const opticsFlareInput = document.getElementById('opticsFlares');
 const opticsBokehInput = document.getElementById('opticsBokeh');
 const OPTICS_STORAGE_KEY = 'grade_optimizer_optics_v1';
@@ -295,6 +296,17 @@ function updateOpticsControls() {
   opticsFlareInput.checked = opticsSettings.flare;
   opticsBokehInput.checked = opticsSettings.bokeh;
   opticsToggle.classList.toggle('active', opticsSettings.enabled);
+  if (opticsStatus) {
+    if (!opticsSettings.enabled) {
+      opticsStatus.textContent = 'Оптика выключена · используется прямой рендер для максимального FPS';
+    } else {
+      const active = [];
+      if (opticsSettings.bloom > 0) active.push('Bloom');
+      if (opticsSettings.flare) active.push('Lens flare + dirt');
+      active.push(opticsSettings.bokeh ? 'Bokeh включён' : 'Bokeh выключен');
+      opticsStatus.textContent = active.join(' · ');
+    }
+  }
   cameraOptics.setOptions({
     enabled: opticsSettings.enabled,
     bloom: opticsSettings.bloom / 100,
