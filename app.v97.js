@@ -3347,6 +3347,10 @@ async function applySceneEditorConfig(payload,{quiet=false}={}){
       material.needsUpdate=true;
       matchedMaterials++;
     }
+    if(asset.sourceType==='imported'){
+      asset.meta.modelDirty=true;
+      persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить импортированную JSON-конфигурацию модели:',error));
+    }
   }
   if(editorSelectedAsset)populateEditorAssetControls(editorSelectedAsset,editorSelectedNode||editorSelectedAsset.root);
   refreshEditorMaterialList(Number(editorMaterialSelect.value)||0);

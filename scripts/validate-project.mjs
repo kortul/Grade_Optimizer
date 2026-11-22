@@ -225,6 +225,7 @@ assert.ok(entrySource.includes("markClientProjectDirty('удаление кар�
 assert.ok(entrySource.includes("markClientProjectDirty('смена активного рельефа')"), 'active terrain selection must mark the client project dirty');
 assert.ok(entrySource.includes("window.addEventListener('beforeunload'"), 'unsaved client project changes must warn before leaving');
 assert.ok(entrySource.includes("removeButton.disabled=asset.sourceType==='scene'"), 'non-persistent built-in scene component deletion must be disabled');
+assert.ok(entrySource.includes("persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить импортированную JSON-конфигурацию модели:'"), 'imported model JSON changes must be persisted into the model file');
 assert.ok(html.includes('id="editorNodeRole" type="text"'), 'node role must accept custom values');
 assert.ok(html.includes('SAVE ALL PROJECT CHANGES TO GITHUB'), 'Scene Editor must expose one shared project save action');
 assert.ok(html.includes('ЭКСПОРТ JSON-БЭКАПА'), 'manual JSON export must be clearly marked as an optional backup');
