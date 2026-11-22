@@ -759,30 +759,6 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @media(max-width:620px){#weatherPanel{top:152px;left:8px;right:8px;width:auto;max-height:calc(100% - 164px);padding:11px}.weather-preset-grid{gap:5px}}
 </style>
 <style id="gradeOptimizerOpticsStyles">
-#opticsToggle{background:#3d4d60;color:#e5eef5}
-#app.optics-open #opticsToggle{background:#617a8b;color:#fff}
-#opticsPanel{
- display:none;position:absolute;z-index:29;top:112px;left:60px;
- width:min(350px,calc(100% - 72px));max-height:calc(100% - 132px);
- overflow:auto;padding:14px;border:1px solid rgba(173,201,225,.2);
- border-radius:13px;background:rgba(17,25,34,.97);
- box-shadow:0 18px 48px rgba(0,0,0,.46);backdrop-filter:blur(16px);
- color:#eaf2f8;overscroll-behavior:contain
-}
-#app.optics-open #opticsPanel{display:block}
-.optics-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.optics-head strong{display:block;font-size:11px;letter-spacing:1px;color:#d9eaf7}
-.optics-head small{display:block;margin-top:4px;font-size:9px;color:#91a7b9;line-height:1.5}
-#opticsPanel #opticsClose{width:30px;min-width:30px;height:30px;margin:0;padding:0;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:#2b3947;color:#eaf2f8;font-size:20px;line-height:1}
-.optics-option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 1px;border-top:1px solid rgba(255,255,255,.075);color:#c7d4de;font-size:10px}
-.optics-option input[type=checkbox]{width:15px;height:15px;margin:0;accent-color:#9db9c9}
-.optics-control{padding:10px 1px 2px;border-top:1px solid rgba(255,255,255,.075)}
-.optics-control label{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#bdcbd7;font-size:10px}
-.optics-control label strong{color:#c1d9e7;font-variant-numeric:tabular-nums}
-#opticsPanel input[type=range]{width:100%;margin:8px 0 2px;accent-color:#a7c7d9}
-#opticsStatus{margin-top:9px;padding:8px 9px;border:1px solid rgba(130,184,226,.12);border-radius:7px;background:rgba(92,145,183,.07);color:#a9c7db;font-size:9px;letter-spacing:.25px;line-height:1.5}
-@media(max-width:1180px){#opticsPanel{top:116px;left:12px;width:min(350px,calc(100% - 24px));max-height:calc(100% - 136px)}}
-@media(max-width:620px){#opticsPanel{top:152px;left:8px;right:8px;width:auto;max-height:calc(100% - 164px);padding:11px}}
 #sceneEditorPanel .scene-look-section{border-color:rgba(143,190,220,.28);background:linear-gradient(180deg,rgba(86,128,157,.12),rgba(255,255,255,.018))}
 #sceneEditorPanel .scene-look-section>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none;cursor:pointer}
 #sceneEditorPanel .scene-look-section>summary::-webkit-details-marker,
@@ -937,6 +913,47 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneEditorPanel .scene-look-active-heading .scene-look-live-pill.has-dof{color:#c0e5fb}
 #sceneEditorPanel button.scene-look-reset{background:rgba(111,146,169,.1)!important;border:1px solid rgba(155,190,211,.16)!important;color:#a9c2d2!important}
 #sceneEditorPanel button.scene-look-reset:hover{background:rgba(126,171,200,.18)!important;border-color:rgba(157,204,231,.32)!important;color:#e2f3fd!important}
+
+/* v111 — six Scene Look category cards */
+#sceneEditorPanel .scene-look-tabs{
+ position:sticky;top:45px;z-index:7;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:6px;margin:7px -1px 12px;padding:7px;border:1px solid rgba(147,190,218,.22);
+ border-radius:13px;background:linear-gradient(155deg,rgba(30,48,64,.98),rgba(14,27,40,.99));
+ box-shadow:0 12px 26px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.045)
+}
+#sceneEditorPanel .scene-look-tab{
+ position:relative;display:grid!important;grid-template-columns:22px minmax(0,1fr);
+ grid-template-rows:auto auto;align-items:center;justify-items:start;width:100%;min-width:0;
+ min-height:48px;margin:0!important;padding:7px 8px!important;gap:2px 7px;
+ border:1px solid rgba(156,190,213,.11)!important;border-radius:9px!important;
+ background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012))!important;
+ color:#8ba1b2!important;text-align:left;white-space:normal;box-shadow:none!important;
+ transition:background .18s ease,border-color .18s ease,transform .18s ease,color .18s ease
+}
+#sceneEditorPanel .scene-look-tab:hover{background:rgba(120,166,195,.10)!important;border-color:rgba(148,190,216,.23)!important;color:#d8e9f3!important;transform:translateY(-1px)}
+#sceneEditorPanel .scene-look-tab.active,#sceneEditorPanel .scene-look-tab[aria-selected="true"]{
+ border-color:rgba(132,202,188,.42)!important;background:linear-gradient(145deg,rgba(58,129,132,.28),rgba(54,100,129,.19))!important;
+ color:#f1fbfc!important;box-shadow:inset 0 1px rgba(255,255,255,.10),0 5px 15px rgba(19,90,96,.15)!important
+}
+#sceneEditorPanel .scene-look-tab.active:before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:2px;border-radius:2px;background:linear-gradient(180deg,#8ad8c0,#8dc6ee);box-shadow:0 0 9px rgba(126,216,190,.36)}
+#sceneEditorPanel .scene-look-tab-icon{grid-column:1;grid-row:1/3;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid rgba(151,189,211,.15);border-radius:7px;background:rgba(115,157,185,.08);color:#8aabbe}
+#sceneEditorPanel .scene-look-tab-icon svg{width:15px;height:15px}
+#sceneEditorPanel .scene-look-tab.active .scene-look-tab-icon{border-color:rgba(129,211,192,.24);background:rgba(107,193,165,.13);color:#a8e7d2}
+#sceneEditorPanel .scene-look-tab-label{display:block;grid-column:2;grid-row:1;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:9px!important;font-weight:850;letter-spacing:.35px;line-height:1.1}
+#sceneEditorPanel .scene-look-tab-meta{display:block;grid-column:2;grid-row:2;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#71899b;font-size:6px;font-weight:800;letter-spacing:.85px;line-height:1.1;white-space:nowrap}
+#sceneEditorPanel .scene-look-tab.active .scene-look-tab-meta{color:#95cdbd}
+#sceneEditorPanel .scene-look-panel--optics .scene-look-switches{grid-template-columns:1fr 1fr}
+#sceneEditorPanel .scene-look-panel--optics .scene-look-switches label{min-height:50px}
+#sceneEditorPanel .scene-look-switch-hint{display:block;margin-top:3px;color:#7892a5;font-size:7px}
+@media(max-width:700px){
+ #sceneEditorPanel .scene-look-tabs{top:44px;gap:4px;padding:5px}
+ #sceneEditorPanel .scene-look-tab{min-height:44px;padding:6px!important;gap:2px 5px}
+ #sceneEditorPanel .scene-look-tab-icon{width:19px;height:19px}
+ #sceneEditorPanel .scene-look-tab-icon svg{width:13px;height:13px}
+ #sceneEditorPanel .scene-look-tab-label{font-size:8px!important}
+ #sceneEditorPanel .scene-look-tab-meta{font-size:5px}
+}
+
 </style>
 
 </head>
@@ -994,8 +1011,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
        </svg>
      </button>
     <button id="weatherToggle" type="button" aria-expanded="false">ПОГОДА</button>
-    <button id="opticsToggle" type="button" aria-expanded="false">ОПТИКА</button>
-  </div>
+      </div>
   <div class="dayCycle" id="dayCycle">
     <button id="timeToggle" type="button" aria-expanded="false" aria-label="Показать управление временем" title="Время суток"><span aria-hidden="true">◷</span><strong id="timeCompactValue">13:00</strong></button>
     <div class="timeControls"><span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:00</span><input id="timeOfDay" type="range" min="5" max="22" step="0.25" value="13" aria-label="Время суток"/><button id="autoDay" type="button" title="Автоматическая смена времени">▶</button></div>
@@ -1029,21 +1045,6 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <input id="weatherWind" type="range" min="0" max="60" step="1" value="2"/>
   </div>
   <div id="weatherStatus" aria-live="polite">Ясно · лёгкие облака</div>
-</div>
-
-<div id="opticsPanel" role="region" aria-label="Настройки оптики камеры">
-  <div class="optics-head">
-    <div><strong>КАМЕРА · CINEMATIC LENS</strong><small>Тонкая оптическая обработка вместо заметных фильтров</small></div>
-    <button id="opticsClose" type="button" aria-label="Закрыть настройки оптики">×</button>
-  </div>
-  <label class="optics-option" for="opticsEnabled"><span>Оптическая обработка</span><input id="opticsEnabled" type="checkbox" checked/></label>
-  <div class="optics-control">
-    <label for="opticsBloom">Bloom / halation <strong id="opticsBloomValue">34%</strong></label>
-    <input id="opticsBloom" type="range" min="0" max="75" step="1" value="34"/>
-  </div>
-  <label class="optics-option" for="opticsFlares"><span>Lens flare · ghosts · lens dirt</span><input id="opticsFlares" type="checkbox" checked/></label>
-  <label class="optics-option" for="opticsBokeh"><span>Depth of field · Bokeh <small style="display:block;margin-top:3px;color:#8399aa">Дополнительная нагрузка на GPU</small></span><input id="opticsBokeh" type="checkbox"/></label>
-  <div id="opticsStatus" aria-live="polite">Bloom и мягкая оптика включены · глубина резкости выключена</div>
 </div>
 
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
@@ -1107,11 +1108,12 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       </div>
     </div>
     <div class="scene-look-body"><div class="scene-look-tabs" role="tablist" aria-label="Scene Look categories">
-        <button class="scene-look-tab" id="sceneLookTab-environment" type="button" role="tab" data-look-tab="environment" aria-controls="sceneLookPanel-environment" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17.5" cy="6.5" r="2.7"/><path d="M17.5 1.5v1.3M22.5 6.5h-1.3M17.5 11.5v-1.3M12.5 6.5h1.3M4 17.2a3.2 3.2 0 0 1 .3-6.4 5.2 5.2 0 0 1 9.9 1.4 2.8 2.8 0 0 1-.2 5.6H4Z"/></svg></span><span class="scene-look-tab-label">Environment</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-camera" type="button" role="tab" data-look-tab="camera" aria-controls="sceneLookPanel-camera" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h4l1.6-2h6.8l1.6 2h4v12H3z"/><circle cx="12" cy="13.5" r="4.1"/><circle cx="12" cy="13.5" r="1.5"/></svg></span><span class="scene-look-tab-label">Camera</span></button>
-        <button class="scene-look-tab active" id="sceneLookTab-lens" type="button" role="tab" data-look-tab="lens" aria-controls="sceneLookPanel-lens" aria-selected="true" tabindex="0"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.4"/><circle cx="12" cy="12" r="2"/><path d="m18.4 5.6 1.2-1.2M4.4 19.6l1.2-1.2"/></svg></span><span class="scene-look-tab-label">Lens</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a2 2 0 0 0 1.3-3.5 1.7 1.7 0 0 1 1.1-3h.7A4.5 4.5 0 0 0 21 10c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="6.8" r=".8"/><circle cx="16" cy="8" r=".8"/></svg></span><span class="scene-look-tab-label">Color</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><span class="scene-look-tab-label">Render</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-environment" type="button" role="tab" data-look-tab="environment" aria-controls="sceneLookPanel-environment" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17.5" cy="6.5" r="2.7"/><path d="M17.5 1.5v1.3M22.5 6.5h-1.3M17.5 11.5v-1.3M12.5 6.5h1.3M4 17.2a3.2 3.2 0 0 1 .3-6.4 5.2 5.2 0 0 1 9.9 1.4 2.8 2.8 0 0 1-.2 5.6H4Z"/></svg></span><span class="scene-look-tab-label">Environment</span><span class="scene-look-tab-meta">ATMOSPHERE</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-camera" type="button" role="tab" data-look-tab="camera" aria-controls="sceneLookPanel-camera" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h4l1.6-2h6.8l1.6 2h4v12H3z"/><circle cx="12" cy="13.5" r="4.1"/><circle cx="12" cy="13.5" r="1.5"/></svg></span><span class="scene-look-tab-label">Camera</span><span class="scene-look-tab-meta">FRAMING</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-lens" type="button" role="tab" data-look-tab="lens" aria-controls="sceneLookPanel-lens" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.4"/><circle cx="12" cy="12" r="2"/><path d="m18.4 5.6 1.2-1.2M4.4 19.6l1.2-1.2"/></svg></span><span class="scene-look-tab-label">Lens</span><span class="scene-look-tab-meta">CHARACTER</span></button>
+        <button class="scene-look-tab active" id="sceneLookTab-optics" type="button" role="tab" data-look-tab="optics" aria-controls="sceneLookPanel-optics" aria-selected="true" tabindex="0"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 14.2 8l5.3 1-4 3.7 1 5.4-4.5-2.7-4.5 2.7 1-5.4-4-3.7 5.3-1L12 2.8Z"/><path d="M19.2 18.2 21 20M3 20l1.8-1.8"/></svg></span><span class="scene-look-tab-label">Optics</span><span class="scene-look-tab-meta">EFFECTS</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a2 2 0 0 0 1.3-3.5 1.7 1.7 0 0 1 1.1-3h.7A4.5 4.5 0 0 0 21 10c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="6.8" r=".8"/><circle cx="16" cy="8" r=".8"/></svg></span><span class="scene-look-tab-label">Color</span><span class="scene-look-tab-meta">PALETTE</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><span class="scene-look-tab-label">Render</span><span class="scene-look-tab-meta">OUTPUT</span></button>
       </div>
       <div class="scene-look-panel-heading scene-look-active-heading">
         <div class="scene-look-active-copy"><strong id="sceneLookPanelTitle">LENS & POST</strong><span id="sceneLookPanelSubtitle">OPTICAL EFFECTS & DEPTH OF FIELD</span></div>
@@ -1196,47 +1198,48 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
         </div>
       </section>
 
-      <section class="scene-look-panel scene-look-panel--lens" id="sceneLookPanel-lens" data-look-panel="lens" role="tabpanel" aria-labelledby="sceneLookTab-lens">
-        
+      <section class="scene-look-panel scene-look-panel--lens" id="sceneLookPanel-lens" data-look-panel="lens" role="tabpanel" aria-labelledby="sceneLookTab-lens" hidden>
+        <div class="scene-look-lens-groups">
+          <div class="scene-look-subsection">
+            <div class="scene-look-subhead"><strong>LENS CHARACTER</strong><span>EDGE RESPONSE · DISTORTION</span></div>
+            <div class="scene-look-grid">
+              <div class="scene-look-control"><label for="sceneVignette">Vignette <strong id="sceneVignetteValue">24%</strong></label><input id="sceneVignette" type="range" min="0" max="100" step="1" value="24"/></div>
+              <div class="scene-look-control"><label for="sceneChromatic">Chromatic aberration <strong id="sceneChromaticValue">18%</strong></label><input id="sceneChromatic" type="range" min="0" max="100" step="1" value="18"/></div>
+              <div class="scene-look-control wide"><label for="sceneDistortion">Lens distortion <strong id="sceneDistortionValue">6%</strong></label><input id="sceneDistortion" type="range" min="0" max="100" step="1" value="6"/></div>
+            </div>
+          </div>
+          <div class="scene-look-subsection">
+            <div class="scene-look-subhead"><strong>IMAGE TEXTURE</strong><span>GRAIN · MICRO-CONTRAST</span></div>
+            <div class="scene-look-grid">
+              <div class="scene-look-control"><label for="sceneGrain">Film grain <strong id="sceneGrainValue">4%</strong></label><input id="sceneGrain" type="range" min="0" max="100" step="1" value="4"/></div>
+              <div class="scene-look-control"><label for="sceneSharpness">Sharpness <strong id="sceneSharpnessValue">14%</strong></label><input id="sceneSharpness" type="range" min="0" max="100" step="1" value="14"/></div>
+            </div>
+          </div>
+        </div>
+        <div class="scene-look-note">Lens Character отвечает за характер оптики по краям кадра и микродеталь. Bloom, flare и глубина резкости находятся отдельно во вкладке Optics.</div>
+      </section>
+      <section class="scene-look-panel scene-look-panel--optics" id="sceneLookPanel-optics" data-look-panel="optics" role="tabpanel" aria-labelledby="sceneLookTab-optics">
         <div class="scene-look-switches">
           <label for="sceneOpticsEnabled"><input id="sceneOpticsEnabled" type="checkbox" checked/> Post-processing enabled</label>
-          <label for="sceneBokeh"><input id="sceneBokeh" type="checkbox"/> Depth of field / Bokeh</label>
+          <label for="sceneBokeh"><input id="sceneBokeh" type="checkbox"/> Depth of field / Bokeh <small class="scene-look-switch-hint">Off by default · extra GPU cost</small></label>
+          <label for="sceneFlareEnabled"><input id="sceneFlareEnabled" type="checkbox" checked/> Lens flare / ghosts</label>
         </div>
-        <div class="scene-look-lens-groups">
-<div class="scene-look-subsection"><div class="scene-look-subhead"><strong>LIGHT & FLARE</strong><span>HIGHLIGHTS · GHOSTS · DIRT</span></div><div class="scene-look-grid"><div class="scene-look-control">
-            <label for="sceneBloom">Bloom <strong id="sceneBloomValue">58%</strong></label>
-            <input id="sceneBloom" type="range" min="0" max="100" step="1" value="58"/>
-          </div><div class="scene-look-control">
-            <label for="sceneBloomThreshold">Bloom threshold <strong id="sceneBloomThresholdValue">0.78</strong></label>
-            <input id="sceneBloomThreshold" type="range" min="0.1" max="2" step="0.01" value="0.78"/>
-          </div><div class="scene-look-control">
-            <label for="sceneFlare">Lens flare <strong id="sceneFlareValue">70%</strong></label>
-            <input id="sceneFlare" type="range" min="0" max="100" step="1" value="70"/>
-          </div><div class="scene-look-control">
-            <label for="sceneDirt">Lens dirt <strong id="sceneDirtValue">38%</strong></label>
-            <input id="sceneDirt" type="range" min="0" max="100" step="1" value="38"/>
-          </div></div></div>
-<div class="scene-look-subsection"><div class="scene-look-subhead"><strong>LENS CHARACTER</strong><span>EDGE RESPONSE · DISTORTION</span></div><div class="scene-look-grid"><div class="scene-look-control">
-            <label for="sceneVignette">Vignette <strong id="sceneVignetteValue">24%</strong></label>
-            <input id="sceneVignette" type="range" min="0" max="100" step="1" value="24"/>
-          </div><div class="scene-look-control">
-            <label for="sceneChromatic">Chromatic aberration <strong id="sceneChromaticValue">18%</strong></label>
-            <input id="sceneChromatic" type="range" min="0" max="100" step="1" value="18"/>
-          </div><div class="scene-look-control">
-            <label for="sceneDistortion">Lens distortion <strong id="sceneDistortionValue">6%</strong></label>
-            <input id="sceneDistortion" type="range" min="0" max="100" step="1" value="6"/>
-          </div></div></div>
-<div class="scene-look-subsection"><div class="scene-look-subhead"><strong>IMAGE DETAIL</strong><span>TEXTURE · MICRO-CONTRAST</span></div><div class="scene-look-grid"><div class="scene-look-control">
-            <label for="sceneGrain">Film grain <strong id="sceneGrainValue">4%</strong></label>
-            <input id="sceneGrain" type="range" min="0" max="100" step="1" value="4"/>
-          </div><div class="scene-look-control">
-            <label for="sceneSharpness">Sharpness <strong id="sceneSharpnessValue">14%</strong></label>
-            <input id="sceneSharpness" type="range" min="0" max="100" step="1" value="14"/>
-          </div></div></div>
-</div>
-        <div class="scene-look-note">Bokeh и повышенное качество рендера требуют дополнительных ресурсов GPU. Для сравнения производительности переключи Render quality на Performance или отключи Post-processing.</div>
+        <div class="scene-look-subsection">
+          <div class="scene-look-subhead"><strong>HIGHLIGHTS & HALATION</strong><span>BLOOM · THRESHOLD</span></div>
+          <div class="scene-look-grid">
+            <div class="scene-look-control"><label for="sceneBloom">Bloom <strong id="sceneBloomValue">58%</strong></label><input id="sceneBloom" type="range" min="0" max="100" step="1" value="58"/></div>
+            <div class="scene-look-control"><label for="sceneBloomThreshold">Bloom threshold <strong id="sceneBloomThresholdValue">0.78</strong></label><input id="sceneBloomThreshold" type="range" min="0.1" max="2" step="0.01" value="0.78"/></div>
+          </div>
+        </div>
+        <div class="scene-look-subsection">
+          <div class="scene-look-subhead"><strong>FLARE & LENS DIRT</strong><span>GHOSTS · SENSOR GLASS</span></div>
+          <div class="scene-look-grid">
+            <div class="scene-look-control"><label for="sceneFlare">Lens flare strength <strong id="sceneFlareValue">70%</strong></label><input id="sceneFlare" type="range" min="0" max="100" step="1" value="70"/></div>
+            <div class="scene-look-control"><label for="sceneDirt">Lens dirt <strong id="sceneDirtValue">38%</strong></label><input id="sceneDirt" type="range" min="0" max="100" step="1" value="38"/></div>
+          </div>
+        </div>
+        <div class="scene-look-note">Depth of field is disabled on startup to preserve a sharp, responsive viewport. Enable it deliberately when a shallow-focus shot is required.</div>
       </section>
-
       <section class="scene-look-panel scene-look-panel--color" id="sceneLookPanel-color" data-look-panel="color" role="tabpanel" aria-labelledby="sceneLookTab-color" hidden>
         
         <div class="scene-look-grid">
@@ -1549,4 +1552,4 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v110.js"></script></body></html>
+<script type="module" src="./app.v111.js"></script></body></html>

@@ -53,7 +53,7 @@ assert.ok(opticsSource.includes('if (!this.enabled || this.composerFailed)'), 'c
 assert.ok(opticsSource.includes('this.syncComposerSize();'), 'composer size must use the allocation guard');
 pass('camera optics GLSL declarations and direct-render fallback are valid');
 
-const sceneLookKeys = ['environment','camera','lens','color','render'];
+const sceneLookKeys = ['environment','camera','lens','optics','color','render'];
 assert.ok(html.includes('role="tablist" aria-label="Scene Look categories"'), 'Scene Look tablist is missing');
 for (const key of sceneLookKeys) {
   assert.ok(html.includes('data-look-tab="' + key + '"'), 'Scene Look tab missing: ' + key);
@@ -72,6 +72,16 @@ assert.ok(html.includes('scene-look-tab-icon" aria-hidden="true"><svg'), 'Scene 
 assert.ok(html.includes('scene-look-switches input[type=checkbox]:checked'), 'Scene Look toggles need styled on/off states');
 assert.ok(html.includes('class="editor-section scene-look-section" aria-label="Global Scene Look"'), 'Scene Look should not require a nested accordion');
 pass('Scene Look finishing polish, live status, grouped Lens controls and range feedback are present');
+assert.ok(html.includes('id="sceneLookTab-optics"') && html.includes('id="sceneLookPanel-optics"'), 'dedicated Optics tab and panel are missing');
+assert.ok(html.includes('id="sceneBokeh"') && html.includes('id="sceneFlareEnabled"'), 'integrated optics switches are missing');
+assert.ok(!html.includes('id="opticsPanel"') && !html.includes('id="opticsToggle"'), 'standalone optics panel must be removed');
+assert.ok(html.includes('grid-template-columns:repeat(3,minmax(0,1fr))'), 'Scene Look six-card tab grid is missing');
+assert.ok(html.includes('scene-look-tab-meta'), 'Scene Look category cards need second-line labels');
+assert.ok(entrySource.includes("const OPTICS_STORAGE_KEY = 'grade_optimizer_optics_v3'"), 'optics setting migration version is missing');
+assert.ok(entrySource.includes("currentOptics?['enabled','flare','bokeh','sunEnabled']:['enabled','flare','sunEnabled']"), 'legacy optics migration must leave depth of field disabled');
+assert.ok(entrySource.includes("['sceneOpticsEnabled','enabled'],['sceneFlareEnabled','flare'],['sceneBokeh','bokeh']"), 'Scene Editor must own enable / flare / DOF controls');
+pass('six Scene Editor tabs, integrated optics controls, and DOF-off migration are present');
+
 
 assert.ok(entrySource.includes("['ArrowLeft','ArrowRight','Home','End']"), 'Scene Look keyboard navigation is missing');
 assert.ok(html.includes('id="sceneQuality"') && html.includes('id="sceneToneMapping"'), 'render settings must remain available in the Render tab');
@@ -107,8 +117,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v74.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v74.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v75.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v75.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
@@ -130,6 +140,13 @@ assert.ok(skierSource.includes('this.avatarPushPulse=1'), 'pole-push animation t
 assert.ok(skierSource.includes('arm.pole.rotation.x'), 'pole stroke animation is missing');
 assert.ok(skierSource.includes('leg.knee.rotation.x'), 'knee flex animation is missing');
 assert.ok(skierSource.includes('slot.group.rotation.z'), 'ski edging animation is missing');
+assert.ok(skierSource.includes('this.avatarPelvis.rotation.z'), 'pelvis counter-rotation during carving is missing');
+assert.ok(skierSource.includes("smooth('torsoRoll'"), 'damped turn lean animation is missing');
+assert.ok(skierSource.includes("smooth('poleZ'"), 'damped ski-pole turn animation is missing');
+assert.ok(skierSource.includes("this.eyeHeight = 2.05"), 'first-person eye-height correction is missing');
+assert.ok(skierSource.includes('this.viewBlend=0;') && skierSource.includes('this.stanceCameraBlend=0;'), 'first-person view and tuck state must reset at skier spawn');
+assert.ok(skierSource.includes('this.position.y+this.eyeHeight+this.airborneHeight-0.26*this.stanceCameraBlend'), 'first-person eye point must remain above skis in tuck');
+
 pass('detailed skier equipment, articulated limbs, pole strokes and carving animation are present');
 
 assert.ok(skierSource.includes('this.skiSlots.push({group:ski,board,stripe,customMount})'), 'custom ski mounts missing from both ski slots');
@@ -380,7 +397,7 @@ assert.ok(entrySource.includes("appRoot.style.setProperty('--ski-wind-opacity'")
 assert.ok(entrySource.includes('skierController.showForDrone()'), 'first-person skier must be shown to the drone during handoff');
 assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='drone'})"), 'skier model must remain in the scene when entering drone mode');
 assert.ok(entrySource.includes("if(mode==='overview')skierController.hideForOverview()"), 'skier model must be hidden when leaving drone for overview');
-assert.ok(skierSource.includes('0.48*this.stanceCameraBlend'), 'first-person camera lowering in speed tuck missing');
+assert.ok(skierSource.includes('0.26*this.stanceCameraBlend'), 'first-person camera eye-height compensation in speed tuck missing');
 assert.ok(skierSource.includes('0.085*this.stanceCameraBlend'), 'camera pitch adjustment in speed tuck missing');
 assert.ok(skierSource.includes('this.avatarLegs.forEach'), 'third-person skier legs must bend into speed tuck');
 assert.ok(skierSource.includes('0.43*tuck'), 'third-person skier torso must lean into speed tuck');
