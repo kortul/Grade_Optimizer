@@ -486,6 +486,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||'UN
 pass('reliable skier/drone mode handoff, spawn fallback and active movement are present');
 assert.ok(entrySource.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use an early delegated click handler');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
+assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
 assert.ok(entrySource.includes("showModeSwitchFeedback(message)"), 'mode startup failures must be visible on screen');
 assert.ok(entrySource.includes("if(!terrain&&state.root)"), 'skier mode must resolve a mesh when a named terrain node is missing');
 assert.ok(entrySource.includes("sceneLoadingEl.getClientRects().length>0"), 'loading-state detection must use rendered visibility');
