@@ -753,7 +753,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneHierarchyPanel #editorTreeList{min-height:0}
 @media(max-width:700px){#sceneHierarchyPanel{top:150px;left:8px;right:8px;bottom:8px;width:auto;height:auto;min-height:0}#sceneEditorPanel{top:150px;left:8px;right:8px;bottom:8px;width:auto}}
 
-/* Two additional content categories; retain the existing Scene Look tab design */
+/* Two additional content tabs; preserve the existing icon artwork and visual treatment */
 #sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(8,minmax(0,1fr))}
 @media(max-width:700px){#sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(8,minmax(0,1fr))}}
 </style>
@@ -1165,26 +1165,29 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
           <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M22 12h-3M5 12H2M19.1 4.9 17 7M7 17l-2.1 2.1M19.1 19.1 17 17M7 7 4.9 4.9"/></svg></span>
           <span class="scene-look-tab-label">General</span><span class="scene-look-tab-meta">OBJECTS</span>
         </button>
-        <button class="scene-look-tab" id="sceneLookTab-materials" type="button" role="tab" data-look-tab="materials" aria-controls="sceneLookPanel-materials" aria-selected="false" tabindex="-1">
-          <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L7 20"/></svg></span>
-          <span class="scene-look-tab-label">Materials</span><span class="scene-look-tab-meta">PBR MAPS</span>
-        </button>
         <button class="scene-look-tab" id="sceneLookTab-environment" type="button" role="tab" data-look-tab="environment" aria-controls="sceneLookPanel-environment" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17.5" cy="6.5" r="2.7"/><path d="M17.5 1.5v1.3M22.5 6.5h-1.3M17.5 11.5v-1.3M12.5 6.5h1.3M4 17.2a3.2 3.2 0 0 1 .3-6.4 5.2 5.2 0 0 1 9.9 1.4 2.8 2.8 0 0 1-.2 5.6H4Z"/></svg></span><span class="scene-look-tab-label">Environment</span><span class="scene-look-tab-meta">ATMOSPHERE</span></button>
         <button class="scene-look-tab" id="sceneLookTab-camera" type="button" role="tab" data-look-tab="camera" aria-controls="sceneLookPanel-camera" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h4l1.6-2h6.8l1.6 2h4v12H3z"/><circle cx="12" cy="13.5" r="4.1"/><circle cx="12" cy="13.5" r="1.5"/></svg></span><span class="scene-look-tab-label">Camera</span><span class="scene-look-tab-meta">FRAMING</span></button>
         <button class="scene-look-tab" id="sceneLookTab-lens" type="button" role="tab" data-look-tab="lens" aria-controls="sceneLookPanel-lens" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.4"/><circle cx="12" cy="12" r="2"/><path d="m18.4 5.6 1.2-1.2M4.4 19.6l1.2-1.2"/></svg></span><span class="scene-look-tab-label">Lens</span><span class="scene-look-tab-meta">CHARACTER</span></button>
         <button class="scene-look-tab active" id="sceneLookTab-optics" type="button" role="tab" data-look-tab="optics" aria-controls="sceneLookPanel-optics" aria-selected="true" tabindex="0"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 14.2 8l5.3 1-4 3.7 1 5.4-4.5-2.7-4.5 2.7 1-5.4-4-3.7 5.3-1L12 2.8Z"/><path d="M19.2 18.2 21 20M3 20l1.8-1.8"/></svg></span><span class="scene-look-tab-label">Optics</span><span class="scene-look-tab-meta">EFFECTS</span></button>
         <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a2 2 0 0 0 1.3-3.5 1.7 1.7 0 0 1 1.1-3h.7A4.5 4.5 0 0 0 21 10c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="6.8" r=".8"/><circle cx="16" cy="8" r=".8"/></svg></span><span class="scene-look-tab-label">Color</span><span class="scene-look-tab-meta">PALETTE</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><span class="scene-look-tab-label">Render</span><span class="scene-look-tab-meta">OUTPUT</span></button>
+        
+        <button class="scene-look-tab" id="sceneLookTab-materials" type="button" role="tab" data-look-tab="materials" aria-controls="sceneLookPanel-materials" aria-selected="false" tabindex="-1">
+          <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L7 20"/></svg></span>
+          <span class="scene-look-tab-label">Materials</span><span class="scene-look-tab-meta">PBR MAPS</span>
+        </button><button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><span class="scene-look-tab-label">Render</span><span class="scene-look-tab-meta">OUTPUT</span></button>
       </div>
       <div class="scene-look-panel-heading scene-look-active-heading">
         <div class="scene-look-active-copy"><strong id="sceneLookPanelTitle">LENS & POST</strong><span id="sceneLookPanelSubtitle">OPTICAL EFFECTS & DEPTH OF FIELD</span></div>
         <span id="sceneLookFxStatus" class="scene-look-live-pill" role="status" aria-live="polite">FX LIVE</span>
       </div>
       <div class="scene-look-panels">
-
       <section class="scene-look-panel scene-look-panel--general" id="sceneLookPanel-general" data-look-panel="general" role="tabpanel" aria-labelledby="sceneLookTab-general" hidden>
               <div class="scene-look-note scene-look-persistence-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"/><path d="M8 4.5v5h8v-5M8 19v-5h8v5"/></svg><span>Настройки сохраняются в Scene Config и <code>clients/&lt;project&gt;/scene.json</code> и восстанавливаются вместе с проектом.</span></div>
-        plit">
+          <div class="editor-section ski-replacement-section">
+    <h3>ЗАМЕНА ЛЫЖ ЛЫЖНИКА <span class="editor-chip">SKIER RIG</span></h3>
+    <div class="editor-hint">Загрузи GLB одной лыжи. Модель автоматически подгоняется по длине и ориентации, затем устанавливается парой на лыжника. Крепления остаются на месте.</div>
+    <input id="skierSkiFileInput" type="file" accept=".glb,model/gltf-binary" hidden/>
+    <div class="editor-split">
       <button id="importSkierSkiButton" type="button">＋ ЗАГРУЗИТЬ ОДНУ ЛЫЖУ · GLB</button>
       <button id="resetSkierSkiButton" class="secondary" type="button">ВЕРНУТЬ СТАНДАРТНЫЕ</button>
     </div>
@@ -1248,23 +1251,11 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="editor-hint">Метки относятся только к выбранному узлу и сохраняются в клиентском manifest. Они не меняют физику или классификацию автоматически.</div>
   </div>
 
-  <div class="editor-section">
-    <h3>Материал / PBR <span id="editorMaterialCount" class="editor-chip">0 SLOTS</span></h3>
-    <label for="editorMaterialSelect">Component / Material Slot</label>
-    <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
-    <div id="editorMaterialLinkStatus" class="editor-hint">Выбери material slot для редактирования.</div>
-    <div class="editor-section" sty
-        ия проекта не скачивай этот файл — используй SAVE ALL PROJECT CHANGES TO GITHUB в блоке CLIENT WORKSPACE.</div>
-</div>
 
-<div id="skierHud" class="mode-hud skier-hud" role="region" aria-label="Подсказки управления лыжником">
-  <div class="mode-hud-header">
-    <div class="mode-hud-identity">
-      <span class="mode-hud-symbol" aria-hidden="true">⛷</span>
-      <div><div class="mode-hud-eyebrow">РЕЖИМ ЛЫЖНИКА</div><div class="mode-hud-title">Твой первый спуск</div></div>
-    </div>
-    <div class="mode-hud-header-actions">
-      <sp
+          <input id="sceneConfigFileInput" type="file" accept=".json,application/json" hidden/>
+  <div class="editor-split"><button id="loadSceneConfig" class="secondary" type="button">ЗАГРУЗИТЬ CONFIG JSON</button><button id="exportSelectedGlb" type="button">EXPORT SELECTED GLB</button></div>
+  <button id="saveSceneConfig" type="button">ЭКСПОРТ JSON-БЭКАПА · ДОПОЛНИТЕЛЬНО</button>
+  <div class="editor-hint">Для обычного сохранения проекта не скачивай этот файл — используй SAVE ALL PROJECT CHANGES TO GITHUB в блоке CLIENT WORKSPACE.</div>
       </section>
       <section class="scene-look-panel scene-look-panel--environment" id="sceneLookPanel-environment" data-look-panel="environment" role="tabpanel" aria-labelledby="sceneLookTab-environment" hidden>
         
@@ -1409,7 +1400,12 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       </section>
 
       <section class="scene-look-panel scene-look-panel--materials" id="sceneLookPanel-materials" data-look-panel="materials" role="tabpanel" aria-labelledby="sceneLookTab-materials" hidden>
-        le="margin:9px 0;padding:9px;background:rgba(255,255,255,.025)">
+          <div class="editor-section">
+    <h3>Материал / PBR <span id="editorMaterialCount" class="editor-chip">0 SLOTS</span></h3>
+    <label for="editorMaterialSelect">Component / Material Slot</label>
+    <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
+    <div id="editorMaterialLinkStatus" class="editor-hint">Выбери material slot для редактирования.</div>
+    <div class="editor-section" style="margin:9px 0;padding:9px;background:rgba(255,255,255,.025)">
       <h3>ОБЩАЯ БИБЛИОТЕКА МАТЕРИАЛОВ <span class="editor-chip">SCENE-WIDE</span></h3>
       <label for="editorMaterialLibrarySelect">Назначить существующий материал</label>
       <select id="editorMaterialLibrarySelect"><option value="">Загрузка материалов…</option></select>
@@ -1470,10 +1466,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="editor-split"><button id="importEditorTexture" type="button">＋ IMPORT MAP</button><button id="clearEditorTexture" class="secondary" type="button">REMOVE MAP</button></div>
     <div class="editor-hint">Выберите material slot, тип карты и изображение. Цветовые карты читаются в sRGB, технические карты — в линейном цветовом пространстве. Для AO автоматически создаётся UV2 из UV, если его нет.</div>
   </div>
-  <input id="sceneConfigFileInput" type="file" accept=".json,application/json" hidden/>
-  <div class="editor-split"><button id="loadSceneConfig" class="secondary" type="button">ЗАГРУЗИТЬ CONFIG JSON</button><button id="exportSelectedGlb" type="button">EXPORT SELECTED GLB</button></div>
-  <button id="saveSceneConfig" type="button">ЭКСПОРТ JSON-БЭКАПА · ДОПОЛНИТЕЛЬНО</button>
-  <div class="editor-hint">Для обычного сохранен
+
       </section>
       <section class="scene-look-panel scene-look-panel--render" id="sceneLookPanel-render" data-look-panel="render" role="tabpanel" aria-labelledby="sceneLookTab-render" hidden>
         <div class="scene-look-panel-heading"><strong>RENDER PIPELINE</strong><span>OUTPUT & PERFORMANCE</span></div>
@@ -1506,11 +1499,17 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     </div>
   </section>
 
-  <div class="editor-section ski-replacement-section">
-    <h3>ЗАМЕНА ЛЫЖ ЛЫЖНИКА <span class="editor-chip">SKIER RIG</span></h3>
-    <div class="editor-hint">Загрузи GLB одной лыжи. Модель автоматически подгоняется по длине и ориентации, затем устанавливается парой на лыжника. Крепления остаются на месте.</div>
-    <input id="skierSkiFileInput" type="file" accept=".glb,model/gltf-binary" hidden/>
-    <div class="editor-san class="mode-hud-view-label" id="skierViewStatus">1-Е ЛИЦО</span>
+
+</div>
+
+<div id="skierHud" class="mode-hud skier-hud" role="region" aria-label="Подсказки управления лыжником">
+  <div class="mode-hud-header">
+    <div class="mode-hud-identity">
+      <span class="mode-hud-symbol" aria-hidden="true">⛷</span>
+      <div><div class="mode-hud-eyebrow">РЕЖИМ ЛЫЖНИКА</div><div class="mode-hud-title">Твой первый спуск</div></div>
+    </div>
+    <div class="mode-hud-header-actions">
+      <span class="mode-hud-view-label" id="skierViewStatus">1-Е ЛИЦО</span>
       <span class="mode-hud-status" id="groundState">Обычная езда</span>
       <button id="toggleSkierTutorial" class="mode-hud-toggle" type="button" aria-expanded="true" aria-controls="skierTutorialContent" title="Скрыть или показать туториал · H"><span class="tutorial-toggle-label">Скрыть</span><kbd>H</kbd></button>
     </div>
