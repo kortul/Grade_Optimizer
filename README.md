@@ -7,15 +7,15 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v116.js`.
+- Current app: `app.v117.js`.
 - Weather: `weather-system.v2.js`; snowfall and wind streaks render through a scene-root camera-follow layer, with visible snow density and persistent controls in skier / drone modes.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
-- Scene Look is part of the Scene Editor and uses six category-card tabs (Environment, Camera, Lens, Optics, Color, Render); the separate optics toolbar has been removed. Depth of field starts disabled.
-- Skier: `skier-controller.v77.js`, with detailed equipment, depth-safe opaque rendering at full visibility, articulated hips / knees and shoulders / elbows, bilateral knee angulation into turns, damped carving lean, pelvis counter-rotation, pole strokes and a reset eye-level first-person camera.
+- Scene Look is part of the Scene Editor and uses seven category-card tabs: General, Environment, Camera, Lens & Optics, Color, Materials, and Render. Lens and optical processing share one panel. Depth of field starts disabled.
+- Skier: `skier-controller.v78.js`, with detailed equipment, depth-safe opaque rendering at full visibility, articulated hips / knees and shoulders / elbows, bilateral knee angulation into turns, damped carving lean, pelvis counter-rotation, pole strokes and a reset eye-level first-person camera.
 - Drone: `drone-controller.v72.js`.
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
 
-For a new release, create a new `app.vNN.js` file, update `index.html`, and keep the previous app file for rollback.
+For a new release, create new versioned app / controller files, update `index.html`, and keep the previous files for rollback.
 
 ## Modes and controls
 
