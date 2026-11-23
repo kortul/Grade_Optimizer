@@ -14,7 +14,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -27,6 +27,7 @@ OPTION_PRESET = "gradeOptimizerMetadataPreset"
 OPTION_CUSTOM_ROLE = "gradeOptimizerCustomRole"
 OPTION_EXTRA_TAGS = "gradeOptimizerExtraTags"
 GIT_ASSET_ITEMS = []
+GIT_ASSET_TREE_MAP = {}
 PRESET_PLACEHOLDER = "— Выбрать тип объекта —"
 
 METADATA_PRESETS = {
@@ -544,68 +545,173 @@ def list_replaceable_client_assets(repo):
 
 
 def _selected_git_asset():
+    """Return the currently selected FBX asset from the Outliner-style tree."""
     try:
-        label = cmds.optionMenuGrp(WINDOW + "_git_asset", query=True, value=True)
+        selected_items = cmds.treeView(
+            WINDOW + "_git_asset_tree", query=True, selectItem=True
+        ) or []
     except Exception:
         return None
-    return next((item for item in GIT_ASSET_ITEMS if item.get("_label") == label), None)
+
+    if isinstance(selected_items, str):
+        selected_items = [selected_items]
+    for tree_item in selected_items:
+        asset = GIT_ASSET_TREE_MAP.get(tree_item)
+        if asset:
+            return asset
+    return None
+
+
+def _git_asset_tree_select(item, state):
+    """Only FBX leaf nodes are selectable; category rows act as folders."""
+    if not state:
+        return True
+    return item in GIT_ASSET_TREE_MAP
 
 
 def _update_git_asset_details(*_):
     asset = _selected_git_asset()
     if not cmds.control(WINDOW + "_git_asset_info", exists=True):
         return
+
     if not asset:
-        message = "Нет доступных FBX для замены. Новые модели можно экспортировать отдельно."
+        message = "Выбери модель в дереве выше. Папки категорий раскрываются стрелкой."
     else:
         size_mib = asset.get("_size_bytes", 0) / float(1024 * 1024)
-        message = "%s  ·  ID %s  ·  %.1f MiB" % (
-            asset.get("_relative_file", ""), asset.get("id", ""), size_mib
+        category = str(asset.get("category") or "model").replace("_", " ")
+        phase = str(asset.get("phase") or "always").replace("_", " ")
+        message = "%s    ·    ID: %s    ·    %s / %s    ·    %.1f MiB" % (
+            asset.get("_relative_file", ""),
+            asset.get("id", ""),
+            category,
+            phase,
+            size_mib
         )
+
     cmds.text(WINDOW + "_git_asset_info", edit=True, label=message)
     if cmds.control(WINDOW + "_replace_asset", exists=True):
         cmds.button(WINDOW + "_replace_asset", edit=True, enable=bool(asset))
 
 
 def refresh_git_asset_list(*_):
-    global GIT_ASSET_ITEMS
+    global GIT_ASSET_ITEMS, GIT_ASSET_TREE_MAP
+    tree_control = WINDOW + "_git_asset_tree"
+
     try:
         repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
         if not os.path.isdir(repo):
             raise RuntimeError("Укажи существующий локальный Git-репозиторий.")
-        client_slug, assets, non_fbx, missing_fbx = list_replaceable_client_assets(repo)
+
         previous = _selected_git_asset()
         previous_id = previous.get("id") if previous else ""
+        client_slug, assets, non_fbx, missing_fbx = list_replaceable_client_assets(repo)
+
         GIT_ASSET_ITEMS = assets
-        cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, deleteAllItems=True)
-        menu_parent = WINDOW + "_git_asset|OptionMenu"
-        if assets:
-            for asset in assets:
-                cmds.menuItem(parent=menu_parent, label=asset["_label"])
-            chosen = next((item for item in assets if item.get("id") == previous_id), assets[0])
-            cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, value=chosen["_label"], enable=True)
-        else:
-            cmds.menuItem(parent=menu_parent, label="— нет доступных FBX —")
-            cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, value="— нет доступных FBX —", enable=False)
-        note = "Git: clients/%s/scene.json · FBX для замены: %d" % (client_slug, len(assets))
+        GIT_ASSET_TREE_MAP = {}
+        cmds.treeView(tree_control, edit=True, removeAll=True)
+
+        category_labels = {
+            "slope": "Рельеф / склоны",
+            "prop": "Объекты",
+            "building": "Здания",
+            "station": "Станции",
+            "lift": "Подъёмники",
+            "road": "Дороги / площадки",
+            "water": "Вода",
+            "obstacle": "Скалы / препятствия",
+            "vegetation": "Растительность"
+        }
+        grouped = {}
+        for asset in assets:
+            category = str(asset.get("category") or "other").strip().lower()
+            grouped.setdefault(category, []).append(asset)
+
+        item_index = 0
+        previous_tree_item = None
+        ordered_categories = sorted(
+            grouped.keys(),
+            key=lambda value: category_labels.get(
+                value, value.replace("_", " ").capitalize()
+            ).lower()
+        )
+
+        for group_index, category in enumerate(ordered_categories):
+            group_key = "category_%02d" % group_index
+            group_assets = grouped[category]
+            group_label = category_labels.get(
+                category, category.replace("_", " ").capitalize()
+            )
+            cmds.treeView(
+                tree_control, edit=True, addItem=(group_key, "")
+            )
+            cmds.treeView(
+                tree_control, edit=True,
+                displayLabel=(group_key, "%s  (%d)" % (group_label, len(group_assets)))
+            )
+
+            for asset in group_assets:
+                tree_item = "asset_%04d" % item_index
+                item_index += 1
+                asset["_tree_item"] = tree_item
+                GIT_ASSET_TREE_MAP[tree_item] = asset
+
+                asset_name = str(asset.get("name") or asset.get("id") or "Без имени")
+                asset_id = str(asset.get("id") or "no-id")
+                cmds.treeView(
+                    tree_control, edit=True, addItem=(tree_item, group_key)
+                )
+                cmds.treeView(
+                    tree_control, edit=True,
+                    displayLabel=(tree_item, "%s    [%s]" % (asset_name, asset_id))
+                )
+                if asset_id == previous_id:
+                    previous_tree_item = tree_item
+
+            cmds.treeView(
+                tree_control, edit=True, expandItem=(group_key, True)
+            )
+
+        note = "Git: clients/%s/scene.json    ·    Доступно для замены: %d FBX" % (
+            client_slug, len(assets)
+        )
         if missing_fbx:
-            note += " · отсутствуют локально: %d" % missing_fbx
+            note += "    ·    отсутствуют локально: %d" % missing_fbx
         if non_fbx:
-            note += " · GLB/прочие: %d (не предлагаются для FBX-замены)" % non_fbx
-        note += ". Источник — локальный клон. Перед обновлением списка сделай Pull в GitHub Desktop."
+            note += "    ·    GLB/прочие: %d (не показываются)" % non_fbx
+        note += ". Список читается из локального клона — сначала сделай Pull в GitHub Desktop."
         cmds.text(WINDOW + "_git_asset_status", edit=True, label=note)
+
+        if previous_tree_item:
+            cmds.treeView(
+                tree_control, edit=True,
+                selectItem=(previous_tree_item, True)
+            )
+        elif assets:
+            first_asset = assets[0]
+            cmds.treeView(
+                tree_control, edit=True,
+                selectItem=(first_asset["_tree_item"], True)
+            )
         _update_git_asset_details()
+
     except Exception as exc:
         GIT_ASSET_ITEMS = []
+        GIT_ASSET_TREE_MAP = {}
         try:
-            cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, deleteAllItems=True)
-            cmds.menuItem(parent=WINDOW + "_git_asset|OptionMenu", label="— список недоступен —")
-            cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, value="— список недоступен —", enable=False)
-            cmds.text(WINDOW + "_git_asset_status", edit=True, label="Не удалось прочитать Git-сцену: " + str(exc))
+            cmds.treeView(tree_control, edit=True, removeAll=True)
+            cmds.text(
+                WINDOW + "_git_asset_status", edit=True,
+                label="Не удалось прочитать Git-сцену: " + str(exc)
+            )
+            cmds.text(
+                WINDOW + "_git_asset_info", edit=True,
+                label="Проверь путь к репозиторию и обнови список."
+            )
+            cmds.button(WINDOW + "_replace_asset", edit=True, enable=False)
         except Exception:
             pass
-        _update_git_asset_details()
         cmds.warning("[Grade Optimizer] Could not load Git asset list: " + str(exc))
+
 
 
 def prepare_client_asset_export(repo, components, node_metadata, replace_asset_id=None):
@@ -942,80 +1048,128 @@ def show():
 
     cmds.window(
         WINDOW,
-        title="Grade Optimizer Scene Asset Exporter " + VERSION,
+        title="Grade Optimizer · Maya Exporter " + VERSION,
         sizeable=True,
-        widthHeight=(640, 650)
+        widthHeight=(590, 760)
     )
-    cmds.columnLayout(adjustableColumn=True, rowSpacing=7, columnAttach=("both", 12))
+    cmds.scrollLayout(WINDOW + "_scroll", childResizable=True)
+    cmds.columnLayout(
+        adjustableColumn=True, rowSpacing=8,
+        columnAttach=("both", 12)
+    )
+
     cmds.text(
-        label="Maya → Git Scene Geometry",
-        align="left",
-        height=26,
-        font="boldLabelFont"
+        label="ЭКСПОРТ ГЕОМЕТРИИ ИЗ MAYA В GRADE OPTIMIZER",
+        align="left", height=24, font="boldLabelFont"
     )
     cmds.text(
-        label="Добавляй новую модель или замени конкретный FBX, уже зарегистрированный в клиентской сцене.",
-        align="left",
-        height=30,
-        wordWrap=True
+        label="Выбери один из двух сценариев ниже. Экспортируется текущее выделение Maya.",
+        align="left", height=30, wordWrap=True
     )
 
     cmds.textFieldButtonGrp(
         WINDOW + "_repo",
         label="Git repo",
         text=repo_default,
-        buttonLabel="Browse…",
+        buttonLabel="Обзор…",
         buttonCommand=browse_repo,
         changeCommand=remember_export_settings,
-        columnWidth3=(65, 380, 85)
+        columnWidth3=(65, 420, 75)
     )
 
+    # 1. NEW ASSET — always creates a fresh ID and a separate FBX.
     cmds.frameLayout(
-        label="ТЕКУЩАЯ ГЕОМЕТРИЯ В GIT · ВЫБОР ЦЕЛИ ЗАМЕНЫ",
-        collapsable=False, marginWidth=8, marginHeight=7, borderStyle="etchedIn"
+        label="1. НОВЫЙ ОБЪЕКТ",
+        collapsable=False, marginWidth=9, marginHeight=8,
+        borderStyle="etchedIn"
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
     cmds.text(
-        WINDOW + "_git_asset_status", label="Список ещё не загружен.",
-        align="left", wordWrap=True, height=38
+        label="Создаёт отдельную модель и новый ID. Существующие объекты проекта не затрагиваются.",
+        align="left", height=36, wordWrap=True
     )
-    cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(420, 90))
-    asset_menu = cmds.optionMenuGrp(
-        WINDOW + "_git_asset", label="Объект",
-        columnWidth2=(65, 345), changeCommand=_update_git_asset_details
-    )
-    cmds.menuItem(parent=asset_menu + "|OptionMenu", label="Загрузка списка…")
-    cmds.button(label="ОБНОВИТЬ", height=28, command=refresh_git_asset_list)
-    cmds.setParent("..")
-    cmds.text(
-        WINDOW + "_git_asset_info", label="Выбери объект, чтобы увидеть его текущий FBX.",
-        align="left", wordWrap=True, height=30
+    cmds.button(
+        label="ДОБАВИТЬ КАК НОВЫЙ ОБЪЕКТ",
+        height=42, backgroundColor=(0.18, 0.48, 0.32),
+        command=export_scene
     )
     cmds.setParent("..")
     cmds.setParent("..")
 
-    cmds.text(
-        label="При замене сохраняются ID и настройки размещения объекта. Новая геометрия и материалы берутся из текущего выделения Maya.",
-        align="left", height=36, wordWrap=True, font="boldLabelFont"
-    )
-    cmds.text(
-        label="Базовая поверхность assets/real-terrain.fbx защищена и не предлагается для замены.",
-        align="left", height=28, wordWrap=True
-    )
-
+    # 2. REPLACE ASSET — choose an existing published FBX in a tree.
     cmds.frameLayout(
-        label="Разметка объектов (необязательно)",
+        label="2. ЗАМЕНА СУЩЕСТВУЮЩЕГО ОБЪЕКТА",
+        collapsable=False, marginWidth=9, marginHeight=8,
+        borderStyle="etchedIn"
+    )
+    cmds.columnLayout(adjustableColumn=True, rowSpacing=6)
+    cmds.text(
+        label="Выбери опубликованную модель в дереве. Категории раскрываются как папки в Outliner.",
+        align="left", height=34, wordWrap=True
+    )
+    cmds.rowLayout(
+        numberOfColumns=2, adjustableColumn=1,
+        columnWidth2=(435, 95)
+    )
+    cmds.text(
+        label="ОБЪЕКТЫ ИЗ КЛИЕНТСКОЙ СЦЕНЫ",
+        align="left", font="smallBoldLabelFont"
+    )
+    cmds.button(
+        label="ОБНОВИТЬ",
+        height=28, command=refresh_git_asset_list
+    )
+    cmds.setParent("..")
+
+    cmds.treeView(
+        WINDOW + "_git_asset_tree",
+        height=205,
+        width=540,
+        allowMultiSelection=False,
+        allowDragAndDrop=False,
+        hideButtons=True,
+        selectCommand=_git_asset_tree_select,
+        selectionChangedCommand=_update_git_asset_details
+    )
+    cmds.text(
+        WINDOW + "_git_asset_status",
+        label="Список ещё не загружен.",
+        align="left", height=42, wordWrap=True
+    )
+    cmds.text(
+        WINDOW + "_git_asset_info",
+        label="Выбери FBX-модель в дереве.",
+        align="left", height=38, wordWrap=True,
+        font="smallPlainLabelFont"
+    )
+    cmds.button(
+        WINDOW + "_replace_asset",
+        label="ЗАМЕНИТЬ ВЫБРАННЫЙ ОБЪЕКТ",
+        height=42,
+        backgroundColor=(0.62, 0.30, 0.18),
+        enable=False,
+        command=replace_selected_scene_asset
+    )
+    cmds.text(
+        label="Защита: базовый рельеф assets/real-terrain.fbx не входит в список и не может быть заменён этим Exporter.",
+        align="left", height=40, wordWrap=True
+    )
+    cmds.setParent("..")
+    cmds.setParent("..")
+
+    # Optional metadata tools remain available, but are kept out of the main path.
+    cmds.frameLayout(
+        label="Дополнительно · Разметка объектов",
         collapsable=True,
         collapse=True,
-        marginWidth=8,
+        marginWidth=9,
         marginHeight=7,
         borderStyle="etchedIn"
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
     cmds.text(
-        label="Role / Tags сохраняются в клиентском scene.json. Collision и Forest blocker настраиваются в Web Editor.",
-        align="left",
-        height=30
+        label="Role / Tags сохраняются в scene.json. Collision и Forest blocker настраиваются в Web Editor.",
+        align="left", height=32, wordWrap=True
     )
     preset_menu = cmds.optionMenuGrp(
         WINDOW + "_preset",
@@ -1030,7 +1184,7 @@ def show():
     cmds.optionMenuGrp(WINDOW + "_preset", edit=True, value=preset_default)
 
     cmds.frameLayout(
-        label="Дополнительно: свои Role / Tags",
+        label="Свои Role / Tags",
         collapsable=True,
         collapse=True,
         marginWidth=6,
@@ -1049,16 +1203,18 @@ def show():
         WINDOW + "_extra_tags",
         label="Extra Tags",
         text=_option_string(OPTION_EXTRA_TAGS, ""),
-        annotation="Необязательно. Несколько тегов через запятую.",
         changeCommand=remember_custom_metadata,
         columnWidth2=(85, 420)
     )
     cmds.setParent("..")
     cmds.setParent("..")
 
-    cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(270, 270))
+    cmds.rowLayout(
+        numberOfColumns=2, adjustableColumn=1,
+        columnWidth2=(270, 270)
+    )
     cmds.button(
-        label="ПРИМЕНИТЬ ROLE / TAGS К ВЫДЕЛЕНИЮ",
+        label="ПРИМЕНИТЬ К ВЫДЕЛЕНИЮ",
         height=32,
         backgroundColor=(0.24, 0.40, 0.31),
         command=apply_metadata_to_selection
@@ -1075,32 +1231,14 @@ def show():
 
     cmds.separator(height=7, style="in")
     cmds.text(
-        label="Новая геометрия добавляется в clients/<client>/scene.json как отдельный объект.",
-        align="left",
-        height=22
-    )
-    cmds.text(
-        label="Embed Media включён · рекомендуемый предел FBX для Git: 90 MiB.",
-        align="left",
-        height=22
-    )
-    cmds.button(
-        label="ДОБАВИТЬ КАК НОВЫЙ ОБЪЕКТ",
-        height=40, backgroundColor=(0.18, 0.48, 0.32), command=export_scene
-    )
-    cmds.button(
-        WINDOW + "_replace_asset",
-        label="ЗАМЕНИТЬ ВЫБРАННУЮ ГЕОМЕТРИЮ В GIT",
-        height=40, backgroundColor=(0.62, 0.30, 0.18),
-        enable=False, command=replace_selected_scene_asset
-    )
-    cmds.text(
-        label="После экспорта проверь FBX и scene.json в GitHub Desktop → Commit → Push.",
+        label="После экспорта проверь изменения в GitHub Desktop и выполни Commit → Push.",
         align="left", height=30, wordWrap=True
     )
+
+    cmds.setParent("..")
+    cmds.setParent("..")
     cmds.showWindow(WINDOW)
     refresh_git_asset_list()
     return WINDOW
-
 
 # Maya Script Editor: execute this file, then call show().
