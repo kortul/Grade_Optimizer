@@ -152,7 +152,7 @@ def _inspect_git_worktree(repo):
     if code != 0:
         origin = ""
     expected_origin = bool(re.search(
-        r"(?:github\\.com[:/])kortul/Grade_Optimizer(?:\\.git)?$",
+        r"(?:github\.com[:/])kortul/Grade_Optimizer(?:\.git)?$",
         origin.strip(),
         re.IGNORECASE
     ))
@@ -169,7 +169,7 @@ def _git_changes_for_paths(repo, paths):
     """Return precise status entries for the FBX and scene manifest just exported."""
     relative_paths = []
     for path in paths:
-        relative = os.path.relpath(os.path.abspath(path), os.path.abspath(repo)).replace("\\\\", "/")
+        relative = os.path.relpath(os.path.abspath(path), os.path.abspath(repo)).replace("\\", "/")
         if relative == ".." or relative.startswith("../"):
             raise RuntimeError("Экспортируемый файл оказался вне выбранного Git root: " + path)
         relative_paths.append(relative)
@@ -208,7 +208,7 @@ def _format_git_export_report(git_info, git_result):
             "Git не обнаружил отличий в этих двух файлах. "
             "Проверь, не экспортировалась ли геометрия с тем же содержимым."
         )
-    return "\\n".join(lines)
+    return "\n".join(lines)
 
 
 def check_git_repository(*_):
@@ -224,12 +224,12 @@ def check_git_repository(*_):
         cmds.confirmDialog(
             title="Grade Optimizer · Git repository",
             message=_format_git_export_report(git_info, {"changes": [], "ignored": []})
-                + "\\n\\nGitHub Desktop должен быть открыт именно для этой папки.",
+                + "\n\nGitHub Desktop должен быть открыт именно для этой папки.",
             button=["OK"]
         )
     except Exception as exc:
         if cmds.control(WINDOW + "_repo_status", exists=True):
-            cmds.text(WINDOW + "_repo_status", edit=True, label="Git не подтверждён · " + str(exc).split("\\n")[0])
+            cmds.text(WINDOW + "_repo_status", edit=True, label="Git не подтверждён · " + str(exc).split("\n")[0])
         cmds.confirmDialog(title="Grade Optimizer · Git check failed", message=str(exc), button=["OK"])
 
 def collect_meshes(selection_only=False):
@@ -1204,15 +1204,23 @@ def _export_scene(replace_asset_id=None):
         if material_conversion_summary:
             message += "\n\nСовместимость материалов: %d неподдерживаемых shader узлов временно переведены в Lambert. Назначения faces и исходные материалы Maya восстановлены." % len(material_conversion_summary)
         message += "\n\nИсходный assets/real-terrain.fbx не изменён."
+        try:
+            git_result = _git_changes_for_paths(repo, [export_info["model_path"], export_info["manifest_path"]])
+            git_report = _format_git_export_report(git_info, git_result)
+        except Exception as git_error:
+            git_report = (
+                "Файлы уже записаны, но Git не смог проверить изменения: %s\n"
+                "Открой GitHub Desktop для папки: %s"
+                % (git_error, git_info["root"])
+            )
+        message += "\n\nПРОВЕРКА GIT:\n" + git_report
+        refresh_git_asset_list()
+        print("[Grade Optimizer] " + message.replace("\n", " | "))
         cmds.confirmDialog(
             title="Grade Optimizer · Scene asset export complete",
             message=message,
             button=["OK"]
         )
-        git_result = _git_changes_for_paths(repo, [export_info["model_path"], export_info["manifest_path"]])
-        message += "\n\nПРОВЕРКА GIT:\n" + _format_git_export_report(git_info, git_result)
-        refresh_git_asset_list()
-        print("[Grade Optimizer] " + message.replace("\n", " | "))
     except Exception as exc:
         for temporary_path in temporary_paths:
             try:
