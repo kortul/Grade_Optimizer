@@ -464,18 +464,16 @@ for(const id of ['outsideSkiLoadValue','insideSkiLoadValue','outsideSkiLoadBar',
 assert.ok(entrySource.includes('outsideSkiLoadValueEl') && entrySource.includes('insideSkiLoadValueEl') && entrySource.includes('outsideSkiLoadBarEl'), 'ski loads must be shown in HUD');
 assert.ok(entrySource.includes("if(state.optimizeMode)setOptimizerOpen(false)"), 'Overview must close the optimization panel');
 
-assert.ok(entrySource.includes('const animateModeTransition='), 'cinematic skier/drone mode transition missing');
-assert.ok(entrySource.includes('camera.position.y+=3'), 'drone must start exactly 3 m above the skier camera when switching from skier mode');
-assert.ok(entrySource.includes('camera.quaternion.copy(transition.fromQuaternion).slerp(transition.toQuaternion,eased)'), 'camera orientation must interpolate smoothly during a mode transition');
-assert.ok(entrySource.includes('camera.fov=transition.baseFov+Math.sin(Math.PI*eased)*4.5'), 'cinematic camera FOV easing missing');
-assert.ok(entrySource.includes('if(pathGround!==null)camera.position.y=Math.max(camera.position.y,pathGround+1.55)'), 'mode transition camera must stay above terrain');
-assert.ok(entrySource.includes('skierController.enableInput()') && entrySource.includes('droneController.enableInput()'), 'target mode input must unlock after cinematic transition');
-assert.ok(skierSource.includes('{deferInput=false}={}') && skierSource.includes('this.inputEnabled=!deferInput'), 'skier controller must support deferred input');
-assert.ok(skierSource.includes('enableInput(){'), 'skier controller input handoff missing');
-assert.ok(droneSource.includes('{deferInput=false}={}') && droneSource.includes('this.inputEnabled=!deferInput'), 'drone controller must support deferred input');
-assert.ok(droneSource.includes('enableInput(){'), 'drone controller input handoff missing');
+assert.ok(entrySource.includes("skierController.start(terrain,spawnHint)"), 'skier mode must start directly without deferred input');
+assert.ok(entrySource.includes("velocity:droneController.velocity.clone()"), 'drone pose and velocity must be captured before mode handoff');
+assert.ok(entrySource.includes("if(state.mode==='skier')skierController.update(dt)"), 'skier controller must update continuously while active');
+assert.ok(entrySource.includes("if(state.mode==='drone')droneController.update(dt)"), 'drone controller must update continuously while active');
+assert.ok(!entrySource.includes('modeTransition'), 'stale transition lock must not block mode changes');
+assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate downhill run-out');
+assert.ok(skierSource.includes('if(!spawnFound)spawnFound=!!this._findSpawn()'), 'drone-local spawn failure must fall back to piste spawn');
+assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone handoff must initialize downhill movement');
 
-pass('cinematic mode transition, terrain clearance and deferred controls are present');
+pass('reliable skier/drone mode handoff, spawn fallback and active movement are present');
 
 assert.ok(skierSource.includes("if (e.code === 'KeyC')"), 'C key third-person camera toggle missing');
 assert.ok(skierSource.includes("toggleCameraView()"), 'camera view toggle method missing');
