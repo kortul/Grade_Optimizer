@@ -1370,6 +1370,85 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   #sceneEditorPanel .scene-look-tab{width:32px;min-width:32px;flex-basis:35px;min-height:35px;height:35px}
 }
 
+
+
+/* v0.111 — match Sketchfab's horizontal icon toolbar */
+#sceneEditorPanel .scene-look-body{
+  display:flex!important;
+  flex-direction:column;
+  align-items:stretch;
+  gap:5px;
+  min-width:0;
+  padding:6px 8px 10px;
+}
+#sceneEditorPanel .scene-look-tabs{
+  position:sticky;
+  top:40px;
+  z-index:7;
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  flex-direction:row;
+  align-items:stretch;
+  gap:2px;
+  width:100%;
+  margin:0 0 2px;
+  padding:3px;
+  border:1px solid var(--sf-line);
+  border-radius:4px;
+  background:#252a2f;
+  box-shadow:none;
+}
+#sceneEditorPanel .scene-look-tab{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:1 1 0;
+  width:100%;
+  min-width:0;
+  min-height:35px;
+  height:35px;
+  margin:0!important;
+  padding:4px!important;
+  border:1px solid transparent!important;
+  border-radius:3px!important;
+  background:transparent!important;
+  color:#aebac3!important;
+}
+#sceneEditorPanel .scene-look-tab:hover{
+  background:#3b4349!important;
+  color:#fff!important;
+}
+#sceneEditorPanel .scene-look-tab.active,
+#sceneEditorPanel .scene-look-tab[aria-selected="true"]{
+  background:#454d53!important;
+  border-color:rgba(23,169,209,.45)!important;
+  color:#fff!important;
+  box-shadow:inset 0 -2px var(--sf-accent)!important;
+}
+#sceneEditorPanel .scene-look-tab-icon{
+  width:19px;
+  height:19px;
+}
+#sceneEditorPanel .scene-look-tab-icon svg{width:18px;height:18px}
+#sceneEditorPanel .scene-look-panel-heading,
+#sceneEditorPanel .scene-look-panels{
+  grid-column:auto;
+  grid-row:auto;
+  width:100%;
+  min-width:0;
+}
+#sceneEditorPanel .scene-look-panel-heading{
+  margin:0;
+  padding:3px 2px 7px;
+}
+#sceneEditorPanel .scene-look-panels{flex:1 1 auto}
+@media(max-width:700px){
+  #sceneEditorPanel .scene-look-body{padding:5px 6px 9px;gap:4px}
+  #sceneEditorPanel .scene-look-tabs{top:40px;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px}
+  #sceneEditorPanel .scene-look-tab{min-height:33px;height:33px;padding:3px!important}
+  #sceneEditorPanel .scene-look-tab-icon,#sceneEditorPanel .scene-look-tab-icon svg{width:17px;height:17px}
+}
+
 </style>
 
 </head>
