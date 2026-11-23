@@ -324,41 +324,79 @@ export class WeatherSystem {
       this.snowVelocity[i * 2] = 0.55 + random() * 0.8;
       this.snowVelocity[i * 2 + 1] = (random() - 0.5) * 0.45;
     }
-    // Instanced textured quads avoid the missing-UV issue with PointsMaterial
-    // and keep all flakes in one draw call.
-    this.snowGeometry = new THREE.PlaneGeometry(1, 1);
-    this.snowMaterial = new THREE.MeshBasicMaterial({
-      color: 0xf7fbff,
-      map: this.snowTexture,
-      transparent: true,
-      opacity: 0.92,
-      alphaTest: 0.015,
-      depthWrite: false,
-      depthTest: true,
-      side: THREE.DoubleSide,
-      fog: false,
-      toneMapped: false
-    });
-    this.snow = new THREE.InstancedMesh(this.snowGeometry, this.snowMaterial, this.snowCount);
-    this.snow.name = 'GO_Snowfall';
-    this.snow.frustumCulled = false;
-    this.snow.renderOrder = 1000;
-    this.snow.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.snowDummy = new THREE.Object3D();
-    this.snowSize = new Float32Array(this.snowCount);
-    for (let i = 0; i < this.snowCount; i++) {
-      const j = i * 3;
-      this.snowSize[i] = 0.65 + random() * 0.9;
-      this.snowDummy.position.set(this.snowPositions[j], this.snowPositions[j + 1], this.snowPositions[j + 2]);
-      const size = -this.snowPositions[j + 2] * 0.0050 * this.snowSize[i];
-      this.snowDummy.scale.set(size, size, 1);
-      this.snowDummy.updateMatrix();
-      this.snow.setMatrixAt(i, this.snowDummy.matrix);
+    // Static instance attributes are animated in the vertex shader; no per-flake CPU matrix writes.
+    const quadGeometry=new THREE.PlaneGeometry(1,1);
+    this.snowGeometry=new THREE.InstancedBufferGeometry();
+    this.snowGeometry.setIndex(quadGeometry.index.clone());
+    this.snowGeometry.setAttribute('position',quadGeometry.attributes.position.clone());
+    this.snowGeometry.setAttribute('uv',quadGeometry.attributes.uv.clone());
+    quadGeometry.dispose();
+    this.snowSize=new Float32Array(this.snowCount);
+    this.snowPhases=new Float32Array(this.snowCount);
+    for(let i=0;i<this.snowCount;i++){
+      this.snowSize[i]=0.65+random()*0.9;
+      this.snowPhases[i]=random()*Math.PI*2;
     }
-    this.snow.instanceMatrix.needsUpdate = true;
-    this.activeSnowflakes = 0;
-    this.snow.count = 0;
-    this.snow.visible = false;
+    this.snowGeometry.setAttribute('aCenter',new THREE.InstancedBufferAttribute(this.snowPositions,3).setUsage(THREE.StaticDrawUsage));
+    this.snowGeometry.setAttribute('aMotion',new THREE.InstancedBufferAttribute(this.snowVelocity,2).setUsage(THREE.StaticDrawUsage));
+    this.snowGeometry.setAttribute('aSize',new THREE.InstancedBufferAttribute(this.snowSize,1).setUsage(THREE.StaticDrawUsage));
+    this.snowGeometry.setAttribute('aPhase',new THREE.InstancedBufferAttribute(this.snowPhases,1).setUsage(THREE.StaticDrawUsage));
+    this.snowGeometry.instanceCount=0;
+    this.snowMaterial=new THREE.ShaderMaterial({
+      uniforms:{
+        uSnowTexture:{value:this.snowTexture},uTime:{value:0},uFallSpeed:{value:10},
+        uLateralSpeed:{value:0.012},uTanHalfFov:{value:snowTanHalfFov},
+        uAspect:{value:camera.aspect||1},uSnowfall:{value:0},uOpacity:{value:0.92}
+      },
+      vertexShader:`
+        attribute vec3 aCenter;
+        attribute vec2 aMotion;
+        attribute float aSize;
+        attribute float aPhase;
+        uniform float uTime;
+        uniform float uFallSpeed;
+        uniform float uLateralSpeed;
+        uniform float uTanHalfFov;
+        uniform float uAspect;
+        uniform float uSnowfall;
+        varying vec2 vUv;
+        varying float vFade;
+        void main(){
+          float depth=max(8.0,-aCenter.z);
+          float halfHeight=depth*uTanHalfFov*0.92;
+          float halfWidth=halfHeight*uAspect*0.92;
+          float phase=aPhase;
+          vec3 center=aCenter;
+          center.y=mod(aCenter.y-uTime*uFallSpeed*(0.95+aMotion.y),2.0*halfHeight)-halfHeight;
+          center.x=mod(aCenter.x+uTime*uLateralSpeed*aMotion.x+halfWidth,2.0*halfWidth)-halfWidth;
+          center.x+=sin(uTime*0.72+phase)*0.045;
+          center.y+=cos(uTime*0.58+phase*1.31)*0.035;
+          float flakeSize=depth*0.0050*aSize*(0.82+uSnowfall*0.35);
+          vec3 localPosition=center+vec3(position.xy*flakeSize,0.0);
+          gl_Position=projectionMatrix*modelViewMatrix*vec4(localPosition,1.0);
+          vUv=uv;
+          vFade=0.82+0.18*sin(uTime*1.15+phase);
+        }`,
+      fragmentShader:`
+        uniform sampler2D uSnowTexture;
+        uniform float uOpacity;
+        varying vec2 vUv;
+        varying float vFade;
+        void main(){
+          vec4 texel=texture2D(uSnowTexture,vUv);
+          float alpha=texel.a*uOpacity*vFade;
+          if(alpha<0.015)discard;
+          gl_FragColor=vec4(vec3(0.94,0.97,1.0)*texel.rgb,alpha);
+        }`,
+      transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,
+      fog:false,toneMapped:false
+    });
+    this.snow=new THREE.Mesh(this.snowGeometry,this.snowMaterial);
+    this.snow.name='GO_Snowfall_GPU';
+    this.snow.frustumCulled=false;
+    this.snow.renderOrder=1000;
+    this.activeSnowflakes=0;
+    this.snow.visible=false;
     this.cameraWeatherRig.add(this.snow);
 
     this.streakCount = 240;
@@ -816,8 +854,11 @@ export class WeatherSystem {
     this.cloudVolumeMaterial.uniforms.uWind.value=this.params.wind;
 
     const flakes=Math.round(this.snowCount*this.params.snowfall);
-    this.activeSnowflakes=flakes;this.snow.count=flakes;this.snow.visible=flakes>0;
-    this.snowMaterial.opacity=0.84+this.params.snowfall*0.12;
+    this.activeSnowflakes=flakes;
+    this.snowGeometry.instanceCount=flakes;
+    this.snow.visible=flakes>0;
+    this.snowMaterial.uniforms.uSnowfall.value=this.params.snowfall;
+    this.snowMaterial.uniforms.uOpacity.value=0.84+this.params.snowfall*0.12;
     const streakFactor=this.THREE.MathUtils.clamp((this.params.wind-12)/42,0,1);
     this.activeStreaks=Math.round(this.streakCount*this.params.snowfall*streakFactor);
     this.streaks.visible=this.activeStreaks>0;
@@ -930,35 +971,17 @@ export class WeatherSystem {
     if (this.activeSnowflakes > 0) {
       this.snow.quaternion.identity();
       this.streaks.quaternion.identity();
-      const fall = (10 + this.params.snowfall * 17 + wind * 0.12) * dt;
-      const lateral = (wind * 0.035 + 0.012) * dt;
-      const tanHalfFov = Math.tan(this.THREE.MathUtils.degToRad(this.camera.fov * 0.5));
-      const aspect = this.camera.aspect || 1;
-      for (let i = 0; i < this.activeSnowflakes; i++) {
-        const j = i * 3;
-        const depth = Math.max(8, -this.snowPositions[j + 2]);
-        const halfHeight = depth * tanHalfFov * 0.92;
-        const halfWidth = halfHeight * aspect * 0.92;
-        this.snowPositions[j] += lateral * this.snowVelocity[i * 2];
-        this.snowPositions[j + 1] -= fall;
-        if (this.snowPositions[j + 1] < -halfHeight) {
-          this.snowPositions[j + 1] = halfHeight;
-          this.snowPositions[j] = (Math.random() * 2 - 1) * halfWidth;
-        }
-        if (this.snowPositions[j] > halfWidth) this.snowPositions[j] -= halfWidth * 2;
-        if (this.snowPositions[j] < -halfWidth) this.snowPositions[j] += halfWidth * 2;
-        this.snowDummy.position.set(
-          this.snowPositions[j],
-          this.snowPositions[j + 1],
-          this.snowPositions[j + 2]
-        );
-        const flakeSize = depth * 0.0050 * this.snowSize[i] * (0.82 + this.params.snowfall * 0.35);
-        this.snowDummy.scale.set(flakeSize, flakeSize, 1);
-        this.snowDummy.updateMatrix();
-        this.snow.setMatrixAt(i, this.snowDummy.matrix);
-      }
-      this.snow.instanceMatrix.needsUpdate = true;
-
+      const fall=10+this.params.snowfall*17+wind*0.12;
+      const lateral=wind*0.035+0.012;
+      const tanHalfFov=Math.tan(this.THREE.MathUtils.degToRad(this.camera.fov*0.5));
+      const aspect=this.camera.aspect||1;
+      const snowUniforms=this.snowMaterial.uniforms;
+      snowUniforms.uTime.value=this.elapsed;
+      snowUniforms.uFallSpeed.value=fall;
+      snowUniforms.uLateralSpeed.value=lateral;
+      snowUniforms.uTanHalfFov.value=tanHalfFov;
+      snowUniforms.uAspect.value=aspect;
+      snowUniforms.uSnowfall.value=this.params.snowfall;
       if (this.activeStreaks > 0) {
         const streakFall = fall * 1.55;
         for (let i = 0; i < this.activeStreaks; i++) {
