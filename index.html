@@ -752,6 +752,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel=hierarchy]{flex:1;min-height:0;overflow:hidden}
 #sceneHierarchyPanel #editorTreeList{min-height:0}
 @media(max-width:700px){#sceneHierarchyPanel{top:150px;left:8px;right:8px;bottom:8px;width:auto;height:auto;min-height:0}#sceneEditorPanel{top:150px;left:8px;right:8px;bottom:8px;width:auto}}
+
+/* Two additional content categories; retain the existing Scene Look tab design */
+#sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(8,minmax(0,1fr))}
+@media(max-width:700px){#sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(8,minmax(0,1fr))}}
 </style>
 
 <style id="gradeOptimizerWeatherStyles">
@@ -994,461 +998,6 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @media(prefers-reduced-motion:reduce){#sceneBar #weatherToggle .weather-cloud-icon{transition:none}}
 
 
-/* v0.110 — Sketchfab-style editor navigation and compact inspector */
-:root{
-  --sf-panel:#292e33;
-  --sf-panel-deep:#22272c;
-  --sf-panel-raised:#343a40;
-  --sf-line:rgba(225,235,242,.14);
-  --sf-muted:#aeb8c0;
-  --sf-text:#eef3f6;
-  --sf-accent:#17a9d1;
-}
-#sceneEditorPanel{
-  width:min(390px,calc(100% - 24px));
-  padding:0;
-  overflow-x:hidden;
-  border-radius:8px;
-  border:1px solid rgba(220,232,240,.18);
-  background:var(--sf-panel);
-  box-shadow:0 12px 34px rgba(0,0,0,.42);
-  scrollbar-color:rgba(180,195,205,.32) transparent;
-}
-#editorHeader{
-  top:0;
-  min-height:40px;
-  margin:0;
-  padding:6px 9px;
-  background:var(--sf-panel-deep);
-  border-bottom:1px solid var(--sf-line);
-  box-shadow:none;
-}
-#editorHeader .editor-heading strong{font-size:10px;letter-spacing:1px}
-#editorHeader .editor-chip{font-size:8px;padding:3px 6px}
-#editorHeader button.closeEditor{width:27px;min-width:27px;height:27px;min-height:27px}
-#editorStatus{
-  min-height:0;
-  margin:0;
-  padding:6px 9px;
-  border:0;
-  border-bottom:1px solid var(--sf-line);
-  border-radius:0;
-  background:#30363b;
-  color:#bdc8ce;
-  font-size:9px;
-  line-height:1.35;
-  box-shadow:none;
-}
-#editorStatus:empty{display:none}
-#sceneEditorPanel .scene-look-section{
-  margin:0;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
-}
-#sceneEditorPanel .scene-look-section-head{
-  min-height:34px;
-  margin:0;
-  padding:5px 9px;
-  border-bottom:1px solid var(--sf-line);
-  background:#30363b;
-}
-#sceneEditorPanel .scene-look-section-mark{
-  flex-basis:22px;
-  width:22px;
-  height:22px;
-  border-radius:4px;
-  border-color:rgba(157,200,218,.2);
-  background:rgba(255,255,255,.045);
-  color:#b6dbe9;
-}
-#sceneEditorPanel .scene-look-section-mark svg{width:14px;height:14px}
-#sceneEditorPanel .scene-look-section-titles strong{font-size:9px;letter-spacing:.9px}
-#sceneEditorPanel .scene-look-section-titles small{display:none}
-#sceneEditorPanel .scene-look-section-actions .editor-chip{display:none}
-#sceneEditorPanel .scene-look-reset{
-  height:23px;min-height:23px;
-  border:0;border-radius:4px;
-  background:transparent;color:#aebbc3;
-  font-size:8px;
-}
-#sceneEditorPanel .scene-look-reset:hover{background:rgba(255,255,255,.08);color:#fff}
-#sceneEditorPanel .scene-look-body{
-  display:grid;
-  grid-template-columns:42px minmax(0,1fr);
-  grid-template-rows:auto minmax(0,1fr);
-  align-items:stretch;
-  column-gap:9px;
-  min-width:0;
-  padding:7px 8px 10px 7px;
-}
-#sceneEditorPanel .scene-look-tabs{
-  grid-column:1;
-  grid-row:1 / span 2;
-  position:sticky;
-  top:0;
-  align-self:stretch;
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  justify-content:flex-start;
-  gap:3px;
-  width:42px;
-  margin:0;
-  padding:4px 3px;
-  border:1px solid var(--sf-line);
-  border-radius:5px;
-  background:#252a2f;
-  box-shadow:none;
-  backdrop-filter:none;
-}
-#sceneEditorPanel .scene-look-tab{
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex:0 0 37px;
-  width:34px;
-  min-width:34px;
-  min-height:37px;
-  height:37px;
-  margin:0!important;
-  padding:4px!important;
-  border:1px solid transparent!important;
-  border-radius:4px!important;
-  background:transparent!important;
-  color:#aebac3!important;
-  box-shadow:none!important;
-}
-#sceneEditorPanel .scene-look-tab:hover{
-  background:#3b4349!important;
-  color:#fff!important;
-}
-#sceneEditorPanel .scene-look-tab.active,
-#sceneEditorPanel .scene-look-tab[aria-selected="true"]{
-  background:#3a4850!important;
-  border-color:rgba(23,169,209,.55)!important;
-  color:#fff!important;
-  box-shadow:inset 3px 0 var(--sf-accent)!important;
-}
-#sceneEditorPanel .scene-look-tab.active:after{display:none}
-#sceneEditorPanel .scene-look-tab-icon{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:19px;
-  height:19px;
-  color:inherit;
-}
-#sceneEditorPanel .scene-look-tab-icon svg{
-  display:block;
-  width:18px;
-  height:18px;
-  stroke:currentColor;
-}
-#sceneEditorPanel .scene-look-tab-label,
-#sceneEditorPanel .scene-look-tab-meta{display:none!important}
-#sceneEditorPanel .scene-look-panel-heading{
-  grid-column:2;
-  grid-row:1;
-  min-width:0;
-  margin:0 0 3px;
-  padding:3px 2px 7px;
-  border-bottom:1px solid var(--sf-line);
-}
-#sceneEditorPanel .scene-look-panel-heading strong{
-  color:var(--sf-text);
-  font-size:9px;
-  letter-spacing:.8px;
-}
-#sceneEditorPanel .scene-look-panel-heading span{
-  color:#92a0a9;
-  font-size:7px;
-  letter-spacing:.55px;
-}
-#sceneEditorPanel .scene-look-panels{
-  grid-column:2;
-  grid-row:2;
-  min-width:0;
-}
-#sceneEditorPanel .scene-look-panel{
-  padding:2px 1px 5px;
-  border:0;
-  border-radius:0;
-  background:transparent;
-}
-#sceneEditorPanel .scene-look-panel .scene-look-grid{
-  display:grid;
-  grid-template-columns:minmax(0,1fr)!important;
-  gap:2px!important;
-}
-#sceneEditorPanel .scene-look-panel .scene-look-control{
-  min-width:0;
-  padding:6px 2px 7px;
-  border-bottom:1px solid rgba(230,239,245,.09);
-}
-#sceneEditorPanel .scene-look-panel .scene-look-control label{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  margin:0 0 4px;
-  color:#dce3e8;
-  font-size:9px;
-}
-#sceneEditorPanel .scene-look-panel .scene-look-control label strong{
-  color:#c5e8f3;
-  font-size:9px;
-  font-weight:650;
-  white-space:nowrap;
-}
-#sceneEditorPanel .scene-look-panel input[type="range"]{
-  display:block;
-  width:100%;
-  height:14px;
-  margin:1px 0 0;
-  accent-color:var(--sf-accent);
-}
-#sceneEditorPanel .scene-look-panel .scene-look-control select{
-  min-height:29px;
-  height:29px;
-  padding:4px 7px;
-  border-radius:4px;
-  border-color:rgba(210,225,235,.2);
-  background:#20262b;
-  color:#edf3f6;
-  font-size:10px;
-}
-#sceneEditorPanel .scene-look-panel .scene-look-switches{
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-  margin-top:8px;
-}
-#sceneEditorPanel .scene-look-panel .scene-look-switches label{
-  min-height:29px;
-  margin:0;
-  padding:5px 7px;
-  border:1px solid rgba(225,235,242,.1);
-  border-radius:4px;
-  background:#30363b;
-  color:#d4dde2;
-  font-size:9px;
-}
-#sceneEditorPanel .scene-look-panel .scene-look-note{
-  margin-top:8px;
-  padding:7px 8px;
-  border:1px solid rgba(23,169,209,.19);
-  border-radius:4px;
-  background:rgba(23,169,209,.07);
-  color:#b7cbd4;
-  font-size:8px;
-}
-#sceneEditorPanel .scene-look-actions{margin-top:7px}
-#sceneEditorPanel .scene-look-actions button{
-  min-height:29px;
-  border-radius:4px;
-  font-size:9px;
-}
-
-/* Scene / project tabs: compact icon strip like the Sketchfab sidebar */
-#sceneHierarchyPanel{
-  width:270px;
-  padding:8px;
-  border-radius:7px;
-  border-color:rgba(220,232,240,.16);
-  background:#292e33;
-  box-shadow:0 12px 34px rgba(0,0,0,.4);
-}
-#sceneHierarchyPanel .hierarchy-header{
-  min-height:30px;
-  padding:2px 3px 6px;
-  border-bottom:1px solid var(--sf-line);
-}
-#sceneHierarchyPanel .hierarchy-title strong{
-  color:#eef3f6;
-  font-size:10px;
-  letter-spacing:.85px;
-}
-#sceneHierarchyPanel .scene-hierarchy-tabs{
-  position:sticky;
-  top:0;
-  z-index:8;
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:3px;
-  margin:0;
-  padding:4px;
-  border:1px solid var(--sf-line);
-  border-radius:5px;
-  background:#252a2f;
-}
-#sceneHierarchyPanel .scene-hierarchy-tab{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:100%;
-  min-width:0;
-  min-height:34px;
-  height:34px;
-  margin:0;
-  padding:4px;
-  border:1px solid transparent;
-  border-radius:4px;
-  background:transparent;
-  color:#aebac3;
-}
-#sceneHierarchyPanel .scene-hierarchy-tab:hover{
-  background:#3b4349;
-  color:#fff;
-}
-#sceneHierarchyPanel .scene-hierarchy-tab.active{
-  border-color:rgba(23,169,209,.55);
-  background:#3a4850;
-  color:#fff;
-  box-shadow:inset 0 -3px var(--sf-accent);
-}
-#sceneHierarchyPanel .scene-hierarchy-tab svg{
-  width:17px;
-  height:17px;
-  fill:none;
-  stroke:currentColor;
-  stroke-width:1.7;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-}
-#sceneHierarchyPanel .hierarchy-tab-sr{
-  position:absolute;
-  width:1px;
-  height:1px;
-  padding:0;
-  margin:-1px;
-  overflow:hidden;
-  clip:rect(0,0,0,0);
-  white-space:nowrap;
-  border:0;
-}
-#sceneHierarchyPanel .scene-hierarchy-panel{
-  min-width:0;
-  padding:2px 1px 4px;
-}
-#sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel="hierarchy"]{overflow:hidden}
-#sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel="hierarchy"] #editorTreeList{
-  overflow-y:auto;
-  flex:1;
-  min-height:60px;
-}
-#sceneHierarchyPanel .client-workspace .tree-search-label{font-size:8px;color:#c4d0d7}
-#sceneHierarchyPanel .client-workspace input,
-#sceneHierarchyPanel .scene-hierarchy-panel>input,
-#sceneHierarchyPanel .scene-hierarchy-panel>select{
-  min-height:29px;
-  padding:5px 7px;
-  border:1px solid rgba(220,232,240,.17);
-  border-radius:4px;
-  background:#20262b;
-  color:#eef3f6;
-  font-size:10px;
-}
-#sceneHierarchyPanel button{
-  min-height:29px;
-  border-radius:4px;
-  font-size:9px;
-}
-#sceneHierarchyPanel .workspace-help summary,
-#sceneHierarchyPanel .workspace-sync-title{font-size:8px}
-@media(max-width:980px){
-  #sceneEditorPanel{width:min(370px,calc(100% - 24px))}
-  #sceneHierarchyPanel{width:250px}
-}
-@media(max-width:700px){
-  #sceneEditorPanel{padding:0}
-  #sceneEditorPanel .scene-look-body{grid-template-columns:38px minmax(0,1fr);column-gap:6px;padding:6px}
-  #sceneEditorPanel .scene-look-tabs{width:38px;padding:3px 2px}
-  #sceneEditorPanel .scene-look-tab{width:32px;min-width:32px;flex-basis:35px;min-height:35px;height:35px}
-}
-
-
-
-/* v0.111 — match Sketchfab's horizontal icon toolbar */
-#sceneEditorPanel .scene-look-body{
-  display:flex!important;
-  flex-direction:column;
-  align-items:stretch;
-  gap:5px;
-  min-width:0;
-  padding:6px 8px 10px;
-}
-#sceneEditorPanel .scene-look-tabs{
-  position:sticky;
-  top:40px;
-  z-index:7;
-  display:grid;
-  grid-template-columns:repeat(6,minmax(0,1fr));
-  flex-direction:row;
-  align-items:stretch;
-  gap:2px;
-  width:100%;
-  margin:0 0 2px;
-  padding:3px;
-  border:1px solid var(--sf-line);
-  border-radius:4px;
-  background:#252a2f;
-  box-shadow:none;
-}
-#sceneEditorPanel .scene-look-tab{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex:1 1 0;
-  width:100%;
-  min-width:0;
-  min-height:35px;
-  height:35px;
-  margin:0!important;
-  padding:4px!important;
-  border:1px solid transparent!important;
-  border-radius:3px!important;
-  background:transparent!important;
-  color:#aebac3!important;
-}
-#sceneEditorPanel .scene-look-tab:hover{
-  background:#3b4349!important;
-  color:#fff!important;
-}
-#sceneEditorPanel .scene-look-tab.active,
-#sceneEditorPanel .scene-look-tab[aria-selected="true"]{
-  background:#454d53!important;
-  border-color:rgba(23,169,209,.45)!important;
-  color:#fff!important;
-  box-shadow:inset 0 -2px var(--sf-accent)!important;
-}
-#sceneEditorPanel .scene-look-tab-icon{
-  width:19px;
-  height:19px;
-}
-#sceneEditorPanel .scene-look-tab-icon svg{width:18px;height:18px}
-#sceneEditorPanel .scene-look-panel-heading,
-#sceneEditorPanel .scene-look-panels{
-  grid-column:auto;
-  grid-row:auto;
-  width:100%;
-  min-width:0;
-}
-#sceneEditorPanel .scene-look-panel-heading{
-  margin:0;
-  padding:3px 2px 7px;
-}
-#sceneEditorPanel .scene-look-panels{flex:1 1 auto}
-@media(max-width:700px){
-  #sceneEditorPanel .scene-look-body{padding:5px 6px 9px;gap:4px}
-  #sceneEditorPanel .scene-look-tabs{top:40px;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px}
-  #sceneEditorPanel .scene-look-tab{min-height:33px;height:33px;padding:3px!important}
-  #sceneEditorPanel .scene-look-tab-icon,#sceneEditorPanel .scene-look-tab-icon svg{width:17px;height:17px}
-}
-
 </style>
 
 </head>
@@ -1550,7 +1099,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
   <div class="hierarchy-header"><div class="hierarchy-title"><strong>SCENE</strong><span id="editorAssetCount" class="editor-chip">0 OBJECTS</span></div></div>
-  <div class="scene-hierarchy-tabs" role="tablist" aria-label="Scene panel sections"><button type="button" class="scene-hierarchy-tab active" data-hierarchy-tab="project" aria-label="Project" title="Project" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h7l2 2H21v10H3z"/></svg><span class="hierarchy-tab-sr">Project</span></button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="import" aria-label="Import" title="Import" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M4 14v6h16v-6"/></svg><span class="hierarchy-tab-sr">Import</span></button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="hierarchy" aria-label="Hierarchy" title="Hierarchy" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h5v4H5zM14 15h5v4h-5zM5 15h5v4H5zM7.5 9v3h9v3M7.5 12H7.5v3"/></svg><span class="hierarchy-tab-sr">Hierarchy</span></button></div><div class="scene-hierarchy-panel" data-hierarchy-panel="project">
+  <div class="scene-hierarchy-tabs" role="tablist" aria-label="Scene panel sections"><button type="button" class="scene-hierarchy-tab active" data-hierarchy-tab="project" aria-selected="true">PROJECT</button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="import" aria-selected="false">IMPORT</button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="hierarchy" aria-selected="false">HIERARCHY</button></div><div class="scene-hierarchy-panel" data-hierarchy-panel="project">
   <div class="client-workspace">
     <label for="clientWorkspaceId" class="tree-search-label">PROJECT</label>
     <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="alpine-resort" autocomplete="off" aria-describedby="clientWorkspaceHint"/>
@@ -1612,18 +1161,111 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       </div>
     </div>
     <div class="scene-look-body"><div class="scene-look-tabs" role="tablist" aria-label="Scene Look categories">
-        <button class="scene-look-tab" id="sceneLookTab-environment" type="button" role="tab" data-look-tab="environment" aria-controls="sceneLookPanel-environment" aria-selected="false" tabindex="-1" aria-label="Environment" title="Environment"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17.5" cy="6.5" r="2.7"/><path d="M17.5 1.5v1.3M22.5 6.5h-1.3M17.5 11.5v-1.3M12.5 6.5h1.3M4 17.2a3.2 3.2 0 0 1 .3-6.4 5.2 5.2 0 0 1 9.9 1.4 2.8 2.8 0 0 1-.2 5.6H4Z"/></svg></span><span class="scene-look-tab-label">Environment</span><span class="scene-look-tab-meta">ATMOSPHERE</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-camera" type="button" role="tab" data-look-tab="camera" aria-controls="sceneLookPanel-camera" aria-selected="false" tabindex="-1" aria-label="Camera" title="Camera"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h4l1.6-2h6.8l1.6 2h4v12H3z"/><circle cx="12" cy="13.5" r="4.1"/><circle cx="12" cy="13.5" r="1.5"/></svg></span><span class="scene-look-tab-label">Camera</span><span class="scene-look-tab-meta">FRAMING</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-lens" type="button" role="tab" data-look-tab="lens" aria-controls="sceneLookPanel-lens" aria-selected="false" tabindex="-1" aria-label="Lens" title="Lens"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.4"/><circle cx="12" cy="12" r="2"/><path d="m18.4 5.6 1.2-1.2M4.4 19.6l1.2-1.2"/></svg></span><span class="scene-look-tab-label">Lens</span><span class="scene-look-tab-meta">CHARACTER</span></button>
-        <button class="scene-look-tab active" id="sceneLookTab-optics" type="button" role="tab" data-look-tab="optics" aria-controls="sceneLookPanel-optics" aria-selected="true" tabindex="0" aria-label="Optics" title="Optics"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 14.2 8l5.3 1-4 3.7 1 5.4-4.5-2.7-4.5 2.7 1-5.4-4-3.7 5.3-1L12 2.8Z"/><path d="M19.2 18.2 21 20M3 20l1.8-1.8"/></svg></span><span class="scene-look-tab-label">Optics</span><span class="scene-look-tab-meta">EFFECTS</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1" aria-label="Color" title="Color"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a2 2 0 0 0 1.3-3.5 1.7 1.7 0 0 1 1.1-3h.7A4.5 4.5 0 0 0 21 10c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="6.8" r=".8"/><circle cx="16" cy="8" r=".8"/></svg></span><span class="scene-look-tab-label">Color</span><span class="scene-look-tab-meta">PALETTE</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1" aria-label="Render" title="Render"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><span class="scene-look-tab-label">Render</span><span class="scene-look-tab-meta">OUTPUT</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-general" type="button" role="tab" data-look-tab="general" aria-controls="sceneLookPanel-general" aria-selected="false" tabindex="-1">
+          <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M22 12h-3M5 12H2M19.1 4.9 17 7M7 17l-2.1 2.1M19.1 19.1 17 17M7 7 4.9 4.9"/></svg></span>
+          <span class="scene-look-tab-label">General</span><span class="scene-look-tab-meta">OBJECTS</span>
+        </button>
+        <button class="scene-look-tab" id="sceneLookTab-materials" type="button" role="tab" data-look-tab="materials" aria-controls="sceneLookPanel-materials" aria-selected="false" tabindex="-1">
+          <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L7 20"/></svg></span>
+          <span class="scene-look-tab-label">Materials</span><span class="scene-look-tab-meta">PBR MAPS</span>
+        </button>
+        <button class="scene-look-tab" id="sceneLookTab-environment" type="button" role="tab" data-look-tab="environment" aria-controls="sceneLookPanel-environment" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17.5" cy="6.5" r="2.7"/><path d="M17.5 1.5v1.3M22.5 6.5h-1.3M17.5 11.5v-1.3M12.5 6.5h1.3M4 17.2a3.2 3.2 0 0 1 .3-6.4 5.2 5.2 0 0 1 9.9 1.4 2.8 2.8 0 0 1-.2 5.6H4Z"/></svg></span><span class="scene-look-tab-label">Environment</span><span class="scene-look-tab-meta">ATMOSPHERE</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-camera" type="button" role="tab" data-look-tab="camera" aria-controls="sceneLookPanel-camera" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h4l1.6-2h6.8l1.6 2h4v12H3z"/><circle cx="12" cy="13.5" r="4.1"/><circle cx="12" cy="13.5" r="1.5"/></svg></span><span class="scene-look-tab-label">Camera</span><span class="scene-look-tab-meta">FRAMING</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-lens" type="button" role="tab" data-look-tab="lens" aria-controls="sceneLookPanel-lens" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.4"/><circle cx="12" cy="12" r="2"/><path d="m18.4 5.6 1.2-1.2M4.4 19.6l1.2-1.2"/></svg></span><span class="scene-look-tab-label">Lens</span><span class="scene-look-tab-meta">CHARACTER</span></button>
+        <button class="scene-look-tab active" id="sceneLookTab-optics" type="button" role="tab" data-look-tab="optics" aria-controls="sceneLookPanel-optics" aria-selected="true" tabindex="0"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 14.2 8l5.3 1-4 3.7 1 5.4-4.5-2.7-4.5 2.7 1-5.4-4-3.7 5.3-1L12 2.8Z"/><path d="M19.2 18.2 21 20M3 20l1.8-1.8"/></svg></span><span class="scene-look-tab-label">Optics</span><span class="scene-look-tab-meta">EFFECTS</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a2 2 0 0 0 1.3-3.5 1.7 1.7 0 0 1 1.1-3h.7A4.5 4.5 0 0 0 21 10c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="6.8" r=".8"/><circle cx="16" cy="8" r=".8"/></svg></span><span class="scene-look-tab-label">Color</span><span class="scene-look-tab-meta">PALETTE</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><span class="scene-look-tab-label">Render</span><span class="scene-look-tab-meta">OUTPUT</span></button>
       </div>
       <div class="scene-look-panel-heading scene-look-active-heading">
         <div class="scene-look-active-copy"><strong id="sceneLookPanelTitle">LENS & POST</strong><span id="sceneLookPanelSubtitle">OPTICAL EFFECTS & DEPTH OF FIELD</span></div>
         <span id="sceneLookFxStatus" class="scene-look-live-pill" role="status" aria-live="polite">FX LIVE</span>
       </div>
       <div class="scene-look-panels">
+
+      <section class="scene-look-panel scene-look-panel--general" id="sceneLookPanel-general" data-look-panel="general" role="tabpanel" aria-labelledby="sceneLookTab-general" hidden>
+              <div class="scene-look-note scene-look-persistence-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"/><path d="M8 4.5v5h8v-5M8 19v-5h8v5"/></svg><span>Настройки сохраняются в Scene Config и <code>clients/&lt;project&gt;/scene.json</code> и восстанавливаются вместе с проектом.</span></div>
+        plit">
+      <button id="importSkierSkiButton" type="button">＋ ЗАГРУЗИТЬ ОДНУ ЛЫЖУ · GLB</button>
+      <button id="resetSkierSkiButton" class="secondary" type="button">ВЕРНУТЬ СТАНДАРТНЫЕ</button>
+    </div>
+    <div id="skierSkiModelStatus" class="editor-hint" aria-live="polite">Используются стандартные лыжи.</div>
+  </div>
+  <select id="editorObjectSelect" hidden aria-hidden="true"><option value="">Сцена загружается…</option></select>
+  <div class="editor-section">
+    <h3>ОБЪЕКТ <span class="editor-chip">TRANSFORM</span></h3>
+    <div id="editorSelectedName" class="editor-selected-name">Нет выбранного объекта</div>
+    <div class="editor-row">
+      <div><label for="editorPosX">Position X</label><input id="editorPosX" type="number" step="0.1" value="0"/></div>
+      <div><label for="editorPosY">Position Y</label><input id="editorPosY" type="number" step="0.1" value="0"/></div>
+      <div><label for="editorPosZ">Position Z</label><input id="editorPosZ" type="number" step="0.1" value="0"/></div>
+    </div>
+    <div class="editor-row">
+      <div><label for="editorRotX">Rotation X, °</label><input id="editorRotX" type="number" step="1" value="0"/></div>
+      <div><label for="editorRotY">Rotation Y, °</label><input id="editorRotY" type="number" step="1" value="0"/></div>
+      <div><label for="editorRotZ">Rotation Z, °</label><input id="editorRotZ" type="number" step="1" value="0"/></div>
+    </div>
+    <div class="editor-row">
+      <div><label for="editorScaleX">Scale X</label><input id="editorScaleX" type="number" min="0.001" step="0.01" value="1"/></div>
+      <div><label for="editorScaleY">Scale Y</label><input id="editorScaleY" type="number" min="0.001" step="0.01" value="1"/></div>
+      <div><label for="editorScaleZ">Scale Z</label><input id="editorScaleZ" type="number" min="0.001" step="0.01" value="1"/></div>
+    </div>
+    <div class="editor-split">
+      <button id="focusSelectedAsset" class="secondary" type="button">FOCUS SELECTED OBJECT</button>
+      <button id="activateSelectedTerrain" type="button">MAKE ACTIVE TERRAIN</button>
+    </div>
+    <div class="editor-split">
+      <div><label for="editorCategory">Категория</label><select id="editorCategory">
+        <option value="model">General model</option><option value="terrain">Terrain</option><option value="slope">Slope</option><option value="forest">Forest</option>
+        <option value="building">Building</option><option value="lift">Lift</option><option value="infrastructure">Infrastructure</option>
+        <option value="vegetation">Vegetation</option><option value="prop" selected>Prop</option><option value="lighting">Lighting</option>
+      </select></div>
+      <div><label for="editorPhase">Очередь</label><select id="editorPhase">
+        <option value="always">Always</option><option value="stage_1" selected>Stage 1</option><option value="stage_2">Stage 2</option>
+      </select></div>
+    </div>
+    <div class="editor-checks">
+      <label><input type="checkbox" id="editorVisible" checked/> Видимый</label>
+      <label><input type="checkbox" id="editorCollision"/> Коллизия (модель)</label>
+      <label><input type="checkbox" id="editorForestBlocker"/> Блокировать деревья (модель)</label>
+    </div>
+    <button id="removeImportedAsset" class="secondary" type="button">УДАЛИТЬ ВЫБРАННЫЙ ОБЪЕКТ</button>
+  </div>
+  <div class="editor-section">
+    <h3>МЕТАДАННЫЕ УЗЛА <span class="editor-chip">OPTIONAL</span></h3>
+    <label for="editorNodeRole">Role / назначение выбранного узла</label>
+    <input id="editorNodeRole" type="text" list="editorNodeRoleOptions" placeholder="например: gondola-station, terrain, custom-role"/>
+    <datalist id="editorNodeRoleOptions">
+      <option value="general"></option><option value="terrain"></option><option value="slope"></option>
+      <option value="building"></option><option value="lift"></option><option value="vegetation"></option>
+      <option value="collision-proxy"></option><option value="forest-blocker"></option><option value="other"></option>
+    </datalist>
+    <label for="editorNodeTags">Tags · через запятую</label>
+    <input id="editorNodeTags" type="text" placeholder="например: gondola, station, phase-2"/>
+    <div class="editor-checks">
+      <label><input type="checkbox" id="editorNodeCollision"/> Collision hint</label>
+      <label><input type="checkbox" id="editorNodeForestBlocker"/> Forest blocker hint</label>
+    </div>
+    <div class="editor-hint">Метки относятся только к выбранному узлу и сохраняются в клиентском manifest. Они не меняют физику или классификацию автоматически.</div>
+  </div>
+
+  <div class="editor-section">
+    <h3>Материал / PBR <span id="editorMaterialCount" class="editor-chip">0 SLOTS</span></h3>
+    <label for="editorMaterialSelect">Component / Material Slot</label>
+    <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
+    <div id="editorMaterialLinkStatus" class="editor-hint">Выбери material slot для редактирования.</div>
+    <div class="editor-section" sty
+        ия проекта не скачивай этот файл — используй SAVE ALL PROJECT CHANGES TO GITHUB в блоке CLIENT WORKSPACE.</div>
+</div>
+
+<div id="skierHud" class="mode-hud skier-hud" role="region" aria-label="Подсказки управления лыжником">
+  <div class="mode-hud-header">
+    <div class="mode-hud-identity">
+      <span class="mode-hud-symbol" aria-hidden="true">⛷</span>
+      <div><div class="mode-hud-eyebrow">РЕЖИМ ЛЫЖНИКА</div><div class="mode-hud-title">Твой первый спуск</div></div>
+    </div>
+    <div class="mode-hud-header-actions">
+      <sp
+      </section>
       <section class="scene-look-panel scene-look-panel--environment" id="sceneLookPanel-environment" data-look-panel="environment" role="tabpanel" aria-labelledby="sceneLookTab-environment" hidden>
         
         <div class="scene-look-grid">
@@ -1765,111 +1407,9 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
           </div>
         </div>
       </section>
-      <section class="scene-look-panel scene-look-panel--render" id="sceneLookPanel-render" data-look-panel="render" role="tabpanel" aria-labelledby="sceneLookTab-render" hidden>
-        <div class="scene-look-panel-heading"><strong>RENDER PIPELINE</strong><span>OUTPUT & PERFORMANCE</span></div>
-        <div class="scene-look-grid">
-          <div class="scene-look-control">
-            <label for="sceneQuality">Render quality</label>
-            <select id="sceneQuality">
-              <option value="performance">Performance</option>
-              <option value="balanced" selected>Balanced</option>
-              <option value="high">High</option>
-              <option value="cinematic">Cinematic</option>
-            </select>
-          </div>
-          <div class="scene-look-control">
-            <label for="sceneToneMapping">Tone mapping</label>
-            <select id="sceneToneMapping">
-              <option value="aces" selected>ACES Filmic</option>
-              <option value="agx">AgX</option>
-              <option value="reinhard">Reinhard</option>
-              <option value="linear">Linear</option>
-            </select>
-          </div>
-        </div>
-        <div class="scene-look-note">Performance снижает нагрузку на GPU. High и Cinematic повышают детализацию композитинга. ACES и AgX сохраняют мягкий roll-off ярких участков; Linear предназначен для технического сравнения.</div>
-      </section>
-      
 
-      </div>
-      <div class="scene-look-note scene-look-persistence-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"/><path d="M8 4.5v5h8v-5M8 19v-5h8v5"/></svg><span>Настройки сохраняются в Scene Config и <code>clients/&lt;project&gt;/scene.json</code> и восстанавливаются вместе с проектом.</span></div>
-    </div>
-  </section>
-
-  <div class="editor-section ski-replacement-section">
-    <h3>ЗАМЕНА ЛЫЖ ЛЫЖНИКА <span class="editor-chip">SKIER RIG</span></h3>
-    <div class="editor-hint">Загрузи GLB одной лыжи. Модель автоматически подгоняется по длине и ориентации, затем устанавливается парой на лыжника. Крепления остаются на месте.</div>
-    <input id="skierSkiFileInput" type="file" accept=".glb,model/gltf-binary" hidden/>
-    <div class="editor-split">
-      <button id="importSkierSkiButton" type="button">＋ ЗАГРУЗИТЬ ОДНУ ЛЫЖУ · GLB</button>
-      <button id="resetSkierSkiButton" class="secondary" type="button">ВЕРНУТЬ СТАНДАРТНЫЕ</button>
-    </div>
-    <div id="skierSkiModelStatus" class="editor-hint" aria-live="polite">Используются стандартные лыжи.</div>
-  </div>
-  <select id="editorObjectSelect" hidden aria-hidden="true"><option value="">Сцена загружается…</option></select>
-  <div class="editor-section">
-    <h3>ОБЪЕКТ <span class="editor-chip">TRANSFORM</span></h3>
-    <div id="editorSelectedName" class="editor-selected-name">Нет выбранного объекта</div>
-    <div class="editor-row">
-      <div><label for="editorPosX">Position X</label><input id="editorPosX" type="number" step="0.1" value="0"/></div>
-      <div><label for="editorPosY">Position Y</label><input id="editorPosY" type="number" step="0.1" value="0"/></div>
-      <div><label for="editorPosZ">Position Z</label><input id="editorPosZ" type="number" step="0.1" value="0"/></div>
-    </div>
-    <div class="editor-row">
-      <div><label for="editorRotX">Rotation X, °</label><input id="editorRotX" type="number" step="1" value="0"/></div>
-      <div><label for="editorRotY">Rotation Y, °</label><input id="editorRotY" type="number" step="1" value="0"/></div>
-      <div><label for="editorRotZ">Rotation Z, °</label><input id="editorRotZ" type="number" step="1" value="0"/></div>
-    </div>
-    <div class="editor-row">
-      <div><label for="editorScaleX">Scale X</label><input id="editorScaleX" type="number" min="0.001" step="0.01" value="1"/></div>
-      <div><label for="editorScaleY">Scale Y</label><input id="editorScaleY" type="number" min="0.001" step="0.01" value="1"/></div>
-      <div><label for="editorScaleZ">Scale Z</label><input id="editorScaleZ" type="number" min="0.001" step="0.01" value="1"/></div>
-    </div>
-    <div class="editor-split">
-      <button id="focusSelectedAsset" class="secondary" type="button">FOCUS SELECTED OBJECT</button>
-      <button id="activateSelectedTerrain" type="button">MAKE ACTIVE TERRAIN</button>
-    </div>
-    <div class="editor-split">
-      <div><label for="editorCategory">Категория</label><select id="editorCategory">
-        <option value="model">General model</option><option value="terrain">Terrain</option><option value="slope">Slope</option><option value="forest">Forest</option>
-        <option value="building">Building</option><option value="lift">Lift</option><option value="infrastructure">Infrastructure</option>
-        <option value="vegetation">Vegetation</option><option value="prop" selected>Prop</option><option value="lighting">Lighting</option>
-      </select></div>
-      <div><label for="editorPhase">Очередь</label><select id="editorPhase">
-        <option value="always">Always</option><option value="stage_1" selected>Stage 1</option><option value="stage_2">Stage 2</option>
-      </select></div>
-    </div>
-    <div class="editor-checks">
-      <label><input type="checkbox" id="editorVisible" checked/> Видимый</label>
-      <label><input type="checkbox" id="editorCollision"/> Коллизия (модель)</label>
-      <label><input type="checkbox" id="editorForestBlocker"/> Блокировать деревья (модель)</label>
-    </div>
-    <button id="removeImportedAsset" class="secondary" type="button">УДАЛИТЬ ВЫБРАННЫЙ ОБЪЕКТ</button>
-  </div>
-  <div class="editor-section">
-    <h3>МЕТАДАННЫЕ УЗЛА <span class="editor-chip">OPTIONAL</span></h3>
-    <label for="editorNodeRole">Role / назначение выбранного узла</label>
-    <input id="editorNodeRole" type="text" list="editorNodeRoleOptions" placeholder="например: gondola-station, terrain, custom-role"/>
-    <datalist id="editorNodeRoleOptions">
-      <option value="general"></option><option value="terrain"></option><option value="slope"></option>
-      <option value="building"></option><option value="lift"></option><option value="vegetation"></option>
-      <option value="collision-proxy"></option><option value="forest-blocker"></option><option value="other"></option>
-    </datalist>
-    <label for="editorNodeTags">Tags · через запятую</label>
-    <input id="editorNodeTags" type="text" placeholder="например: gondola, station, phase-2"/>
-    <div class="editor-checks">
-      <label><input type="checkbox" id="editorNodeCollision"/> Collision hint</label>
-      <label><input type="checkbox" id="editorNodeForestBlocker"/> Forest blocker hint</label>
-    </div>
-    <div class="editor-hint">Метки относятся только к выбранному узлу и сохраняются в клиентском manifest. Они не меняют физику или классификацию автоматически.</div>
-  </div>
-
-  <div class="editor-section">
-    <h3>Материал / PBR <span id="editorMaterialCount" class="editor-chip">0 SLOTS</span></h3>
-    <label for="editorMaterialSelect">Component / Material Slot</label>
-    <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
-    <div id="editorMaterialLinkStatus" class="editor-hint">Выбери material slot для редактирования.</div>
-    <div class="editor-section" style="margin:9px 0;padding:9px;background:rgba(255,255,255,.025)">
+      <section class="scene-look-panel scene-look-panel--materials" id="sceneLookPanel-materials" data-look-panel="materials" role="tabpanel" aria-labelledby="sceneLookTab-materials" hidden>
+        le="margin:9px 0;padding:9px;background:rgba(255,255,255,.025)">
       <h3>ОБЩАЯ БИБЛИОТЕКА МАТЕРИАЛОВ <span class="editor-chip">SCENE-WIDE</span></h3>
       <label for="editorMaterialLibrarySelect">Назначить существующий материал</label>
       <select id="editorMaterialLibrarySelect"><option value="">Загрузка материалов…</option></select>
@@ -1933,17 +1473,44 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <input id="sceneConfigFileInput" type="file" accept=".json,application/json" hidden/>
   <div class="editor-split"><button id="loadSceneConfig" class="secondary" type="button">ЗАГРУЗИТЬ CONFIG JSON</button><button id="exportSelectedGlb" type="button">EXPORT SELECTED GLB</button></div>
   <button id="saveSceneConfig" type="button">ЭКСПОРТ JSON-БЭКАПА · ДОПОЛНИТЕЛЬНО</button>
-  <div class="editor-hint">Для обычного сохранения проекта не скачивай этот файл — используй SAVE ALL PROJECT CHANGES TO GITHUB в блоке CLIENT WORKSPACE.</div>
-</div>
+  <div class="editor-hint">Для обычного сохранен
+      </section>
+      <section class="scene-look-panel scene-look-panel--render" id="sceneLookPanel-render" data-look-panel="render" role="tabpanel" aria-labelledby="sceneLookTab-render" hidden>
+        <div class="scene-look-panel-heading"><strong>RENDER PIPELINE</strong><span>OUTPUT & PERFORMANCE</span></div>
+        <div class="scene-look-grid">
+          <div class="scene-look-control">
+            <label for="sceneQuality">Render quality</label>
+            <select id="sceneQuality">
+              <option value="performance">Performance</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="high">High</option>
+              <option value="cinematic">Cinematic</option>
+            </select>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneToneMapping">Tone mapping</label>
+            <select id="sceneToneMapping">
+              <option value="aces" selected>ACES Filmic</option>
+              <option value="agx">AgX</option>
+              <option value="reinhard">Reinhard</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+        </div>
+        <div class="scene-look-note">Performance снижает нагрузку на GPU. High и Cinematic повышают детализацию композитинга. ACES и AgX сохраняют мягкий roll-off ярких участков; Linear предназначен для технического сравнения.</div>
+      </section>
+      
 
-<div id="skierHud" class="mode-hud skier-hud" role="region" aria-label="Подсказки управления лыжником">
-  <div class="mode-hud-header">
-    <div class="mode-hud-identity">
-      <span class="mode-hud-symbol" aria-hidden="true">⛷</span>
-      <div><div class="mode-hud-eyebrow">РЕЖИМ ЛЫЖНИКА</div><div class="mode-hud-title">Твой первый спуск</div></div>
+      </div>
+
     </div>
-    <div class="mode-hud-header-actions">
-      <span class="mode-hud-view-label" id="skierViewStatus">1-Е ЛИЦО</span>
+  </section>
+
+  <div class="editor-section ski-replacement-section">
+    <h3>ЗАМЕНА ЛЫЖ ЛЫЖНИКА <span class="editor-chip">SKIER RIG</span></h3>
+    <div class="editor-hint">Загрузи GLB одной лыжи. Модель автоматически подгоняется по длине и ориентации, затем устанавливается парой на лыжника. Крепления остаются на месте.</div>
+    <input id="skierSkiFileInput" type="file" accept=".glb,model/gltf-binary" hidden/>
+    <div class="editor-san class="mode-hud-view-label" id="skierViewStatus">1-Е ЛИЦО</span>
       <span class="mode-hud-status" id="groundState">Обычная езда</span>
       <button id="toggleSkierTutorial" class="mode-hud-toggle" type="button" aria-expanded="true" aria-controls="skierTutorialContent" title="Скрыть или показать туториал · H"><span class="tutorial-toggle-label">Скрыть</span><kbd>H</kbd></button>
     </div>
