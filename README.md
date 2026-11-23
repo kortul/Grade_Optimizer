@@ -43,19 +43,22 @@ Run locally with Node.js 22 or later:
 node scripts/validate-project.mjs
 ```
 
-## Maya project-scene export
+## Maya terrain export
 
-Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor. Its default Project ID is `alpine-resort`, matching the Web Editor's primary project.
+Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor, or open it from the Grade Optimizer Maya plug-in.
 
-1. Export the entire Maya scene (or the current selection) as one binary FBX with embedded media.
-2. The exporter writes `clients/<project-id>/models/resort.fbx` and `clients/<project-id>/scene.json` into the local Git working copy.
-3. Push those Maya-exported files to the repository with GitHub Desktop.
-4. Open the site. The primary `alpine-resort` project loads automatically; another project can be opened with `?project=<project-id>`.
+1. In Maya, select the root transform/group of the terrain, or select the terrain mesh objects directly. Only the selection and its descendant meshes are exported; the rest of the Maya scene is never included.
+2. In the exporter, choose the local `Grade_Optimizer` repository root (the folder containing `index.html` and `assets/`).
+3. The exporter writes the canonical project files:
+   - `assets/real-terrain.fbx`
+   - `assets/real-terrain.json`
+4. Open GitHub Desktop, review the two changed files, then commit and push. The Maya exporter does not create commits or push by itself.
 
-The FBX keeps object hierarchy, mesh names and shared material assignments. The Web Editor material inspector lists slots as `mesh name · material name`; Terrain and Slope remain optional special roles.
+The FBX preserves hierarchy, transforms, mesh names, smoothing, tangents, material assignments and embedded textures. The JSON sidecar records the source scene, Maya version, linear unit, world bounds, component names, material names and Role / Tags metadata. Collision and Forest blocker remain Web Editor settings.
 
-Keep the FBX below 90 MiB for the current regular-Git workflow. Use embedded textures so the project remains self-contained.
+The exporter removes the old Project ID / `clients/<id>` requirement. There is one fixed destination for the main terrain. Keep the FBX below 90 MiB for the current regular-Git workflow.
 
+**Runtime note:** this exporter prepares the canonical terrain asset in the repository. The browser app still needs its separate loader update before it will replace the built-in test slope with this FBX; exporting alone does not change the live terrain.
 ## Scene Editor: browser autosave and direct local repository sync
 
 You are the only Scene Editor administrator. Viewers only need the generated viewer link; no client accounts or editing workflow are required.
