@@ -31,6 +31,8 @@ assert.ok(entrySource.includes('setTerrainSnowMaterial(canonicalTerrain.terrainM
 assert.ok(entrySource.includes("if(id==='A1')") && entrySource.includes("использую резервный A1.gltf"), 'real terrain must be preferred for the primary slope while preserving A1 fallback');
 assert.ok(entrySource.includes('expectedNames.some(expected=>names.some(name=>name===expected))'), 'FBX loader must resolve terrainShape by its manifest name');
 pass('canonical Maya terrainShape FBX loading, units, UV scale and A1 fallback are present');
+assert.ok(entrySource.includes("if(/\\.fbx$/i.test(String(fileName||'')))"), 'generic model parser must route .fbx files through FBXLoader');
+pass('generic FBX parser extension detection routes .fbx assets through FBXLoader');
 
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
 assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
