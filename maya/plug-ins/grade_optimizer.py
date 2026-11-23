@@ -12,7 +12,7 @@ import maya.cmds as cmds
 import maya.utils as maya_utils
 import maya.api.OpenMaya as om
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 COMMAND_NAME = "gradeOptimizerOpen"
 MENU_NAME = "gradeOptimizerMenu"
 MENU_LABEL = "Grade Optimizer"

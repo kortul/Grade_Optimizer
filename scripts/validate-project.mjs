@@ -470,18 +470,16 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.3.0"'), 'Maya terrain exporter version must be 0.3.0');
-assert.ok(mayaExporter.includes('FBX_RELATIVE_PATH = "assets/" + FBX_NAME'), 'Maya exporter must use the one canonical project terrain path');
-assert.ok(mayaExporter.includes('def write_terrain_manifest(') && mayaExporter.includes('"assetId": "real-terrain"'), 'project-level terrain manifest missing');
-assert.ok(mayaExporter.includes('"category": "terrain"') && mayaExporter.includes('"activeTerrain": True'), 'terrain manifest must identify the exported asset as the active terrain');
-assert.ok(mayaExporter.includes('"nodeMetadata": node_metadata'), 'Maya terrain manifest must preserve per-node metadata');
-assert.ok(mayaExporter.includes('def collect_node_metadata(selection_only=False):'), 'Maya metadata exporter missing');
-assert.ok(mayaExporter.includes('def apply_metadata_to_selection('), 'Maya metadata UI action missing');
-assert.ok(mayaExporter.includes('"C:/zGit/GradeOptimizer/Grade_Optimizer"') && mayaExporter.includes('OPTION_REPO'), 'Maya exporter remembered default path must target the actual nested local repository root');
-assert.ok(mayaExporter.includes('collect_meshes(selection_only=True)') && mayaExporter.includes('collect_node_metadata(selection_only=True)'), 'Maya terrain exporter must collect only selected objects and descendants');
-assert.ok(mayaExporter.includes('FBXExport -f "') && mayaExporter.includes('" -s;'), 'Maya terrain export must always use FBX selection-only mode');
-assert.ok(!mayaExporter.includes('OPTION_PROJECT') && !mayaExporter.includes('Project ID') && !mayaExporter.includes('clients/'), 'legacy Project ID / clients export path must be removed from Maya exporter');
-assert.ok(mayaExporter.includes('os.replace(temporary_model_path, model_path)'), 'Maya exporter must replace the published FBX only after export succeeds');
+assert.ok(mayaExporter.includes('VERSION = "0.4.0"'), 'Maya scene-asset exporter version must be 0.4.0');
+assert.ok(mayaExporter.includes('def find_client_scene_manifest(repo):') && mayaExporter.includes('if len(matches) != 1'), 'Maya exporter must safely detect exactly one client scene without asking for a Project ID');
+assert.ok(mayaExporter.includes('def prepare_client_asset_export(') && mayaExporter.includes('"file": relative_file'), 'Maya exporter must prepare a separate asset path and client manifest entry');
+assert.ok(mayaExporter.includes('"activeTerrain": False') && mayaExporter.includes('"category": category'), 'new Maya scene assets must default to non-active geometry');
+assert.ok(mayaExporter.includes('MAYA_LINEAR_UNIT_TO_METERS') && mayaExporter.includes('"scale": [meters_per_unit, meters_per_unit, meters_per_unit]'), 'Maya asset units must be converted to metres in the client manifest');
+assert.ok(mayaExporter.includes('def write_client_asset_manifest('), 'Maya client scene manifest writer missing');
+assert.ok(mayaExporter.includes('collect_meshes(selection_only=True)') && mayaExporter.includes('collect_node_metadata(selection_only=True)'), 'Maya exporter must collect only selected objects and descendants');
+assert.ok(mayaExporter.includes('FBXExport -f "') && mayaExporter.includes('" -s;'), 'Maya scene asset export must always use FBX selection-only mode');
+assert.ok(mayaExporter.includes('os.replace(temporary_model_path, export_info["model_path"])') && mayaExporter.includes('os.replace(temporary_manifest_path, export_info["manifest_path"])'), 'Maya exporter must publish the separate model and manifest only after export succeeds');
+assert.ok(!mayaExporter.includes('FBX_NAME = "real-terrain.fbx"') && !mayaExporter.includes('FBX_RELATIVE_PATH') && !mayaExporter.includes('def write_terrain_manifest('), 'Maya exporter must never write selected geometry to the canonical base terrain path');
 assert.ok(mayaExporter.includes('METADATA_PRESETS = {'), 'Maya exporter metadata presets missing');
 const mayaPresetSource = mayaExporter.slice(mayaExporter.indexOf('METADATA_PRESETS = {'), mayaExporter.indexOf('def safe_path'));
 assert.ok(!mayaPresetSource.includes('"collision"') && !mayaPresetSource.includes('"forestBlocker"'), 'Maya metadata presets must not assign editor-owned Collision / Forest blocker flags');
@@ -495,7 +493,7 @@ assert.ok(!mayaExporter.includes('WINDOW + "_node_collision"') && !mayaExporter.
 const mayaCollector = mayaExporter.slice(mayaExporter.indexOf('def collect_node_metadata('), mayaExporter.indexOf('def _set_string_attribute'));
 assert.ok(!mayaCollector.includes('goCollision') && !mayaCollector.includes('goForestBlocker'), 'Maya exporter must not import editor-owned flags from Maya attributes');
 
-assert.ok(mayaPlugin.includes('VERSION = "0.3.0"'), 'Maya plug-in version must match exporter');
+assert.ok(mayaPlugin.includes('VERSION = "0.4.0"'), 'Maya plug-in version must match exporter');
 assert.ok(mayaPlugin.includes('def maya_useNewAPI():'), 'Maya Python API 2.0 marker missing');
 assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
 assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');
