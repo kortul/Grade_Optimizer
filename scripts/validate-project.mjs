@@ -244,7 +244,7 @@ assert.ok(entrySource.includes("state.mode='loading'")&&entrySource.includes("sc
 assert.ok(entrySource.includes('runtimePerformance.skierUpdateMs')&&entrySource.includes('runtimePerformance.renderMs'), 'runtime FPS and frame timing diagnostics missing');
 assert.ok(entrySource.includes('Подготавливаем поверхность для физики и управления'), 'pending skier request must reuse scene loading overlay');
 assert.ok(!entrySource.includes('modeTransition'), 'mode changes must not be blocked by a stale cinematic transition');
-assert.ok(entrySource.includes("if(state.mode==='skier')skierController.update(dt)"), 'skier physics must update every frame once skier mode is active');
+assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.includes("skierController.update(dt);"), 'skier physics must update every frame once skier mode is active');
 assert.ok(entrySource.includes('await new Promise(resolve=>requestAnimationFrame(resolve))')&&entrySource.includes('Подготавливаем режим лыжника'), 'loading overlay must persist through camera-ready render frames');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate continuous downhill terrain');
 assert.ok(skierSource.includes('if(!spawnFound)spawnFound=!!this._findSpawn()'), 'failed drone-local spawn must fall back to the main slope');
