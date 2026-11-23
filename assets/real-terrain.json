@@ -5,33 +5,41 @@
   "file": "assets/real-terrain.fbx",
   "category": "terrain",
   "activeTerrain": true,
-  "updatedAt": "2026-11-23T15:13:59Z",
+  "updatedAt": "2026-11-23T18:12:33Z",
   "mayaExport": {
     "pluginVersion": "0.3.0",
     "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
     "mayaVersion": "2026",
     "linearUnit": "cm",
-    "modelSizeBytes": 4058272,
+    "modelSizeBytes": 3139280,
     "meshComponentCount": 1,
     "materialNames": [
-      "openPBR_shader1"
+      "openPBR_shader1",
+      "pasted__pasted__zzMainlandscape_Slopes",
+      "pasted__zzShapka_Angled",
+      "zzMainlandscape_Slopes",
+      "zzShapka_Angled"
     ],
     "worldBounds": [
-      -265699.25,
-      1478.509033203125,
-      -374683.03125,
-      186625.75,
-      13422.923828125,
-      65470.09375
+      -5943.02783203125,
+      2164.56591796875,
+      -203791.28125,
+      166841.171875,
+      16204.087890625,
+      -12431.59375
     ],
     "nodeMetadata": [],
     "components": [
       {
-        "dagPath": "|terrainShape",
-        "name": "terrainShape",
-        "shape": "terrainShapeShape",
+        "dagPath": "|Slopes_Stage1",
+        "name": "Slopes_Stage1",
+        "shape": "Slopes_Stage1Shape",
         "materials": [
-          "openPBR_shader1"
+          "pasted__pasted__zzMainlandscape_Slopes",
+          "openPBR_shader1",
+          "zzMainlandscape_Slopes",
+          "pasted__zzShapka_Angled",
+          "zzShapka_Angled"
         ]
       }
     ]
