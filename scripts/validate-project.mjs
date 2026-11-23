@@ -752,7 +752,6 @@ assert.ok(Array.isArray(manifest.assets));
 pass('scene manifest parses');
 
 console.log('\nAll project checks passed.');
-) && mayaExporter.includes('_safe_existing_fbx_path'), 'Maya replacement must be restricted to existing client-model FBX paths');
 assert.ok(mayaExporter.includes('occupied_ids') && mayaExporter.includes('if asset_id not in occupied_ids and not os.path.exists(model_path)'), 'new exports must not silently overwrite an existing client asset');
 assert.ok(mayaExporter.includes('"replacement": bool(existing)') && mayaExporter.includes('entry = dict(existing or {})'), 'replacement must retain current manifest settings and record provenance');
 assert.ok(mayaExporter.includes('shutil.copy2(export_info["model_path"], backup_model_path)') && mayaExporter.includes('os.replace(backup_model_path, export_info["model_path"])'), 'replacement must restore the previous FBX if publishing fails');
