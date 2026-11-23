@@ -7,11 +7,11 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v119.js`.
+- Current app: `app.v120.js`.
 - Weather: `weather-system.v2.js`; snowfall and wind streaks render through a scene-root camera-follow layer, with visible snow density and persistent controls in skier / drone modes.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
-- Skier: `skier-controller.v80.js`, with a 75 kg skier-equipment point-mass reference, mass-scaled pole / jump impulses, ballistic take-off and terrain-aware landing, grounded ski-snow friction, speed-limited edge force, calculated inside / outside ski loads, load-aware stance animation and first / third-person cameras.
+- Skier: `skier-controller.v81.js`, with a 75 kg skier-equipment point-mass reference, mass-scaled pole / jump impulses, 3D ballistic take-off inheriting slope velocity and terrain-aware landing, grounded ski-snow friction, speed-limited edge force, calculated inside / outside ski loads, load-aware stance animation and first / third-person cameras.
 - Drone: `drone-controller.v72.js`.
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
 
