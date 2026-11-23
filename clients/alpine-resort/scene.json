@@ -1,11 +1,11 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-23T14:49:59.949Z",
+  "updatedAt": "2026-11-23T14:50:32.612Z",
   "assets": [],
   "editorSettings": {
     "schemaVersion": "1.0",
-    "savedAt": "2026-11-23T14:49:59.949Z",
+    "savedAt": "2026-11-23T14:50:32.612Z",
     "units": "meters",
     "assets": [
       {
@@ -42,7 +42,7 @@
             "materialId": "scene-material-1",
             "nodeName": "terrainShape",
             "materialName": "",
-            "baseColor": "#ffffff",
+            "baseColor": "#fafafa",
             "roughness": 0.97,
             "metalness": 0,
             "normalScale": 1,
