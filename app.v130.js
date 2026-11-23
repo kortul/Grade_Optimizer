@@ -3084,6 +3084,8 @@ function setMaterialControlsEnabled(enabled){
     'editorAo','editorEmissive','editorTiling','editorOpacity','editorDoubleSide','editorWireframe',
     'editorPresetSelect','applyEditorPreset','editorTextureType','importEditorTexture','clearEditorTexture','exportSelectedGlb'];
   ids.forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=!enabled;});
+  document.querySelectorAll('[data-texture-import]').forEach(button=>{button.disabled=!enabled;});
+  if(!enabled)document.querySelectorAll('[data-texture-remove]').forEach(button=>{button.disabled=true;});
 }
 function colorHex(color,fallback){
   return color&&color.isColor?'#'+color.getHexString():fallback;
@@ -4556,7 +4558,7 @@ document.getElementById('clearEditorTexture').addEventListener('click',clearEdit
 document.querySelectorAll('[data-texture-import]').forEach(button=>{
   button.addEventListener('click',()=>{
     document.getElementById('editorTextureType').value=button.dataset.textureImport;
-    document.getElementById('importEditorTexture').click();
+    document.getElementById('editorTextureFileInput').click();
   });
 });
 document.querySelectorAll('[data-texture-remove]').forEach(button=>{
