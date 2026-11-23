@@ -156,7 +156,7 @@ assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone mov
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
 assert.ok(entrySource.includes('skier-controller.v79.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v78.js').toString('utf8');
+const skierSource = read('skier-controller.v79.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
