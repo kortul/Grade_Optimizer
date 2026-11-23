@@ -494,7 +494,7 @@ assert.ok(entrySource.includes("TERRAIN_NOT_RESOLVED"), 'mode API must report te
 assert.ok(skierSource.includes('this._groundFromLookup(x,z)'), 'skier ground queries must have a direct triangle lookup fallback');
 assert.ok(skierSource.includes('this._buildTerrainLookup()'), 'skier start must build a spatial terrain lookup');
 assert.ok(skierSource.includes('occupiedCells:this.terrainLookup?.cells?.size||0'), 'failed skier starts must report terrain lookup diagnostics');
-assert.ok(entrySource.includes("return 'failed:'+state.mode+':'+(skierController.lastStartError||'NO_MODE_CHANGE')"), 'mode bridge must receive the controller failure code');
+assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!state.root?'SCENE_ROOT_MISSING':'TERRAIN_NOT_RESOLVED')"), 'mode bridge must receive the precise terrain / startup failure code');
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
