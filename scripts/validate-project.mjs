@@ -225,7 +225,7 @@ assert.ok(entrySource.includes('skier-controller.v93.js'), 'active app must use 
 const skierSource = read('skier-controller.v93.js').toString('utf8');
 assert.ok(skierSource.includes('const idleYaw=this.headingYaw;')&&!skierSource.includes('const idleYaw=this.headingYaw+this.lookYaw;'), 'third-person camera orbit must not rotate the skier or ski rig at low speed');
 const droneSpawnStart=skierSource.indexOf('if(spawnHint?.fromDrone){');
-const droneSpawnEnd=skierSource.indexOf('\\n    this.active=true',droneSpawnStart);
+const droneSpawnEnd=skierSource.indexOf('\n    this.active=true',droneSpawnStart);
 const droneSpawnBlock=droneSpawnStart>=0&&droneSpawnEnd>droneSpawnStart?skierSource.slice(droneSpawnStart,droneSpawnEnd):'';
 assert.ok(droneSpawnBlock.includes('this.lookYaw=0;')&&droneSpawnBlock.includes('this.lookPitch=-0.035;')&&!droneSpawnBlock.includes('spawnHint.yaw')&&!droneSpawnBlock.includes('spawnHint.pitch'), 'drone-to-skier handoff must align first-person gaze with the ski heading, not drone camera yaw / pitch');
 pass('skier camera orbit is decoupled from ski heading; drone handoff starts looking along the skis');
