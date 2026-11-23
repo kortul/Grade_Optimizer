@@ -9,12 +9,13 @@ import re
 import json
 import datetime
 import shutil
+import subprocess
 
 import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.7.2"
+VERSION = "0.7.3"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -64,6 +65,172 @@ METADATA_PRESETS = {
 def safe_path(path):
     return os.path.abspath(path).replace("\\", "/")
 
+
+
+def _git_executable():
+    """Find a Git executable, including the one bundled with GitHub Desktop."""
+    from_path = shutil.which("git")
+    if from_path and os.path.isfile(from_path):
+        return from_path
+
+    candidates = []
+    local_app_data = os.environ.get("LOCALAPPDATA", "")
+    desktop_root = os.path.join(local_app_data, "GitHubDesktop")
+    try:
+        for folder in os.listdir(desktop_root):
+            if not folder.lower().startswith("app-"):
+                continue
+            app_root = os.path.join(desktop_root, folder, "resources", "app", "git")
+            candidates.extend([
+                os.path.join(app_root, "cmd", "git.exe"),
+                os.path.join(app_root, "mingw64", "bin", "git.exe"),
+                os.path.join(app_root, "bin", "git.exe")
+            ])
+    except Exception:
+        pass
+
+    candidates.extend([
+        r"C:\Program Files\Git\cmd\git.exe",
+        r"C:\Program Files\Git\bin\git.exe",
+        r"C:\Program Files (x86)\Git\cmd\git.exe"
+    ])
+    for candidate in candidates:
+        if candidate and os.path.isfile(candidate):
+            return candidate
+    return "git"
+
+
+def _run_git(repo, arguments):
+    """Run Git quietly from the exact folder selected in the Maya Exporter."""
+    executable = _git_executable()
+    creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    try:
+        process = subprocess.Popen(
+            [executable] + list(arguments),
+            cwd=os.path.abspath(repo),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            creationflags=creation_flags
+        )
+        stdout, stderr = process.communicate()
+    except Exception as exc:
+        raise RuntimeError(
+            "Не удалось запустить Git из Maya: %s\n"
+            "Установи Git for Windows / GitHub Desktop или проверь Git PATH."
+            % exc
+        )
+    return process.returncode, (stdout or "").strip(), (stderr or "").strip()
+
+
+def _inspect_git_worktree(repo):
+    """Require an actual Git worktree and return its canonical root, branch and origin."""
+    repo_path = os.path.realpath(os.path.abspath(repo))
+    code, top_level, error = _run_git(repo_path, ["rev-parse", "--show-toplevel"])
+    if code != 0 or not top_level:
+        raise RuntimeError(
+            "Выбранная папка содержит файлы проекта, но Git не распознаёт её как локальный репозиторий.\n\n"
+            "Папка: %s\nGit: %s\n\n"
+            "Выбери именно локальный clone Grade_Optimizer, который открыт в GitHub Desktop."
+            % (repo_path, error or "working tree not found")
+        )
+
+    actual_root = os.path.realpath(top_level)
+    normalize = lambda value: os.path.normcase(os.path.normpath(value))
+    if normalize(actual_root) != normalize(repo_path):
+        raise RuntimeError(
+            "Указана не корневая папка Git-репозитория.\n\n"
+            "Поле Maya: %s\nНастоящий Git root: %s\n\n"
+            "Укажи настоящий Git root — папку, внутри которой лежит .git."
+            % (repo_path, actual_root)
+        )
+
+    code, branch, branch_error = _run_git(actual_root, ["branch", "--show-current"])
+    if code != 0:
+        branch = "(не удалось определить)"
+    code, origin, origin_error = _run_git(actual_root, ["config", "--get", "remote.origin.url"])
+    if code != 0:
+        origin = ""
+    expected_origin = bool(re.search(
+        r"(?:github\\.com[:/])kortul/Grade_Optimizer(?:\\.git)?$",
+        origin.strip(),
+        re.IGNORECASE
+    ))
+    return {
+        "root": actual_root,
+        "branch": branch or "(detached HEAD)",
+        "origin": origin or "(origin не настроен)",
+        "origin_matches": expected_origin,
+        "git": _git_executable()
+    }
+
+
+def _git_changes_for_paths(repo, paths):
+    """Return precise status entries for the FBX and scene manifest just exported."""
+    relative_paths = []
+    for path in paths:
+        relative = os.path.relpath(os.path.abspath(path), os.path.abspath(repo)).replace("\\\\", "/")
+        if relative == ".." or relative.startswith("../"):
+            raise RuntimeError("Экспортируемый файл оказался вне выбранного Git root: " + path)
+        relative_paths.append(relative)
+
+    code, output, error = _run_git(
+        repo, ["status", "--short", "--untracked-files=all", "--"] + relative_paths
+    )
+    if code != 0:
+        raise RuntimeError("Git не смог проверить изменённые файлы: " + (error or output))
+    changes = [line.rstrip() for line in output.splitlines() if line.strip()]
+
+    ignored = []
+    for relative in relative_paths:
+        ignored_code, ignored_output, _ = _run_git(repo, ["check-ignore", "-v", "--", relative])
+        if ignored_code == 0 and ignored_output:
+            ignored.append(ignored_output)
+    return {"paths": relative_paths, "changes": changes, "ignored": ignored}
+
+
+def _format_git_export_report(git_info, git_result):
+    lines = [
+        "Git root: " + git_info["root"],
+        "Branch: " + git_info["branch"],
+        "Origin: " + git_info["origin"]
+    ]
+    if not git_info["origin_matches"]:
+        lines.append("ВНИМАНИЕ: origin не совпадает с kortul/Grade_Optimizer.")
+    if git_result["changes"]:
+        lines.append("Git видит изменения:")
+        lines.extend(git_result["changes"])
+    elif git_result["ignored"]:
+        lines.append("Git ИГНОРИРУЕТ экспортируемые файлы:")
+        lines.extend(git_result["ignored"])
+    else:
+        lines.append(
+            "Git не обнаружил отличий в этих двух файлах. "
+            "Проверь, не экспортировалась ли геометрия с тем же содержимым."
+        )
+    return "\\n".join(lines)
+
+
+def check_git_repository(*_):
+    """Show exactly which local repository GitHub Desktop should be watching."""
+    try:
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        git_info = _inspect_git_worktree(repo)
+        label = "Git OK · %s · %s" % (git_info["branch"], git_info["root"])
+        if not git_info["origin_matches"]:
+            label = "ПРОВЕРЬ ORIGIN · " + label
+        if cmds.control(WINDOW + "_repo_status", exists=True):
+            cmds.text(WINDOW + "_repo_status", edit=True, label=label)
+        cmds.confirmDialog(
+            title="Grade Optimizer · Git repository",
+            message=_format_git_export_report(git_info, {"changes": [], "ignored": []})
+                + "\\n\\nGitHub Desktop должен быть открыт именно для этой папки.",
+            button=["OK"]
+        )
+    except Exception as exc:
+        if cmds.control(WINDOW + "_repo_status", exists=True):
+            cmds.text(WINDOW + "_repo_status", edit=True, label="Git не подтверждён · " + str(exc).split("\\n")[0])
+        cmds.confirmDialog(title="Grade Optimizer · Git check failed", message=str(exc), button=["OK"])
 
 def collect_meshes(selection_only=False):
     selection = cmds.ls(selection=True, long=True) or []
@@ -195,6 +362,15 @@ def remember_export_settings(*_):
     try:
         repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
         _remember_option(OPTION_REPO, repo)
+        if cmds.control(WINDOW + "_repo_status", exists=True):
+            try:
+                git_info = _inspect_git_worktree(repo)
+                status = "Git OK · %s · %s" % (git_info["branch"], git_info["root"])
+                if not git_info["origin_matches"]:
+                    status = "ПРОВЕРЬ ORIGIN · " + status
+                cmds.text(WINDOW + "_repo_status", edit=True, label=status)
+            except Exception as exc:
+                cmds.text(WINDOW + "_repo_status", edit=True, label="Git не подтверждён · " + str(exc).split("\n")[0])
         if cmds.control(WINDOW + "_git_asset", exists=True):
             refresh_git_asset_list()
     except Exception:
@@ -882,6 +1058,11 @@ def _export_scene(replace_asset_id=None):
             button=["OK"]
         )
         return
+    try:
+        git_info = _inspect_git_worktree(repo)
+    except Exception as git_error:
+        cmds.confirmDialog(title="Grade Optimizer · Git path error", message=str(git_error), button=["OK"])
+        return
 
     previous_selection = cmds.ls(selection=True, long=True) or []
     if not previous_selection:
@@ -1028,6 +1209,8 @@ def _export_scene(replace_asset_id=None):
             message=message,
             button=["OK"]
         )
+        git_result = _git_changes_for_paths(repo, [export_info["model_path"], export_info["manifest_path"]])
+        message += "\n\nПРОВЕРКА GIT:\n" + _format_git_export_report(git_info, git_result)
         refresh_git_asset_list()
         print("[Grade Optimizer] " + message.replace("\n", " | "))
     except Exception as exc:
@@ -1093,6 +1276,10 @@ def show():
         changeCommand=remember_export_settings,
         columnWidth3=(65, 420, 75)
     )
+    cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(390, 145))
+    cmds.text(WINDOW + "_repo_status", label="Git-папка ещё не проверена.", align="left", height=24, wordWrap=True)
+    cmds.button(label="ПРОВЕРИТЬ ПАПКУ", height=26, command=check_git_repository)
+    cmds.setParent("..")
 
     # 1. NEW ASSET — always creates a fresh ID and a separate FBX.
     cmds.frameLayout(
@@ -1254,6 +1441,7 @@ def show():
     cmds.setParent("..")
     cmds.setParent("..")
     cmds.showWindow(WINDOW)
+    remember_export_settings()
     refresh_git_asset_list()
     return WINDOW
 

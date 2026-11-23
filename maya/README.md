@@ -62,7 +62,7 @@ grade_optimizer_test_scene.create_test_scene()
 
 ## Настройки Exporter
 
-- **Git repo** — корень локального клона GitHub, по умолчанию `C:/zGit/GradeOptimizer/Grade_Optimizer`.
+- **Git repo** — корень локального клона GitHub, по умолчанию `C:/zGit/GradeOptimizer/Grade_Optimizer`. Exporter проверяет через Git, что выбранная папка — настоящий working tree, показывает Git root / branch / origin и после записи FBX выводит `git status` именно для двух изменённых файлов.
 - Отдельный Project ID вводить не нужно: Exporter автоматически находит единственный файл `clients/<slug>/scene.json` в репозитории. Если клиентских сцен несколько, экспорт останавливается, чтобы не записать модель не в тот проект.
 - Экспортируется только выделенная ветка Maya и её дочерние mesh-объекты. Пустое выделение блокирует экспорт.
 - Выбранная группа экспортируется как самостоятельная FBX-модель в `clients/<slug>/models/<asset-id>.fbx`. Запись автоматически добавляется в массив `assets` клиентского `scene.json`.
@@ -109,7 +109,7 @@ clients/
 
 В `scene.json` объект регистрируется как отдельная геометрия категории `slope`, фазы `stage_1` и с `activeTerrain: false`. Он остаётся видимым рядом с исходной поверхностью и может использоваться лыжником как отдельная piste-геометрия.
 
-После экспорта открой GitHub Desktop, проверь оба изменённых файла (`models/*.fbx` и `scene.json`), сделай Commit и Push.
+После экспорта Exporter показывает точный Git root, branch, origin и результат `git status` для FBX и `scene.json`. GitHub Desktop должен быть открыт для **того же самого Git root**. Exporter не делает Commit/Push автоматически: в GitHub Desktop проверь оба изменённых файла, сделай Commit и Push. Если Exporter пишет `Git видит изменения`, а GitHub Desktop пустой — в Desktop открыт другой локальный clone. Если Exporter пишет `Git не обнаружил отличий`, сначала проверь указанные им пути и размеры/содержимое целевых файлов.
 
 Ссылка проекта: `https://kortul.github.io/Grade_Optimizer/?client=alpine-resort`.
 
