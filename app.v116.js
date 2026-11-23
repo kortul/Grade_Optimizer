@@ -484,6 +484,7 @@ function applyOpticsSettings({persist=true,markDirty=true}={}) {
   if(markDirty)markClientProjectDirty('настройки камеры и рендеринга');
 }
 let activeSceneLookTab='optics';
+function bindSceneHierarchyTabs(){const tabs=[...document.querySelectorAll("#sceneHierarchyPanel [data-hierarchy-tab]")],panels=[...document.querySelectorAll("#sceneHierarchyPanel [data-hierarchy-panel]")];if(!tabs.length||!panels.length)return;function activate(name){tabs.forEach(t=>{const active=t.dataset.hierarchyTab===name;t.classList.toggle("active",active);t.setAttribute("aria-selected",String(active));});panels.forEach(p=>{p.hidden=p.dataset.hierarchyPanel!==name;});}tabs.forEach(t=>t.addEventListener("click",()=>activate(t.dataset.hierarchyTab)));activate("project");}
 function bindSceneLookTabs(){
   const tabs=[...document.querySelectorAll('#sceneEditorPanel [data-look-tab]')];
   const panels=[...document.querySelectorAll('#sceneEditorPanel [data-look-panel]')];
@@ -585,6 +586,7 @@ function applyOpticsSettingsFromProject(saved) {
   if(['performance','balanced','high','cinematic'].includes(saved.quality))opticsSettings.quality=saved.quality;
   applyOpticsSettings({persist:true,markDirty:false});
 }
+bindSceneHierarchyTabs();
 bindSceneLookTabs();
 document.querySelectorAll('#sceneEditorPanel .scene-look-panel input[type="range"]').forEach(input=>{
   input.addEventListener('input',updateSceneLookRangeFill);
@@ -630,6 +632,7 @@ try {
     }
   }
   const weatherToRestore=savedWeather||legacyWeather;
+  if(!weatherToRestore){weatherSystem.setPreset('light');persistWeatherSettings();}
   if(weatherToRestore){
     if(legacyWeather){
       const legacyPreset=WeatherSystem.PRESETS[legacyWeather.preset]||{};
@@ -4771,6 +4774,7 @@ function updateModeSwitcher(){
   droneModeButton.classList.toggle('active',state.mode==='drone');
   overviewModeButton.classList.toggle('active',state.mode==='overview');
 }
+function applyModeWeatherDefault(mode){const light=WeatherSystem.PRESETS.light;weatherSystem.setCustom({clouds:light.clouds,snowfall:mode==='overview'?0:0.16,wind:mode==='overview'?light.wind:5});updateDaylight(state.dayTime);updateWeatherControls();persistWeatherSettings();}
 function setSceneMode(mode){
   if(modeTransition||!['overview','skier','drone'].includes(mode)||mode===state.mode)return;
   const previousMode=state.mode;
@@ -4835,7 +4839,7 @@ function setSceneMode(mode){
     controls.enabled=true;labelRenderer.domElement.style.display='';
     appRoot.classList.remove('skier-mode','drone-mode');controls.update();
   }
-  state.mode=mode;updateModeSwitcher();resizeSceneAfterModeChange();
+  state.mode=mode;applyModeWeatherDefault(mode);updateModeSwitcher();resizeSceneAfterModeChange();
   if(animateModeTransition&&transitionFromPose){
     const fromPosition=transitionFromPose.position.clone(),toPosition=camera.position.clone();
     const fromQuaternion=transitionFromPose.quaternion.clone(),toQuaternion=camera.quaternion.clone();
