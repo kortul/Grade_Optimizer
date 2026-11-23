@@ -30,6 +30,7 @@ details summary{cursor:pointer;font-size:13px;color:#9ab;text-transform:uppercas
 #homeBtn{position:absolute;top:12px;left:12px;width:38px;height:38px;padding:0;border:0;border-radius:8px;background:rgba(46,163,106,.9);color:#fff;font-size:20px;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center}
 #measureBtn{position:absolute;bottom:16px;right:16px;width:46px;height:46px;padding:0;border:0;border-radius:8px;background:rgba(58,58,68,.92);color:#fff;font-size:22px;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center}
 #measureBtn.active{background:rgba(240,180,30,.95)}
+#modeSwitchFeedback[hidden]{display:none!important}
 #sceneBar{position:absolute;top:12px;left:60px;right:12px;z-index:7;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none}
 #sceneBar .sceneMode,#sceneBar .dayCycle{display:flex;align-items:center;gap:7px;padding:6px;background:rgba(20,24,32,.84);border:1px solid rgba(255,255,255,.15);border-radius:10px;backdrop-filter:blur(12px);pointer-events:auto}
 #sceneBar button{width:auto;margin:0;padding:8px 12px;border-radius:7px;font-size:11px;letter-spacing:.5px;background:#343b47;color:#dce6f2}
@@ -412,6 +413,14 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 .mode-stat strong small{font-size:10px;color:#aebdcb;font-weight:600}
 .mode-stat-primary{border-color:color-mix(in srgb,var(--mode-accent) 23%,transparent);background:var(--mode-accent-soft)}
 .mode-stat-primary strong{font-size:27px}
+.ski-load-readout{display:grid;gap:5px;margin:-5px 0 13px;padding:9px 11px;border:1px solid rgba(130,184,226,.16);border-radius:10px;background:rgba(255,255,255,.035)}
+.ski-load-readout-head,.ski-load-readout-values{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.ski-load-readout-head span{font-size:9px;font-weight:850;letter-spacing:.1em;color:#b7cce0}
+.ski-load-readout-head small,.ski-load-readout-total{font-size:9px;color:#8fa4b7}
+.ski-load-readout-values strong{font-size:10px;font-weight:750;color:#e5eef6;font-variant-numeric:tabular-nums}
+.ski-load-readout-values strong:first-child{color:#9fd3f1}
+.ski-load-track{height:5px;overflow:hidden;border-radius:99px;background:rgba(160,184,204,.2)}
+#outsideSkiLoadBar{display:block;width:50%;height:100%;border-radius:99px;background:linear-gradient(90deg,#5d9fc7,#9ad3ef);transition:width .12s ease}
 .mode-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 9px}
 .mode-section-heading>span:first-child{font-size:10px;letter-spacing:.12em;font-weight:850;color:#e7f0f7}
 .mode-section-note{font-size:8px;letter-spacing:.08em;color:#8499ab;text-align:right}
@@ -727,7 +736,279 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #skiWindFx .wind-edge i:nth-child(7){top:92%;left:8%;width:54%;animation-delay:-.2s}
 @keyframes ski-wind-streak{0%{transform:translate3d(-16px,-26px,0) scaleX(.4);opacity:0}18%{opacity:.24}48%{opacity:.9}100%{transform:translate3d(18px,38px,0) scaleX(1.15);opacity:0}}
 @media(prefers-reduced-motion:reduce){#skiWindFx .wind-edge i{animation:none;opacity:.2}}
+
+/* Scene hierarchy tabs: compact, full-height sections */
+#sceneHierarchyPanel .scene-hierarchy-tabs{position:sticky;top:0;z-index:8;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:5px;margin:-2px -2px 5px;border:1px solid rgba(135,178,205,.16);border-radius:9px;background:rgba(18,29,40,.98)}
+#sceneHierarchyPanel .scene-hierarchy-tab{min-height:32px;padding:5px 4px;border:1px solid transparent;border-radius:6px;background:transparent;color:#879eaf;font-size:9px;font-weight:800;letter-spacing:.45px}
+#sceneHierarchyPanel .scene-hierarchy-tab.active{color:#e7f5fc;border-color:rgba(131,195,220,.24);background:linear-gradient(180deg,rgba(65,117,150,.3),rgba(41,75,98,.22))}
+#sceneHierarchyPanel .scene-hierarchy-panel[hidden]{display:none!important}
+#sceneHierarchyPanel .scene-hierarchy-panel{min-width:0;flex:1;display:flex;flex-direction:column;gap:7px}
+#sceneHierarchyPanel .client-workspace .editor-hint{font-size:8px;line-height:1.45}
+
+/* Compact project workspace; keep help collapsed */
+#sceneHierarchyPanel .client-workspace{padding:7px;margin:0;border:1px solid rgba(111,164,202,.15);border-radius:8px;background:rgba(61,107,139,.06);display:flex;flex-direction:column;gap:6px}
+#sceneHierarchyPanel .client-workspace .editor-split{margin-top:0}
+#sceneHierarchyPanel .workspace-help{font-size:8px;color:#839bad;line-height:1.4}
+#sceneHierarchyPanel .workspace-help summary{cursor:pointer;list-style:none;color:#86a9c2;font-size:8px;font-weight:800;letter-spacing:.45px;padding:3px 1px}
+#sceneHierarchyPanel .workspace-help summary::-webkit-details-marker{display:none}
+#sceneHierarchyPanel .workspace-help summary:before{content:'＋';display:inline-block;width:13px;color:#8db9d5}
+#sceneHierarchyPanel .workspace-help[open] summary:before{content:'−'}
+#sceneHierarchyPanel .workspace-help>div{padding:4px 5px 5px;color:#90a5b6}
+#sceneHierarchyPanel .workspace-sync{display:flex;flex-direction:column;gap:5px;padding:6px;border:1px solid rgba(130,174,205,.12);border-radius:7px;background:rgba(0,0,0,.12)}
+#sceneHierarchyPanel .workspace-sync-title{display:flex;align-items:center;justify-content:space-between;font-size:9px;font-weight:800;letter-spacing:.65px;color:#a7c7df}
+#sceneHierarchyPanel .workspace-sync-title span{font-size:7px;color:#68869d;letter-spacing:.3px}
+#sceneHierarchyPanel .workspace-status{font-size:8px;line-height:1.3;color:#7891a4;overflow-wrap:anywhere}
+#sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel=hierarchy]{flex:1;min-height:0;overflow:hidden}
+#sceneHierarchyPanel #editorTreeList{min-height:0}
+@media(max-width:700px){#sceneHierarchyPanel{top:150px;left:8px;right:8px;bottom:8px;width:auto;height:auto;min-height:0}#sceneEditorPanel{top:150px;left:8px;right:8px;bottom:8px;width:auto}}
+
+/* Two additional content tabs; preserve the existing icon artwork and visual treatment */
+#sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:480px){#sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
+
+<style id="gradeOptimizerWeatherStyles">
+#weatherToggle{background:#40596d;color:#e4f0fa}
+#app.weather-open #weatherToggle{background:#2ea36a;color:#fff}
+#weatherPanel{
+ display:none;position:absolute;z-index:60;top:68px;left:12px;
+ width:min(360px,calc(100% - 24px));max-height:calc(100% - 82px);
+ overflow:auto;padding:14px;border:1px solid rgba(173,201,225,.2);
+ border-radius:13px;background:rgba(17,25,34,.97);
+ box-shadow:0 18px 48px rgba(0,0,0,.46);backdrop-filter:blur(16px);
+ color:#eaf2f8;overscroll-behavior:contain
+}
+#app.weather-open #weatherPanel{display:block}
+.weather-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.weather-head strong{display:block;font-size:11px;letter-spacing:1px;color:#d9eaf7}
+.weather-head small{display:block;margin-top:3px;font-size:9px;color:#91a7b9}
+#weatherPanel #weatherClose{width:30px;min-width:30px;height:30px;margin:0;padding:0;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:#2b3947;color:#eaf2f8;font-size:20px;line-height:1}
+.weather-preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#weatherPanel .weather-preset{width:100%;min-height:36px;margin:0;padding:8px 6px;border:1px solid rgba(173,201,225,.12);border-radius:7px;background:#263543;color:#d5e3ed;font-size:10px;font-weight:750;letter-spacing:.1px}
+#weatherPanel .weather-preset:hover{background:#34495b}
+#weatherPanel .weather-preset.active{border-color:rgba(95,207,157,.65);background:rgba(46,163,106,.2);color:#a8edc9;box-shadow:inset 0 0 0 1px rgba(95,207,157,.12)}
+.weather-control{padding:10px 1px 2px;margin-top:5px;border-top:1px solid rgba(255,255,255,.08)}
+.weather-control label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;color:#bdcbd7;font-size:10px}
+.weather-control label strong{color:#9edbbd;font-variant-numeric:tabular-nums}
+#weatherPanel input[type=range]{width:100%;margin:8px 0 2px;accent-color:#69c99e}
+#weatherStatus{margin-top:9px;padding:8px 9px;border:1px solid rgba(130,184,226,.12);border-radius:7px;background:rgba(92,145,183,.07);color:#a9c7db;font-size:9px;letter-spacing:.4px}
+@media(max-width:1180px){#weatherPanel{top:116px;left:12px;width:min(360px,calc(100% - 24px));max-height:calc(100% - 136px)}}
+@media(max-width:620px){#weatherPanel{top:166px;left:8px;right:8px;width:auto;max-height:calc(100% - 178px);padding:11px}.weather-preset-grid{gap:5px}}
+</style>
+<style id="gradeOptimizerOpticsStyles">
+#sceneEditorPanel .scene-look-section{border-color:rgba(143,190,220,.28);background:linear-gradient(180deg,rgba(86,128,157,.12),rgba(255,255,255,.018))}
+#sceneEditorPanel .scene-look-section>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none;cursor:pointer}
+#sceneEditorPanel .scene-look-section>summary::-webkit-details-marker,
+#sceneEditorPanel .scene-look-group>summary::-webkit-details-marker{display:none}
+#sceneEditorPanel .scene-look-section>summary:after{content:'⌄';color:#9abbd0;font-size:16px}
+#sceneEditorPanel .scene-look-section:not([open])>summary:after{content:'›'}
+#sceneEditorPanel .scene-look-title{font-size:11px;font-weight:800;letter-spacing:.9px;color:#e3f0f7}
+#sceneEditorPanel .scene-look-group{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.09)}
+#sceneEditorPanel .scene-look-group>summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;color:#bad3e3;font-size:10px;font-weight:800;letter-spacing:.65px}
+#sceneEditorPanel .scene-look-group>summary:after{content:'+';color:#8ba7b8;font-size:15px}
+#sceneEditorPanel .scene-look-group[open]>summary:after{content:'−'}
+#sceneEditorPanel .scene-look-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;margin-top:9px}
+#sceneEditorPanel .scene-look-control{min-width:0}
+#sceneEditorPanel .scene-look-control.wide{grid-column:1/-1}
+#sceneEditorPanel .scene-look-control label{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:0 0 3px;color:#b9c9d5;font-size:9px}
+#sceneEditorPanel .scene-look-control label strong{flex:0 0 auto;color:#c5e0ef;font-size:9px;font-variant-numeric:tabular-nums}
+#sceneEditorPanel .scene-look-control input[type=range]{width:100%;height:15px;margin:2px 0 0;accent-color:#9bc6df}
+#sceneEditorPanel .scene-look-control select{width:100%;height:31px;margin:2px 0 0;padding:4px 6px;font-size:10px}
+#sceneEditorPanel .scene-look-switches{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+#sceneEditorPanel .scene-look-switches label{display:flex;align-items:center;gap:6px;margin:0;padding:7px;border:1px solid rgba(255,255,255,.08);border-radius:6px;background:rgba(255,255,255,.025);color:#c5d4df;font-size:9px}
+#sceneEditorPanel .scene-look-switches input{accent-color:#a6cfe6}
+#sceneEditorPanel .scene-look-note{margin-top:8px;padding:7px 8px;border-radius:6px;background:rgba(101,145,175,.08);color:#91aabc;font-size:9px;line-height:1.45}
+#sceneEditorPanel .scene-look-actions{display:flex;justify-content:flex-end;margin-top:8px}
+#sceneEditorPanel .scene-look-actions button{width:auto;min-width:110px}
+
+
+/* v107 — Sketchfab-inspired Scene Look tabs and compact Scene Editor gear */
+#sceneBar #editorToggle.scene-editor-icon-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 38px;width:38px!important;min-width:38px!important;max-width:38px;height:38px;min-height:38px;padding:0!important;margin:0;border:1px solid rgba(162,197,223,.25);border-radius:10px;background:linear-gradient(145deg,rgba(42,61,78,.96),rgba(25,39,52,.96));color:#c6d9e8;box-shadow:inset 0 1px rgba(255,255,255,.06),0 5px 16px rgba(0,0,0,.18);transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease}
+#sceneBar #editorToggle.scene-editor-icon-button:hover{color:#f2f8fc;border-color:rgba(156,208,235,.55);background:linear-gradient(145deg,#354f65,#263d51);box-shadow:0 5px 18px rgba(0,0,0,.24),0 0 0 3px rgba(119,176,212,.08)}
+#sceneBar #editorToggle.scene-editor-icon-button.active,#app.editor-open #sceneBar #editorToggle.scene-editor-icon-button{color:#baf3d6;border-color:rgba(104,211,159,.58);background:linear-gradient(145deg,#245a48,#1b4038);box-shadow:inset 0 1px rgba(255,255,255,.08),0 0 0 3px rgba(69,191,132,.10),0 5px 18px rgba(0,0,0,.2)}
+#sceneBar #editorToggle .scene-editor-gear{width:20px;height:20px;display:block;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+#sceneBar #editorToggle:hover .scene-editor-gear{transform:rotate(35deg)}
+#sceneBar #editorToggle.active .scene-editor-gear,#app.editor-open #sceneBar #editorToggle .scene-editor-gear{transform:rotate(55deg)}
+#sceneEditorPanel .scene-look-section{padding:10px}
+#sceneEditorPanel .scene-look-section>summary{min-height:22px}
+#sceneEditorPanel .scene-look-body{display:block;min-width:0}
+#sceneEditorPanel .scene-look-tabs{position:sticky;top:47px;z-index:5;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:8px -2px 10px;padding:5px;border:1px solid rgba(145,183,210,.18);border-radius:10px;background:linear-gradient(180deg,rgba(24,38,51,.98),rgba(17,28,39,.98));box-shadow:0 8px 20px rgba(0,0,0,.16),inset 0 1px rgba(255,255,255,.035);backdrop-filter:blur(14px)}
+#sceneEditorPanel .scene-look-tab{min-width:0;width:100%;min-height:51px;margin:0!important;padding:6px 3px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1px solid transparent!important;border-radius:7px!important;background:transparent!important;color:#879eb0!important;font-size:9px!important;font-weight:750!important;letter-spacing:.15px!important;line-height:1.15;white-space:nowrap;box-shadow:none!important;transition:color .16s ease,background .16s ease,border-color .16s ease}
+#sceneEditorPanel .scene-look-tab:hover{background:rgba(122,170,202,.09)!important;color:#d9e9f4!important;transform:none}
+#sceneEditorPanel .scene-look-tab.active,#sceneEditorPanel .scene-look-tab[aria-selected="true"]{color:#e5f5ff!important;background:linear-gradient(180deg,rgba(72,126,160,.32),rgba(54,93,119,.2))!important;border-color:rgba(134,192,224,.25)!important;box-shadow:inset 0 1px rgba(255,255,255,.075),0 3px 9px rgba(0,0,0,.14)!important}
+#sceneEditorPanel .scene-look-tab-icon{font-size:16px;line-height:1;font-weight:500;color:#91b4ca}
+#sceneEditorPanel .scene-look-tab.active .scene-look-tab-icon{color:#9ed9f5}
+#sceneEditorPanel .scene-look-tab-label{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#sceneEditorPanel .scene-look-panels{min-width:0}
+#sceneEditorPanel .scene-look-panel{margin:0;padding:5px 1px 2px;border:0;min-width:0}
+#sceneEditorPanel .scene-look-panel[hidden]{display:none!important}
+#sceneEditorPanel .scene-look-panel:not([hidden]){animation:sceneLookTabIn .16s ease-out}
+#sceneEditorPanel .scene-look-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 1px 8px;margin:0 0 9px;border-bottom:1px solid rgba(255,255,255,.09)}
+#sceneEditorPanel .scene-look-panel-heading strong{font-size:10px;letter-spacing:1px;color:#c9dfed}
+#sceneEditorPanel .scene-look-panel-heading span{font-size:8px;letter-spacing:.8px;color:#71899c}
+#sceneEditorPanel .scene-look-panel .scene-look-grid{margin-top:0;gap:11px 12px}
+#sceneEditorPanel .scene-look-panel .scene-look-control{padding:2px 1px}
+#sceneEditorPanel .scene-look-panel .scene-look-control label{font-size:9px;color:#bdcbd6}
+#sceneEditorPanel .scene-look-panel .scene-look-control label strong{font-size:9px;color:#b8e2d0}
+#sceneEditorPanel .scene-look-panel input[type=range]{height:18px;accent-color:#80c9a7}
+#sceneEditorPanel .scene-look-panel .scene-look-control select{height:34px;border:1px solid rgba(133,173,200,.25);border-radius:7px;background:#172633;color:#eaf4fa}
+#sceneEditorPanel .scene-look-panel .scene-look-switches{gap:7px;margin-top:12px}
+#sceneEditorPanel .scene-look-panel .scene-look-switches label{min-height:36px;padding:8px;border-color:rgba(144,183,208,.15);border-radius:8px;background:linear-gradient(145deg,rgba(111,154,184,.09),rgba(255,255,255,.025));font-size:9px}
+#sceneEditorPanel .scene-look-panel .scene-look-note{margin-top:12px;padding:9px 10px;border:1px solid rgba(113,162,195,.13);border-radius:8px;background:rgba(78,126,158,.075);font-size:9px}
+#sceneEditorPanel .scene-look-actions{margin-top:9px}
+#sceneEditorPanel .scene-look-actions button{min-height:32px}
+@keyframes sceneLookTabIn{from{opacity:.55;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){#sceneEditorPanel .scene-look-tabs{top:48px;margin-left:-1px;margin-right:-1px;gap:2px;padding:4px}#sceneEditorPanel .scene-look-tab{min-height:48px;font-size:8px!important}#sceneEditorPanel .scene-look-tab-icon{font-size:15px}#sceneEditorPanel .scene-look-panel .scene-look-grid{gap:9px 8px}}
+@media(prefers-reduced-motion:reduce){#sceneEditorPanel .scene-look-panel:not([hidden]){animation:none}#sceneBar #editorToggle .scene-editor-gear{transition:none}}
+
+
+#sceneEditorPanel .scene-look-active-heading{margin:1px 0 8px;padding:1px 1px 8px}
+#sceneEditorPanel .scene-look-active-heading span{font-size:8px;letter-spacing:.8px;color:#71899c}
+
+
+/* v109 — Scene Look finishing pass: visual hierarchy, precision controls and live state */
+#sceneEditorPanel{background:radial-gradient(ellipse at 92% 0%,rgba(71,126,160,.11),transparent 34%),linear-gradient(160deg,rgba(18,29,40,.985),rgba(12,21,30,.985));border-color:rgba(154,191,217,.23);box-shadow:0 22px 64px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.045);scrollbar-color:rgba(124,159,183,.36) transparent}
+#editorHeader{background:rgba(15,25,35,.97);border-bottom-color:rgba(163,197,220,.16);box-shadow:0 7px 18px rgba(0,0,0,.12)}
+#editorHeader .editor-heading{gap:10px}
+#editorHeader .editor-heading strong{display:flex;align-items:center;gap:8px;color:#e0edf6;font-size:11px;letter-spacing:1.4px}
+#editorHeader .editor-heading strong:before{content:"";width:6px;height:6px;border-radius:50%;background:#71c9a1;box-shadow:0 0 0 4px rgba(113,201,161,.1),0 0 12px rgba(113,201,161,.42)}
+#editorHeader .editor-chip{background:rgba(114,158,190,.075);border-color:rgba(142,184,211,.19)}
+#editorHeader button.closeEditor{display:inline-flex;align-items:center;justify-content:center;width:30px;min-width:30px;height:30px;min-height:30px;padding:0;border:1px solid rgba(157,190,213,.16);border-radius:8px;background:rgba(95,125,148,.13);color:#b7cbd9;transition:background .15s ease,color .15s ease,border-color .15s ease}
+#editorHeader button.closeEditor:hover{background:rgba(205,105,100,.15);border-color:rgba(225,135,127,.3);color:#ffd1cb}
+#editorHeader button.closeEditor svg{width:15px;height:15px}
+#editorStatus{border-radius:8px;background:linear-gradient(100deg,rgba(79,135,172,.12),rgba(79,135,172,.045));border-color:rgba(124,171,204,.16);border-left-color:#6aafd4}
+#sceneEditorPanel .scene-look-section{padding:11px 10px 10px;margin-top:2px;border-color:rgba(143,190,220,.22);background:linear-gradient(180deg,rgba(68,108,137,.105),rgba(255,255,255,.014));box-shadow:inset 0 1px rgba(255,255,255,.025)}
+#sceneEditorPanel .scene-look-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:1px 1px 10px;margin:0 0 8px;border-bottom:1px solid rgba(166,200,222,.14)}
+#sceneEditorPanel .scene-look-section-brand{display:flex;align-items:center;gap:9px;min-width:0}
+#sceneEditorPanel .scene-look-section-mark{display:flex;align-items:center;justify-content:center;flex:0 0 29px;width:29px;height:29px;border:1px solid rgba(142,194,222,.2);border-radius:8px;background:linear-gradient(145deg,rgba(91,151,187,.2),rgba(53,93,122,.09));color:#a6d8ef}
+#sceneEditorPanel .scene-look-section-mark svg{width:17px;height:17px}
+#sceneEditorPanel .scene-look-section-titles{display:flex;flex-direction:column;gap:2px;min-width:0}
+#sceneEditorPanel .scene-look-section-titles strong{font-size:11px;letter-spacing:1.15px;color:#e3f1f8}
+#sceneEditorPanel .scene-look-section-titles small{font-size:7px;letter-spacing:1.15px;color:#7892a6;white-space:nowrap}
+#sceneEditorPanel .scene-look-section-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+#sceneEditorPanel .scene-look-section-actions .editor-chip{font-size:8px;padding:3px 6px}
+#sceneEditorPanel .scene-look-reset{display:inline-flex;align-items:center;justify-content:center;gap:5px;width:auto;min-width:0;height:27px;min-height:27px;margin:0;padding:4px 7px;border:1px solid rgba(155,190,211,.16);border-radius:7px;background:rgba(111,146,169,.1);color:#a9c2d2;font-size:8px;font-weight:800;letter-spacing:.6px;transition:background .15s ease,border-color .15s ease,color .15s ease}
+#sceneEditorPanel .scene-look-reset:hover{background:rgba(126,171,200,.18);border-color:rgba(157,204,231,.32);color:#e2f3fd}
+#sceneEditorPanel .scene-look-reset svg{width:12px;height:12px}
+#sceneEditorPanel .scene-look-tabs{top:45px;margin:5px -1px 11px;padding:4px;gap:3px;border-color:rgba(147,185,210,.18);border-radius:11px;background:linear-gradient(180deg,rgba(24,39,52,.99),rgba(15,27,38,.99));box-shadow:0 8px 22px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.045)}
+#sceneEditorPanel .scene-look-tab{min-height:54px;padding:6px 2px!important;gap:5px;border-radius:8px!important;color:#8299aa!important}
+#sceneEditorPanel .scene-look-tab:hover{background:rgba(126,178,210,.095)!important;color:#dcebf4!important}
+#sceneEditorPanel .scene-look-tab.active,#sceneEditorPanel .scene-look-tab[aria-selected="true"]{position:relative;color:#f0f8fc!important;background:linear-gradient(180deg,rgba(70,129,163,.3),rgba(45,83,109,.19))!important;border-color:rgba(137,195,226,.27)!important;box-shadow:inset 0 1px rgba(255,255,255,.08),0 4px 12px rgba(0,0,0,.16)!important}
+#sceneEditorPanel .scene-look-tab.active:after{content:"";position:absolute;left:23%;right:23%;bottom:3px;height:2px;border-radius:2px;background:linear-gradient(90deg,#6bc69e,#9bd9ea);box-shadow:0 0 9px rgba(123,208,190,.28)}
+#sceneEditorPanel .scene-look-tab-icon{display:flex;align-items:center;justify-content:center;width:20px;height:20px;color:#89aabf}
+#sceneEditorPanel .scene-look-tab-icon svg{display:block;width:18px;height:18px}
+#sceneEditorPanel .scene-look-tab.active .scene-look-tab-icon{color:#a8def5}
+#sceneEditorPanel .scene-look-tab-label{font-size:8px;letter-spacing:.3px}
+#sceneEditorPanel .scene-look-active-heading{align-items:center;margin:0 1px 9px;padding:0 1px 8px;border-bottom:1px solid rgba(160,196,218,.12)}
+#sceneEditorPanel .scene-look-active-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+#sceneEditorPanel .scene-look-active-heading strong{font-size:10px;letter-spacing:1.2px;color:#e2f0f7}
+#sceneEditorPanel .scene-look-active-heading span{font-size:7px;letter-spacing:1.05px;color:#7893a6}
+#sceneEditorPanel .scene-look-live-pill{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid rgba(98,196,148,.24);border-radius:999px;background:rgba(68,169,119,.105);color:#a9e4c4;font-size:7px;font-weight:850;letter-spacing:.7px;white-space:nowrap}
+#sceneEditorPanel .scene-look-live-pill:before{content:"";width:5px;height:5px;border-radius:50%;background:#74d5a4;box-shadow:0 0 7px rgba(116,213,164,.45)}
+#sceneEditorPanel .scene-look-live-pill.is-off{border-color:rgba(160,176,188,.19);background:rgba(133,149,160,.075);color:#96a6b1}
+#sceneEditorPanel .scene-look-live-pill.is-off:before{background:#6f7c86;box-shadow:none}
+#sceneEditorPanel .scene-look-live-pill.has-dof{border-color:rgba(120,179,220,.28);color:#c0e5fb;background:rgba(77,142,188,.12)}
+#sceneEditorPanel .scene-look-live-pill.has-dof:before{background:#83c8ef;box-shadow:0 0 7px rgba(131,200,239,.45)}
+#sceneEditorPanel .scene-look-panel .scene-look-grid{gap:12px}
+#sceneEditorPanel .scene-look-panel .scene-look-control label{margin-bottom:5px;font-size:9px;letter-spacing:.1px}
+#sceneEditorPanel .scene-look-panel .scene-look-control label strong{min-width:38px;padding:2px 5px;border:1px solid rgba(128,181,158,.14);border-radius:5px;background:rgba(92,160,129,.075);color:#b9e2cb;font-variant-numeric:tabular-nums;text-align:center}
+#sceneEditorPanel .scene-look-panel input[type=range]{--range-fill:50%;appearance:none;-webkit-appearance:none;width:100%;height:18px;margin:1px 0 0;padding:0;background:transparent;border:0;cursor:pointer;accent-color:#7ed0a8}
+#sceneEditorPanel .scene-look-panel input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:99px;background:linear-gradient(90deg,#69bc97 0%,#88cdb2 var(--range-fill),rgba(124,153,172,.2) var(--range-fill),rgba(124,153,172,.2) 100%);box-shadow:inset 0 1px 1px rgba(0,0,0,.25)}
+#sceneEditorPanel .scene-look-panel input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border:2px solid #d9f2e4;border-radius:50%;background:#62b990;box-shadow:0 1px 5px rgba(0,0,0,.45),0 0 0 3px rgba(105,188,151,.12)}
+#sceneEditorPanel .scene-look-panel input[type=range]::-moz-range-track{height:4px;border-radius:99px;background:rgba(124,153,172,.2)}
+#sceneEditorPanel .scene-look-panel input[type=range]::-moz-range-progress{height:4px;border-radius:99px;background:linear-gradient(90deg,#69bc97,#88cdb2)}
+#sceneEditorPanel .scene-look-panel input[type=range]::-moz-range-thumb{width:9px;height:9px;border:2px solid #d9f2e4;border-radius:50%;background:#62b990;box-shadow:0 1px 5px rgba(0,0,0,.45)}
+#sceneEditorPanel .scene-look-panel input[type=range]:focus-visible{outline:0}
+#sceneEditorPanel .scene-look-panel input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px rgba(113,205,161,.2),0 1px 6px rgba(0,0,0,.45)}
+#sceneEditorPanel .scene-look-panel .scene-look-control select{height:35px;padding:0 9px;border:1px solid rgba(133,173,200,.22);background:linear-gradient(180deg,#1b2c3a,#152431);color:#edf6fc}
+#sceneEditorPanel .scene-look-panel .scene-look-control select:focus{border-color:#71bfa0;box-shadow:0 0 0 3px rgba(113,191,160,.1)}
+#sceneEditorPanel .scene-look-panel .scene-look-switches{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 12px}
+#sceneEditorPanel .scene-look-panel .scene-look-switches label{position:relative;display:flex;align-items:center;min-height:45px;padding:8px 49px 8px 9px;border:1px solid rgba(144,183,208,.16);border-radius:9px;background:linear-gradient(145deg,rgba(111,154,184,.085),rgba(255,255,255,.018));color:#b8cbd8;font-size:8px;line-height:1.35;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease}
+#sceneEditorPanel .scene-look-panel .scene-look-switches label:has(input:checked){border-color:rgba(106,199,153,.27);background:linear-gradient(145deg,rgba(73,161,118,.14),rgba(255,255,255,.018));color:#e0f3e8}
+#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]{position:absolute;right:9px;top:50%;transform:translateY(-50%);appearance:none;-webkit-appearance:none;width:33px;height:19px;margin:0;border:1px solid rgba(154,181,200,.28);border-radius:99px;background:#304353;cursor:pointer;transition:background .16s ease,border-color .16s ease}
+#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]:after{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#a9bdcb;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .16s ease,background .16s ease}
+#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]:checked{background:#277451;border-color:#62bd91}
+#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]:checked:after{transform:translateX(14px);background:#e5fff0}
+#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]:focus-visible{outline:2px solid #8bd6b3;outline-offset:3px}
+#sceneEditorPanel .scene-look-lens-groups{display:grid;gap:8px}
+#sceneEditorPanel .scene-look-subsection{padding:9px 9px 10px;border:1px solid rgba(140,180,204,.13);border-radius:9px;background:linear-gradient(145deg,rgba(101,143,171,.065),rgba(255,255,255,.012))}
+#sceneEditorPanel .scene-look-subhead{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:0 0 8px;padding:0 1px 6px;border-bottom:1px solid rgba(157,190,211,.1)}
+#sceneEditorPanel .scene-look-subhead strong{font-size:8px;letter-spacing:.9px;color:#c2d7e4}
+#sceneEditorPanel .scene-look-subhead span{font-size:6px;letter-spacing:.6px;color:#71899c;text-align:right}
+#sceneEditorPanel .scene-look-subsection .scene-look-grid{gap:10px 12px}
+#sceneEditorPanel .scene-look-panel .scene-look-note{margin-top:10px;padding:8px 9px;border:1px solid rgba(113,162,195,.12);border-radius:8px;background:rgba(78,126,158,.06);font-size:8px;line-height:1.45}
+#sceneEditorPanel .scene-look-persistence-note{display:flex;align-items:flex-start;gap:8px;margin:10px 0 1px;color:#8ea5b5}
+#sceneEditorPanel .scene-look-persistence-note svg{flex:0 0 14px;width:14px;height:14px;color:#81bba0}
+#sceneEditorPanel .scene-look-persistence-note code{color:#b0cddd;font-size:8px}
+@media(max-width:700px){#sceneEditorPanel .scene-look-section-head{gap:5px}#sceneEditorPanel .scene-look-section-titles small{font-size:6px;letter-spacing:.8px}#sceneEditorPanel .scene-look-section-actions .editor-chip{display:none}#sceneEditorPanel .scene-look-tabs{top:44px;gap:2px;padding:3px}#sceneEditorPanel .scene-look-tab{min-height:49px}#sceneEditorPanel .scene-look-tab-label{font-size:7px}#sceneEditorPanel .scene-look-panel .scene-look-switches{gap:5px}#sceneEditorPanel .scene-look-panel .scene-look-switches label{padding-left:7px;padding-right:43px;font-size:7px}#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]{right:6px;width:30px}#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]:checked:after{transform:translateX(11px)}#sceneEditorPanel .scene-look-subsection{padding:8px}}
+@media(prefers-reduced-motion:reduce){#sceneEditorPanel .scene-look-tab,#sceneEditorPanel .scene-look-panel .scene-look-switches label,#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox],#sceneEditorPanel .scene-look-panel .scene-look-switches input[type=checkbox]:after{transition:none}}
+
+
+/* Final specificity guard: live badge and header reset outrank legacy inspector rules. */
+#sceneEditorPanel .scene-look-active-heading .scene-look-live-pill{font-size:7px;letter-spacing:.7px;color:#a9e4c4}
+#sceneEditorPanel .scene-look-active-heading .scene-look-live-pill.is-off{color:#96a6b1}
+#sceneEditorPanel .scene-look-active-heading .scene-look-live-pill.has-dof{color:#c0e5fb}
+#sceneEditorPanel button.scene-look-reset{background:rgba(111,146,169,.1)!important;border:1px solid rgba(155,190,211,.16)!important;color:#a9c2d2!important}
+#sceneEditorPanel button.scene-look-reset:hover{background:rgba(126,171,200,.18)!important;border-color:rgba(157,204,231,.32)!important;color:#e2f3fd!important}
+
+/* v111 — six Scene Look category cards */
+#sceneEditorPanel .scene-look-tabs{
+ position:sticky;top:45px;z-index:7;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:6px;margin:7px -1px 12px;padding:7px;border:1px solid rgba(147,190,218,.22);
+ border-radius:13px;background:linear-gradient(155deg,rgba(30,48,64,.98),rgba(14,27,40,.99));
+ box-shadow:0 12px 26px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.045)
+}
+#sceneEditorPanel .scene-look-tab{
+ position:relative;display:grid!important;grid-template-columns:22px minmax(0,1fr);
+ grid-template-rows:auto auto;align-items:center;justify-items:start;width:100%;min-width:0;
+ min-height:48px;margin:0!important;padding:7px 8px!important;gap:2px 7px;
+ border:1px solid rgba(156,190,213,.11)!important;border-radius:9px!important;
+ background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012))!important;
+ color:#8ba1b2!important;text-align:left;white-space:normal;box-shadow:none!important;
+ transition:background .18s ease,border-color .18s ease,transform .18s ease,color .18s ease
+}
+#sceneEditorPanel .scene-look-tab:hover{background:rgba(120,166,195,.10)!important;border-color:rgba(148,190,216,.23)!important;color:#d8e9f3!important;transform:translateY(-1px)}
+#sceneEditorPanel .scene-look-tab.active,#sceneEditorPanel .scene-look-tab[aria-selected="true"]{
+ border-color:rgba(132,202,188,.42)!important;background:linear-gradient(145deg,rgba(58,129,132,.28),rgba(54,100,129,.19))!important;
+ color:#f1fbfc!important;box-shadow:inset 0 1px rgba(255,255,255,.10),0 5px 15px rgba(19,90,96,.15)!important
+}
+#sceneEditorPanel .scene-look-tab.active:before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:2px;border-radius:2px;background:linear-gradient(180deg,#8ad8c0,#8dc6ee);box-shadow:0 0 9px rgba(126,216,190,.36)}
+#sceneEditorPanel .scene-look-tab-icon{grid-column:1;grid-row:1/3;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid rgba(151,189,211,.15);border-radius:7px;background:rgba(115,157,185,.08);color:#8aabbe}
+#sceneEditorPanel .scene-look-tab-icon svg{width:15px;height:15px}
+#sceneEditorPanel .scene-look-tab.active .scene-look-tab-icon{border-color:rgba(129,211,192,.24);background:rgba(107,193,165,.13);color:#a8e7d2}
+#sceneEditorPanel .scene-look-tab-label{display:block;grid-column:2;grid-row:1;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:9px!important;font-weight:850;letter-spacing:.35px;line-height:1.1}
+#sceneEditorPanel .scene-look-tab-meta{display:block;grid-column:2;grid-row:2;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#71899b;font-size:6px;font-weight:800;letter-spacing:.85px;line-height:1.1;white-space:nowrap}
+#sceneEditorPanel .scene-look-tab.active .scene-look-tab-meta{color:#95cdbd}
+#sceneEditorPanel .scene-look-panel--optics .scene-look-switches{grid-template-columns:1fr 1fr}
+#sceneEditorPanel .scene-look-panel--optics .scene-look-switches label{min-height:50px}
+#sceneEditorPanel .scene-look-switch-hint{display:block;margin-top:3px;color:#7892a5;font-size:7px}
+@media(max-width:700px){
+ #sceneEditorPanel .scene-look-tabs{top:44px;gap:4px;padding:5px}
+ #sceneEditorPanel .scene-look-tab{min-height:44px;padding:6px!important;gap:2px 5px}
+ #sceneEditorPanel .scene-look-tab-icon{width:19px;height:19px}
+ #sceneEditorPanel .scene-look-tab-icon svg{width:13px;height:13px}
+ #sceneEditorPanel .scene-look-tab-label{font-size:8px!important}
+ #sceneEditorPanel .scene-look-tab-meta{font-size:5px}
+}
+
+
+/* v113 — compact cloud weather control beside the Scene Editor gear */
+#sceneBar #weatherToggle.weather-icon-button{
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 38px;
+ width:38px!important;min-width:38px!important;max-width:38px;height:38px;min-height:38px;
+ padding:0!important;margin:0;border:1px solid rgba(162,197,223,.25);border-radius:10px;
+ background:linear-gradient(145deg,rgba(42,61,78,.96),rgba(25,39,52,.96));color:#c6d9e8;
+ box-shadow:inset 0 1px rgba(255,255,255,.06),0 5px 16px rgba(0,0,0,.18);
+}
+#sceneBar #weatherToggle .weather-cloud-icon{display:block;width:22px;height:22px;transition:transform .2s ease,color .2s ease}
+#sceneBar #weatherToggle.weather-icon-button:hover{color:#f2f8fc;border-color:rgba(156,208,235,.55);background:linear-gradient(145deg,#354f65,#263d51);box-shadow:0 5px 18px rgba(0,0,0,.24),0 0 0 3px rgba(119,176,212,.08)}
+#sceneBar #weatherToggle.weather-icon-button:hover .weather-cloud-icon{transform:translateY(-1px)}
+#sceneBar #weatherToggle.weather-icon-button.active,#app.weather-open #sceneBar #weatherToggle.weather-icon-button{color:#baf3d6;border-color:rgba(104,211,159,.58);background:linear-gradient(145deg,#245a48,#1b4038);box-shadow:inset 0 1px rgba(255,255,255,.08),0 0 0 3px rgba(69,191,132,.10),0 5px 18px rgba(0,0,0,.2)}
+@media(prefers-reduced-motion:reduce){#sceneBar #weatherToggle .weather-cloud-icon{transition:none}}
+
+
+</style>
+
 </head>
 <body>
 <div id="app"><div id="panel">
@@ -764,6 +1045,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <button id="save">Скачать параметры (JSON)</button><button class="secondary" id="reset">Сбросить</button>
 </div>
 <div id="view">
+<div id="modeSwitchFeedback" role="status" hidden></div>
 <div id="skiWindFx" aria-hidden="true">
   <div class="wind-edge wind-edge-left"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <div class="wind-edge wind-edge-right"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -776,33 +1058,75 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <button id="skierMode" type="button" aria-label="Режим лыжника" title="Режим лыжника"><span class="mode-switch-icon" aria-hidden="true">⛷</span> ЛЫЖНИК</button>
     <button id="droneModeButton" type="button" aria-label="Режим дрона" title="Режим дрона"><span class="drone-mode-icon" aria-hidden="true">✥</span> ДРОН</button>
   </div>
-    <button id="editorToggle" type="button" aria-expanded="false">SCENE EDITOR</button>
-  </div>
+    <button id="weatherToggle" class="weather-icon-button" type="button" aria-label="Погода" title="Настройки погоды" aria-expanded="false">
+      <svg class="weather-cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6.8 18.25h10.4a4.05 4.05 0 0 0 .3-8.09A5.55 5.55 0 0 0 6.9 8.5a4.1 4.1 0 0 0-.1 9.75Z"/>
+        <path d="M8 21h7.8" opacity=".55"/>
+      </svg>
+    </button>
+    <button id="editorToggle" class="scene-editor-icon-button" type="button" aria-label="Scene Editor" title="Scene Editor · Inspector" aria-expanded="false">
+       <svg class="scene-editor-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+         <circle cx="12" cy="12" r="3.2"/>
+         <path d="m19.4 15 .05.05a1.8 1.8 0 0 1-2.55 2.55l-.05-.05a1.8 1.8 0 0 0-3.07 1.27v.14a1.8 1.8 0 0 1-3.6 0v-.08a1.8 1.8 0 0 0-3.07-1.27l-.05.05a1.8 1.8 0 0 1-2.55-2.55l.05-.05a1.8 1.8 0 0 0-1.27-3.07H3.2a1.8 1.8 0 0 1 0-3.6h.08a1.8 1.8 0 0 0 1.27-3.07L4.5 5.2a1.8 1.8 0 0 1 2.55-2.55l.05.05a1.8 1.8 0 0 0 3.07-1.27V1.2a1.8 1.8 0 0 1 3.6 0v.08a1.8 1.8 0 0 0 3.07 1.27l.05-.05A1.8 1.8 0 0 1 19.5 5.05l-.05.05a1.8 1.8 0 0 0 1.27 3.07h.14a1.8 1.8 0 0 1 0 3.6h-.08A1.8 1.8 0 0 0 19.4 15Z" transform="translate(1 1) scale(.92)"/>
+       </svg>
+     </button>
+
+      </div>
   <div class="dayCycle" id="dayCycle">
-    <button id="timeToggle" type="button" aria-expanded="false" aria-label="Показать управление временем" title="Время суток"><span aria-hidden="true">◷</span><strong id="timeCompactValue">13:00</strong></button>
-    <div class="timeControls"><span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:00</span><input id="timeOfDay" type="range" min="5" max="22" step="0.25" value="13" aria-label="Время суток"/><button id="autoDay" type="button" title="Автоматическая смена времени">▶</button></div>
+    <button id="timeToggle" type="button" aria-expanded="false" aria-label="Показать управление временем" title="Время суток"><span aria-hidden="true">◷</span><strong id="timeCompactValue">16:00</strong></button>
+    <div class="timeControls"><span>ВРЕМЯ</span><span class="timeValue" id="timeValue">16:00</span><input id="timeOfDay" type="range" min="5" max="22" step="0.25" value="16" aria-label="Время суток"/><button id="autoDay" type="button" title="Автоматическая смена времени">▶</button></div>
   </div>
+</div>
+
+<div id="weatherPanel" role="region" aria-label="Настройки погоды">
+  <div class="weather-head">
+    <div><strong>ПОГОДА И АТМОСФЕРА</strong><small>Освещение, облачность и снегопад</small></div>
+    <button id="weatherClose" type="button" aria-label="Закрыть погоду">×</button>
+  </div>
+  <div class="weather-preset-grid" role="group" aria-label="Погодные пресеты">
+    <button class="weather-preset active" data-weather-preset="light" type="button">☀ Лёгкие облака</button>
+    <button class="weather-preset" data-weather-preset="clear" type="button">☀ Без облаков</button>
+    <button class="weather-preset" data-weather-preset="partly" type="button">🌤 Переменная</button>
+    <button class="weather-preset" data-weather-preset="cloudy" type="button">☁ Облачно</button>
+    <button class="weather-preset" data-weather-preset="overcast" type="button">🌥 Пасмурно</button>
+    <button class="weather-preset" data-weather-preset="snow" type="button">❄ Снегопад</button>
+    <button class="weather-preset" data-weather-preset="blizzard" type="button">🌨 Метель</button>
+  </div>
+  <div class="weather-control">
+    <label for="weatherClouds">Облачность <strong id="weatherCloudsValue">0%</strong></label>
+    <input id="weatherClouds" type="range" min="0" max="100" step="1" value="0"/>
+  </div>
+  <div class="weather-control">
+    <label for="weatherSnow">Интенсивность снегопада <strong id="weatherSnowValue">0%</strong></label>
+    <input id="weatherSnow" type="range" min="0" max="100" step="1" value="0"/>
+  </div>
+  <div class="weather-control">
+    <label for="weatherWind">Скорость ветра <strong id="weatherWindValue">2 км/ч</strong></label>
+    <input id="weatherWind" type="range" min="0" max="60" step="1" value="2"/>
+  </div>
+  <div id="weatherStatus" aria-live="polite">Ясно · лёгкие облака</div>
 </div>
 
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
   <div class="hierarchy-header"><div class="hierarchy-title"><strong>SCENE</strong><span id="editorAssetCount" class="editor-chip">0 OBJECTS</span></div></div>
+  <div class="scene-hierarchy-tabs" role="tablist" aria-label="Scene panel sections"><button type="button" class="scene-hierarchy-tab active" data-hierarchy-tab="project" aria-selected="true">PROJECT</button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="import" aria-selected="false">IMPORT</button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="hierarchy" aria-selected="false">HIERARCHY</button></div><div class="scene-hierarchy-panel" data-hierarchy-panel="project">
   <div class="client-workspace">
-    <label for="clientWorkspaceId" class="tree-search-label">PROJECT WORKSPACE</label>
-    <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="Project ID · default: alpine-resort" autocomplete="off" aria-describedby="clientWorkspaceHint"/>
-    <div class="editor-hint" id="clientWorkspaceHint">Основной проект <strong>alpine-resort</strong> открывается автоматически. Для другого проекта введи его ID и нажми OPEN PROJECT. Ты редактируешь и сохраняешь проект; клиентам нужна только ссылка для просмотра.</div>
+    <label for="clientWorkspaceId" class="tree-search-label">PROJECT</label>
+    <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="alpine-resort" autocomplete="off" aria-describedby="clientWorkspaceHint"/>
     <div class="editor-split">
-      <button id="openClientWorkspaceButton" class="secondary" type="button">OPEN PROJECT</button>
-      <button id="shareClientWorkspaceButton" class="secondary" type="button">COPY VIEWER LINK</button>
+      <button id="openClientWorkspaceButton" class="secondary" type="button">OPEN</button>
+      <button id="shareClientWorkspaceButton" class="secondary" type="button">COPY LINK</button>
     </div>
-    <input id="clientShareLink" type="text" readonly aria-label="Project viewer URL" placeholder="Viewer link will appear here"/>
-    <div class="editor-section">
-      <h3>LOCAL REPOSITORY · AUTO-SYNC</h3>
-      <div class="editor-hint">Выбери корень локального репозитория <strong>C:\zGit\GradeOptimizer\Grade_Optimizer</strong>. Grade Optimizer будет напрямую записывать туда scene.json и изменённые GLB-модели после каждого изменения сцены. GitHub Desktop автоматически увидит эти файлы.</div>
-      <button id="connectProjectFolderButton" type="button">CONNECT LOCAL PROJECT FOLDER</button>
-      <div class="editor-hint">ZIP не нужен. Браузерная копия в IndexedDB остаётся резервной. При новом запуске Chrome может попросить повторно разрешить доступ к уже выбранной папке.</div>
+    <input id="clientShareLink" type="text" readonly aria-label="Project viewer URL" placeholder="Viewer link"/>
+    <details class="workspace-help" id="clientWorkspaceHint"><summary>ABOUT PROJECTS</summary><div>Основной проект alpine-resort открывается автоматически. Для другого проекта введи его ID и нажми OPEN. Ты редактируешь проект; клиентам нужна только ссылка для просмотра.</div></details>
+    <div class="workspace-sync">
+      <div class="workspace-sync-title">LOCAL SYNC <span>GITHUB DESKTOP</span></div>
+      <button id="connectProjectFolderButton" type="button">CONNECT FOLDER</button>
+      <details class="workspace-help"><summary>HOW IT WORKS</summary><div>Выбери корень локального репозитория Grade Optimizer. Сцена и изменённые модели записываются в эту папку, GitHub Desktop увидит изменения. ZIP не нужен. Если Chrome попросит разрешение, подтверди доступ к папке.</div></details>
     </div>
-    <div id="clientWorkspaceStatus" class="editor-hint" aria-live="polite">Основной проект alpine-resort открывается автоматически. Автосохранение в этом браузере включено после загрузки проекта.</div>
+    <div id="clientWorkspaceStatus" class="workspace-status" aria-live="polite">Browser autosave active</div>
   </div>
+  </div><div class="scene-hierarchy-panel" data-hierarchy-panel="import" hidden>
   <label for="importAssetCategory" class="tree-search-label">IMPORT AS</label>
   <select id="importAssetCategory" aria-label="Категория импортируемой модели">
     <option value="model" selected>General model · без категории</option>
@@ -819,6 +1143,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <button id="importGlbButton" type="button">＋ IMPORT MODEL · GLB / FBX</button>
   <button id="resetTerrainButton" class="secondary" type="button" disabled>↺ RESTORE ORIGINAL TERRAIN</button>
   <input id="glbFileInput" type="file" accept=".glb,.fbx,model/gltf-binary,application/octet-stream" multiple hidden/>
+  </div><div class="scene-hierarchy-panel" data-hierarchy-panel="hierarchy" hidden>
   <label for="editorTreeSearch" class="tree-search-label">SCENE HIERARCHY</label>
   <input id="editorTreeSearch" type="search" placeholder="Filter groups, objects, meshes, materials…" autocomplete="off"/>
   <div class="editor-tree-toolbar">
@@ -827,23 +1152,49 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   </div>
   <div id="editorTreeList" role="tree" aria-label="Иерархия сцены Maya"></div>
   <div class="editor-hint">Раскрывай группы до mesh и material slots. Общие материалы связываются через PBR Library; GLB / FBX можно перетащить сюда.</div>
+  </div>
 </div>
 
 <div id="sceneEditorPanel" aria-label="Scene and material inspector">
-  <div id="editorHeader"><div class="editor-heading"><strong>INSPECTOR</strong><span class="editor-chip">SCENE / MATERIAL</span></div><button class="secondary closeEditor" id="closeEditor" type="button" title="Закрыть">×</button></div>
+  <div id="editorHeader"><div class="editor-heading"><strong>INSPECTOR</strong><span class="editor-chip">SCENE / MATERIAL</span></div><button class="secondary closeEditor" id="closeEditor" type="button" title="Close Inspector" aria-label="Close Inspector"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
   <div id="editorStatus">Выбери объект в сцене, чтобы редактировать его свойства и материалы.</div>
 
-  <div class="editor-section ski-replacement-section">
-    <h3>ЗАМЕНА ЛЫЖ ЛЫЖНИКА <span class="editor-chip">SKIER RIG</span></h3>
-    <div class="editor-hint">Загрузи GLB одной лыжи. Модель автоматически подгоняется по длине и ориентации, затем устанавливается парой на лыжника. Крепления остаются на месте.</div>
-    <input id="skierSkiFileInput" type="file" accept=".glb,model/gltf-binary" hidden/>
-    <div class="editor-split">
-      <button id="importSkierSkiButton" type="button">＋ ЗАГРУЗИТЬ ОДНУ ЛЫЖУ · GLB</button>
-      <button id="resetSkierSkiButton" class="secondary" type="button">ВЕРНУТЬ СТАНДАРТНЫЕ</button>
+  <section class="editor-section scene-look-section" aria-label="Global Scene Look">
+    <div class="scene-look-section-head">
+      <div class="scene-look-section-brand">
+        <span class="scene-look-section-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 13.9 8l4.9.5-3.7 3.2 1.1 4.8-4.2-2.5-4.2 2.5 1.1-4.8-3.7-3.2 4.9-.5L12 3.2Z"/><path d="m19 17 1.2 1.2M4 18l1-1"/></svg></span>
+        <span class="scene-look-section-titles"><strong>SCENE EDITOR</strong><small>OBJECTS · MATERIALS · VISUAL SETTINGS</small></span>
+      </div>
+      <div class="scene-look-section-actions">
+        <span class="editor-chip">GLOBAL</span>
+        <button id="openMaterialLibrary" class="scene-look-reset scene-look-library-open" type="button" title="Open shared material library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5 12 2l8 3.5v13L12 22l-8-3.5z"/><path d="M4 5.5 12 9l8-3.5M12 9v13"/></svg><span>MATERIAL LIBRARY</span></button>
+        <button id="sceneLookReset" class="scene-look-reset" type="button" title="Reset all Scene Look settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11a8.5 8.5 0 1 1 2.1 5.6"/><path d="M3.5 4.5V11h6.5"/></svg><span>RESET</span></button>
+      </div>
     </div>
-    <div id="skierSkiModelStatus" class="editor-hint" aria-live="polite">Используются стандартные лыжи.</div>
-  </div>
-  <select id="editorObjectSelect" hidden aria-hidden="true"><option value="">Сцена загружается…</option></select>
+    <div class="scene-look-body"><div class="scene-look-tabs" role="tablist" aria-label="Scene Look categories">
+        <button class="scene-look-tab" id="sceneLookTab-general" type="button" role="tab" data-look-tab="general" aria-controls="sceneLookPanel-general" aria-selected="false" tabindex="-1">
+          <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M22 12h-3M5 12H2M19.1 4.9 17 7M7 17l-2.1 2.1M19.1 19.1 17 17M7 7 4.9 4.9"/></svg></span>
+          <span class="scene-look-tab-label">General</span><span class="scene-look-tab-meta">OBJECTS</span>
+        </button>
+        <button class="scene-look-tab" id="sceneLookTab-environment" type="button" role="tab" data-look-tab="environment" aria-controls="sceneLookPanel-environment" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17.5" cy="6.5" r="2.7"/><path d="M17.5 1.5v1.3M22.5 6.5h-1.3M17.5 11.5v-1.3M12.5 6.5h1.3M4 17.2a3.2 3.2 0 0 1 .3-6.4 5.2 5.2 0 0 1 9.9 1.4 2.8 2.8 0 0 1-.2 5.6H4Z"/></svg></span><span class="scene-look-tab-label">Environment</span><span class="scene-look-tab-meta">ATMOSPHERE</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-materials" type="button" role="tab" data-look-tab="materials" aria-controls="sceneLookPanel-materials" aria-selected="false" tabindex="-1">
+          <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L7 20"/></svg></span>
+          <span class="scene-look-tab-label">Materials</span><span class="scene-look-tab-meta">PBR MAPS</span>
+        </button>
+        
+        
+        <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a2 2 0 0 0 1.3-3.5 1.7 1.7 0 0 1 1.1-3h.7A4.5 4.5 0 0 0 21 10c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="6.8" r=".8"/><circle cx="16" cy="8" r=".8"/></svg></span><span class="scene-look-tab-label">Color</span><span class="scene-look-tab-meta">PALETTE</span></button>
+        
+        <button class="scene-look-tab active" id="sceneLookTab-camera" type="button" role="tab" data-look-tab="camera" aria-controls="sceneLookPanel-camera" aria-selected="true" tabindex="0"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h4l1.6-2h6.8l1.6 2h4v12H3z"/><circle cx="12" cy="13.5" r="4.1"/><circle cx="12" cy="13.5" r="1.5"/></svg></span><span class="scene-look-tab-label">Camera</span><span class="scene-look-tab-meta">CAMERA · LENS · OPTICS</span></button><button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><span class="scene-look-tab-label">Render</span><span class="scene-look-tab-meta">OUTPUT</span></button>
+      </div>
+      <div class="scene-look-panel-heading scene-look-active-heading">
+        <div class="scene-look-active-copy"><strong id="sceneLookPanelTitle">LENS &amp; OPTICS</strong><span id="sceneLookPanelSubtitle">LENS CHARACTER · BLOOM · FLARE · DEPTH OF FIELD</span></div>
+        <span id="sceneLookFxStatus" class="scene-look-live-pill" role="status" aria-live="polite">FX LIVE</span>
+      </div>
+      <div class="scene-look-panels">
+      <section class="scene-look-panel scene-look-panel--general" id="sceneLookPanel-general" data-look-panel="general" role="tabpanel" aria-labelledby="sceneLookTab-general" hidden>
+              <div class="scene-look-note scene-look-persistence-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"/><path d="M8 4.5v5h8v-5M8 19v-5h8v5"/></svg><span>Настройки сохраняются в Scene Config и <code>clients/&lt;project&gt;/scene.json</code> и восстанавливаются вместе с проектом.</span></div>
+          <select id="editorObjectSelect" hidden aria-hidden="true"><option value="">Сцена загружается…</option></select>
   <div class="editor-section">
     <h3>ОБЪЕКТ <span class="editor-chip">TRANSFORM</span></h3>
     <div id="editorSelectedName" class="editor-selected-name">Нет выбранного объекта</div>
@@ -901,20 +1252,170 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="editor-hint">Метки относятся только к выбранному узлу и сохраняются в клиентском manifest. Они не меняют физику или классификацию автоматически.</div>
   </div>
 
-  <div class="editor-section">
+
+          <input id="sceneConfigFileInput" type="file" accept=".json,application/json" hidden/>
+  <div class="editor-split"><button id="loadSceneConfig" class="secondary" type="button">ЗАГРУЗИТЬ CONFIG JSON</button><button id="exportSelectedGlb" type="button">EXPORT SELECTED GLB</button></div>
+  <button id="saveSceneConfig" type="button">ЭКСПОРТ JSON-БЭКАПА · ДОПОЛНИТЕЛЬНО</button>
+  <div class="editor-hint">Для обычного сохранения проекта не скачивай этот файл — используй SAVE ALL PROJECT CHANGES TO GITHUB в блоке CLIENT WORKSPACE.</div>
+      </section>
+      <section class="scene-look-panel scene-look-panel--environment" id="sceneLookPanel-environment" data-look-panel="environment" role="tabpanel" aria-labelledby="sceneLookTab-environment" hidden>
+        
+        <div class="scene-look-grid">
+          <div class="scene-look-control wide">
+            <label for="sceneClouds">Cloud coverage <strong id="sceneCloudsValue">18%</strong></label>
+            <input id="sceneClouds" type="range" min="0" max="100" step="1" value="18"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSnow">Snowfall <strong id="sceneSnowValue">0%</strong></label>
+            <input id="sceneSnow" type="range" min="0" max="100" step="1" value="0"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneWind">Wind <strong id="sceneWindValue">3 km/h</strong></label>
+            <input id="sceneWind" type="range" min="0" max="60" step="1" value="3"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSunIntensity">Sun intensity <strong id="sceneSunIntensityValue">100%</strong></label>
+            <input id="sceneSunIntensity" type="range" min="0" max="300" step="1" value="100"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSunRotation">Sun rotation <strong id="sceneSunRotationValue">0°</strong></label>
+            <input id="sceneSunRotation" type="range" min="0" max="360" step="1" value="0"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneAmbientFill">Ambient fill <strong id="sceneAmbientFillValue">100%</strong></label>
+            <input id="sceneAmbientFill" type="range" min="0" max="200" step="1" value="100"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneShadowQuality">Shadow map quality</label>
+            <select id="sceneShadowQuality">
+              <option value="0">Low · 1024</option>
+              <option value="1" selected>High · 2048</option>
+              <option value="2">Ultra · 4096</option>
+            </select>
+          </div>
+        </div>
+        <div class="scene-look-switches">
+          <label for="sceneSunEnabled"><input id="sceneSunEnabled" type="checkbox" checked/> Directional sun</label>
+        </div>
+      </section>
+
+      <section class="scene-look-panel scene-look-panel--camera scene-look-panel--lens scene-look-panel--optics" id="sceneLookPanel-camera" data-look-panel="camera" role="tabpanel" aria-labelledby="sceneLookTab-camera">
+        
+        <div class="scene-look-grid">
+          <div class="scene-look-control">
+            <label for="sceneCameraFov">Field of view <strong id="sceneCameraFovValue">55°</strong></label>
+            <input id="sceneCameraFov" type="range" min="30" max="90" step="1" value="55"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneExposure">Exposure bias <strong id="sceneExposureValue">+0.00 EV</strong></label>
+            <input id="sceneExposure" type="range" min="-2" max="2" step="0.05" value="0"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneWhiteBalance">White balance <strong id="sceneWhiteBalanceValue">6500 K</strong></label>
+            <input id="sceneWhiteBalance" type="range" min="3200" max="9000" step="50" value="6500"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneTint">Green / magenta tint <strong id="sceneTintValue">0</strong></label>
+            <input id="sceneTint" type="range" min="-100" max="100" step="1" value="0"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneFocusMode">Focus mode</label>
+            <select id="sceneFocusMode">
+              <option value="target" selected>Auto · camera target</option>
+              <option value="manual">Manual · focus distance</option>
+            </select>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneFocusDistance">Focus distance <strong id="sceneFocusDistanceValue">48 m</strong></label>
+            <input id="sceneFocusDistance" type="range" min="5" max="500" step="1" value="48"/>
+          </div>
+          <div class="scene-look-control wide">
+            <label for="sceneAperture">Lens aperture <strong id="sceneApertureValue">f/4.0</strong></label>
+            <input id="sceneAperture" type="range" min="1.4" max="16" step="0.1" value="4"/>
+          </div>
+        </div>
+      
+        <div class="scene-look-camera-optics">
+          
+        <div class="scene-look-lens-groups">
+          <div class="scene-look-subsection">
+            <div class="scene-look-subhead"><strong>LENS CHARACTER</strong><span>EDGE RESPONSE · DISTORTION</span></div>
+            <div class="scene-look-grid">
+              <div class="scene-look-control"><label for="sceneVignette">Vignette <strong id="sceneVignetteValue">24%</strong></label><input id="sceneVignette" type="range" min="0" max="100" step="1" value="24"/></div>
+              <div class="scene-look-control"><label for="sceneChromatic">Chromatic aberration <strong id="sceneChromaticValue">18%</strong></label><input id="sceneChromatic" type="range" min="0" max="100" step="1" value="18"/></div>
+              <div class="scene-look-control wide"><label for="sceneDistortion">Lens distortion <strong id="sceneDistortionValue">6%</strong></label><input id="sceneDistortion" type="range" min="0" max="100" step="1" value="6"/></div>
+            </div>
+          </div>
+          <div class="scene-look-subsection">
+            <div class="scene-look-subhead"><strong>IMAGE TEXTURE</strong><span>GRAIN · MICRO-CONTRAST</span></div>
+            <div class="scene-look-grid">
+              <div class="scene-look-control"><label for="sceneGrain">Film grain <strong id="sceneGrainValue">4%</strong></label><input id="sceneGrain" type="range" min="0" max="100" step="1" value="4"/></div>
+              <div class="scene-look-control"><label for="sceneSharpness">Sharpness <strong id="sceneSharpnessValue">14%</strong></label><input id="sceneSharpness" type="range" min="0" max="100" step="1" value="14"/></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="scene-look-lens-groups scene-look-optics-groups">
+          <div class="scene-look-subhead"><strong>OPTICAL PROCESSING</strong><span>BLOOM · FLARE · DEPTH OF FIELD</span></div>
+          <div class="scene-look-switches">
+          <label for="sceneOpticsEnabled"><input id="sceneOpticsEnabled" type="checkbox" checked/> Post-processing enabled</label>
+          <label for="sceneBokeh"><input id="sceneBokeh" type="checkbox"/> Depth of field / Bokeh <small class="scene-look-switch-hint">Off by default · extra GPU cost</small></label>
+          <label for="sceneFlareEnabled"><input id="sceneFlareEnabled" type="checkbox" checked/> Lens flare / ghosts</label>
+        </div>
+        <div class="scene-look-subsection">
+          <div class="scene-look-subhead"><strong>HIGHLIGHTS & HALATION</strong><span>BLOOM · THRESHOLD</span></div>
+          <div class="scene-look-grid">
+            <div class="scene-look-control"><label for="sceneBloom">Bloom <strong id="sceneBloomValue">58%</strong></label><input id="sceneBloom" type="range" min="0" max="100" step="1" value="58"/></div>
+            <div class="scene-look-control"><label for="sceneBloomThreshold">Bloom threshold <strong id="sceneBloomThresholdValue">0.78</strong></label><input id="sceneBloomThreshold" type="range" min="0.1" max="2" step="0.01" value="0.78"/></div>
+          </div>
+        </div>
+        <div class="scene-look-subsection">
+          <div class="scene-look-subhead"><strong>FLARE & LENS DIRT</strong><span>GHOSTS · SENSOR GLASS</span></div>
+          <div class="scene-look-grid">
+            <div class="scene-look-control"><label for="sceneFlare">Lens flare strength <strong id="sceneFlareValue">70%</strong></label><input id="sceneFlare" type="range" min="0" max="100" step="1" value="70"/></div>
+            <div class="scene-look-control"><label for="sceneDirt">Lens dirt <strong id="sceneDirtValue">38%</strong></label><input id="sceneDirt" type="range" min="0" max="100" step="1" value="38"/></div>
+          </div>
+        </div>
+        <div class="scene-look-note">Depth of field is disabled on startup to preserve a sharp, responsive viewport. Enable it deliberately when a shallow-focus shot is required.</div>
+        </div>
+      
+        </div>
+      </section>
+
+      
+      
+      <section class="scene-look-panel scene-look-panel--color" id="sceneLookPanel-color" data-look-panel="color" role="tabpanel" aria-labelledby="sceneLookTab-color" hidden>
+        
+        <div class="scene-look-grid">
+          <div class="scene-look-control">
+            <label for="sceneShadowLift">Shadow lift / local exposure <strong id="sceneShadowLiftValue">12%</strong></label>
+            <input id="sceneShadowLift" type="range" min="0" max="100" step="1" value="12"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneHighlightCompression">Highlight compression <strong id="sceneHighlightCompressionValue">18%</strong></label>
+            <input id="sceneHighlightCompression" type="range" min="0" max="100" step="1" value="18"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneContrast">Contrast <strong id="sceneContrastValue">1.04</strong></label>
+            <input id="sceneContrast" type="range" min="60" max="160" step="1" value="104"/>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneSaturation">Saturation <strong id="sceneSaturationValue">1.04</strong></label>
+            <input id="sceneSaturation" type="range" min="0" max="160" step="1" value="104"/>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene-look-panel scene-look-panel--materials" id="sceneLookPanel-materials" data-look-panel="materials" role="tabpanel" aria-labelledby="sceneLookTab-materials" hidden>
+          <div class="editor-section">
     <h3>Материал / PBR <span id="editorMaterialCount" class="editor-chip">0 SLOTS</span></h3>
     <label for="editorMaterialSelect">Component / Material Slot</label>
     <select id="editorMaterialSelect"><option value="">Нет материала</option></select>
     <div id="editorMaterialLinkStatus" class="editor-hint">Выбери material slot для редактирования.</div>
-    <div class="editor-section" style="margin:9px 0;padding:9px;background:rgba(255,255,255,.025)">
-      <h3>ОБЩАЯ БИБЛИОТЕКА МАТЕРИАЛОВ <span class="editor-chip">SCENE-WIDE</span></h3>
-      <label for="editorMaterialLibrarySelect">Назначить существующий материал</label>
+    <div id="editorMaterialLibraryBridge" hidden>
       <select id="editorMaterialLibrarySelect"><option value="">Загрузка материалов…</option></select>
-      <div class="editor-split">
-        <button id="assignEditorMaterial" class="secondary" type="button" disabled>НАЗНАЧИТЬ В SLOT</button>
-        <button id="makeEditorMaterialUnique" class="secondary" type="button" disabled>СДЕЛАТЬ УНИКАЛЬНЫМ</button>
-      </div>
-      <div class="editor-hint">Один экземпляр материала может использоваться несколькими mesh slots. Назначение связывает слоты, а «Сделать уникальным» создаёт отдельную копию выбранного слота.</div>
+      <button id="assignEditorMaterial" type="button" disabled>ASSIGN</button>
+      <button id="makeEditorMaterialUnique" type="button" disabled>MAKE UNIQUE</button>
     </div>
     <div class="editor-split">
       <div><label for="editorBaseColor">Base Color</label><input id="editorBaseColor" type="color" value="#ffffff"/></div>
@@ -941,37 +1442,157 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="editor-hint">Изменения применяются сразу. Текстуры масштабируются единым параметром Texture Tiling.</div>
   </div>
 
-  <div class="editor-section">
-    <h3>Библиотека PBR-пресетов</h3>
-    <label for="editorPresetSelect">Профиль материала</label>
-    <select id="editorPresetSelect">
-      <option value="">Выберите профиль…</option>
-      <option value="snow_groomed">Snow · Groomed</option><option value="snow_fresh">Snow · Fresh</option>
-      <option value="pine_needles">Pine · Needles</option><option value="bark_wood">Wood · Bark</option>
-      <option value="concrete">Concrete</option><option value="asphalt">Asphalt</option>
-      <option value="painted_metal">Metal · Painted</option><option value="glass">Glass · Simple</option>
-    </select>
-    <button id="applyEditorPreset" class="secondary" type="button">ПРИМЕНИТЬ PBR-ПРЕСЕТ</button>
-    <div class="editor-hint">Пресет задаёт базовые цвет, roughness, metalness и прозрачность. Уже подключённые карты текстур сохраняются.</div>
-  </div>
-
-  <div class="editor-section">
-    <h3>Отдельные карты текстур</h3>
-    <label for="editorTextureType">Тип карты</label>
-    <select id="editorTextureType">
+  <div class="editor-section texture-map-section">
+    <h3>КАРТЫ ТЕКСТУР <span class="editor-chip">PBR · 6 MAPS</span></h3>
+    <div class="texture-map-grid">
+      <article class="texture-map-card" data-texture-card="map">
+        <div class="texture-map-card-heading"><strong>Base Color / Albedo</strong><span>sRGB</span></div>
+        <div class="texture-map-preview">
+          <img id="editorTexturePreview-map" alt="Base Color / Albedo preview" hidden/>
+          <span id="editorTexturePreviewEmpty-map" class="texture-map-empty">NO MAP</span>
+        </div>
+        <div class="texture-map-filename" id="editorTextureFileName-map">Карта не назначена</div>
+        <div class="texture-map-actions">
+          <button type="button" data-texture-import="map">＋ IMPORT</button>
+          <button type="button" class="secondary" data-texture-remove="map" disabled>REMOVE</button>
+        </div>
+      </article>
+      <article class="texture-map-card" data-texture-card="normalMap">
+        <div class="texture-map-card-heading"><strong>Normal</strong><span>Linear</span></div>
+        <div class="texture-map-preview">
+          <img id="editorTexturePreview-normalMap" alt="Normal preview" hidden/>
+          <span id="editorTexturePreviewEmpty-normalMap" class="texture-map-empty">NO MAP</span>
+        </div>
+        <div class="texture-map-filename" id="editorTextureFileName-normalMap">Карта не назначена</div>
+        <div class="texture-map-actions">
+          <button type="button" data-texture-import="normalMap">＋ IMPORT</button>
+          <button type="button" class="secondary" data-texture-remove="normalMap" disabled>REMOVE</button>
+        </div>
+      </article>
+      <article class="texture-map-card" data-texture-card="roughnessMap">
+        <div class="texture-map-card-heading"><strong>Roughness</strong><span>Linear</span></div>
+        <div class="texture-map-preview">
+          <img id="editorTexturePreview-roughnessMap" alt="Roughness preview" hidden/>
+          <span id="editorTexturePreviewEmpty-roughnessMap" class="texture-map-empty">NO MAP</span>
+        </div>
+        <div class="texture-map-filename" id="editorTextureFileName-roughnessMap">Карта не назначена</div>
+        <div class="texture-map-actions">
+          <button type="button" data-texture-import="roughnessMap">＋ IMPORT</button>
+          <button type="button" class="secondary" data-texture-remove="roughnessMap" disabled>REMOVE</button>
+        </div>
+      </article>
+      <article class="texture-map-card" data-texture-card="metalnessMap">
+        <div class="texture-map-card-heading"><strong>Metalness</strong><span>Linear</span></div>
+        <div class="texture-map-preview">
+          <img id="editorTexturePreview-metalnessMap" alt="Metalness preview" hidden/>
+          <span id="editorTexturePreviewEmpty-metalnessMap" class="texture-map-empty">NO MAP</span>
+        </div>
+        <div class="texture-map-filename" id="editorTextureFileName-metalnessMap">Карта не назначена</div>
+        <div class="texture-map-actions">
+          <button type="button" data-texture-import="metalnessMap">＋ IMPORT</button>
+          <button type="button" class="secondary" data-texture-remove="metalnessMap" disabled>REMOVE</button>
+        </div>
+      </article>
+      <article class="texture-map-card" data-texture-card="aoMap">
+        <div class="texture-map-card-heading"><strong>Ambient Occlusion</strong><span>Linear · UV2</span></div>
+        <div class="texture-map-preview">
+          <img id="editorTexturePreview-aoMap" alt="Ambient Occlusion preview" hidden/>
+          <span id="editorTexturePreviewEmpty-aoMap" class="texture-map-empty">NO MAP</span>
+        </div>
+        <div class="texture-map-filename" id="editorTextureFileName-aoMap">Карта не назначена</div>
+        <div class="texture-map-actions">
+          <button type="button" data-texture-import="aoMap">＋ IMPORT</button>
+          <button type="button" class="secondary" data-texture-remove="aoMap" disabled>REMOVE</button>
+        </div>
+      </article>
+      <article class="texture-map-card" data-texture-card="emissiveMap">
+        <div class="texture-map-card-heading"><strong>Emissive</strong><span>sRGB</span></div>
+        <div class="texture-map-preview">
+          <img id="editorTexturePreview-emissiveMap" alt="Emissive preview" hidden/>
+          <span id="editorTexturePreviewEmpty-emissiveMap" class="texture-map-empty">NO MAP</span>
+        </div>
+        <div class="texture-map-filename" id="editorTextureFileName-emissiveMap">Карта не назначена</div>
+        <div class="texture-map-actions">
+          <button type="button" data-texture-import="emissiveMap">＋ IMPORT</button>
+          <button type="button" class="secondary" data-texture-remove="emissiveMap" disabled>REMOVE</button>
+        </div>
+      </article>
+    </div>
+    <div class="editor-hint">Каждый тип карты подключается отдельно. Base Color и Emissive читаются в sRGB; Normal, Roughness, Metalness и AO — в линейном пространстве. Для AO автоматически создаётся UV2 из UV, если его нет.</div>
+    <select id="editorTextureType" hidden>
       <option value="map">Base Color / Albedo</option><option value="normalMap">Normal</option>
       <option value="roughnessMap">Roughness</option><option value="metalnessMap">Metalness</option>
       <option value="aoMap">Ambient Occlusion</option><option value="emissiveMap">Emissive</option>
     </select>
     <input id="editorTextureFileInput" type="file" accept="image/*" hidden/>
-    <div class="editor-split"><button id="importEditorTexture" type="button">＋ IMPORT MAP</button><button id="clearEditorTexture" class="secondary" type="button">REMOVE MAP</button></div>
-    <div class="editor-hint">Выберите material slot, тип карты и изображение. Цветовые карты читаются в sRGB, технические карты — в линейном цветовом пространстве. Для AO автоматически создаётся UV2 из UV, если его нет.</div>
+    <button id="importEditorTexture" type="button" hidden>IMPORT MAP</button>
+    <button id="clearEditorTexture" type="button" hidden>REMOVE MAP</button>
+    <select id="editorPresetSelect" hidden>
+      <option value="">Выберите профиль…</option><option value="snow_groomed">Snow · Groomed</option>
+      <option value="snow_fresh">Snow · Fresh</option><option value="pine_needles">Pine · Needles</option>
+      <option value="bark_wood">Wood · Bark</option><option value="concrete">Concrete</option>
+      <option value="asphalt">Asphalt</option><option value="painted_metal">Metal · Painted</option>
+      <option value="glass">Glass · Simple</option>
+    </select>
+    <button id="applyEditorPreset" type="button" hidden>APPLY PRESET</button>
   </div>
-  <input id="sceneConfigFileInput" type="file" accept=".json,application/json" hidden/>
-  <div class="editor-split"><button id="loadSceneConfig" class="secondary" type="button">ЗАГРУЗИТЬ CONFIG JSON</button><button id="exportSelectedGlb" type="button">EXPORT SELECTED GLB</button></div>
-  <button id="saveSceneConfig" type="button">ЭКСПОРТ JSON-БЭКАПА · ДОПОЛНИТЕЛЬНО</button>
-  <div class="editor-hint">Для обычного сохранения проекта не скачивай этот файл — используй SAVE ALL PROJECT CHANGES TO GITHUB в блоке CLIENT WORKSPACE.</div>
+
+      </section>
+      <section class="scene-look-panel scene-look-panel--render" id="sceneLookPanel-render" data-look-panel="render" role="tabpanel" aria-labelledby="sceneLookTab-render" hidden>
+        <div class="scene-look-panel-heading"><strong>RENDER PIPELINE</strong><span>OUTPUT & PERFORMANCE</span></div>
+        <div class="scene-look-grid">
+          <div class="scene-look-control">
+            <label for="sceneQuality">Render quality</label>
+            <select id="sceneQuality">
+              <option value="performance">Performance</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="high">High</option>
+              <option value="cinematic">Cinematic</option>
+            </select>
+          </div>
+          <div class="scene-look-control">
+            <label for="sceneToneMapping">Tone mapping</label>
+            <select id="sceneToneMapping">
+              <option value="aces" selected>ACES Filmic</option>
+              <option value="agx">AgX</option>
+              <option value="reinhard">Reinhard</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+        </div>
+        <div class="scene-look-note">Performance снижает нагрузку на GPU. High и Cinematic повышают детализацию композитинга. ACES и AgX сохраняют мягкий roll-off ярких участков; Linear предназначен для технического сравнения.</div>
+      </section>
+      
+
+      </div>
+
+    </div>
+  </section>
+
+
 </div>
+
+<div id="materialLibraryWindow" role="dialog" aria-label="Shared material library" aria-modal="false">
+  <div class="hypershade-titlebar" id="materialLibraryTitlebar">
+    <div class="hypershade-title"><span class="hypershade-mark">◈</span><div><strong>MATERIAL LIBRARY</strong><small>SCENE-WIDE · SHARED PBR MATERIALS</small></div></div>
+    <button type="button" id="closeMaterialLibrary" class="hypershade-close" aria-label="Close material library" title="Close">×</button>
+  </div>
+  <div class="hypershade-toolbar">
+    <input id="materialLibrarySearch" type="search" placeholder="Search materials…" autocomplete="off" aria-label="Search materials"/>
+    <span id="materialLibraryCount" class="editor-chip">0 MATERIALS</span>
+  </div>
+  <div id="materialLibraryGrid" class="hypershade-grid" aria-live="polite">
+    <div class="hypershade-empty">Материалы появятся здесь после загрузки сцены</div>
+  </div>
+  <div class="hypershade-footer">
+    <div class="hypershade-selection" id="materialLibrarySelectionStatus">Выбери материал и активный слот во вкладке Materials.</div>
+    <div class="hypershade-actions">
+      <button type="button" id="materialLibraryAssign" disabled>ASSIGN TO SLOT</button>
+      <button type="button" id="materialLibraryUnique" class="secondary" disabled>MAKE SLOT UNIQUE</button>
+    </div>
+  </div>
+</div>
+
 
 <div id="skierHud" class="mode-hud skier-hud" role="region" aria-label="Подсказки управления лыжником">
   <div class="mode-hud-header">
@@ -992,12 +1613,19 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="mode-stat"><span>УСКОРЕНИЕ</span><strong><span id="accelerationValue">0.00</span><small>м/с²</small></strong></div>
   </div>
 
+  <div id="skiLoadReadout" class="ski-load-readout" aria-label="Расчётная нагрузка на внешнюю и внутреннюю лыжу">
+    <div class="ski-load-readout-head"><span>НАГРУЗКА НА ЛЫЖИ</span><small>РАСЧЁТНАЯ СИЛА · N</small></div>
+    <div class="ski-load-readout-values"><strong id="outsideSkiLoadValue">Внешняя 50% · 0 N</strong><strong id="insideSkiLoadValue">Внутренняя 50% · 0 N</strong></div>
+    <div class="ski-load-track" aria-hidden="true"><span id="outsideSkiLoadBar"></span></div>
+    <small id="totalSkiLoadValue" class="ski-load-readout-total">Суммарная нагрузка 0 N · масса 75 кг</small>
+  </div>
+
   <div id="skierTutorialContent" class="mode-hud-collapsible">
   <section class="mode-tutorial">
     <div class="mode-section-heading"><span>КАК НАЧАТЬ</span><span class="mode-section-note">ВСЁ ПРОСТО</span></div>
     <div class="tutorial-steps">
       <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по склону</strong><small>Клик — захват мыши. Двигай мышью, чтобы осмотреться.</small></div></div>
-      <div class="tutorial-step"><span class="step-number">2</span><div><strong>Оттолкнись и поезжай</strong><small><kbd>SHIFT</kbd> / <kbd>SPACE</kbd> — толчок. Дальше разгоняешься сам.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">2</span><div><strong>Оттолкнись и прыгай</strong><small><kbd>SHIFT</kbd> — толчок палками. <kbd>SPACE</kbd> — прыжок.</small></div></div>
       <div class="tutorial-step"><span class="step-number">3</span><div><strong>Поворачивай и тормози</strong><small><kbd>A</kbd> / <kbd>D</kbd> — поворот. <kbd>S</kbd> — тормоз.</small></div></div>
     </div>
   </section>
@@ -1008,9 +1636,9 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <div class="control-tile"><div class="control-keys"><kbd>W</kbd><span>/</span><kbd>↑</kbd></div><div><strong>Скоростная стойка</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd>S</kbd><span>/</span><kbd>↓</kbd></div><div><strong>Тормозить</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd>A</kbd><span>/</span><kbd>D</kbd></div><div><strong>Поворот</strong></div></div>
-      <div class="control-tile"><div class="control-keys control-keys-wide"><kbd>SHIFT</kbd><span>или</span><kbd>SPACE</kbd></div><div><strong>Толчок палками</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>SHIFT</kbd></div><div><strong>Толчок палками</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>SPACE</kbd></div><div><strong>Прыжок</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd><span>/</span><kbd>C</kbd></div><div><strong>Осмотреться / 3-е лицо</strong></div></div>
-      <div class="control-tile control-tile-switch"><div class="control-keys"><kbd>V</kbd></div><div><strong>Сменить режим</strong></div></div>
     </div>
   </section>
 
@@ -1081,16 +1709,657 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   </div>
   </div>
 </div>
+
+<div id="mobileControls" aria-label="Mobile controls">
+  <div class="mobile-status-row">
+    <div id="mobileModeHint" class="mobile-mode-hint">ОБЗОР · проведи пальцем, чтобы вращать сцену · два пальца — масштаб</div>
+    <div id="mobileSpeedBox" class="mobile-speed-box" hidden><strong id="mobileSpeedValue">0</strong><span>км/ч</span></div>
+  </div>
+  <div id="mobileMoveStick" class="mobile-stick mobile-stick-move" role="group" aria-label="Movement joystick">
+    <span class="mobile-stick-caption">MOVE</span><span class="mobile-stick-ring"></span><span class="mobile-stick-knob"></span>
+  </div>
+  <div id="mobileLookStick" class="mobile-stick mobile-stick-look" role="group" aria-label="Camera look joystick">
+    <span class="mobile-stick-caption">LOOK</span><span class="mobile-stick-ring"></span><span class="mobile-stick-knob"></span>
+  </div>
+  <div id="mobileSkierActions" class="mobile-actions mobile-actions-skier" role="group" aria-label="Skier actions">
+    <button type="button" data-mobile-key="shift">PUSH</button>
+    <button type="button" data-mobile-action="jump">JUMP</button>
+    <button type="button" data-mobile-action="camera">VIEW</button>
+  </div>
+  <div id="mobileDroneActions" class="mobile-actions mobile-actions-drone" role="group" aria-label="Drone actions">
+    <button type="button" data-mobile-key=" ">UP</button>
+    <button type="button" data-mobile-key="control">DOWN</button>
+    <button type="button" data-mobile-key="shift">BOOST</button>
+  </div>
+</div>
+
 <div id="legend">
 <div><span class="sw" style="background:#598cd9"></span>Насыпь</div><div><span class="sw" style="background:#d17a5c"></span>Выемка</div>
 <div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div><div><span class="sw" style="background:#eaf0f5"></span>Снежный рельеф</div>
-<div class="ctl"><input type="checkbox" id="pLightOn" checked/> <span>Солнце</span><input type="range" id="pLight" min="0" max="3" step="0.1" value="3" style="width:70px"/></div>
+<div class="ctl"><input type="checkbox" id="pLightOn" checked/> <span>Солнце</span><input type="range" id="pLight" min="0" max="3" step="0.1" value="1" style="width:70px"/></div>
 <div class="ctl"><span>Поворот</span><input type="range" id="pSunRot" min="0" max="360" step="5" value="0" style="width:80px"/></div>
-<div class="ctl"><span>Тени</span><input type="range" id="pShadow" min="0" max="3" step="1" value="2" style="width:80px"/></div>
+<div class="ctl"><span>Тени</span><input type="range" id="pShadow" min="0" max="2" step="1" value="1" style="width:80px"/></div>
 <div class="ctl"><span>Лейблы</span><input type="range" id="pLabelOp" min="0" max="100" step="10" value="100" style="width:80px"/><span id="vLabelOp">100%</span></div></div>
 <button id="homeBtn" title="Домой">⌂</button>
 <button id="measureBtn" title="Включить линейку">📏</button>
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v104.js"></script></body></html>
+<script type="module" src="./app.v134.js"></script>
+<script id="grade-optimizer-mode-bridge">
+(()=>{
+  const notice=document.getElementById('modeSwitchFeedback');
+  function show(message){
+    if(notice){notice.textContent=message;notice.hidden=false;notice.style.display='block';}
+    console.error('[Grade Optimizer mode]',message);
+  }
+  function hide(){
+    if(notice){notice.hidden=true;notice.style.display='none';}
+  }
+  function setMode(mode){
+    const api=window.__GRADE_OPTIMIZER_MODE_API;
+    if(!api||typeof api.set!=='function'){
+      show('Событие получено, но 3D-модуль не запустился. Проверь загрузку JavaScript в консоли браузера.');
+      return;
+    }
+    try{
+      const actual=api.set(mode);
+      requestAnimationFrame(()=>{
+        if(actual==='pending')hide();
+        else if(typeof actual==='string'&&actual.startsWith('failed:'))show('Режим '+mode+' не запущен. '+actual.slice(7));
+        else if(actual!==mode)show('Запрос режима '+mode+' принят, но приложение осталось в режиме '+actual+'.');
+        else hide();
+      });
+    }catch(error){
+      show('Ошибка переключения: '+(error?.stack||error?.message||String(error)));
+    }
+  }
+  document.addEventListener('click',event=>{
+    const button=event.target?.closest?.('#skierMode, #droneModeButton');
+    if(!button)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    setMode(button.id==='skierMode'?'skier':'drone');
+  },true);
+  document.addEventListener('keydown',event=>{
+    if(event.code!=='KeyV'||event.repeat)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const api=window.__GRADE_OPTIMIZER_MODE_API;
+    if(!api||typeof api.toggle!=='function'){
+      show('Клавиша V получена, но 3D-модуль не запустился. Проверь JavaScript в консоли браузера.');
+      return;
+    }
+    try{
+      const actual=api.toggle();
+      requestAnimationFrame(()=>{
+        if(typeof actual==='string'&&actual.startsWith('failed:'))show('Переключение V не удалось. '+actual.slice(7));
+        else if(actual!=='skier'&&actual!=='drone'&&actual!=='pending')show('V обработана, но приложение осталось в режиме '+actual+'.');
+        else hide();
+      });
+    }catch(error){
+      show('Ошибка переключения V: '+(error?.stack||error?.message||String(error)));
+    }
+  },true);
+  window.addEventListener('error',event=>{
+    show('Ошибка JavaScript: '+(event.message||event.error?.message||'Неизвестная ошибка'));
+  });
+  window.addEventListener('unhandledrejection',event=>{
+    show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
+  });
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v134.js"]');
+  moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить app.v132.js или один из его модулей.'));
+})();
+</script><style id="inspector-vertical-and-combined-lens">
+/* Inspector vertical workspace: use the full viewport height */
+#sceneEditorPanel{
+  top:12px!important;
+  bottom:12px!important;
+  height:auto!important;
+  max-height:none!important;
+}
+@media(max-width:980px){
+  #sceneEditorPanel{top:112px!important;bottom:8px!important}
+}
+@media(max-width:700px){
+  #sceneEditorPanel{top:150px!important;bottom:8px!important}
+}
+/* The Lens workspace now also owns all optical processing controls. */
+#sceneEditorPanel .scene-look-panel--lens .scene-look-switches{grid-template-columns:1fr 1fr}
+#sceneEditorPanel .scene-look-optics-groups{margin-top:2px}
+</style>
+
+<style id="scene-material-workspace-v130">
+#sceneEditorPanel .texture-map-section{padding:12px}
+#sceneEditorPanel .texture-map-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#sceneEditorPanel .texture-map-card{min-width:0;padding:9px;border:1px solid rgba(173,201,225,.14);border-radius:9px;background:rgba(7,14,22,.36)}
+#sceneEditorPanel .texture-map-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;min-height:28px}
+#sceneEditorPanel .texture-map-card-heading strong{font-size:10px;color:#dce8f2;line-height:1.3}
+#sceneEditorPanel .texture-map-card-heading span{font-size:8px;color:#91a9bc;text-align:right;white-space:nowrap}
+#sceneEditorPanel .texture-map-preview{height:76px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:7px 0;border:1px solid rgba(190,213,235,.14);border-radius:6px;background-color:#121d28;background-image:linear-gradient(45deg,#202d39 25%,transparent 25%),linear-gradient(-45deg,#202d39 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#202d39 75%),linear-gradient(-45deg,transparent 75%,#202d39 75%);background-size:14px 14px;background-position:0 0,0 7px,7px -7px,-7px 0}
+#sceneEditorPanel .texture-map-preview img{display:block;width:100%;height:100%;object-fit:contain}
+#sceneEditorPanel .texture-map-empty{font-size:9px;letter-spacing:1px;color:#647a8d}
+#sceneEditorPanel .texture-map-filename{min-height:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;color:#8fa4b7}
+#sceneEditorPanel .texture-map-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+#sceneEditorPanel .texture-map-actions button{width:100%;min-width:0;padding:7px 4px;font-size:8px;letter-spacing:.35px}
+#sceneEditorPanel .texture-map-actions button:disabled{opacity:.35}
+#sceneEditorPanel .scene-look-library-open{min-height:30px;padding:6px 9px;gap:6px;background:rgba(52,80,103,.48);border-color:rgba(130,184,226,.25)}
+#sceneEditorPanel .scene-look-library-open svg{width:14px;height:14px}
+#sceneEditorPanel .scene-look-library-open span{font-size:9px}
+#sceneEditorPanel .scene-look-section-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#sceneEditorPanel .scene-look-section-actions .scene-look-reset{margin:0}
+#materialLibraryWindow{display:none;position:absolute;z-index:45;top:84px;right:22px;width:min(660px,calc(100% - 44px));height:min(690px,calc(100% - 112px));min-height:330px;flex-direction:column;overflow:hidden;border:1px solid rgba(169,202,229,.24);border-radius:13px;background:rgba(17,25,35,.985);box-shadow:0 24px 70px rgba(0,0,0,.56);backdrop-filter:blur(18px);color:#edf4fa}
+#materialLibraryWindow.open{display:flex}
+#materialLibraryWindow .hypershade-titlebar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border-bottom:1px solid rgba(190,213,235,.13);background:linear-gradient(110deg,rgba(49,76,99,.42),rgba(17,25,35,.1));cursor:move;user-select:none}
+#materialLibraryWindow .hypershade-title{display:flex;align-items:center;gap:10px}
+#materialLibraryWindow .hypershade-mark{display:grid;place-items:center;width:32px;height:32px;border:1px solid rgba(129,190,225,.24);border-radius:8px;color:#9ed5f5;font-size:20px}
+#materialLibraryWindow .hypershade-title strong{display:block;font-size:11px;letter-spacing:1px}
+#materialLibraryWindow .hypershade-title small{display:block;margin-top:3px;font-size:8px;letter-spacing:.7px;color:#8fa8bd}
+#materialLibraryWindow button{width:auto;min-height:32px;margin:0;padding:8px 11px;border:1px solid rgba(190,213,235,.13);border-radius:7px;background:#267d5b;color:#f0f7fa;font-size:9px;font-weight:800;letter-spacing:.55px}
+#materialLibraryWindow button.secondary{background:#2b3948}
+#materialLibraryWindow button:disabled{opacity:.38;cursor:not-allowed}
+#materialLibraryWindow .hypershade-close{width:30px;height:30px;padding:0;background:#293746;font-size:19px}
+#materialLibraryWindow .hypershade-toolbar{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid rgba(190,213,235,.1)}
+#materialLibraryWindow .hypershade-toolbar input{flex:1;min-width:0;height:34px;padding:7px 10px;border:1px solid #405366;border-radius:7px;background:#111c27;color:#edf4fa;font-size:11px}
+#materialLibraryWindow .hypershade-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));align-content:start;gap:10px;overflow:auto;min-height:0;padding:13px}
+#materialLibraryWindow .hypershade-material-card{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;padding:8px;text-align:left;background:rgba(255,255,255,.035);border:1px solid rgba(190,213,235,.13);border-radius:9px}
+#materialLibraryWindow .hypershade-material-card:hover{background:rgba(92,143,181,.12);border-color:rgba(130,184,226,.38)}
+#materialLibraryWindow .hypershade-material-card.active{border-color:#61c99a;box-shadow:inset 0 0 0 1px rgba(97,201,154,.25);background:rgba(54,147,107,.13)}
+#materialLibraryWindow .hypershade-swatch{position:relative;display:grid;place-items:center;height:78px;overflow:hidden;border:1px solid rgba(255,255,255,.14);border-radius:7px;background:radial-gradient(circle at 34% 25%,rgba(255,255,255,.7),rgba(255,255,255,0) 35%),linear-gradient(145deg,#718296,#263747)}
+#materialLibraryWindow .hypershade-swatch::after{content:"";width:43px;height:43px;border-radius:50%;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.78),rgba(255,255,255,.1) 28%,rgba(0,0,0,.25) 78%);box-shadow:0 5px 14px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.16)}
+#materialLibraryWindow .hypershade-swatch img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9}
+#materialLibraryWindow .hypershade-swatch.has-texture::after{position:absolute;z-index:1}
+#materialLibraryWindow .hypershade-material-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#e3edf5}
+#materialLibraryWindow .hypershade-material-meta{font-size:8px;line-height:1.4;color:#8fa4b6}
+#materialLibraryWindow .hypershade-empty{grid-column:1/-1;padding:28px 16px;text-align:center;font-size:11px;color:#91a7ba}
+#materialLibraryWindow .hypershade-footer{padding:10px 13px 12px;border-top:1px solid rgba(190,213,235,.12);background:rgba(9,15,22,.34)}
+#materialLibraryWindow .hypershade-selection{margin-bottom:9px;font-size:9px;line-height:1.45;color:#a8bdce}
+#materialLibraryWindow .hypershade-actions{display:flex;gap:7px;flex-wrap:wrap}
+#app.skier-mode #materialLibraryWindow{display:none!important}
+@media(max-width:720px){
+ #materialLibraryWindow{top:162px;left:10px;right:10px;width:auto;height:min(65vh,620px);max-height:calc(100% - 174px);min-height:280px}
+ #sceneEditorPanel .texture-map-grid{grid-template-columns:1fr 1fr;gap:6px}
+ #sceneEditorPanel .texture-map-preview{height:64px}
+ #materialLibraryWindow .hypershade-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:9px}
+}
+</style>
+
+<style id="scene-editor-window-fit-v131">
+/* Shared panel sizing: no horizontal clipping and no undersized flex/grid children. */
+#sceneHierarchyPanel,#sceneEditorPanel{
+  box-sizing:border-box;
+  min-width:0;
+  max-width:calc(100vw - 16px);
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+}
+#sceneHierarchyPanel *,#sceneEditorPanel *{box-sizing:border-box;min-width:0}
+#sceneEditorPanel button,#sceneHierarchyPanel button{
+  max-width:100%;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+}
+#sceneEditorPanel svg,#sceneHierarchyPanel svg{
+  display:block;
+  flex:0 0 auto;
+  max-width:100%;
+  overflow:visible;
+}
+#sceneEditorPanel .editor-section h3{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:6px 8px;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+#sceneEditorPanel .editor-section h3 .editor-chip{flex:0 0 auto}
+#sceneEditorPanel .editor-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+#sceneEditorPanel .editor-split{grid-template-columns:repeat(2,minmax(0,1fr))}
+#sceneEditorPanel .editor-row>div,#sceneEditorPanel .editor-split>div,
+#sceneEditorPanel .scene-look-panel,#sceneEditorPanel .scene-look-panel-heading,
+#sceneEditorPanel .scene-look-active-heading{min-width:0;max-width:100%}
+#sceneEditorPanel .scene-look-panel-heading,
+#sceneEditorPanel .scene-look-active-heading{
+  align-items:flex-start;
+  flex-wrap:wrap;
+  gap:7px;
+}
+#sceneEditorPanel .scene-look-panel-heading strong,
+#sceneEditorPanel .scene-look-panel-heading span,
+#sceneEditorPanel .scene-look-active-heading strong,
+#sceneEditorPanel .scene-look-active-heading span{
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+#sceneEditorPanel .scene-look-section-head{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px 10px;
+}
+#sceneEditorPanel .scene-look-section-brand{
+  flex:1 1 170px;
+  min-width:0;
+}
+#sceneEditorPanel .scene-look-section-mark{
+  flex:0 0 29px;
+  overflow:visible;
+}
+#sceneEditorPanel .scene-look-section-mark svg{
+  width:17px;
+  height:17px;
+}
+#sceneEditorPanel .scene-look-section-titles{
+  min-width:0;
+  max-width:100%;
+}
+#sceneEditorPanel .scene-look-section-titles strong,
+#sceneEditorPanel .scene-look-section-titles small{
+  max-width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.3;
+}
+#sceneEditorPanel .scene-look-section-actions{
+  display:flex;
+  flex:1 1 100%;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:wrap;
+  gap:6px;
+  min-width:0;
+  max-width:100%;
+}
+#sceneEditorPanel .scene-look-section-actions .editor-chip{flex:0 0 auto}
+#sceneEditorPanel .scene-look-section-actions .scene-look-reset{
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-width:0;
+  max-width:100%;
+  min-height:30px;
+  height:auto;
+  padding:6px 9px;
+  white-space:normal;
+  line-height:1.2;
+}
+#sceneEditorPanel .scene-look-section-actions .scene-look-reset svg{
+  width:13px;
+  height:13px;
+}
+#sceneEditorPanel .scene-look-section-actions .scene-look-library-open span,
+#sceneEditorPanel .scene-look-section-actions #sceneLookReset span{
+  overflow-wrap:normal;
+}
+#sceneEditorPanel .scene-look-tabs{
+  position:sticky;
+  top:46px;
+  z-index:7;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:stretch;
+  gap:5px;
+  margin:8px 0 12px;
+  padding:5px;
+  overflow:visible;
+}
+#sceneEditorPanel .scene-look-tab{
+  display:grid!important;
+  grid-template-columns:21px minmax(0,1fr);
+  grid-template-rows:auto auto;
+  align-items:center;
+  justify-items:start;
+  gap:3px 7px;
+  width:100%;
+  min-width:0;
+  min-height:56px;
+  height:auto;
+  padding:7px 7px!important;
+  overflow:visible;
+  white-space:normal;
+  text-align:left;
+}
+#sceneEditorPanel .scene-look-tab-icon{
+  grid-column:1;
+  grid-row:1/3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 21px;
+  width:21px;
+  height:21px;
+  margin:0;
+  overflow:visible;
+}
+#sceneEditorPanel .scene-look-tab-icon svg{
+  width:16px!important;
+  height:16px!important;
+}
+#sceneEditorPanel .scene-look-tab-label{
+  grid-column:2;
+  grid-row:1;
+  display:block;
+  max-width:100%;
+  overflow:visible;
+  text-overflow:clip;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.2;
+  font-size:9px!important;
+}
+#sceneEditorPanel .scene-look-tab-meta{
+  grid-column:2;
+  grid-row:2;
+  display:block;
+  max-width:100%;
+  overflow:visible;
+  text-overflow:clip;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.15;
+  font-size:6px;
+  letter-spacing:.55px;
+}
+#sceneEditorPanel .scene-look-tab.active:before{left:3px;top:7px;bottom:7px}
+#editorHeader{
+  min-width:0;
+  gap:8px;
+  padding-left:2px;
+  padding-right:2px;
+}
+#editorHeader .editor-heading{min-width:0;max-width:100%;flex:1 1 auto;gap:7px;flex-wrap:wrap}
+#editorHeader .editor-heading strong{min-width:0;overflow-wrap:anywhere}
+#editorHeader .editor-chip{max-width:100%;white-space:normal;line-height:1.2}
+#editorHeader button.closeEditor{
+  display:inline-flex;
+  flex:0 0 32px;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  min-width:32px;
+  height:32px;
+  min-height:32px;
+  overflow:visible;
+}
+#editorHeader button.closeEditor svg{width:15px;height:15px}
+
+/* Desktop: the scene tree and inspector share the workspace without touching the toolbar. */
+@media(min-width:981px){
+  #sceneHierarchyPanel{top:106px;bottom:12px;left:12px;width:clamp(238px,23vw,270px)}
+  #sceneEditorPanel{top:106px!important;bottom:12px!important;left:auto;right:12px;width:clamp(360px,35vw,420px)}
+}
+/* Compact laptop / tablet: retain two columns, but allow controls to wrap. */
+@media(min-width:701px) and (max-width:980px){
+  #sceneHierarchyPanel{top:148px;bottom:10px;left:8px;width:220px}
+  #sceneEditorPanel{top:148px!important;bottom:10px!important;left:auto;right:8px;width:340px}
+  #sceneEditorPanel .scene-look-section-actions{flex-basis:100%}
+  #sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+/* Phones: scene tree becomes a compact strip above the full-width inspector. */
+@media(max-width:700px){
+  #sceneHierarchyPanel{
+    top:148px!important;
+    left:8px;
+    right:8px;
+    bottom:auto;
+    width:auto;
+    height:112px;
+    min-height:112px;
+    max-height:112px;
+    padding:9px 10px;
+    overflow-y:auto;
+  }
+  #sceneHierarchyPanel .hierarchy-header{padding:0 1px 5px}
+  #sceneHierarchyPanel .scene-hierarchy-tabs{margin:0 0 5px}
+  #sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel=project],
+  #sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel=import]{
+    gap:4px;
+  }
+  #sceneEditorPanel{
+    top:270px!important;
+    left:8px;
+    right:8px;
+    bottom:8px!important;
+    width:auto;
+    max-width:calc(100vw - 16px);
+    padding:10px;
+  }
+  #sceneEditorPanel .scene-look-section-head{gap:6px}
+  #sceneEditorPanel .scene-look-section-actions{justify-content:flex-start}
+  #sceneEditorPanel .scene-look-tabs{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:5px;
+    top:46px;
+  }
+  #sceneEditorPanel .scene-look-tab{min-height:52px;padding:6px 7px!important}
+  #sceneEditorPanel .scene-look-tab-label{font-size:9px!important}
+  #sceneEditorPanel .scene-look-tab-meta{font-size:6px}
+}
+/* Short viewports keep each window scrollable instead of cutting off its controls. */
+@media(max-height:650px) and (min-width:701px){
+  #sceneHierarchyPanel,#sceneEditorPanel{bottom:8px}
+  #sceneEditorPanel{padding-bottom:14px}
+}
+@media(max-height:590px) and (max-width:700px){
+  #sceneHierarchyPanel{top:138px!important;height:94px;min-height:94px;max-height:94px}
+  #sceneEditorPanel{top:244px!important}
+}
+@media(max-width:390px){
+  #sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px;padding:4px}
+  #sceneEditorPanel .scene-look-tab{grid-template-columns:19px minmax(0,1fr);gap:3px 5px;padding:6px!important}
+  #sceneEditorPanel .scene-look-tab-icon{width:19px;height:19px;flex-basis:19px}
+  #sceneEditorPanel .scene-look-tab-icon svg{width:15px!important;height:15px!important}
+  #sceneEditorPanel .editor-split{gap:6px}
+}
+/* Floating Hypershade window: protect the title, close icon, search and footer actions. */
+#materialLibraryWindow{
+  box-sizing:border-box;
+  min-width:0;
+  max-width:calc(100vw - 16px);
+  max-height:calc(100dvh - 90px);
+}
+#materialLibraryWindow *{box-sizing:border-box;min-width:0}
+#materialLibraryWindow .hypershade-titlebar,
+#materialLibraryWindow .hypershade-toolbar,
+#materialLibraryWindow .hypershade-footer{flex:0 0 auto;min-width:0}
+#materialLibraryWindow .hypershade-titlebar{gap:8px;padding:10px 12px}
+#materialLibraryWindow .hypershade-title{flex:1 1 auto;min-width:0;gap:8px}
+#materialLibraryWindow .hypershade-mark{
+  display:flex;
+  flex:0 0 30px;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  line-height:1;
+  overflow:visible;
+}
+#materialLibraryWindow .hypershade-title strong,
+#materialLibraryWindow .hypershade-title small{
+  max-width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.3;
+}
+#materialLibraryWindow .hypershade-close{
+  display:inline-flex;
+  flex:0 0 30px;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  min-width:30px;
+  height:30px;
+  min-height:30px;
+  line-height:1;
+}
+#materialLibraryWindow .hypershade-toolbar{gap:8px;padding:9px 11px}
+#materialLibraryWindow .hypershade-toolbar input{min-width:0;flex:1 1 120px}
+#materialLibraryWindow .hypershade-grid{flex:1 1 auto;min-height:0;min-width:0}
+#materialLibraryWindow .hypershade-material-card{min-width:0;overflow:hidden}
+#materialLibraryWindow .hypershade-material-name{white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+#materialLibraryWindow .hypershade-material-meta{overflow-wrap:anywhere}
+#materialLibraryWindow .hypershade-actions{display:flex;flex-wrap:wrap;gap:7px}
+#materialLibraryWindow .hypershade-actions button{
+  flex:1 1 130px;
+  min-width:0;
+  min-height:36px;
+  height:auto;
+  padding:8px 9px;
+  white-space:normal;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+@media(max-width:720px){
+  #materialLibraryWindow{
+    top:156px;
+    left:8px;
+    right:8px;
+    width:auto;
+    height:min(62dvh,580px);
+    min-height:260px;
+    max-height:calc(100dvh - 166px);
+  }
+  #materialLibraryWindow .hypershade-toolbar{flex-wrap:wrap}
+  #materialLibraryWindow .hypershade-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-height:590px){
+  #materialLibraryWindow{top:8px;height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);min-height:0}
+}
+</style>
+
+<style id="grade-optimizer-mobile-mode-v132">
+#app.mobile-mode{touch-action:none;overscroll-behavior:none}
+#app.mobile-mode #view,#app.mobile-mode #view canvas{touch-action:none;overscroll-behavior:none}
+#app.mobile-mode #sceneBar{
+  position:absolute!important;z-index:40!important;
+  top:calc(env(safe-area-inset-top,0px) + 8px)!important;
+  left:9px!important;right:9px!important;
+  display:flex!important;flex-direction:row!important;align-items:stretch!important;
+  justify-content:stretch!important;width:auto!important;max-width:none!important;
+  gap:0!important;padding:0!important;pointer-events:none!important;
+  background:none!important;border:0!important;box-shadow:none!important;
+}
+#app.mobile-mode #sceneBar .sceneMode{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:stretch!important;gap:5px!important;width:100%!important;
+  min-width:0!important;max-width:none!important;padding:5px!important;
+  border:1px solid rgba(190,218,240,.2)!important;border-radius:13px!important;
+  background:rgba(12,22,32,.88)!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.04)!important;
+  backdrop-filter:blur(14px);pointer-events:auto!important;
+}
+#app.mobile-mode #sceneBar #optimizerToggle,
+#app.mobile-mode #sceneBar #weatherToggle,
+#app.mobile-mode #sceneBar #editorToggle,
+#app.mobile-mode #sceneBar .dayCycle{display:none!important}
+#app.mobile-mode #sceneBar .mode-pair{display:contents!important}
+#app.mobile-mode #sceneBar #overviewMode,
+#app.mobile-mode #sceneBar #skierMode,
+#app.mobile-mode #sceneBar #droneModeButton{
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;
+  width:100%!important;min-width:0!important;min-height:43px!important;height:auto!important;
+  margin:0!important;padding:8px 5px!important;border:1px solid rgba(177,205,229,.12)!important;
+  border-radius:8px!important;background:rgba(54,72,89,.72)!important;color:#d8e7f2!important;
+  font-size:10px!important;font-weight:850!important;letter-spacing:.5px!important;line-height:1.15!important;
+  white-space:nowrap!important;text-align:center!important;box-shadow:none!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#app.mobile-mode #sceneBar #overviewMode.active{background:linear-gradient(140deg,#3b7195,#28516e)!important;border-color:rgba(149,205,237,.52)!important;color:#fff!important}
+#app.mobile-mode #sceneBar #skierMode.active{background:linear-gradient(140deg,#218a5c,#2fa875)!important;border-color:rgba(115,235,178,.48)!important;color:#fff!important}
+#app.mobile-mode #sceneBar #droneModeButton.active{background:linear-gradient(140deg,#347ab6,#4e9bd5)!important;border-color:rgba(140,207,255,.5)!important;color:#fff!important}
+#app.mobile-mode #sceneHierarchyPanel,#app.mobile-mode #sceneEditorPanel,
+#app.mobile-mode #materialLibraryWindow,#app.mobile-mode #panel,#app.mobile-mode #legend,
+#app.mobile-mode #weatherPanel,#app.mobile-mode #skierHud,#app.mobile-mode #droneHud,
+#app.mobile-mode #homeBtn,#app.mobile-mode #measureBtn{display:none!important}
+
+#mobileControls{
+  display:none;position:absolute;z-index:35;inset:0;overflow:hidden;pointer-events:none;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+#app.mobile-mode #mobileControls{display:block}
+#app.mobile-mode:not(.skier-mode):not(.drone-mode) #mobileControls .mobile-stick,
+#app.mobile-mode:not(.skier-mode):not(.drone-mode) #mobileControls .mobile-actions{display:none!important}
+#mobileControls .mobile-status-row{
+  position:absolute;top:calc(env(safe-area-inset-top,0px) + 63px);left:12px;right:12px;
+  display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;
+}
+#mobileControls .mobile-mode-hint{
+  max-width:min(75vw,440px);padding:7px 10px;border:1px solid rgba(179,209,231,.14);
+  border-radius:999px;background:rgba(11,20,29,.72);color:#c3d5e3;
+  font-size:9px;font-weight:750;letter-spacing:.3px;line-height:1.25;text-align:center;
+  text-wrap:balance;box-shadow:0 5px 16px rgba(0,0,0,.18);backdrop-filter:blur(10px);
+}
+#mobileControls .mobile-speed-box{
+  display:inline-flex;flex:0 0 auto;align-items:baseline;gap:4px;padding:6px 9px;
+  border:1px solid rgba(126,207,170,.24);border-radius:999px;background:rgba(12,30,25,.78);
+  color:#d9f5e7;font-size:9px;
+}
+#mobileControls .mobile-speed-box[hidden]{display:none!important}
+#mobileControls .mobile-speed-box strong{font-size:13px;font-variant-numeric:tabular-nums}
+#mobileControls .mobile-stick{
+  --stick-x:0px;--stick-y:0px;position:absolute;
+  bottom:calc(env(safe-area-inset-bottom,0px) + 13px);
+  display:grid;place-items:center;width:clamp(104px,28vw,132px);aspect-ratio:1;
+  border:1px solid rgba(186,216,238,.27);border-radius:50%;
+  background:radial-gradient(circle,rgba(75,106,129,.36),rgba(18,31,43,.58) 70%);
+  box-shadow:inset 0 2px 12px rgba(0,0,0,.2),0 8px 24px rgba(0,0,0,.25);
+  pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;
+}
+#mobileControls .mobile-stick-move{left:14px}
+#mobileControls .mobile-stick-look{right:14px}
+#mobileControls .mobile-stick-ring{position:absolute;inset:22%;border:1px dashed rgba(187,218,239,.24);border-radius:50%;pointer-events:none}
+#mobileControls .mobile-stick-caption{
+  position:absolute;top:12px;left:0;right:0;z-index:2;color:rgba(208,226,239,.66);
+  font-size:8px;font-weight:900;letter-spacing:1.3px;text-align:center;pointer-events:none;
+}
+#mobileControls .mobile-stick-knob{
+  position:absolute;z-index:1;width:43%;height:43%;border:1px solid rgba(211,232,246,.45);
+  border-radius:50%;background:radial-gradient(circle at 34% 26%,rgba(127,165,194,.88),rgba(50,78,101,.94) 72%);
+  box-shadow:0 4px 14px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.18);
+  transform:translate(var(--stick-x),var(--stick-y));pointer-events:none;will-change:transform;
+}
+#mobileControls .mobile-actions{
+  position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + clamp(104px,28vw,132px) + 25px);
+  display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+  width:min(228px,calc(100vw - 30px));transform:translateX(-50%);pointer-events:auto;
+}
+#app.mobile-mode.skier-mode #mobileSkierActions{display:grid}
+#app.mobile-mode.drone-mode #mobileDroneActions{display:grid}
+#mobileControls .mobile-actions button{
+  display:flex;align-items:center;justify-content:center;min-width:0;min-height:38px;
+  margin:0;padding:7px 4px;border:1px solid rgba(194,220,239,.2);border-radius:9px;
+  background:rgba(20,34,47,.9);color:#edf6fc;font-size:9px;font-weight:900;
+  letter-spacing:.45px;line-height:1.1;box-shadow:0 5px 15px rgba(0,0,0,.22);
+  backdrop-filter:blur(10px);touch-action:none;-webkit-tap-highlight-color:transparent;
+}
+#mobileControls .mobile-actions button:active,#mobileControls .mobile-actions button.is-pressed{
+  transform:translateY(1px);border-color:rgba(136,222,182,.5);
+  background:rgba(36,118,80,.94);color:#fff;
+}
+#mobileControls .mobile-actions button[data-mobile-action=jump]{background:rgba(45,104,150,.92);border-color:rgba(138,202,245,.34)}
+#mobileControls .mobile-actions button[data-mobile-action=camera]{background:rgba(51,66,84,.92)}
+@media(orientation:landscape) and (max-height:520px){
+  #mobileControls .mobile-status-row{top:calc(env(safe-area-inset-top,0px) + 58px)}
+  #mobileControls .mobile-stick{width:clamp(94px,23vh,116px);bottom:calc(env(safe-area-inset-bottom,0px) + 8px)}
+  #mobileControls .mobile-actions{bottom:calc(env(safe-area-inset-bottom,0px) + clamp(94px,23vh,116px) + 17px);width:min(240px,35vw)}
+  #app.mobile-mode #sceneBar .sceneMode{gap:4px!important;padding:4px!important}
+  #app.mobile-mode #sceneBar #overviewMode,#app.mobile-mode #sceneBar #skierMode,
+  #app.mobile-mode #sceneBar #droneModeButton{min-height:38px!important;font-size:9px!important}
+}
+@media(max-width:360px){
+  #app.mobile-mode #sceneBar .sceneMode{gap:3px!important;padding:4px!important}
+  #app.mobile-mode #sceneBar #overviewMode,#app.mobile-mode #sceneBar #skierMode,
+  #app.mobile-mode #sceneBar #droneModeButton{font-size:9px!important;padding:7px 3px!important}
+  #mobileControls .mobile-stick{width:100px}
+  #mobileControls .mobile-actions{bottom:calc(env(safe-area-inset-bottom,0px) + 125px);gap:4px;width:calc(100vw - 24px)}
+}
+@media(prefers-reduced-motion:reduce){#mobileControls .mobile-stick-knob{will-change:auto}}
+</style>
+</body></html>

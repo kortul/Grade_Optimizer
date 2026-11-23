@@ -7,18 +7,21 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v102.js`.\n- `github-config.js` is loaded before the app and contains the public GitHub Publisher credential after one-time setup.
-- Skier: `skier-controller.v73.js`.
+- Current app: `app.v120.js`.
+- Weather: `weather-system.v2.js`; snowfall and wind streaks render through a scene-root camera-follow layer, with visible snow density and persistent controls in skier / drone modes.
+- Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
+- Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
+- Skier: `skier-controller.v81.js`, with a 75 kg skier-equipment point-mass reference, mass-scaled pole / jump impulses, 3D ballistic take-off inheriting slope velocity and terrain-aware landing, grounded ski-snow friction, speed-limited edge force, calculated inside / outside ski loads, load-aware stance animation and first / third-person cameras.
 - Drone: `drone-controller.v72.js`.
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
 
-For a new release, create a new `app.vNN.js` file, update `index.html`, and keep the previous app file for rollback.
+For a new release, create new versioned app / controller files, update `index.html`, and keep the previous files for rollback.
 
 ## Modes and controls
 
 The in-mode help cards explain the controls in Russian and are visible while skiing or flying.
 
-- **Skier:** W / ↑ tuck, S / ↓ brake, A / D or arrows turn, Shift / Space push.
+- **Skier:** W / ↑ tuck, S / ↓ brake, A / D or arrows turn, Shift pole push, Space jump.
 - **Drone:** W / S forward and backward, A / D strafe, Space / Shift change altitude, Ctrl boost.
 - **Mouse:** click the scene to capture the mouse; move it to look around. Esc releases the cursor; click the scene to capture it again.
 - **Switch skier ↔ drone:** V. The HUD also has a clickable switch button.
@@ -28,11 +31,11 @@ WASD controls use physical key codes, so they also work with a Russian keyboard 
 
 ## Forest
 
-`assets/trees/snowy_conifer_atlas.webp` is an RGBA atlas with winter conifer cutouts. Each tree uses one camera-facing instanced plane; crossed planes are avoided because they caused z-fighting.
+`assets/trees/snowy_conifer_atlas.webp` is an RGBA atlas with winter conifer cutouts. Each tree uses one camera-facing instanced plane; the atlas billboards use a texture-matched emissive fill linked to daylight, keeping trees readable before sunset while fading naturally at dusk and night. Crossed planes are avoided because they caused z-fighting.
 
 ## Quality checks
 
-GitHub Actions runs `scripts/validate-project.mjs` on pushes and pull requests. It checks the active entrypoint, local imports, JavaScript syntax, HTML IDs and DOM references, the tree atlas, forest safeguards, slope GLTF buffers and profile curves, the scene manifest, Maya exporter and project-save wiring.
+GitHub Actions runs `scripts/validate-project.mjs` on pushes and pull requests. It checks the active entrypoint, local imports, JavaScript syntax, HTML IDs and DOM references, Scene Look tab panels / keyboard behavior / gear icon, 75 kg skier force / impulse calculations and load transfer, terrain-aware jump landing, skier equipment and articulated animation, camera-optics GLSL declarations and render fallback, the tree atlas, forest safeguards, slope GLTF buffers and profile curves, the scene manifest, Maya exporter and project-save wiring.
 
 Run locally with Node.js 22 or later:
 
