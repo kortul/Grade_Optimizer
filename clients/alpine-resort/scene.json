@@ -1,11 +1,11 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-23T14:50:32.612Z",
+  "updatedAt": "2026-11-23T15:48:09.107Z",
   "assets": [],
   "editorSettings": {
     "schemaVersion": "1.0",
-    "savedAt": "2026-11-23T14:50:32.612Z",
+    "savedAt": "2026-11-23T15:48:09.107Z",
     "units": "meters",
     "assets": [
       {
@@ -42,7 +42,7 @@
             "materialId": "scene-material-1",
             "nodeName": "terrainShape",
             "materialName": "",
-            "baseColor": "#fafafa",
+            "baseColor": "#689b55",
             "roughness": 0.97,
             "metalness": 0,
             "normalScale": 1,
@@ -100,10 +100,24 @@
       "shadowQuality": 1
     },
     "weatherSettings": {
-      "preset": "light",
+      "preset": "custom",
       "clouds": 0.18,
       "snowfall": 0,
       "wind": 3
+    }
+  },
+  "overviewCameras": {
+    "A1": {
+      "position": [
+        489.90617697334307,
+        665.6820792641213,
+        -357.22026095797935
+      ],
+      "target": [
+        926.5506244756243,
+        -26.952804814912216,
+        -1188.2421961057664
+      ]
     }
   }
 }
