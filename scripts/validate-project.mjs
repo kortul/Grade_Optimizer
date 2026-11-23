@@ -223,7 +223,7 @@ assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aw
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
 assert.ok(entrySource.includes('skier-controller.v94.js'), 'active app must use the current skier controller');
 const skierSource = read('skier-controller.v94.js').toString('utf8');
-assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), 'imported Slopes_Stage1 geometry must take priority as the skier's surface');
+assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), "imported Slopes_Stage1 geometry must take priority as the skier surface");
 assert.ok(entrySource.includes('startAtTop:true')&&entrySource.includes('skierTerrainName:skierController.terrain?.name')&&entrySource.includes('skierSpawn:skierController.lastSpawnInfo'), 'drone handoff must start at the selected piste summit and diagnostics must expose the selected surface / spawn');
 assert.ok(!entrySource.includes('droneController.setTerrain(terrain);\\n    applySkierPresentation();'), 'using a dedicated skier piste must not replace the drone collision surface');
 assert.ok(skierSource.includes('if(spawnHint?.position&&!spawnHint.startAtTop)'), 'top-start requests must ignore the drone camera position');
