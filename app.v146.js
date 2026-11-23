@@ -4318,7 +4318,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       return false;
     }
   }
-  if(previousSlug!==slug){state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();}
+  if(previousSlug!==slug){state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();updateTreeAreaPanel();}
   if(previousSlug!==slug){state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();}
   currentClientSlug=slug;
   state.savedOverviewCameras={};
@@ -4360,7 +4360,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       clientWorkspaceReady=true;
       updateModeSwitcher();
       state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();
-      state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();
+      state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();updateTreeAreaPanel();
       projectBackupBaseUpdatedAt='';
       projectDeployedManifestUpdatedAt='';
       if(updateUrl)window.history.replaceState({},'','?project='+encodeURIComponent(slug));
@@ -4383,6 +4383,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
     state.treeAreas=normalizeTreeAreas(manifest.treeAreas);
     forestPlacementCache=null;
     renderTreeAreaOverlays();
+    updateTreeAreaPanel();
     state.treeAreas=normalizeTreeAreas(manifest.treeAreas);
     forestPlacementCache=null;
     renderTreeAreaOverlays();
