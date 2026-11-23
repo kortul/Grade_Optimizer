@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v122.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v123.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -145,8 +145,8 @@ assert.ok(entrySource.includes('emissiveMap:map, emissiveIntensity:forestEmissiv
 assert.ok(entrySource.includes('emissive:0x4d875c, emissiveIntensity:forestEmissiveIntensity'), 'procedural 3D tree foliage must receive daylight-matched fill');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
-assert.ok(entrySource.includes('drone-controller.v72.js'), 'active app must use the current drone controller');
-const droneSource = read('drone-controller.v72.js').toString('utf8');
+assert.ok(entrySource.includes('drone-controller.v73.js'), 'active app must use the current drone controller');
+const droneSource = read('drone-controller.v73.js').toString('utf8');
 assert.ok(droneSource.includes('intersectObject(this.terrain,true)'), 'drone terrain raycast missing');
 assert.ok(droneSource.includes('minimumTerrainClearance=2.5'), 'drone terrain clearance missing');
 assert.ok(droneSource.includes('enforceTerrainClearance(nextPosition)'), 'drone movement collision guard missing');
@@ -155,8 +155,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v82.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v82.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v83.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v83.js').toString('utf8');
 assert.ok(entrySource.includes("velocity:droneController.velocity.clone()"), 'drone-to-skier handoff must preserve the drone pose and velocity');
 assert.ok(entrySource.includes("skierController.start(terrain,spawnHint)"), 'skier mode must start directly without deferred input');
 assert.ok(!entrySource.includes('modeTransition'), 'mode changes must not be blocked by a stale cinematic transition');
@@ -476,6 +476,12 @@ assert.ok(!entrySource.includes('modeTransition'), 'stale transition lock must n
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate downhill run-out');
 assert.ok(skierSource.includes('if(!spawnFound)spawnFound=!!this._findSpawn()'), 'drone-local spawn failure must fall back to piste spawn');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone handoff must initialize downhill movement');
+assert.ok(skierSource.includes('const fallbackDivisions=32'), 'skier spawn must have a dense last-resort terrain scan');
+assert.ok(skierSource.includes('fallbackCandidates.slice(0,36)'), 'skier spawn fallback must select candidates and score downhill clearance');
+assert.ok(skierSource.includes('this.lastPointerLockError=null'), 'pointer-lock denial must not abort skier startup');
+assert.ok(entrySource.includes('let pendingSceneMode = null;'), 'skier mode requests during terrain loading must be queued');
+assert.ok(entrySource.includes("if(pendingSceneMode==='skier')"), 'queued skier mode must resume after slope loading');
+assert.ok(entrySource.includes("const reason=skierController.lastStartError||'UNKNOWN'"), 'skier startup failures must report the controller error code');
 
 pass('reliable skier/drone mode handoff, spawn fallback and active movement are present');
 
