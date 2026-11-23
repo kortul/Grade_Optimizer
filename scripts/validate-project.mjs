@@ -11,10 +11,18 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v136.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v137.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
+
+assert.ok(html.includes('id="saveOverviewCamera"')&&html.includes('class="secondary save-overview-camera"'), 'Scene Editor overview camera-save icon is missing');
+assert.ok(entrySource.includes('function normalizeOverviewCameraMap(')&&entrySource.includes('function saveOverviewCamera()'), 'overview camera capture / validation helpers are missing');
+assert.ok(entrySource.includes("markClientProjectDirty('стартовый ракурс обзорной камеры')"), 'saving an overview camera must mark the client project dirty');
+assert.ok(entrySource.includes('overviewCameras:normalizeOverviewCameraMap(state.savedOverviewCameras)'), 'per-slope overview cameras must be serialized into scene.json');
+assert.ok(entrySource.includes('state.savedOverviewCameras=normalizeOverviewCameraMap(manifest.overviewCameras)'), 'per-slope overview cameras must be restored from scene.json');
+assert.ok(entrySource.includes('if(restoreSavedOverviewCameraForCurrentSlope())return;'), 'Home must restore the saved overview camera before using the automatic fallback');
+pass('Scene Editor camera-save icon, per-slope manifest persistence and Home restore are present');
 
 assert.ok(entrySource.includes('async function loadCanonicalTerrainFbx('), 'canonical Maya terrain FBX loader is missing');
 assert.ok(entrySource.includes("'./assets/real-terrain.json'+bust()") && entrySource.includes("'./assets/real-terrain.fbx'+bust()"), 'runtime must load the canonical terrain JSON / FBX pair');

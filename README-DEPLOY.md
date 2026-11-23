@@ -4,8 +4,9 @@ The project is hosted as a static GitHub Pages site. A push to `main` triggers t
 
 ## Current release
 
-- Active browser entrypoint: `index.html` → `app.v116.js`.
-- Skier character and animation rig: `skier-controller.v77.js` (v73 retained for rollback).
+- Active browser entrypoint: `index.html` → `app.v137.js`.
+- Skier controller: `skier-controller.v89.js`; drone controller: `drone-controller.v75.js`.
+- Camera optics module: `camera-optics.v2.js`.
 - Previous app releases remain in the repository for rollback.
 - Skier and drone controllers are versioned separately.
 - Generated forest texture: `assets/trees/snowy_conifer_atlas.webp`.
