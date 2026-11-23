@@ -54,6 +54,8 @@ Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor, or open
    - `assets/real-terrain.json`
 4. Open GitHub Desktop, review the two changed files, then commit and push. The Maya exporter does not create commits or push by itself.
 
+The runtime converts Maya centimetres to metres without changing the source world origin or physical proportions. Camera zoom, fog and directional shadow bounds adapt to the imported terrain dimensions; the geometry is not normalized to the old A1 test slope.
+
 The FBX preserves hierarchy, transforms, mesh names, smoothing, tangents, material assignments and embedded textures. The JSON sidecar records the source scene, Maya version, linear unit, world bounds, component names, material names and Role / Tags metadata. Collision and Forest blocker remain Web Editor settings.
 
 The exporter removes the old Project ID / `clients/<id>` requirement. There is one fixed destination for the main terrain. Keep the FBX below 90 MiB for the current regular-Git workflow.
