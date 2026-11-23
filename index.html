@@ -1721,7 +1721,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v130.js"></script>
+<script type="module" src="./app.v131.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -1783,8 +1783,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v130.js"]');
-  moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить app.v130.js или один из его модулей.'));
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v131.js"]');
+  moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить app.v131.js или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
 /* Inspector vertical workspace: use the full viewport height */
@@ -1857,6 +1857,356 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
  #sceneEditorPanel .texture-map-grid{grid-template-columns:1fr 1fr;gap:6px}
  #sceneEditorPanel .texture-map-preview{height:64px}
  #materialLibraryWindow .hypershade-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:9px}
+}
+</style>
+
+<style id="scene-editor-window-fit-v131">
+/* Shared panel sizing: no horizontal clipping and no undersized flex/grid children. */
+#sceneHierarchyPanel,#sceneEditorPanel{
+  box-sizing:border-box;
+  min-width:0;
+  max-width:calc(100vw - 16px);
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+}
+#sceneHierarchyPanel *,#sceneEditorPanel *{box-sizing:border-box;min-width:0}
+#sceneEditorPanel button,#sceneHierarchyPanel button{
+  max-width:100%;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+}
+#sceneEditorPanel svg,#sceneHierarchyPanel svg{
+  display:block;
+  flex:0 0 auto;
+  max-width:100%;
+  overflow:visible;
+}
+#sceneEditorPanel .editor-section h3{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:6px 8px;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+#sceneEditorPanel .editor-section h3 .editor-chip{flex:0 0 auto}
+#sceneEditorPanel .editor-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+#sceneEditorPanel .editor-split{grid-template-columns:repeat(2,minmax(0,1fr))}
+#sceneEditorPanel .editor-row>div,#sceneEditorPanel .editor-split>div,
+#sceneEditorPanel .scene-look-panel,#sceneEditorPanel .scene-look-panel-heading,
+#sceneEditorPanel .scene-look-active-heading{min-width:0;max-width:100%}
+#sceneEditorPanel .scene-look-panel-heading,
+#sceneEditorPanel .scene-look-active-heading{
+  align-items:flex-start;
+  flex-wrap:wrap;
+  gap:7px;
+}
+#sceneEditorPanel .scene-look-panel-heading strong,
+#sceneEditorPanel .scene-look-panel-heading span,
+#sceneEditorPanel .scene-look-active-heading strong,
+#sceneEditorPanel .scene-look-active-heading span{
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+#sceneEditorPanel .scene-look-section-head{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px 10px;
+}
+#sceneEditorPanel .scene-look-section-brand{
+  flex:1 1 170px;
+  min-width:0;
+}
+#sceneEditorPanel .scene-look-section-mark{
+  flex:0 0 29px;
+  overflow:visible;
+}
+#sceneEditorPanel .scene-look-section-mark svg{
+  width:17px;
+  height:17px;
+}
+#sceneEditorPanel .scene-look-section-titles{
+  min-width:0;
+  max-width:100%;
+}
+#sceneEditorPanel .scene-look-section-titles strong,
+#sceneEditorPanel .scene-look-section-titles small{
+  max-width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.3;
+}
+#sceneEditorPanel .scene-look-section-actions{
+  display:flex;
+  flex:1 1 100%;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:wrap;
+  gap:6px;
+  min-width:0;
+  max-width:100%;
+}
+#sceneEditorPanel .scene-look-section-actions .editor-chip{flex:0 0 auto}
+#sceneEditorPanel .scene-look-section-actions .scene-look-reset{
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-width:0;
+  max-width:100%;
+  min-height:30px;
+  height:auto;
+  padding:6px 9px;
+  white-space:normal;
+  line-height:1.2;
+}
+#sceneEditorPanel .scene-look-section-actions .scene-look-reset svg{
+  width:13px;
+  height:13px;
+}
+#sceneEditorPanel .scene-look-section-actions .scene-look-library-open span,
+#sceneEditorPanel .scene-look-section-actions #sceneLookReset span{
+  overflow-wrap:normal;
+}
+#sceneEditorPanel .scene-look-tabs{
+  position:sticky;
+  top:46px;
+  z-index:7;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:stretch;
+  gap:5px;
+  margin:8px 0 12px;
+  padding:5px;
+  overflow:visible;
+}
+#sceneEditorPanel .scene-look-tab{
+  display:grid!important;
+  grid-template-columns:21px minmax(0,1fr);
+  grid-template-rows:auto auto;
+  align-items:center;
+  justify-items:start;
+  gap:3px 7px;
+  width:100%;
+  min-width:0;
+  min-height:56px;
+  height:auto;
+  padding:7px 7px!important;
+  overflow:visible;
+  white-space:normal;
+  text-align:left;
+}
+#sceneEditorPanel .scene-look-tab-icon{
+  grid-column:1;
+  grid-row:1/3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 21px;
+  width:21px;
+  height:21px;
+  margin:0;
+  overflow:visible;
+}
+#sceneEditorPanel .scene-look-tab-icon svg{
+  width:16px!important;
+  height:16px!important;
+}
+#sceneEditorPanel .scene-look-tab-label{
+  grid-column:2;
+  grid-row:1;
+  display:block;
+  max-width:100%;
+  overflow:visible;
+  text-overflow:clip;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.2;
+  font-size:9px!important;
+}
+#sceneEditorPanel .scene-look-tab-meta{
+  grid-column:2;
+  grid-row:2;
+  display:block;
+  max-width:100%;
+  overflow:visible;
+  text-overflow:clip;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.15;
+  font-size:6px;
+  letter-spacing:.55px;
+}
+#sceneEditorPanel .scene-look-tab.active:before{left:3px;top:7px;bottom:7px}
+#editorHeader{
+  min-width:0;
+  gap:8px;
+  padding-left:2px;
+  padding-right:2px;
+}
+#editorHeader .editor-heading{min-width:0;max-width:100%;flex:1 1 auto;gap:7px;flex-wrap:wrap}
+#editorHeader .editor-heading strong{min-width:0;overflow-wrap:anywhere}
+#editorHeader .editor-chip{max-width:100%;white-space:normal;line-height:1.2}
+#editorHeader button.closeEditor{
+  display:inline-flex;
+  flex:0 0 32px;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  min-width:32px;
+  height:32px;
+  min-height:32px;
+  overflow:visible;
+}
+#editorHeader button.closeEditor svg{width:15px;height:15px}
+
+/* Desktop: the scene tree and inspector share the workspace without touching the toolbar. */
+@media(min-width:981px){
+  #sceneHierarchyPanel{top:106px;bottom:12px;left:12px;width:clamp(238px,23vw,270px)}
+  #sceneEditorPanel{top:106px!important;bottom:12px!important;left:auto;right:12px;width:clamp(360px,35vw,420px)}
+}
+/* Compact laptop / tablet: retain two columns, but allow controls to wrap. */
+@media(min-width:701px) and (max-width:980px){
+  #sceneHierarchyPanel{top:148px;bottom:10px;left:8px;width:220px}
+  #sceneEditorPanel{top:148px!important;bottom:10px!important;left:auto;right:8px;width:340px}
+  #sceneEditorPanel .scene-look-section-actions{flex-basis:100%}
+  #sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+/* Phones: scene tree becomes a compact strip above the full-width inspector. */
+@media(max-width:700px){
+  #sceneHierarchyPanel{
+    top:148px!important;
+    left:8px;
+    right:8px;
+    bottom:auto;
+    width:auto;
+    height:112px;
+    min-height:112px;
+    max-height:112px;
+    padding:9px 10px;
+    overflow-y:auto;
+  }
+  #sceneHierarchyPanel .hierarchy-header{padding:0 1px 5px}
+  #sceneHierarchyPanel .scene-hierarchy-tabs{margin:0 0 5px}
+  #sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel=project],
+  #sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel=import]{
+    gap:4px;
+  }
+  #sceneEditorPanel{
+    top:270px!important;
+    left:8px;
+    right:8px;
+    bottom:8px!important;
+    width:auto;
+    max-width:calc(100vw - 16px);
+    padding:10px;
+  }
+  #sceneEditorPanel .scene-look-section-head{gap:6px}
+  #sceneEditorPanel .scene-look-section-actions{justify-content:flex-start}
+  #sceneEditorPanel .scene-look-tabs{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:5px;
+    top:46px;
+  }
+  #sceneEditorPanel .scene-look-tab{min-height:52px;padding:6px 7px!important}
+  #sceneEditorPanel .scene-look-tab-label{font-size:9px!important}
+  #sceneEditorPanel .scene-look-tab-meta{font-size:6px}
+}
+/* Short viewports keep each window scrollable instead of cutting off its controls. */
+@media(max-height:650px) and (min-width:701px){
+  #sceneHierarchyPanel,#sceneEditorPanel{bottom:8px}
+  #sceneEditorPanel{padding-bottom:14px}
+}
+@media(max-height:590px) and (max-width:700px){
+  #sceneHierarchyPanel{top:138px!important;height:94px;min-height:94px;max-height:94px}
+  #sceneEditorPanel{top:244px!important}
+}
+@media(max-width:390px){
+  #sceneEditorPanel .scene-look-tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px;padding:4px}
+  #sceneEditorPanel .scene-look-tab{grid-template-columns:19px minmax(0,1fr);gap:3px 5px;padding:6px!important}
+  #sceneEditorPanel .scene-look-tab-icon{width:19px;height:19px;flex-basis:19px}
+  #sceneEditorPanel .scene-look-tab-icon svg{width:15px!important;height:15px!important}
+  #sceneEditorPanel .editor-split{gap:6px}
+}
+/* Floating Hypershade window: protect the title, close icon, search and footer actions. */
+#materialLibraryWindow{
+  box-sizing:border-box;
+  min-width:0;
+  max-width:calc(100vw - 16px);
+  max-height:calc(100dvh - 90px);
+}
+#materialLibraryWindow *{box-sizing:border-box;min-width:0}
+#materialLibraryWindow .hypershade-titlebar,
+#materialLibraryWindow .hypershade-toolbar,
+#materialLibraryWindow .hypershade-footer{flex:0 0 auto;min-width:0}
+#materialLibraryWindow .hypershade-titlebar{gap:8px;padding:10px 12px}
+#materialLibraryWindow .hypershade-title{flex:1 1 auto;min-width:0;gap:8px}
+#materialLibraryWindow .hypershade-mark{
+  display:flex;
+  flex:0 0 30px;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  line-height:1;
+  overflow:visible;
+}
+#materialLibraryWindow .hypershade-title strong,
+#materialLibraryWindow .hypershade-title small{
+  max-width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.3;
+}
+#materialLibraryWindow .hypershade-close{
+  display:inline-flex;
+  flex:0 0 30px;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  min-width:30px;
+  height:30px;
+  min-height:30px;
+  line-height:1;
+}
+#materialLibraryWindow .hypershade-toolbar{gap:8px;padding:9px 11px}
+#materialLibraryWindow .hypershade-toolbar input{min-width:0;flex:1 1 120px}
+#materialLibraryWindow .hypershade-grid{flex:1 1 auto;min-height:0;min-width:0}
+#materialLibraryWindow .hypershade-material-card{min-width:0;overflow:hidden}
+#materialLibraryWindow .hypershade-material-name{white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+#materialLibraryWindow .hypershade-material-meta{overflow-wrap:anywhere}
+#materialLibraryWindow .hypershade-actions{display:flex;flex-wrap:wrap;gap:7px}
+#materialLibraryWindow .hypershade-actions button{
+  flex:1 1 130px;
+  min-width:0;
+  min-height:36px;
+  height:auto;
+  padding:8px 9px;
+  white-space:normal;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+@media(max-width:720px){
+  #materialLibraryWindow{
+    top:156px;
+    left:8px;
+    right:8px;
+    width:auto;
+    height:min(62dvh,580px);
+    min-height:260px;
+    max-height:calc(100dvh - 166px);
+  }
+  #materialLibraryWindow .hypershade-toolbar{flex-wrap:wrap}
+  #materialLibraryWindow .hypershade-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-height:590px){
+  #materialLibraryWindow{top:8px;height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);min-height:0}
 }
 </style>
 </body></html>
