@@ -170,7 +170,7 @@ def create_test_scene():
         cmds.viewFit("persp", all=True)
     except Exception:
         pass
-    cmds.select(root, replace=True)
+    cmds.select(terrain_group, replace=True)
 
     message = (
         "Тестовая сцена создана.\n\n"
