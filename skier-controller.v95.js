@@ -1335,21 +1335,22 @@ export class SkierController {
     this.bounds.setFromObject(this.terrain);
     if(this.bounds.isEmpty())return null;
 
-    const clampedX=THREE.MathUtils.clamp(x,this.bounds.min.x,this.bounds.max.x);
-    const clampedZ=THREE.MathUtils.clamp(z,this.bounds.min.z,this.bounds.max.z);
-    const direct=this._groundAt(clampedX,clampedZ);
+    const insideBounds=x>=this.bounds.min.x&&x<=this.bounds.max.x&&
+      z>=this.bounds.min.z&&z<=this.bounds.max.z;
+    const direct=insideBounds?this._groundAt(x,z):null;
     if(direct&&this._isUsableSkiStart(direct,12))return direct;
 
-    // A drone may be above an apron, mesh edge or a gap. Search outward for
-    // actual skiable terrain instead of snapping to the nearest arbitrary vertex.
+    // Keep the drone's actual world location as the search origin. Never clamp
+    // an off-piste drone back to a distant mesh edge: let start() use its
+    // validated summit fallback when no run is close enough.
     const radii=[3,6,10,15,22,30,40,50];
     const spokes=16;
     for(const radius of radii){
       let best=null,bestScore=Infinity;
       for(let i=0;i<spokes;i++){
         const angle=(i/spokes)*Math.PI*2;
-        const px=clampedX+Math.cos(angle)*radius;
-        const pz=clampedZ+Math.sin(angle)*radius;
+        const px=x+Math.cos(angle)*radius;
+        const pz=z+Math.sin(angle)*radius;
         if(px<this.bounds.min.x+0.75||px>this.bounds.max.x-0.75||
            pz<this.bounds.min.z+0.75||pz>this.bounds.max.z-0.75)continue;
         const hit=this._groundAt(px,pz);
