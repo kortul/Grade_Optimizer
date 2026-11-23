@@ -52,9 +52,12 @@ pass('per-material emissive toggle, strength preservation and project serializat
 assert.ok(entrySource.includes('function disableMaterialEmissionByDefault(')&&entrySource.includes('material.emissiveIntensity=enabled?savedStrength:0'), 'current and newly loaded model materials must default to emission OFF');
 assert.ok(entrySource.includes("gradeOptimizerEmissiveEnabled:false")&&entrySource.includes("if('emissiveIntensity' in material)material.emissiveIntensity=0"), 'legacy material configurations must migrate to emission OFF');
 pass('all current legacy and newly imported model materials default to emissive OFF');
-assert.ok(entrySource.includes("preserveSlopeAlbedo:/slopes[_ -]?stage[_ -]?1/i.test(String(fileName||''))"), 'Slopes_Stage1 FBX must enable the base-color recovery path');
+assert.ok(entrySource.includes("const isStageOneSlopes=/slopes[_ -]?stage[_ -]?1/i.test(String(fileName||''))"), 'Slopes_Stage1 parser must identify the named stage-one asset');
+assert.ok(entrySource.includes('prepareFbxMaterials(root,{preserveSlopeAlbedo:isStageOneSlopes})')&&entrySource.includes('applyStageOneSurfaceMaterials(root)'), 'Slopes_Stage1 must run its dedicated surface-material pass after FBX conversion');
+assert.ok(entrySource.includes("material.color.set(kind==='slopes'?0xffffff:0x383838)")&&entrySource.includes("if(/(^|_)angled?(_|$)/.test(value))return 'angled'")&&entrySource.includes("if(/(^|_)slopes?(_|$)/.test(value))return 'slopes'"), 'Stage 1 Slopes must be white and Angled surfaces dark grey based on imported material/object names');
+assert.ok(entrySource.includes('material.map=null')&&entrySource.includes('material.emissiveMap=null')&&entrySource.includes('material.vertexColors=false'), 'Stage 1 surface colors must not be tinted by imported albedo maps, emission maps or vertex colors');
 assert.ok(entrySource.includes('gradeOptimizerAlbedoRecovery')&&entrySource.includes('emissive-map-recovered-as-base-color-map')&&entrySource.includes('emissive-color-recovered-as-base-color'), 'black diffuse materials must recover usable albedo from FBX emission data');
-pass('Slopes_Stage1 FBX restores diffuse albedo when Maya exported visible color through Emission');
+pass('Slopes_Stage1 applies explicit white Slopes and dark-grey Angled materials');
 
 assert.ok(entrySource.includes('function editorMaterialsEquivalent(a,b)')&&entrySource.includes('function editorGeometryForMaterial(object,materialFilter,ownedGeometries)'), 'material identity matching and group-filtered geometry selection are missing');
 assert.ok(entrySource.includes('filtered.clearGroups()')&&entrySource.includes('filtered.addGroup(group.start,group.count,0)'), 'material highlight must isolate matching FBX geometry groups');
