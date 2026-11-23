@@ -4351,6 +4351,7 @@ editorToggleButton.addEventListener('click',()=>{
   const open=!appRoot.classList.contains('editor-open');
   if(open&&state.optimizeMode)setOptimizerOpen(false);
   appRoot.classList.toggle('editor-open',open);
+  if(!open)materialLibraryWindow.classList.remove('open');
   editorToggleButton.classList.toggle('active',open);
   editorToggleButton.setAttribute('aria-expanded',String(open));
   if(open){
