@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v130.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v131.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -103,6 +103,14 @@ assert.ok(entrySource.includes("document.getElementById('materialLibraryAssign')
 const sceneTabOrder=[...html.matchAll(/id="sceneLookTab-([^"]+)"/g)].map(match=>match[1]);
 assert.ok(sceneTabOrder.indexOf('materials')<sceneTabOrder.indexOf('camera'), 'Materials tab must appear before Camera');
 pass('Scene Editor material cards, separate Hypershade library, and Camera / Materials tab order are present');
+
+assert.ok(html.includes('id="scene-editor-window-fit-v131"'), 'Scene Editor fit / responsive CSS layer is missing');
+assert.ok(html.includes('grid-template-columns:repeat(3,minmax(0,1fr))!important'), 'Scene Editor tabs must use a responsive three-column desktop grid');
+assert.ok(html.includes('white-space:normal')&&html.includes('overflow-wrap:anywhere'), 'Scene Editor labels must wrap instead of being clipped');
+assert.ok(html.includes('height:112px')&&html.includes('top:270px!important'), 'mobile Scene Editor hierarchy and inspector must use separate non-overlapping rows');
+assert.ok(entrySource.includes("if(open&&state.mode!=='overview')")&&entrySource.includes("setSceneMode('overview');"), 'opening Scene Editor from skier / drone must switch to overview');
+pass('Scene Editor desktop / tablet / mobile fit guards and overview-on-open behavior are present');
+
 
 assert.ok(!html.includes('id="sceneLookTab-optics"') && !html.includes('id="sceneLookPanel-optics"'), 'separate Optics tab must remain removed');
 assert.ok(!html.includes('id="sceneLookTab-lens"') && !html.includes('id="sceneLookPanel-lens"'), 'separate Lens tab must remain removed');
@@ -516,7 +524,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('app.v130.js'), 'HTML must load the current application module');
+assert.ok(html.includes('app.v131.js'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
