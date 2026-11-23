@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v128.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v129.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -155,8 +155,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v86.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v86.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v87.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v87.js').toString('utf8');
 assert.ok(skierSource.includes("const outsideLoad=Math.max(0,side*turnSide)*carve*(0.85+0.15*loadShift);")&&skierSource.includes("'skiFlex'+index"), 'ski flex must compute outside-ski load within each ski-slot iteration');
 
 assert.ok(entrySource.includes("velocity:droneController.velocity.clone()"), 'drone-to-skier handoff must preserve the drone pose and velocity');
@@ -500,7 +500,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('app.v128.js'), 'HTML must load v125 module');
+assert.ok(html.includes('app.v129.js'), 'HTML must load v125 module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
@@ -523,6 +523,10 @@ assert.ok(html.includes('<kbd>C</kbd>') && html.includes('Осмотреться
 
 assert.ok(entrySource.includes("appRoot.classList.toggle('tuck-mode',tuck)"), 'speed tuck CSS state missing');
 assert.ok(entrySource.includes("appRoot.style.setProperty('--ski-wind-opacity'"), 'speed-dependent wind effect intensity missing');
+assert.ok(entrySource.includes('function beginModeCameraTransition(')&&entrySource.includes('function prepareModeCameraTransitionFrame()')&&entrySource.includes('function advanceModeCameraTransition(dt)'), 'drone/skier camera handoff must use a time-based transition');
+assert.ok(entrySource.includes('if(modeCameraTransition)prepareModeCameraTransitionFrame();')&&entrySource.includes('if(modeCameraTransition)advanceModeCameraTransition(dt);'), 'camera handoff must preserve the destination controller camera state while blending output');
+assert.ok(skierSource.includes('this.airborneCameraPitch+=(flightPitchTarget-this.airborneCameraPitch)*(1-Math.exp(-dt*5.5))'), 'first-person jump pitch must be damped');
+assert.ok(!skierSource.includes('travelPitch+this.lookPitch'), 'first-person camera must not directly follow raw vertical flight velocity');
 assert.ok(entrySource.includes('skierController.showForDrone()'), 'first-person skier must be shown to the drone during handoff');
 assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='drone'})"), 'skier model must remain in the scene when entering drone mode');
 assert.ok(entrySource.includes("if(mode==='overview')skierController.hideForOverview()"), 'skier model must be hidden when leaving drone for overview');
