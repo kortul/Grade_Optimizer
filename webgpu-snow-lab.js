@@ -174,7 +174,7 @@ async function start() {
   statusText.textContent = hasWebGPU
     ? 'WebGPU API обнаружен · WebGPURenderer инициализирован'
     : 'WebGPU API не найден · используется WebGL 2 fallback';
-  statusDot.classList.add(hasWebGPU ? 'ok' : 'bad');
+  if (hasWebGPU) statusDot.classList.add('ok');
   makeSnow(particleCount);
 
   densityInput.addEventListener('input', () => makeSnow(Number(densityInput.value)));
