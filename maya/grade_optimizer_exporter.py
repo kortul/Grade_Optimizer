@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Grade Optimizer Exporter for Autodesk Maya.
-Writes one FBX scene and a scene.json manifest into a local Git working copy.
+Exports the selected Maya hierarchy as a separate client scene asset in a local Git working copy.
 Run in Maya's Python Script Editor.
 """
 import os
+import re
 import json
 import datetime
 
@@ -12,10 +13,11 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.3.0"
-FBX_NAME = "real-terrain.fbx"
-FBX_RELATIVE_PATH = "assets/" + FBX_NAME
-MANIFEST_NAME = "real-terrain.json"
+VERSION = "0.4.0"
+MAYA_LINEAR_UNIT_TO_METERS = {
+    "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
+    "in": 0.0254, "ft": 0.3048, "yd": 0.9144
+}
 
 # Maya optionVars keep the export settings and last-used metadata preset between
 # Script Editor / Shelf launches, so users do not have to re-enter them.
@@ -291,42 +293,163 @@ def set_option(command):
         cmds.warning("FBX option skipped: " + command + " — " + str(exc))
 
 
-def write_terrain_manifest(assets_dir, components, model_size, node_metadata):
-    material_names = sorted(set(
-        material
-        for component in components
-        for material in component["materials"]
-    ))
-    bounds = None
-    try:
-        bounds = cmds.exactWorldBoundingBox(
-            [component["dagPath"] for component in components]
-        )
-    except Exception:
-        pass
+def _safe_asset_id(value):
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value or "").strip())
+    slug = slug.strip("._-").lower()
+    return slug or "maya_asset"
 
-    manifest = {
-        "schemaVersion": "1.0",
-        "assetId": "real-terrain",
-        "name": "Real Terrain",
-        "file": FBX_RELATIVE_PATH,
-        "category": "terrain",
-        "activeTerrain": True,
-        "updatedAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+
+def find_client_scene_manifest(repo):
+    clients_dir = os.path.join(repo, "clients")
+    matches = []
+    if os.path.isdir(clients_dir):
+        for slug in sorted(os.listdir(clients_dir)):
+            scene_path = os.path.join(clients_dir, slug, "scene.json")
+            if os.path.isfile(scene_path):
+                matches.append((slug, scene_path))
+
+    if not matches:
+        raise RuntimeError(
+            "В clients/ не найден scene.json. Сначала создай клиентскую сцену в Web Editor."
+        )
+    if len(matches) != 1:
+        names = ", ".join(item[0] for item in matches)
+        raise RuntimeError(
+            "Найдено несколько клиентских сцен: " + names
+            + ". Экспорт остановлен, чтобы не записать геометрию не в тот проект."
+        )
+    return matches[0]
+
+
+def prepare_client_asset_export(repo, components, node_metadata):
+    client_slug, scene_path = find_client_scene_manifest(repo)
+    with open(scene_path, "r", encoding="utf-8") as stream:
+        manifest = json.load(stream)
+    if not isinstance(manifest, dict):
+        raise RuntimeError("Клиентский scene.json должен содержать JSON-объект.")
+
+    assets = manifest.get("assets", [])
+    if not isinstance(assets, list):
+        raise RuntimeError("Поле assets в клиентском scene.json должно быть массивом.")
+
+    selected = _selected_transforms()
+    asset_name = (
+        selected[0].rsplit("|", 1)[-1]
+        if selected
+        else str(components[0].get("name") or "Maya Asset")
+    )
+    base_id = _safe_asset_id(asset_name)
+
+    asset_id = base_id
+    suffix = 2
+    while True:
+        existing = next(
+            (item for item in assets if isinstance(item, dict) and item.get("id") == asset_id),
+            None
+        )
+        relative_file = "models/" + asset_id + ".fbx"
+        model_path = os.path.join(os.path.dirname(scene_path), "models", asset_id + ".fbx")
+        if existing or not os.path.exists(model_path):
+            break
+        asset_id = base_id + "_" + str(suffix)
+        suffix += 1
+
+    linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
+    meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
+    if meters_per_unit is None:
+        raise RuntimeError(
+            "Неизвестная линейная единица Maya: " + (linear_unit or "не указана")
+        )
+
+    lower_name = asset_name.lower()
+    is_slope = "slope" in lower_name or "piste" in lower_name
+    is_stage_one = "stage1" in lower_name or "stage_1" in lower_name
+    category = "slope" if is_slope else "prop"
+    phase = "stage_1" if is_stage_one else "always"
+
+    serialized_node_metadata = []
+    for record in node_metadata:
+        serialized_node_metadata.append({
+            "namePath": record.get("namePath", []),
+            "role": record.get("role", ""),
+            "tags": record.get("tags", []),
+            "collision": False,
+            "forestBlocker": False
+        })
+
+    entry = dict(existing or {})
+    if not existing:
+        entry.update({
+            "category": category,
+            "phase": phase,
+            "visible": True,
+            "collision": False,
+            "forestBlocker": is_slope,
+            "activeTerrain": False,
+            "transform": {
+                "position": [0, 0, 0],
+                "rotation": [0, 0, 0],
+                "scale": [meters_per_unit, meters_per_unit, meters_per_unit]
+            },
+            "nodeVisibility": [],
+            "nodeMetadata": []
+        })
+
+    entry.update({
+        "id": asset_id,
+        "name": asset_name,
+        "file": relative_file,
+        "sourceFile": cmds.file(query=True, sceneName=True, shortName=True) or "",
         "mayaExport": {
             "pluginVersion": VERSION,
             "sourceScene": cmds.file(query=True, sceneName=True, shortName=True) or "",
             "mayaVersion": cmds.about(version=True),
-            "linearUnit": cmds.currentUnit(query=True, linear=True),
-            "modelSizeBytes": model_size,
+            "linearUnit": linear_unit,
+            "metersPerUnit": meters_per_unit,
             "meshComponentCount": len(components),
-            "materialNames": material_names,
-            "worldBounds": bounds,
-            "nodeMetadata": node_metadata,
             "components": components
         }
+    })
+    if serialized_node_metadata:
+        entry["nodeMetadata"] = serialized_node_metadata
+
+    manifest["schemaVersion"] = manifest.get("schemaVersion") or "1.0"
+    manifest["clientId"] = client_slug
+    manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    manifest["assets"] = [
+        item for item in assets
+        if not (isinstance(item, dict) and item.get("id") == asset_id)
+    ] + [entry]
+
+    client_dir = os.path.dirname(scene_path)
+    model_path = os.path.join(client_dir, *relative_file.split("/"))
+    model_dir = os.path.dirname(model_path)
+    if not os.path.isdir(model_dir):
+        os.makedirs(model_dir)
+
+    temporary_model_path = os.path.join(model_dir, asset_id + ".exporting.fbx")
+    temporary_manifest_path = scene_path + ".exporting.tmp"
+    return {
+        "client_slug": client_slug,
+        "asset_id": asset_id,
+        "asset_name": asset_name,
+        "relative_file": relative_file,
+        "model_path": model_path,
+        "temporary_model_path": temporary_model_path,
+        "manifest_path": scene_path,
+        "temporary_manifest_path": temporary_manifest_path,
+        "manifest": manifest
     }
-    path = os.path.join(assets_dir, MANIFEST_NAME + ".tmp")
+
+
+def write_client_asset_manifest(export_info, model_size):
+    manifest = export_info["manifest"]
+    entry = next(
+        item for item in manifest["assets"]
+        if isinstance(item, dict) and item.get("id") == export_info["asset_id"]
+    )
+    entry["mayaExport"]["modelSizeBytes"] = model_size
+    path = export_info["temporary_manifest_path"]
     with open(path, "w", encoding="utf-8") as stream:
         json.dump(manifest, stream, ensure_ascii=False, indent=2)
         stream.write("\n")
@@ -362,7 +485,7 @@ def export_scene(*_):
     if not previous_selection:
         cmds.confirmDialog(
             title="Grade Optimizer",
-            message="Сначала выдели корневую группу рельефа или один/несколько mesh-объектов.",
+            message="Сначала выдели корневую группу или один/несколько mesh-объектов.",
             button=["OK"]
         )
         return
@@ -372,22 +495,20 @@ def export_scene(*_):
     if not components:
         cmds.confirmDialog(
             title="Grade Optimizer",
-            message="В выделении не найдено polygon mesh объектов. Выдели группу рельефа или его mesh.",
+            message="В выделении не найдено polygon mesh объектов. Выдели группу или её mesh.",
             button=["OK"]
         )
         return
 
-    assets_dir = os.path.join(repo, "assets")
-    if not os.path.isdir(assets_dir):
-        os.makedirs(assets_dir)
-
-    model_path = os.path.join(assets_dir, FBX_NAME)
-    temporary_model_path = os.path.join(assets_dir, "real-terrain.exporting.fbx")
-    manifest_path = os.path.join(assets_dir, MANIFEST_NAME)
-    temporary_manifest_path = manifest_path + ".tmp"
-
+    export_info = None
+    temporary_paths = []
     try:
-        for temporary_path in (temporary_model_path, temporary_manifest_path):
+        export_info = prepare_client_asset_export(repo, components, node_metadata)
+        temporary_model_path = export_info["temporary_model_path"]
+        temporary_manifest_path = export_info["temporary_manifest_path"]
+        temporary_paths.extend([temporary_model_path, temporary_manifest_path])
+
+        for temporary_path in temporary_paths:
             if os.path.isfile(temporary_path):
                 os.remove(temporary_path)
 
@@ -404,7 +525,7 @@ def export_scene(*_):
         set_option("FBXExportLights -v false;")
 
         path = safe_path(temporary_model_path).replace('"', '\\"')
-        # Selection-only is intentional: the exporter must never dump the whole Maya scene.
+        # Selection-only is intentional: only the selected branch becomes this scene asset.
         mel.eval('FBXExport -f "' + path + '" -s;')
 
         if not os.path.isfile(temporary_model_path):
@@ -413,36 +534,39 @@ def export_scene(*_):
         if size <= 0:
             raise RuntimeError("Maya создала пустой FBX. Экспорт отменён.")
 
-        write_terrain_manifest(assets_dir, components, size, node_metadata)
+        write_client_asset_manifest(export_info, size)
 
-        # Replace the published files only after a complete FBX and manifest exist.
-        os.replace(temporary_model_path, model_path)
-        os.replace(temporary_manifest_path, manifest_path)
+        # Publish the new asset file and its scene.json registration only after both are ready.
+        os.replace(temporary_model_path, export_info["model_path"])
+        os.replace(temporary_manifest_path, export_info["manifest_path"])
 
         mib = size / float(1024 * 1024)
         message = (
-            "Экспорт активного рельефа завершён.\n\n"
-            + model_path + "\n\n" + manifest_path
-            + "\n\n" + str(len(components)) + " mesh objects · "
+            "Новая геометрия добавлена в клиентскую сцену.\n\n"
+            + export_info["model_path"]
+            + "\n\n" + export_info["manifest_path"]
+            + "\n\nAsset ID: " + export_info["asset_id"]
+            + " · " + str(len(components)) + " mesh objects · "
             + str(len(set(m for c in components for m in c["materials"])))
             + " materials · %.1f MiB" % mib
         )
         if size >= 90 * 1024 * 1024:
             message += "\n\nВНИМАНИЕ: размер достиг 90 MiB — обычный Git не подходит."
+        message += "\n\nИсходный assets/real-terrain.fbx не изменён."
         cmds.confirmDialog(
-            title="Grade Optimizer · Terrain export complete",
+            title="Grade Optimizer · Scene asset export complete",
             message=message,
             button=["OK"]
         )
         print("[Grade Optimizer] " + message.replace("\n", " | "))
     except Exception as exc:
-        for temporary_path in (temporary_model_path, temporary_manifest_path):
+        for temporary_path in temporary_paths:
             try:
                 if os.path.isfile(temporary_path):
                     os.remove(temporary_path)
             except Exception:
                 pass
-        cmds.warning("[Grade Optimizer] Terrain export failed: " + str(exc))
+        cmds.warning("[Grade Optimizer] Scene asset export failed: " + str(exc))
         cmds.confirmDialog(
             title="Grade Optimizer · Export failed",
             message=str(exc),
@@ -468,19 +592,19 @@ def show():
 
     cmds.window(
         WINDOW,
-        title="Grade Optimizer Terrain Exporter " + VERSION,
+        title="Grade Optimizer Scene Asset Exporter " + VERSION,
         sizeable=True,
         widthHeight=(540, 410)
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=7, columnAttach=("both", 12))
     cmds.text(
-        label="Maya → Active Terrain → Grade Optimizer",
+        label="Maya → New Scene Asset → Grade Optimizer",
         align="left",
         height=26,
         font="boldLabelFont"
     )
     cmds.text(
-        label="Экспортируется только выделение и его дочерние mesh-объекты.",
+        label="Экспортируется только выделенная ветка Maya как отдельная модель сцены.",
         align="left",
         height=22
     )
@@ -495,13 +619,13 @@ def show():
         columnWidth3=(65, 380, 85)
     )
     cmds.text(
-        label="Файл рельефа: " + FBX_RELATIVE_PATH,
+        label="Файл создаётся в clients/<client>/models/<имя-объекта>.fbx.",
         align="left",
         height=22,
         font="boldLabelFont"
     )
     cmds.text(
-        label="Выдели корневую группу terrain или mesh рельефа в Outliner.",
+        label="Исходный assets/real-terrain.fbx не изменяется и остаётся базовой поверхностью.",
         align="left",
         height=22
     )
@@ -516,7 +640,7 @@ def show():
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
     cmds.text(
-        label="Role / Tags сохраняются в JSON-манифесте рядом с FBX. Collision и Forest blocker остаются настройками Web Editor.",
+        label="Role / Tags сохраняются в клиентском scene.json. Collision и Forest blocker настраиваются в Web Editor.",
         align="left",
         height=30
     )
@@ -578,7 +702,7 @@ def show():
 
     cmds.separator(height=7, style="in")
     cmds.text(
-        label="assets/real-terrain.fbx + assets/real-terrain.json",
+        label="Новая геометрия добавляется в clients/<client>/scene.json как отдельный объект.",
         align="left",
         height=22
     )
@@ -588,7 +712,7 @@ def show():
         height=22
     )
     cmds.button(
-        label="ЭКСПОРТИРОВАТЬ ВЫДЕЛЕННЫЙ РЕЛЬЕФ",
+        label="ЭКСПОРТИРОВАТЬ КАК НОВЫЙ ОБЪЕКТ",
         height=42,
         backgroundColor=(0.18, 0.48, 0.32),
         command=export_scene

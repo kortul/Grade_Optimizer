@@ -1,8 +1,71 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-23T15:48:35.686Z",
-  "assets": [],
+  "updatedAt": "2026-11-23T18:33:00.095Z",
+  "assets": [
+    {
+      "id": "slopes_stage1",
+      "name": "Slopes_Stage1",
+      "file": "models/slopes_stage1.fbx",
+      "sourceFile": "Slopes_Stage1.fbx",
+      "category": "slope",
+      "phase": "stage_1",
+      "visible": true,
+      "collision": false,
+      "forestBlocker": true,
+      "activeTerrain": false,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      "nodeVisibility": [],
+      "nodeMetadata": [],
+      "mayaExport": {
+        "pluginVersion": "0.3.0",
+        "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
+        "mayaVersion": "2026",
+        "linearUnit": "cm",
+        "metersPerUnit": 0.01,
+        "modelSizeBytes": 3139280,
+        "meshComponentCount": 1,
+        "worldBounds": [
+          -5943.02783203125,
+          2164.56591796875,
+          -203791.28125,
+          166841.171875,
+          16204.087890625,
+          -12431.59375
+        ],
+        "components": [
+          {
+            "dagPath": "|Slopes_Stage1",
+            "name": "Slopes_Stage1",
+            "shape": "Slopes_Stage1Shape",
+            "materials": [
+              "pasted__pasted__zzMainlandscape_Slopes",
+              "openPBR_shader1",
+              "zzMainlandscape_Slopes",
+              "pasted__zzShapka_Angled",
+              "zzShapka_Angled"
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "editorSettings": {
     "schemaVersion": "1.0",
     "savedAt": "2026-11-23T16:10:24.760Z",

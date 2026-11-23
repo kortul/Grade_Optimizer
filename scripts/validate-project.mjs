@@ -32,6 +32,21 @@ assert.ok(entrySource.includes("if(id==='A1')") && entrySource.includes("исп�
 assert.ok(entrySource.includes('expectedNames.some(expected=>names.some(name=>name===expected))'), 'FBX loader must resolve terrainShape by its manifest name');
 pass('canonical Maya terrainShape FBX loading, units, UV scale and A1 fallback are present');
 
+const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
+assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
+assert.equal(originalTerrainManifest.mayaExport.components[0].name, 'terrainShape', 'base terrain component was replaced by a piste asset');
+assert.ok(existsSync(resolve(root, 'assets/real-terrain.fbx')), 'original base terrain FBX is missing');
+const clientSceneManifest = JSON.parse(read('clients/alpine-resort/scene.json').toString('utf8'));
+const stageOneAsset = clientSceneManifest.assets.find(asset => asset.id === 'slopes_stage1');
+assert.ok(stageOneAsset, 'Slopes_Stage1 must be registered as a separate client asset');
+assert.equal(stageOneAsset.name, 'Slopes_Stage1', 'stage-one piste asset name changed');
+assert.equal(stageOneAsset.category, 'slope', 'Slopes_Stage1 must remain an additional slope asset');
+assert.equal(stageOneAsset.activeTerrain, false, 'Slopes_Stage1 must not replace the base terrain');
+assert.deepEqual(stageOneAsset.transform.scale, [0.01, 0.01, 0.01], 'Maya centimetres must be converted to metres for the imported piste');
+assert.ok(existsSync(resolve(root, 'clients/alpine-resort', stageOneAsset.file)), 'Slopes_Stage1 FBX file is missing');
+pass('original base terrain is preserved and Slopes_Stage1 is registered as separate non-active piste geometry');
+
+
 assert.ok(entrySource.includes('function adaptSceneScaleToBounds(bounds){'), 'scene framing must adapt to the actual terrain bounds');
 assert.ok(entrySource.includes('controls.maxDistance=sceneViewMaxDistance') && entrySource.includes('d * factor, 30, sceneViewMaxDistance'), 'camera zoom range must grow with the real Maya terrain');
 assert.ok(entrySource.includes('shadowHalfSpan=Math.max(1200,horizontalDiagonal*0.55)'), 'directional shadow coverage must include the full-scale terrain');

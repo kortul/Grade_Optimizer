@@ -62,13 +62,14 @@ grade_optimizer_test_scene.create_test_scene()
 
 ## Настройки Exporter
 
-- **Git repo** — по умолчанию `C:/zGit/GradeOptimizer/Grade_Optimizer`; это корень локального клона GitHub.
-- **Project ID** — короткий slug проекта, например `alpine-resort`. Это не GitHub ID и не имя пользователя. Он задаёт папку `clients/alpine-resort/` и параметр ссылки `?client=alpine-resort`. Для нового проекта используй отдельный уникальный slug.
-- По умолчанию экспортируются **только выделенные объекты** и их дочерняя иерархия. Флажок включён при каждом открытии Exporter. Если выделение пустое, экспорт останавливается, чтобы случайно не выгрузить всю сцену.
-- Чтобы намеренно выгрузить всю сцену, сними флажок **Export selected objects only**.
-- Включён экспорт FBX materials и Embed Media.
-- Selection позволяет экспортировать только выделенную ветку.
-- Обязательные категории объектов не навязываются.
+- **Git repo** — корень локального клона GitHub, по умолчанию `C:/zGit/GradeOptimizer/Grade_Optimizer`.
+- Отдельный Project ID вводить не нужно: Exporter автоматически находит единственный файл `clients/<slug>/scene.json` в репозитории. Если клиентских сцен несколько, экспорт останавливается, чтобы не записать модель не в тот проект.
+- Экспортируется только выделенная ветка Maya и её дочерние mesh-объекты. Пустое выделение блокирует экспорт.
+- Выбранная группа экспортируется как самостоятельная FBX-модель в `clients/<slug>/models/<asset-id>.fbx`. Запись автоматически добавляется в массив `assets` клиентского `scene.json`.
+- Повторный экспорт объекта с тем же именем обновляет его отдельный FBX-файл. Другие объекты и базовая поверхность не затрагиваются.
+- **`assets/real-terrain.fbx` и `assets/real-terrain.json` никогда не перезаписываются этим Exporter.** Чтобы поменять базовый рельеф, это должно быть отдельное явное действие в Web Editor.
+- Масштаб FBX автоматически переводится из текущих единиц Maya в метры через transform модели в `scene.json`.
+- Включён экспорт FBX materials и Embed Media. Рекомендуемый предел FBX для обычного Git workflow — 90 MiB.
 
 ## Метки отдельных узлов
 
@@ -90,21 +91,21 @@ Project ID и Git repo тоже сохраняются между запуска
 
 ## Результат экспорта
 
+Например, для группы `Slopes_Stage1`:
+
 ```
 clients/
   alpine-resort/
     scene.json
     models/
-      resort.fbx
+      slopes_stage1.fbx
 ```
 
-После экспорта открой GitHub Desktop, проверь изменения, сделай Commit и Push.
+В `scene.json` объект регистрируется как отдельная геометрия категории `slope`, фазы `stage_1` и с `activeTerrain: false`. Он остаётся видимым рядом с исходной поверхностью и может использоваться лыжником как отдельная piste-геометрия.
 
-Ссылка клиента:
+После экспорта открой GitHub Desktop, проверь оба изменённых файла (`models/*.fbx` и `scene.json`), сделай Commit и Push.
 
-`https://kortul.github.io/Grade_Optimizer/?client=alpine-resort`
-
-Держи FBX меньше 90 MiB для текущего обычного Git workflow.
+Ссылка проекта: `https://kortul.github.io/Grade_Optimizer/?client=alpine-resort`.
 
 ## Необязательный вариант: установка нативного Maya plug-in
 
