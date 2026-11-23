@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v121.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v122.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -463,6 +463,10 @@ assert.ok(entrySource.includes('openLocalAssetDatabase') && entrySource.includes
 for(const id of ['outsideSkiLoadValue','insideSkiLoadValue','outsideSkiLoadBar','totalSkiLoadValue'])assert.ok(html.includes('id="'+id+'"'), 'ski load HUD element missing: '+id);
 assert.ok(entrySource.includes('outsideSkiLoadValueEl') && entrySource.includes('insideSkiLoadValueEl') && entrySource.includes('outsideSkiLoadBarEl'), 'ski loads must be shown in HUD');
 assert.ok(entrySource.includes("if(state.optimizeMode)setOptimizerOpen(false)"), 'Overview must close the optimization panel');
+assert.ok(entrySource.includes("if(state.mode!=='overview')setSceneMode('overview')"), 'optimizer must return to overview from skier / drone');
+assert.ok(entrySource.includes("if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.()"), 'optimizer must release renderer pointer lock');
+assert.ok(entrySource.includes('skierController.stop();')&&entrySource.includes('droneController.stop();'), 'optimizer must stop both interactive controllers');
+
 
 assert.ok(entrySource.includes("skierController.start(terrain,spawnHint)"), 'skier mode must start directly without deferred input');
 assert.ok(entrySource.includes("velocity:droneController.velocity.clone()"), 'drone pose and velocity must be captured before mode handoff');
