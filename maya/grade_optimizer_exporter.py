@@ -5,7 +5,6 @@ Writes one FBX scene and a scene.json manifest into a local Git working copy.
 Run in Maya's Python Script Editor.
 """
 import os
-import re
 import json
 import datetime
 
@@ -13,13 +12,14 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.2.4"
-FBX_NAME = "resort.fbx"
+VERSION = "0.3.0"
+FBX_NAME = "real-terrain.fbx"
+FBX_RELATIVE_PATH = "assets/" + FBX_NAME
+MANIFEST_NAME = "real-terrain.json"
 
 # Maya optionVars keep the export settings and last-used metadata preset between
 # Script Editor / Shelf launches, so users do not have to re-enter them.
 OPTION_REPO = "gradeOptimizerRepoPath"
-OPTION_PROJECT = "gradeOptimizerProjectId"
 OPTION_PRESET = "gradeOptimizerMetadataPreset"
 OPTION_CUSTOM_ROLE = "gradeOptimizerCustomRole"
 OPTION_EXTRA_TAGS = "gradeOptimizerExtraTags"
@@ -189,9 +189,7 @@ def _remember_option(name, value):
 def remember_export_settings(*_):
     try:
         repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
-        project = cmds.textFieldGrp(WINDOW + "_client", query=True, text=True).strip()
         _remember_option(OPTION_REPO, repo)
-        _remember_option(OPTION_PROJECT, project)
     except Exception:
         pass
 
@@ -293,34 +291,28 @@ def set_option(command):
         cmds.warning("FBX option skipped: " + command + " — " + str(exc))
 
 
-def write_manifest(client_dir, slug, components, model_size, node_metadata):
+def write_terrain_manifest(assets_dir, components, model_size, node_metadata):
     material_names = sorted(set(
         material
         for component in components
         for material in component["materials"]
     ))
+    bounds = None
+    try:
+        bounds = cmds.exactWorldBoundingBox(
+            [component["dagPath"] for component in components]
+        )
+    except Exception:
+        pass
+
     manifest = {
         "schemaVersion": "1.0",
-        "clientId": slug,
+        "assetId": "real-terrain",
+        "name": "Real Terrain",
+        "file": FBX_RELATIVE_PATH,
+        "category": "terrain",
+        "activeTerrain": True,
         "updatedAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
-        "assets": [{
-            "id": "maya-scene",
-            "name": slug.replace("-", " ").title(),
-            "file": "models/" + FBX_NAME,
-            "category": "model",
-            "phase": "always",
-            "visible": True,
-            "collision": False,
-            "forestBlocker": False,
-            "activeTerrain": False,
-            "sourceFile": FBX_NAME,
-            "nodeMetadata": node_metadata,
-            "transform": {
-                "position": [0, 0, 0],
-                "rotation": [0, 0, 0],
-                "scale": [1, 1, 1]
-            }
-        }],
         "mayaExport": {
             "pluginVersion": VERSION,
             "sourceScene": cmds.file(query=True, sceneName=True, shortName=True) or "",
@@ -329,16 +321,16 @@ def write_manifest(client_dir, slug, components, model_size, node_metadata):
             "modelSizeBytes": model_size,
             "meshComponentCount": len(components),
             "materialNames": material_names,
+            "worldBounds": bounds,
             "nodeMetadata": node_metadata,
             "components": components
         }
     }
-    path = os.path.join(client_dir, "scene.json")
+    path = os.path.join(assets_dir, MANIFEST_NAME + ".tmp")
     with open(path, "w", encoding="utf-8") as stream:
         json.dump(manifest, stream, ensure_ascii=False, indent=2)
         stream.write("\n")
     return path
-
 
 def browse_repo(*_):
     result = cmds.fileDialog2(fileMode=3, caption="Выбери корень локального репозитория Grade Optimizer")
@@ -349,38 +341,58 @@ def browse_repo(*_):
 
 def export_scene(*_):
     repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
-    slug = cmds.textFieldGrp(WINDOW + "_client", query=True, text=True).strip().lower()
-    selected_only = cmds.checkBox(WINDOW + "_selection", query=True, value=True)
     remember_export_settings()
 
     if not os.path.isdir(repo):
-        cmds.confirmDialog(title="Grade Optimizer", message="Укажи существующую локальную папку репозитория.", button=["OK"])
+        cmds.confirmDialog(
+            title="Grade Optimizer",
+            message="Укажи существующую локальную папку репозитория.",
+            button=["OK"]
+        )
         return
-    if not re.match(r"^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$", slug):
-        cmds.confirmDialog(title="Grade Optimizer", message="Project ID: латиница, цифры и дефис; 1–40 символов.", button=["OK"])
-        return
-    if selected_only and not (cmds.ls(selection=True, long=True) or []):
-        cmds.confirmDialog(title="Grade Optimizer", message="Сначала выдели объекты.", button=["OK"])
+    if not os.path.isfile(os.path.join(repo, "index.html")) or not os.path.isdir(os.path.join(repo, "assets")):
+        cmds.confirmDialog(
+            title="Grade Optimizer",
+            message="Выбери корень репозитория Grade_Optimizer — папку с index.html и assets.",
+            button=["OK"]
+        )
         return
 
-    components = collect_meshes(selected_only)
-    node_metadata = collect_node_metadata(selected_only)
-    if not components:
-        cmds.confirmDialog(title="Grade Optimizer", message="Не найдено polygon mesh объектов.", button=["OK"])
-        return
-
-    clients_dir = os.path.join(repo, "clients")
-    client_dir = os.path.join(clients_dir, slug)
-    model_dir = os.path.join(client_dir, "models")
-    for directory in (clients_dir, client_dir, model_dir):
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
-
-    model_path = os.path.join(model_dir, FBX_NAME)
     previous_selection = cmds.ls(selection=True, long=True) or []
+    if not previous_selection:
+        cmds.confirmDialog(
+            title="Grade Optimizer",
+            message="Сначала выдели корневую группу рельефа или один/несколько mesh-объектов.",
+            button=["OK"]
+        )
+        return
+
+    components = collect_meshes(selection_only=True)
+    node_metadata = collect_node_metadata(selection_only=True)
+    if not components:
+        cmds.confirmDialog(
+            title="Grade Optimizer",
+            message="В выделении не найдено polygon mesh объектов. Выдели группу рельефа или его mesh.",
+            button=["OK"]
+        )
+        return
+
+    assets_dir = os.path.join(repo, "assets")
+    if not os.path.isdir(assets_dir):
+        os.makedirs(assets_dir)
+
+    model_path = os.path.join(assets_dir, FBX_NAME)
+    temporary_model_path = os.path.join(assets_dir, "real-terrain.exporting.fbx")
+    manifest_path = os.path.join(assets_dir, MANIFEST_NAME)
+    temporary_manifest_path = manifest_path + ".tmp"
+
     try:
+        for temporary_path in (temporary_model_path, temporary_manifest_path):
+            if os.path.isfile(temporary_path):
+                os.remove(temporary_path)
+
         enable_fbx()
-        # One file, full hierarchy, named material assignments, embedded textures.
+        # Preserve hierarchy, transforms, smoothing, tangents, materials and embedded textures.
         set_option("FBXExportFileVersion -v FBX202000;")
         set_option("FBXExportSmoothingGroups -v true;")
         set_option("FBXExportHardEdges -v false;")
@@ -391,30 +403,51 @@ def export_scene(*_):
         set_option("FBXExportCameras -v false;")
         set_option("FBXExportLights -v false;")
 
-        path = safe_path(model_path)
-        if selected_only:
-            mel.eval('FBXExport -f "' + path + '" -s;')
-        else:
-            mel.eval('FBXExport -f "' + path + '";')
+        path = safe_path(temporary_model_path).replace('"', '\\"')
+        # Selection-only is intentional: the exporter must never dump the whole Maya scene.
+        mel.eval('FBXExport -f "' + path + '" -s;')
 
-        if not os.path.isfile(model_path):
-            raise RuntimeError("Maya не создала FBX. Проверь FBX Exporter.")
-        size = os.path.getsize(model_path)
-        manifest_path = write_manifest(client_dir, slug, components, size, node_metadata)
+        if not os.path.isfile(temporary_model_path):
+            raise RuntimeError("Maya не создала FBX. Проверь FBX Exporter и выделение.")
+        size = os.path.getsize(temporary_model_path)
+        if size <= 0:
+            raise RuntimeError("Maya создала пустой FBX. Экспорт отменён.")
+
+        write_terrain_manifest(assets_dir, components, size, node_metadata)
+
+        # Replace the published files only after a complete FBX and manifest exist.
+        os.replace(temporary_model_path, model_path)
+        os.replace(temporary_manifest_path, manifest_path)
+
         mib = size / float(1024 * 1024)
         message = (
-            "Экспорт завершён.\n\n" + model_path + "\n\n" + manifest_path
+            "Экспорт активного рельефа завершён.\n\n"
+            + model_path + "\n\n" + manifest_path
             + "\n\n" + str(len(components)) + " mesh objects · "
             + str(len(set(m for c in components for m in c["materials"])))
             + " materials · %.1f MiB" % mib
         )
         if size >= 90 * 1024 * 1024:
             message += "\n\nВНИМАНИЕ: размер достиг 90 MiB — обычный Git не подходит."
-        cmds.confirmDialog(title="Grade Optimizer · Export complete", message=message, button=["OK"])
+        cmds.confirmDialog(
+            title="Grade Optimizer · Terrain export complete",
+            message=message,
+            button=["OK"]
+        )
         print("[Grade Optimizer] " + message.replace("\n", " | "))
     except Exception as exc:
-        cmds.warning("[Grade Optimizer] Export failed: " + str(exc))
-        cmds.confirmDialog(title="Grade Optimizer · Export failed", message=str(exc), button=["OK"])
+        for temporary_path in (temporary_model_path, temporary_manifest_path):
+            try:
+                if os.path.isfile(temporary_path):
+                    os.remove(temporary_path)
+            except Exception:
+                pass
+        cmds.warning("[Grade Optimizer] Terrain export failed: " + str(exc))
+        cmds.confirmDialog(
+            title="Grade Optimizer · Export failed",
+            message=str(exc),
+            button=["OK"]
+        )
     finally:
         try:
             if previous_selection:
@@ -424,26 +457,33 @@ def export_scene(*_):
         except Exception:
             pass
 
-
 def show():
     if cmds.window(WINDOW, exists=True):
         cmds.deleteUI(WINDOW)
 
     repo_default = _option_string(OPTION_REPO, "C:/zGit/GradeOptimizer/Grade_Optimizer")
-    project_default = _option_string(OPTION_PROJECT, "alpine-resort")
     preset_default = _option_string(OPTION_PRESET, PRESET_PLACEHOLDER)
     if preset_default not in METADATA_PRESETS and preset_default != PRESET_PLACEHOLDER:
         preset_default = PRESET_PLACEHOLDER
 
     cmds.window(
         WINDOW,
-        title="Grade Optimizer Exporter " + VERSION,
+        title="Grade Optimizer Terrain Exporter " + VERSION,
         sizeable=True,
-        widthHeight=(540, 390)
+        widthHeight=(540, 410)
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=7, columnAttach=("both", 12))
-    cmds.text(label="Maya → FBX → Grade Optimizer", align="left", height=26, font="boldLabelFont")
-    cmds.text(label="Сохраняются иерархия, геометрия и назначения материалов.", align="left", height=22)
+    cmds.text(
+        label="Maya → Active Terrain → Grade Optimizer",
+        align="left",
+        height=26,
+        font="boldLabelFont"
+    )
+    cmds.text(
+        label="Экспортируется только выделение и его дочерние mesh-объекты.",
+        align="left",
+        height=22
+    )
 
     cmds.textFieldButtonGrp(
         WINDOW + "_repo",
@@ -454,21 +494,14 @@ def show():
         changeCommand=remember_export_settings,
         columnWidth3=(65, 380, 85)
     )
-    cmds.textFieldGrp(
-        WINDOW + "_client",
-        label="Project ID",
-        text=project_default,
-        annotation="Project ID для папки clients/<id> и ссылки ?project=<id>.",
-        changeCommand=remember_export_settings,
-        columnWidth2=(85, 440)
-    )
-    cmds.checkBox(
-        WINDOW + "_selection",
-        label="Export selected objects only",
-        value=True
+    cmds.text(
+        label="Файл рельефа: " + FBX_RELATIVE_PATH,
+        align="left",
+        height=22,
+        font="boldLabelFont"
     )
     cmds.text(
-        label="По умолчанию экспортируются только выделенные объекты и их дочерние узлы.",
+        label="Выдели корневую группу terrain или mesh рельефа в Outliner.",
         align="left",
         height=22
     )
@@ -483,9 +516,9 @@ def show():
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
     cmds.text(
-        label="Выдели объекты в Maya → выбери тип → нажми «Применить». Collision и Forest blocker настраиваются в Web Editor.",
+        label="Role / Tags сохраняются в JSON-манифесте рядом с FBX. Collision и Forest blocker остаются настройками Web Editor.",
         align="left",
-        height=24
+        height=30
     )
     preset_menu = cmds.optionMenuGrp(
         WINDOW + "_preset",
@@ -544,15 +577,27 @@ def show():
     on_metadata_preset_changed()
 
     cmds.separator(height=7, style="in")
-    cmds.text(label="clients/<project>/models/resort.fbx + scene.json", align="left", height=22)
-    cmds.text(label="Embed Media включён · рекомендуемый предел FBX для Git: 90 MiB.", align="left", height=22)
+    cmds.text(
+        label="assets/real-terrain.fbx + assets/real-terrain.json",
+        align="left",
+        height=22
+    )
+    cmds.text(
+        label="Embed Media включён · рекомендуемый предел FBX для Git: 90 MiB.",
+        align="left",
+        height=22
+    )
     cmds.button(
-        label="EXPORT CLIENT SCENE",
+        label="ЭКСПОРТИРОВАТЬ ВЫДЕЛЕННЫЙ РЕЛЬЕФ",
         height=42,
         backgroundColor=(0.18, 0.48, 0.32),
         command=export_scene
     )
-    cmds.text(label="Затем проверь изменения в GitHub Desktop и нажми Push.", align="left", height=22)
+    cmds.text(
+        label="Затем GitHub Desktop → Commit → Push.",
+        align="left",
+        height=22
+    )
     cmds.showWindow(WINDOW)
     return WINDOW
 
