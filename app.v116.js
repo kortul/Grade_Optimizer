@@ -519,6 +519,8 @@ function bindSceneLookTabs(){
     const copy=labels[name]||['SCENE LOOK','GLOBAL VISUAL SETTINGS'];
     if(title)title.textContent=copy[0];
     if(subtitle)subtitle.textContent=copy[1];
+    const resetButton=document.getElementById('sceneLookReset');
+    if(resetButton)resetButton.hidden=name==='general'||name==='materials';
   };
   tabs.forEach((tab,index)=>{
     tab.addEventListener('click',()=>activate(tab.dataset.lookTab));
