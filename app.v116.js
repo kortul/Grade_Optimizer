@@ -507,6 +507,8 @@ function bindSceneLookTabs(){
     const title=document.getElementById('sceneLookPanelTitle');
     const subtitle=document.getElementById('sceneLookPanelSubtitle');
     const labels={
+      general:['GENERAL · OBJECT SETTINGS','TRANSFORM · METADATA · PROJECT TOOLS'],
+      materials:['MATERIALS & PBR','MATERIAL SLOTS · MAPS · PRESETS'],
       environment:['ENVIRONMENT & LIGHTING','WEATHER · SUN · SHADOWS'],
       camera:['CAMERA & EXPOSURE','FRAMING · FOCUS · WHITE BALANCE'],
       lens:['LENS CHARACTER','DISTORTION · EDGE RESPONSE · DETAIL'],
