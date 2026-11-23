@@ -735,6 +735,23 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #sceneHierarchyPanel .scene-hierarchy-panel[hidden]{display:none!important}
 #sceneHierarchyPanel .scene-hierarchy-panel{min-width:0;flex:1;display:flex;flex-direction:column;gap:7px}
 #sceneHierarchyPanel .client-workspace .editor-hint{font-size:8px;line-height:1.45}
+
+/* Compact project workspace; keep help collapsed */
+#sceneHierarchyPanel .client-workspace{padding:7px;margin:0;border:1px solid rgba(111,164,202,.15);border-radius:8px;background:rgba(61,107,139,.06);display:flex;flex-direction:column;gap:6px}
+#sceneHierarchyPanel .client-workspace .editor-split{margin-top:0}
+#sceneHierarchyPanel .workspace-help{font-size:8px;color:#839bad;line-height:1.4}
+#sceneHierarchyPanel .workspace-help summary{cursor:pointer;list-style:none;color:#86a9c2;font-size:8px;font-weight:800;letter-spacing:.45px;padding:3px 1px}
+#sceneHierarchyPanel .workspace-help summary::-webkit-details-marker{display:none}
+#sceneHierarchyPanel .workspace-help summary:before{content:'＋';display:inline-block;width:13px;color:#8db9d5}
+#sceneHierarchyPanel .workspace-help[open] summary:before{content:'−'}
+#sceneHierarchyPanel .workspace-help>div{padding:4px 5px 5px;color:#90a5b6}
+#sceneHierarchyPanel .workspace-sync{display:flex;flex-direction:column;gap:5px;padding:6px;border:1px solid rgba(130,174,205,.12);border-radius:7px;background:rgba(0,0,0,.12)}
+#sceneHierarchyPanel .workspace-sync-title{display:flex;align-items:center;justify-content:space-between;font-size:9px;font-weight:800;letter-spacing:.65px;color:#a7c7df}
+#sceneHierarchyPanel .workspace-sync-title span{font-size:7px;color:#68869d;letter-spacing:.3px}
+#sceneHierarchyPanel .workspace-status{font-size:8px;line-height:1.3;color:#7891a4;overflow-wrap:anywhere}
+#sceneHierarchyPanel .scene-hierarchy-panel[data-hierarchy-panel=hierarchy]{flex:1;min-height:0;overflow:hidden}
+#sceneHierarchyPanel #editorTreeList{min-height:0}
+@media(max-width:700px){#sceneHierarchyPanel{top:150px;left:8px;right:8px;bottom:8px;width:auto;height:auto;min-height:0}#sceneEditorPanel{top:150px;left:8px;right:8px;bottom:8px;width:auto}}
 </style>
 
 <style id="gradeOptimizerWeatherStyles">
@@ -1078,21 +1095,20 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <div class="hierarchy-header"><div class="hierarchy-title"><strong>SCENE</strong><span id="editorAssetCount" class="editor-chip">0 OBJECTS</span></div></div>
   <div class="scene-hierarchy-tabs" role="tablist" aria-label="Scene panel sections"><button type="button" class="scene-hierarchy-tab active" data-hierarchy-tab="project" aria-selected="true">PROJECT</button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="import" aria-selected="false">IMPORT</button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="hierarchy" aria-selected="false">HIERARCHY</button></div><div class="scene-hierarchy-panel" data-hierarchy-panel="project">
   <div class="client-workspace">
-    <label for="clientWorkspaceId" class="tree-search-label">PROJECT WORKSPACE</label>
-    <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="Project ID · default: alpine-resort" autocomplete="off" aria-describedby="clientWorkspaceHint"/>
-    <div class="editor-hint" id="clientWorkspaceHint">Основной проект <strong>alpine-resort</strong> открывается автоматически. Для другого проекта введи его ID и нажми OPEN PROJECT. Ты редактируешь и сохраняешь проект; клиентам нужна только ссылка для просмотра.</div>
+    <label for="clientWorkspaceId" class="tree-search-label">PROJECT</label>
+    <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="alpine-resort" autocomplete="off" aria-describedby="clientWorkspaceHint"/>
     <div class="editor-split">
-      <button id="openClientWorkspaceButton" class="secondary" type="button">OPEN PROJECT</button>
-      <button id="shareClientWorkspaceButton" class="secondary" type="button">COPY VIEWER LINK</button>
+      <button id="openClientWorkspaceButton" class="secondary" type="button">OPEN</button>
+      <button id="shareClientWorkspaceButton" class="secondary" type="button">COPY LINK</button>
     </div>
-    <input id="clientShareLink" type="text" readonly aria-label="Project viewer URL" placeholder="Viewer link will appear here"/>
-    <div class="editor-section">
-      <h3>LOCAL REPOSITORY · AUTO-SYNC</h3>
-      <div class="editor-hint">Выбери корень локального репозитория <strong>C:\zGit\GradeOptimizer\Grade_Optimizer</strong>. Grade Optimizer будет напрямую записывать туда scene.json и изменённые GLB-модели после каждого изменения сцены. GitHub Desktop автоматически увидит эти файлы.</div>
-      <button id="connectProjectFolderButton" type="button">CONNECT LOCAL PROJECT FOLDER</button>
-      <div class="editor-hint">ZIP не нужен. Браузерная копия в IndexedDB остаётся резервной. При новом запуске Chrome может попросить повторно разрешить доступ к уже выбранной папке.</div>
+    <input id="clientShareLink" type="text" readonly aria-label="Project viewer URL" placeholder="Viewer link"/>
+    <details class="workspace-help" id="clientWorkspaceHint"><summary>ABOUT PROJECTS</summary><div>Основной проект alpine-resort открывается автоматически. Для другого проекта введи его ID и нажми OPEN. Ты редактируешь проект; клиентам нужна только ссылка для просмотра.</div></details>
+    <div class="workspace-sync">
+      <div class="workspace-sync-title">LOCAL SYNC <span>GITHUB DESKTOP</span></div>
+      <button id="connectProjectFolderButton" type="button">CONNECT FOLDER</button>
+      <details class="workspace-help"><summary>HOW IT WORKS</summary><div>Выбери корень локального репозитория Grade Optimizer. Сцена и изменённые модели записываются в эту папку, GitHub Desktop увидит изменения. ZIP не нужен. Если Chrome попросит разрешение, подтверди доступ к папке.</div></details>
     </div>
-    <div id="clientWorkspaceStatus" class="editor-hint" aria-live="polite">Основной проект alpine-resort открывается автоматически. Автосохранение в этом браузере включено после загрузки проекта.</div>
+    <div id="clientWorkspaceStatus" class="workspace-status" aria-live="polite">Browser autosave active</div>
   </div>
   </div><div class="scene-hierarchy-panel" data-hierarchy-panel="import" hidden>
   <label for="importAssetCategory" class="tree-search-label">IMPORT AS</label>
