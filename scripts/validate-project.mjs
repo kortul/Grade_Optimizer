@@ -148,7 +148,7 @@ assert.ok(entrySource.includes("window.matchMedia('(pointer: coarse) and (max-wi
 assert.ok(entrySource.includes('controls.enableZoom=enabled'), 'mobile overview must support pinch zoom');
 assert.ok(entrySource.includes('function bindMobileStick(')&&entrySource.includes('updateMobileMoveKeys(dx,dy)'), 'virtual movement and look sticks must be wired');
 assert.ok(entrySource.includes('mobileTouch.lookX*1.05*dt')&&entrySource.includes('mobileTouch.lookX*1.65*dt'), 'right mobile stick must drive drone and skier camera direction');
-assert.ok(read('skier-controller.v92.js').toString('utf8').includes('this.touchMode = false')&&read('skier-controller.v92.js').toString('utf8').includes('if(!this.touchMode){'), 'skier Pointer Lock must be disabled on mobile');
+assert.ok(read('skier-controller.v92.js').toString('utf8').includes('this.touchMode = false')&&read('skier-controller.v92.js').toString('utf8').includes('if(requestPointerLock&&!this.touchMode){'), 'skier Pointer Lock must be disabled on mobile and deferable during async preparation');
 assert.ok(read('drone-controller.v75.js').toString('utf8').includes('this.touchMode=false')&&read('drone-controller.v75.js').toString('utf8').includes('if(!this.touchMode){'), 'drone Pointer Lock must be disabled on mobile');
 pass('mobile-only 3-mode navigation, touch sticks, action buttons and Pointer Lock-free controls are present');
 
