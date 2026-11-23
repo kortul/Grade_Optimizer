@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v129.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v130.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -88,6 +88,22 @@ assert.ok(html.includes('scene-look-tab-icon" aria-hidden="true"><svg'), 'Scene 
 assert.ok(html.includes('scene-look-switches input[type=checkbox]:checked'), 'Scene Look toggles need styled on/off states');
 assert.ok(html.includes('class="editor-section scene-look-section" aria-label="Global Scene Look"'), 'Scene Look should not require a nested accordion');
 pass('Scene Look finishing polish, live status, grouped Lens controls and range feedback are present');
+
+assert.ok(!html.includes('Библиотека PBR-пресетов')&&!html.includes('ПРИМЕНИТЬ PBR-ПРЕСЕТ'), 'visible PBR preset workflow must remain removed');
+assert.ok(!html.includes('<label for="editorTextureType">Тип карты</label>'), 'texture map type dropdown must remain removed');
+for(const mapType of ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap']){
+  assert.ok(html.includes('data-texture-card="'+mapType+'"'), 'independent texture card missing: '+mapType);
+  assert.ok(html.includes('id="editorTexturePreview-'+mapType+'"'), 'texture preview missing: '+mapType);
+  assert.ok(entrySource.includes("button.dataset.textureImport")&&entrySource.includes("button.dataset.textureRemove"), 'independent texture card actions are not wired');
+}
+assert.ok(html.includes('id="materialLibraryWindow"')&&html.includes('id="materialLibraryGrid"'), 'separate shared material library window is missing');
+assert.ok(html.includes('id="openMaterialLibrary"')&&entrySource.includes('function renderMaterialLibraryWindow()'), 'Hypershade-style material library launcher / renderer missing');
+assert.ok(entrySource.includes('function refreshEditorTexturePreviews('), 'material slot texture preview refresh is missing');
+assert.ok(entrySource.includes("document.getElementById('materialLibraryAssign').addEventListener('click',assignEditorLibraryMaterial)"), 'floating material library assignment action is missing');
+const sceneTabOrder=[...html.matchAll(/id="sceneLookTab-([^"]+)"/g)].map(match=>match[1]);
+assert.ok(sceneTabOrder.indexOf('materials')<sceneTabOrder.indexOf('camera'), 'Materials tab must appear before Camera');
+pass('Scene Editor material cards, separate Hypershade library, and Camera / Materials tab order are present');
+
 assert.ok(!html.includes('id="sceneLookTab-optics"') && !html.includes('id="sceneLookPanel-optics"'), 'separate Optics tab must remain removed');
 assert.ok(!html.includes('id="sceneLookTab-lens"') && !html.includes('id="sceneLookPanel-lens"'), 'separate Lens tab must remain removed');
 assert.ok(html.includes('id="sceneLookTab-camera"') && html.includes('id="sceneLookPanel-camera"'), 'combined Camera / Lens / Optics tab is missing');
@@ -500,7 +516,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('app.v129.js'), 'HTML must load v125 module');
+assert.ok(html.includes('app.v130.js'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
