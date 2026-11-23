@@ -193,7 +193,7 @@ export class WeatherSystem {
       fog: false, toneMapped: false
     }));
     this.cloudAtlasTexture = new THREE.TextureLoader().load(
-      new URL('./assets/cloud-atlas.v1.png', import.meta.url).href,
+      new URL('./assets/cloud-atlas.v1.svg', import.meta.url).href,
       texture => {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearMipmapLinearFilter;
