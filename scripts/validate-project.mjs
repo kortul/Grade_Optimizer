@@ -121,7 +121,7 @@ for (const preset of ['clear','light','partly','cloudy','overcast','snow','blizz
 }
 assert.ok(entrySource.includes('weatherPresetButtons.forEach(button =>')&&entrySource.includes('applyWeatherPreset(button.dataset.weatherPreset)'), 'weather preset buttons must apply the selected runtime preset');
 assert.ok(weatherSource.includes("this.params = { ...WeatherSystem.PRESETS.light, preset: 'light', groundFog: false, volumetrics: true }"), 'ground fog must default to OFF');
-assert.ok(weatherSource.includes('shadowOpticalDepth')&&weatherSource.includes('uRayStrength'), 'broken-cloud sun shafts must be present and weather-dependent');
+assert.ok(weatherSource.includes('shadowDensity')&&weatherSource.includes('uRayStrength'), 'broken-cloud sun shafts must be present and weather-dependent');
 assert.ok(weatherSource.includes('makeGroundFogTexture()')&&weatherSource.includes('setGroundFog(enabled)'), 'optional ground fog simulation is missing');
 assert.ok(entrySource.includes('dayTime:13.5'), 'default scene time must be sunny midday');
 assert.ok(html.includes('id="weatherGroundFog"')&&html.includes('id="sceneGroundFog"'), 'ground fog controls must be exposed in Weather and Scene Look');
