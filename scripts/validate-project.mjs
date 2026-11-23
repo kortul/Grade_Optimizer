@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v148.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v149.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -91,8 +91,8 @@ assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missi
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
 
 const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map(m => m[1]);
-assert.ok(entrySource.includes('weather-system.v2.js'), 'active app must use the camera-space weather fix');
-const weatherSource = read('weather-system.v2.js').toString('utf8');
+assert.ok(entrySource.includes('weather-system.v3.js'), 'active app must use the updated atmospheric weather engine');
+const weatherSource = read('weather-system.v3.js').toString('utf8');
 assert.ok(weatherSource.includes("this.cameraWeatherRig = new THREE.Group()"), 'weather camera-follow scene root missing');
 assert.ok(weatherSource.includes('this.scene.add(this.cameraWeatherRig)'), 'camera-follow weather layer must belong to the renderable scene graph');
 assert.ok(weatherSource.includes('this.cameraWeatherRig.add(this.snow)')&&weatherSource.includes('this.cameraWeatherRig.add(this.streaks)'), 'snow and wind streaks must be children of the renderable camera-follow root');
@@ -103,6 +103,13 @@ for (const preset of ['clear','light','partly','cloudy','overcast','snow','blizz
   assert.ok(html.includes('data-weather-preset="' + preset + '"'), 'weather preset button missing from UI: ' + preset);
 }
 assert.ok(entrySource.includes('weatherPresetButtons.forEach(button =>')&&entrySource.includes('applyWeatherPreset(button.dataset.weatherPreset)'), 'weather preset buttons must apply the selected runtime preset');
+assert.ok(weatherSource.includes("this.params = { ...WeatherSystem.PRESETS.light, preset: 'light', groundFog: false }"), 'ground fog must default to OFF');
+assert.ok(weatherSource.includes('makeGodRayTexture()')&&weatherSource.includes('cloudGate * sunStrength'), 'broken-cloud sun shafts must be present and weather-dependent');
+assert.ok(weatherSource.includes('makeGroundFogTexture()')&&weatherSource.includes('setGroundFog(enabled)'), 'optional ground fog simulation is missing');
+assert.ok(entrySource.includes('dayTime:13.5'), 'default scene time must be sunny midday');
+assert.ok(html.includes('id="weatherGroundFog"')&&html.includes('id="sceneGroundFog"'), 'ground fog controls must be exposed in Weather and Scene Look');
+assert.ok(entrySource.includes("if(typeof saved.groundFog==='boolean')weatherSystem.setGroundFog(saved.groundFog)"), 'ground fog preference must restore with project weather settings');
+pass('sunny midday default, atmospheric god rays and persistent optional ground fog are present');
 assert.ok(!entrySource.includes("weather-open'))setWeatherPanelOpen(false)"), 'changing to skier / drone mode must not forcibly close weather settings');
 assert.doesNotMatch(html,/#[^\n]*skier-mode #weatherPanel[^\n]*display:none|#[^\n]*drone-mode #weatherPanel[^\n]*display:none/, 'weather panel must remain available in skier and drone modes');
 assert.ok(html.includes('#app.weather-open #weatherPanel{display:block}'), 'weather panel open state CSS missing');
