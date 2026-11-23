@@ -483,7 +483,7 @@ function applyOpticsSettings({persist=true,markDirty=true}={}) {
   if(persist)persistOpticsSettings();
   if(markDirty)markClientProjectDirty('настройки камеры и рендеринга');
 }
-let activeSceneLookTab='optics';
+let activeSceneLookTab='lens';
 function bindSceneHierarchyTabs(){const tabs=[...document.querySelectorAll("#sceneHierarchyPanel [data-hierarchy-tab]")],panels=[...document.querySelectorAll("#sceneHierarchyPanel [data-hierarchy-panel]")];if(!tabs.length||!panels.length)return;function activate(name){tabs.forEach(t=>{const active=t.dataset.hierarchyTab===name;t.classList.toggle("active",active);t.setAttribute("aria-selected",String(active));});panels.forEach(p=>{p.hidden=p.dataset.hierarchyPanel!==name;});}tabs.forEach(t=>t.addEventListener("click",()=>activate(t.dataset.hierarchyTab)));activate("project");}
 function bindSceneLookTabs(){
   const tabs=[...document.querySelectorAll('#sceneEditorPanel [data-look-tab]')];
@@ -511,12 +511,11 @@ function bindSceneLookTabs(){
       materials:['MATERIALS & PBR','MATERIAL SLOTS · MAPS · PRESETS'],
       environment:['ENVIRONMENT & LIGHTING','WEATHER · SUN · SHADOWS'],
       camera:['CAMERA & EXPOSURE','FRAMING · FOCUS · WHITE BALANCE'],
-      lens:['LENS CHARACTER','DISTORTION · EDGE RESPONSE · DETAIL'],
-      optics:['OPTICAL PROCESSING','BLOOM · FLARE · DEPTH OF FIELD'],
+      lens:['LENS & OPTICS','LENS CHARACTER · BLOOM · FLARE · DEPTH OF FIELD'],
       color:['COLOR GRADING','TONAL RESPONSE & COLOR'],
       render:['RENDER PIPELINE','OUTPUT TRANSFORM & GPU QUALITY']
     };
-    const copy=labels[name]||['SCENE LOOK','GLOBAL VISUAL SETTINGS'];
+    const copy=labels[name]||['SCENE EDITOR','OBJECTS · MATERIALS · VISUAL SETTINGS'];
     if(title)title.textContent=copy[0];
     if(subtitle)subtitle.textContent=copy[1];
     const resetButton=document.getElementById('sceneLookReset');
