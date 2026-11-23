@@ -15,12 +15,12 @@ assert.equal(entry, 'app.v150.js', 'index.html must activate the current app rel
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
-const weatherSource=read('weather-system.v4.js').toString('utf8');
+const weatherV4Source=read('weather-system.v4.js').toString('utf8');
 assert.ok(existsSync(resolve(root,'assets/cloud-atlas.v1.svg')),'AI cloud atlas asset is missing');
-assert.ok(weatherSource.includes('cloud-atlas.v1.svg')&&weatherSource.includes('cloudMaterials'),'AI cloud atlas is not used');
-assert.ok(weatherSource.includes('CLOUD_VOLUME_FRAGMENT_SHADER')&&weatherSource.includes('GROUND_FOG_FRAGMENT_SHADER'),'volumetric cloud/fog shaders are missing');
-assert.ok(weatherSource.includes('shadowOpticalDepth')&&weatherSource.includes('uRayStrength'),'volumetric god-ray scattering or cloud self-shadowing is missing');
-assert.ok(weatherSource.includes('createNightSky()')&&weatherSource.includes('GO_StarField')&&weatherSource.includes('GO_Moon'),'night sky stars or moon are missing');
+assert.ok(weatherV4Source.includes('cloud-atlas.v1.svg')&&weatherV4Source.includes('cloudMaterials'),'AI cloud atlas is not used');
+assert.ok(weatherV4Source.includes('CLOUD_VOLUME_FRAGMENT_SHADER')&&weatherV4Source.includes('GROUND_FOG_FRAGMENT_SHADER'),'volumetric cloud/fog shaders are missing');
+assert.ok(weatherV4Source.includes('shadowOpticalDepth')&&weatherV4Source.includes('uRayStrength'),'volumetric god-ray scattering or cloud self-shadowing is missing');
+assert.ok(weatherV4Source.includes('createNightSky()')&&weatherV4Source.includes('GO_StarField')&&weatherV4Source.includes('GO_Moon'),'night sky stars or moon are missing');
 assert.ok(entrySource.includes('./weather-system.v4.js')&&entrySource.includes('setVolumetrics'),'app must import the volumetric weather system');
 assert.ok(html.includes('id="weatherVolumetrics"')&&html.includes('id="sceneVolumetrics"'),'volumetric toggle UI is missing');
 assert.ok(html.includes('id="timeOfDay" type="range" min="0" max="24"'),'time slider must span 24 hours');
@@ -101,8 +101,8 @@ assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missi
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
 
 const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map(m => m[1]);
-assert.ok(entrySource.includes('weather-system.v3.js'), 'active app must use the updated atmospheric weather engine');
-const weatherSource = read('weather-system.v3.js').toString('utf8');
+assert.ok(entrySource.includes('weather-system.v4.js'), 'active app must use the updated atmospheric weather engine');
+const weatherSource = read('weather-system.v4.js').toString('utf8');
 assert.ok(weatherSource.includes("this.cameraWeatherRig = new THREE.Group()"), 'weather camera-follow scene root missing');
 assert.ok(weatherSource.includes('this.scene.add(this.cameraWeatherRig)'), 'camera-follow weather layer must belong to the renderable scene graph');
 assert.ok(weatherSource.includes('this.cameraWeatherRig.add(this.snow)')&&weatherSource.includes('this.cameraWeatherRig.add(this.streaks)'), 'snow and wind streaks must be children of the renderable camera-follow root');
@@ -113,8 +113,8 @@ for (const preset of ['clear','light','partly','cloudy','overcast','snow','blizz
   assert.ok(html.includes('data-weather-preset="' + preset + '"'), 'weather preset button missing from UI: ' + preset);
 }
 assert.ok(entrySource.includes('weatherPresetButtons.forEach(button =>')&&entrySource.includes('applyWeatherPreset(button.dataset.weatherPreset)'), 'weather preset buttons must apply the selected runtime preset');
-assert.ok(weatherSource.includes("this.params = { ...WeatherSystem.PRESETS.light, preset: 'light', groundFog: false }"), 'ground fog must default to OFF');
-assert.ok(weatherSource.includes('makeGodRayTexture()')&&weatherSource.includes('cloudGate * sunStrength'), 'broken-cloud sun shafts must be present and weather-dependent');
+assert.ok(weatherSource.includes("this.params = { ...WeatherSystem.PRESETS.light, preset: 'light', groundFog: false, volumetrics: true }"), 'ground fog must default to OFF');
+assert.ok(weatherSource.includes('shadowOpticalDepth')&&weatherSource.includes('uRayStrength'), 'broken-cloud sun shafts must be present and weather-dependent');
 assert.ok(weatherSource.includes('makeGroundFogTexture()')&&weatherSource.includes('setGroundFog(enabled)'), 'optional ground fog simulation is missing');
 assert.ok(entrySource.includes('dayTime:13.5'), 'default scene time must be sunny midday');
 assert.ok(html.includes('id="weatherGroundFog"')&&html.includes('id="sceneGroundFog"'), 'ground fog controls must be exposed in Weather and Scene Look');
