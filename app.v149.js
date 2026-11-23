@@ -313,6 +313,7 @@ function applyWeatherSettingsFromProject(saved) {
   if(saved.preset==='custom')weatherSystem.setCustom(saved);
   else if(WeatherSystem.PRESETS[saved.preset])weatherSystem.setPreset(saved.preset);
   else weatherSystem.setPreset('light');
+  if(typeof saved.groundFog==='boolean')weatherSystem.setGroundFog(saved.groundFog);
   updateDaylight(state.dayTime);
   updateWeatherControls();
   persistWeatherSettings();
@@ -692,6 +693,10 @@ try {
       weatherSystem.setCustom(savedWeather);
     }else if(WeatherSystem.PRESETS[savedWeather.preset]){
       weatherSystem.setPreset(savedWeather.preset);
+    }
+    if(typeof weatherToRestore.groundFog==='boolean'){
+      weatherSystem.setGroundFog(weatherToRestore.groundFog);
+      if(legacyWeather)persistWeatherSettings();
     }
   }
 } catch (error) {
