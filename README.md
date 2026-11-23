@@ -54,11 +54,13 @@ Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor, or open
    - `assets/real-terrain.json`
 4. Open GitHub Desktop, review the two changed files, then commit and push. The Maya exporter does not create commits or push by itself.
 
+The runtime converts Maya centimetres to metres without changing the source world origin or physical proportions. Camera zoom, fog and directional shadow bounds adapt to the imported terrain dimensions; the geometry is not normalized to the old A1 test slope.
+
 The FBX preserves hierarchy, transforms, mesh names, smoothing, tangents, material assignments and embedded textures. The JSON sidecar records the source scene, Maya version, linear unit, world bounds, component names, material names and Role / Tags metadata. Collision and Forest blocker remain Web Editor settings.
 
 The exporter removes the old Project ID / `clients/<id>` requirement. There is one fixed destination for the main terrain. Keep the FBX below 90 MiB for the current regular-Git workflow.
 
-**Runtime note:** this exporter prepares the canonical terrain asset in the repository. The browser app still needs its separate loader update before it will replace the built-in test slope with this FBX; exporting alone does not change the live terrain.
+**Runtime:** for the primary A1 slot, the app now prefers `assets/real-terrain.fbx` + `assets/real-terrain.json`, resolves the mesh by its manifest name (`terrainShape`), converts Maya source units to metres and applies snow materials. If either canonical file is missing or invalid, it falls back to the original `assets/A1.gltf`. The A1 optimizer profiles remain loaded from `A1.curves.json`.
 ## Scene Editor: browser autosave and direct local repository sync
 
 You are the only Scene Editor administrator. Viewers only need the generated viewer link; no client accounts or editing workflow are required.
