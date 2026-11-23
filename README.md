@@ -7,7 +7,7 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v153.js`.
+- Current app: `app.v154.js`.
 - Weather: `weather-system.v2.js`; snowfall and wind streaks render through a scene-root camera-follow layer, with visible snow density and persistent controls in skier / drone modes.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
