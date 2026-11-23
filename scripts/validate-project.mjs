@@ -790,3 +790,7 @@ assert.ok(weatherV7Source.includes('aColor')&&weatherV7Source.includes('GO_StarF
 assert.ok(weatherV7Source.includes('azimuthDelta>0.045')&&weatherV7Source.includes('globalCompositeOperation=\'screen\''),'sky must include wrapped, directional atmospheric scattering');
 assert.ok(weatherV7Source.includes('cloudFbm')&&weatherV7Source.includes('cirrusLayer')&&weatherV7Source.includes('for(int i=0;i<6;i++)'),'cloud shader must retain layered detail with the reduced integration sample count');
 pass('v7 sky atmosphere, cloud layers and night-sky regression checks');
+
+assert.ok(weatherV7Source.includes('InstancedBufferGeometry')&&weatherV7Source.includes('uFallSpeed')&&weatherV7Source.includes('uLateralSpeed'),'snow particle motion must be vertex-shader driven');
+assert.ok(!weatherV7Source.includes('this.snow.instanceMatrix.needsUpdate'),'snow must not upload per-instance matrices every frame');
+pass('GPU-animated snowfall regression checks');
