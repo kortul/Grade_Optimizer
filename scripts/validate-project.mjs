@@ -11,12 +11,16 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v133.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v134.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
 assert.ok(entrySource.includes('function collectVisibleOverviewMeshes(')&&entrySource.includes('function focusOverviewGeometryAt('), 'overview geometry focus helper is missing');
 assert.ok(entrySource.includes('lastOverviewTouchTap')&&entrySource.includes("event.pointerType!=='touch'")&&entrySource.includes("addEventListener('pointercancel'"), 'mobile overview double-tap recognition / cancel cleanup is missing');
+assert.ok(entrySource.includes('overviewTouchStart.maxMove')&&entrySource.includes('moved>8')&&entrySource.includes('now-start.time>260'), 'touch focus must reject dragging / long press rather than stealing the overview camera');
+assert.ok(entrySource.includes('lastTouchFocusAt')&&entrySource.includes('performance.now()-lastTouchFocusAt<700'), 'synthetic mobile dblclick must not focus the camera a second time');
+assert.ok(entrySource.includes('maxHitDistance=touch')&&entrySource.includes('item.distance<=maxHitDistance'), 'touch focus must reject distant stray / back-face geometry hits');
+
 
 const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(m => m[1]);
 const duplicateIds = ids.filter((id, i) => ids.indexOf(id) !== i);
@@ -540,7 +544,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('app.v133.js'), 'HTML must load the current application module');
+assert.ok(html.includes('app.v134.js'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
