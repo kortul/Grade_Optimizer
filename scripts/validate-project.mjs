@@ -467,7 +467,7 @@ assert.ok(entrySource.includes("persistImportedEditorAsset(asset).catch(error=>c
 assert.ok(html.includes('id="editorNodeRole" type="text"'), 'node role must accept custom values');
 assert.ok(html.includes('id="connectProjectFolderButton"') && html.includes('>CONNECT FOLDER</button>'), 'Scene Editor must provide the compact local repository folder control');
 assert.ok(html.includes('id="clientWorkspaceStatus"') && entrySource.includes('function readProjectBrowserBackup(') && entrySource.includes('function autosaveProjectToBrowser('), 'browser backup and autosave status must remain available without verbose help text');
-assert.ok(read('maya/grade_optimizer_exporter.py').toString('utf8').includes('_option_string(OPTION_PROJECT, "alpine-resort")'), 'Maya Exporter default Project ID must match the Web Editor default');
+assert.ok(!read('maya/grade_optimizer_exporter.py').toString('utf8').includes('OPTION_PROJECT'), 'Maya exporter must remain independent of client Project IDs');
 assert.ok(html.includes('ЭКСПОРТ JSON-БЭКАПА'), 'manual JSON export must be clearly marked as an optional backup');
 
 
