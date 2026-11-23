@@ -1,11 +1,11 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-22T16:52:09.093Z",
+  "updatedAt": "2026-11-23T14:49:59.949Z",
   "assets": [],
   "editorSettings": {
     "schemaVersion": "1.0",
-    "savedAt": "2026-11-22T16:52:09.093Z",
+    "savedAt": "2026-11-23T14:49:59.949Z",
     "units": "meters",
     "assets": [
       {
@@ -42,7 +42,7 @@
             "materialId": "scene-material-1",
             "nodeName": "terrainShape",
             "materialName": "",
-            "baseColor": "#6c3d3d",
+            "baseColor": "#ffffff",
             "roughness": 0.97,
             "metalness": 0,
             "normalScale": 1,
@@ -66,6 +66,44 @@
           }
         ]
       }
-    ]
+    ],
+    "visualSettings": {
+      "enabled": true,
+      "bloom": 58,
+      "bloomThreshold": 0.78,
+      "flare": true,
+      "flareStrength": 70,
+      "dirt": 38,
+      "bokeh": false,
+      "focusDistance": 48,
+      "aperture": 4,
+      "vignette": 24,
+      "chromatic": 18,
+      "grain": 4,
+      "sharpness": 14,
+      "distortion": 6,
+      "shadowLift": 12,
+      "highlightCompression": 18,
+      "focusMode": "target",
+      "temperature": 6500,
+      "tint": 0,
+      "contrast": 104,
+      "saturation": 104,
+      "exposure": 0,
+      "cameraFov": 55,
+      "toneMapping": "aces",
+      "quality": "balanced",
+      "sunIntensity": 100,
+      "sunRotation": 0,
+      "ambientFill": 100,
+      "sunEnabled": true,
+      "shadowQuality": 1
+    },
+    "weatherSettings": {
+      "preset": "light",
+      "clouds": 0.18,
+      "snowfall": 0,
+      "wind": 3
+    }
   }
 }
