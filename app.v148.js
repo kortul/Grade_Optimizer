@@ -3188,6 +3188,7 @@ function updateEditorSelectionHelper(asset){
   editorSelectionHelper.visible=appRoot.classList.contains('editor-open');
   scene.add(editorSelectionHelper);
 }
+// Imported FBX files may duplicate one material slot across several mesh groups.
 function editorMaterialsEquivalent(a,b){
   if(a===b)return true;
   if(!a||!b)return false;
