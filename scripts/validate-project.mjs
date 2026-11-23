@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v147.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v148.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -41,6 +41,15 @@ pass('per-material emissive toggle, strength preservation and project serializat
 assert.ok(entrySource.includes('function disableMaterialEmissionByDefault(')&&entrySource.includes('material.emissiveIntensity=enabled?savedStrength:0'), 'current and newly loaded model materials must default to emission OFF');
 assert.ok(entrySource.includes("gradeOptimizerEmissiveEnabled:false")&&entrySource.includes("if('emissiveIntensity' in material)material.emissiveIntensity=0"), 'legacy material configurations must migrate to emission OFF');
 pass('all current legacy and newly imported model materials default to emissive OFF');
+assert.ok(entrySource.includes("preserveSlopeAlbedo:/slopes[_ -]?stage[_ -]?1/i.test(String(fileName||''))"), 'Slopes_Stage1 FBX must enable the base-color recovery path');
+assert.ok(entrySource.includes('gradeOptimizerAlbedoRecovery')&&entrySource.includes('emissive-map-recovered-as-base-color-map')&&entrySource.includes('emissive-color-recovered-as-base-color'), 'black diffuse materials must recover usable albedo from FBX emission data');
+pass('Slopes_Stage1 FBX restores diffuse albedo when Maya exported visible color through Emission');
+
+assert.ok(entrySource.includes('function editorMaterialsEquivalent(a,b)')&&entrySource.includes('function editorGeometryForMaterial(object,materialFilter,ownedGeometries)'), 'material identity matching and group-filtered geometry selection are missing');
+assert.ok(entrySource.includes('geometry.clearGroups()')&&entrySource.includes('filtered.addGroup(group.start,group.count,0)'), 'material highlight must isolate matching FBX geometry groups');
+assert.ok(entrySource.includes('hit.face?.materialIndex')&&entrySource.includes('selectEditorNode(picked,picked.root,-1,hitMaterial)')&&entrySource.includes('pulseEditorSelection(picked.root,hitMaterial)'), 'viewport click must select and highlight all faces assigned to the clicked material');
+assert.ok(entrySource.includes('persistent:!!materialFilter')&&entrySource.includes('if(effect.persistent){'), 'the selected material faces must remain highlighted after the click');
+pass('viewport and material-list selection highlight all matching material groups across the selected asset');
 
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
 assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
