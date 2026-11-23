@@ -11,6 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
+assert.equal(entry, 'app.v115.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -27,6 +28,21 @@ assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missi
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
 
 const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map(m => m[1]);
+assert.ok(entrySource.includes('weather-system.v2.js'), 'active app must use the camera-space weather fix');
+const weatherSource = read('weather-system.v2.js').toString('utf8');
+assert.ok(weatherSource.includes("this.cameraWeatherRig = new THREE.Group()"), 'weather camera-follow scene root missing');
+assert.ok(weatherSource.includes('this.scene.add(this.cameraWeatherRig)'), 'camera-follow weather layer must belong to the renderable scene graph');
+assert.ok(weatherSource.includes('this.cameraWeatherRig.add(this.snow)')&&weatherSource.includes('this.cameraWeatherRig.add(this.streaks)'), 'snow and wind streaks must be children of the renderable camera-follow root');
+assert.ok(weatherSource.includes('this.camera.getWorldQuaternion(this.cameraWeatherRig.quaternion)')&&weatherSource.includes('this.cameraWeatherRig.position.copy(this.cameraPosition)'), 'weather layer must follow the current camera transform every frame');
+assert.ok(weatherSource.includes('this.snowCount = 2200')&&weatherSource.includes('this.snowMaterial.opacity = 0.84 + this.params.snowfall * 0.12'), 'snowfall density and contrast must remain visible');
+for (const preset of ['clear','light','partly','cloudy','overcast','snow','blizzard']) {
+  assert.ok(weatherSource.includes(preset + ':'), 'weather preset missing from runtime: ' + preset);
+  assert.ok(html.includes('data-weather-preset="' + preset + '"'), 'weather preset button missing from UI: ' + preset);
+}
+assert.ok(entrySource.includes('weatherPresetButtons.forEach(button =>')&&entrySource.includes('applyWeatherPreset(button.dataset.weatherPreset)'), 'weather preset buttons must apply the selected runtime preset');
+assert.ok(!entrySource.includes("weather-open'))setWeatherPanelOpen(false)"), 'changing to skier / drone mode must not forcibly close weather settings');
+assert.doesNotMatch(html,/#[^\n]*skier-mode #weatherPanel[^\n]*display:none|#[^\n]*drone-mode #weatherPanel[^\n]*display:none/, 'weather panel must remain available in skier and drone modes');
+assert.ok(html.includes('#app.weather-open #weatherPanel{display:block}'), 'weather panel open state CSS missing');
 const modulePaths = [entry, ...localImports.map(p => resolve(dirname(entry), p))];
 for (const path of modulePaths) {
   assert.ok(existsSync(resolve(root, path)), 'missing local JS import: ' + path);
@@ -111,9 +127,11 @@ assert.ok(aiForestStart>=0&&aiForestEnd>aiForestStart,'AI tree atlas rendering b
 const aiForestMaterialSource=entrySource.slice(aiForestStart,aiForestEnd);
 assert.ok(aiForestMaterialSource.includes('new THREE.MeshStandardMaterial'), 'AI tree billboards must respond to scene lighting');
 assert.doesNotMatch(aiForestMaterialSource,/MeshBasicMaterial|toneMapped:false/, 'AI tree billboards must not bypass daylight / tone mapping');
-assert.ok(aiForestMaterialSource.includes('emissive:0x000000')&&aiForestMaterialSource.includes('emissiveIntensity:0'), 'AI tree atlas must not self-illuminate at dusk');
-assert.ok(entrySource.includes('emissive:0x000000, emissiveIntensity:0, roughness:0.96'), 'procedural tree foliage must not self-illuminate at dusk');
-assert.ok(entrySource.includes('emissive:0x000000, emissiveIntensity:0,\n    roughness:1'), 'fallback tree billboards must not self-illuminate at dusk');
+assert.ok(aiForestMaterialSource.includes('emissiveMap:treeTexture')&&aiForestMaterialSource.includes('emissiveIntensity:forestEmissiveIntensity'), 'AI trees must use texture-matched dynamic fill');
+assert.ok(entrySource.includes('function updateForestDaylight(daylight)')&&entrySource.includes('updateForestDaylight(daylight)'), 'tree brightness must follow the day/night cycle');
+assert.ok(entrySource.includes('treeLightingMaterials.push(material)'), 'AI tree materials must be registered for dynamic daylight updates');
+assert.ok(entrySource.includes('emissiveMap:map, emissiveIntensity:forestEmissiveIntensity'), 'fallback billboard trees must receive daylight-matched fill');
+assert.ok(entrySource.includes('emissive:0x4d875c, emissiveIntensity:forestEmissiveIntensity'), 'procedural 3D tree foliage must receive daylight-matched fill');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
 assert.ok(entrySource.includes('drone-controller.v72.js'), 'active app must use the current drone controller');

@@ -7,7 +7,8 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v114.js`.
+- Current app: `app.v115.js`.
+- Weather: `weather-system.v2.js`; snowfall and wind streaks render through a scene-root camera-follow layer, with visible snow density and persistent controls in skier / drone modes.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs (Environment, Camera, Lens, Optics, Color, Render); the separate optics toolbar has been removed. Depth of field starts disabled.
 - Skier: `skier-controller.v77.js`, with detailed equipment, depth-safe opaque rendering at full visibility, articulated hips / knees and shoulders / elbows, bilateral knee angulation into turns, damped carving lean, pelvis counter-rotation, pole strokes and a reset eye-level first-person camera.
@@ -30,7 +31,7 @@ WASD controls use physical key codes, so they also work with a Russian keyboard 
 
 ## Forest
 
-`assets/trees/snowy_conifer_atlas.webp` is an RGBA atlas with winter conifer cutouts. Each tree uses one camera-facing instanced plane; the atlas billboards use light-responsive standard materials with no emissive fill so the forest dims naturally at dusk and night. Crossed planes are avoided because they caused z-fighting.
+`assets/trees/snowy_conifer_atlas.webp` is an RGBA atlas with winter conifer cutouts. Each tree uses one camera-facing instanced plane; the atlas billboards use a texture-matched emissive fill linked to daylight, keeping trees readable before sunset while fading naturally at dusk and night. Crossed planes are avoided because they caused z-fighting.
 
 ## Quality checks
 
