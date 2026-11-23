@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v120.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v121.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -155,8 +155,16 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v81.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v81.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v82.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v82.js').toString('utf8');
+assert.ok(entrySource.includes("velocity:droneController.velocity.clone()"), 'drone-to-skier handoff must preserve the drone pose and velocity');
+assert.ok(entrySource.includes("skierController.start(terrain,spawnHint)"), 'skier mode must start directly without deferred input');
+assert.ok(!entrySource.includes('modeTransition'), 'mode changes must not be blocked by a stale cinematic transition');
+assert.ok(entrySource.includes("if(state.mode==='skier')skierController.update(dt)"), 'skier physics must update every frame once skier mode is active');
+assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate continuous downhill terrain');
+assert.ok(skierSource.includes('if(!spawnFound)spawnFound=!!this._findSpawn()'), 'failed drone-local spawn must fall back to the main slope');
+assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone-to-skier handoff must begin with controlled downhill motion');
+
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push&&!airborne,airborne,tuck'), 'skier push, airborne and stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
