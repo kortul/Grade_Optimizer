@@ -221,10 +221,26 @@ def check_git_repository(*_):
             label = "ПРОВЕРЬ ORIGIN · " + label
         if cmds.control(WINDOW + "_repo_status", exists=True):
             cmds.text(WINDOW + "_repo_status", edit=True, label=label)
+        status_code, working_status, status_error = _run_git(
+            repo, ["status", "--short", "--branch", "--untracked-files=all"]
+        )
+        if status_code != 0:
+            raise RuntimeError("Git status failed: " + (status_error or working_status))
+        report = [
+            "Git root: " + git_info["root"],
+            "Branch: " + git_info["branch"],
+            "Origin: " + git_info["origin"]
+        ]
+        if not git_info["origin_matches"]:
+            report.append("ВНИМАНИЕ: origin не совпадает с kortul/Grade_Optimizer.")
+        report.append("")
+        report.append("Текущее состояние Git:")
+        report.append(working_status if working_status else "Рабочая копия чистая — незакоммиченных изменений нет.")
+        report.append("")
+        report.append("GitHub Desktop должен быть открыт именно для этого Git root.")
         cmds.confirmDialog(
             title="Grade Optimizer · Git repository",
-            message=_format_git_export_report(git_info, {"changes": [], "ignored": []})
-                + "\n\nGitHub Desktop должен быть открыт именно для этой папки.",
+            message="\n".join(report),
             button=["OK"]
         )
     except Exception as exc:

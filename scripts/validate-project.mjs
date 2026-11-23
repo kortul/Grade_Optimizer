@@ -105,7 +105,7 @@ assert.ok(entrySource.includes('weather-system.v4.js'), 'active app must use the
 const mayaExporterSource = read('maya/grade_optimizer_exporter.py').toString('utf8');
 assert.ok(mayaExporterSource.includes('def _inspect_git_worktree(repo):')&&mayaExporterSource.includes('"--show-toplevel"'), 'Maya exporter must verify the selected Git working tree');
 assert.ok(mayaExporterSource.includes('def _git_changes_for_paths(repo, paths):')&&mayaExporterSource.includes('"--short"'), 'Maya exporter must report exact Git status for the exported FBX and manifest');
-assert.ok(mayaExporterSource.includes('remote.origin.url')&&mayaExporterSource.includes('def check_git_repository('), 'Maya exporter must expose Git origin diagnostics in its UI');
+assert.ok(mayaExporterSource.includes('remote.origin.url')&&mayaExporterSource.includes('def check_git_repository(')&&mayaExporterSource.includes('"--short", "--branch"'), 'Maya exporter must expose Git origin diagnostics in its UI');
 assert.ok(mayaExporterSource.includes('ПРОВЕРКА GIT:')&&mayaExporterSource.includes('ПРОВЕРИТЬ ПАПКУ'), 'Maya exporter must show post-export Git diagnostics and a folder check button');
 pass('Maya exporter verifies local Git root and reports exact post-export file status');
 const weatherSource = read('weather-system.v4.js').toString('utf8');
