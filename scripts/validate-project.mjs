@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v126.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v127.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -484,6 +484,13 @@ assert.ok(entrySource.includes("if(pendingSceneMode==='skier')"), 'queued skier 
 assert.ok(entrySource.includes("const reason=skierController.lastStartError||'UNKNOWN'"), 'skier startup failures must report the controller error code');
 
 pass('reliable skier/drone mode handoff, spawn fallback and active movement are present');
+assert.ok(entrySource.includes('function resolveSkierTerrain()'), 'skier mode must resolve a terrain mesh before its early guard');
+assert.ok(entrySource.indexOf('const requestedTerrain=mode===\'skier\'?resolveSkierTerrain():null;')<entrySource.indexOf("if(mode==='skier'&&!requestedTerrain)"), 'terrain resolution must run before the early skier guard');
+assert.ok(entrySource.includes('const terrain=requestedTerrain;'), 'skier start must use the resolved terrain instance');
+assert.ok(entrySource.includes("const terrain=resolveSkierTerrain();"), 'queued skier mode must resolve its terrain when loading completes');
+assert.ok(entrySource.includes("START_EXCEPTION"), 'skier controller exceptions must be reported precisely');
+assert.ok(entrySource.includes("TERRAIN_NOT_RESOLVED"), 'mode API must report terrain resolution failures instead of NO_MODE_CHANGE');
+
 assert.ok(skierSource.includes('this._groundFromLookup(x,z)'), 'skier ground queries must have a direct triangle lookup fallback');
 assert.ok(skierSource.includes('this._buildTerrainLookup()'), 'skier start must build a spatial terrain lookup');
 assert.ok(skierSource.includes('occupiedCells:this.terrainLookup?.cells?.size||0'), 'failed skier starts must report terrain lookup diagnostics');
@@ -491,7 +498,7 @@ assert.ok(entrySource.includes("return 'failed:'+state.mode+':'+(skierController
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('app.v126.js'), 'HTML must load v125 module');
+assert.ok(html.includes('app.v127.js'), 'HTML must load v125 module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
