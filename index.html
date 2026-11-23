@@ -1098,7 +1098,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       </div>
   <div class="dayCycle" id="dayCycle">
     <button id="timeToggle" type="button" aria-expanded="false" aria-label="Показать управление временем" title="Время суток"><span aria-hidden="true">◷</span><strong id="timeCompactValue">13:30</strong></button>
-    <div class="timeControls"><span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:30</span><input id="timeOfDay" type="range" min="5" max="22" step="0.25" value="13.5" aria-label="Время суток"/><button id="autoDay" type="button" title="Автоматическая смена времени">▶</button></div>
+    <div class="timeControls"><span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:30</span><input id="timeOfDay" type="range" min="0" max="24" step="0.25" value="13.5" aria-label="Время суток"/><button id="autoDay" type="button" title="Автоматическая смена времени">▶</button></div>
   </div>
 </div>
 
@@ -1128,6 +1128,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <label for="weatherWind">Скорость ветра <strong id="weatherWindValue">2 км/ч</strong></label>
     <input id="weatherWind" type="range" min="0" max="60" step="1" value="2"/>
   </div>
+  <label class="weather-ground-fog-toggle" for="weatherVolumetrics"><input id="weatherVolumetrics" type="checkbox" checked/> <span>Объёмные эффекты <small>облака · god rays · ground fog</small></span></label>
   <label class="weather-ground-fog-toggle" for="weatherGroundFog"><input id="weatherGroundFog" type="checkbox"/> <span>Наземный туман <small>выключен по умолчанию</small></span></label>
   <div id="weatherStatus" aria-live="polite">Ясно · лёгкие облака</div>
 </div>
@@ -1354,6 +1355,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
         </div>
         <div class="scene-look-switches">
           <label for="sceneSunEnabled"><input id="sceneSunEnabled" type="checkbox" checked/> Directional sun</label>
+          <label for="sceneVolumetrics"><input id="sceneVolumetrics" type="checkbox" checked/> Volumetric effects</label>
           <label for="sceneGroundFog"><input id="sceneGroundFog" type="checkbox"/> Ground fog</label>
         </div>
       </section>
@@ -1808,7 +1810,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v149.js"></script>
+<script type="module" src="./app.v150.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -1870,8 +1872,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v149.js"]');
-  moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить app.v149.js или один из его модулей.'));
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v150.js"]');
+  moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить app.v150.js или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
 /* Inspector vertical workspace: use the full viewport height */
