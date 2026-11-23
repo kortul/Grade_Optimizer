@@ -1127,7 +1127,6 @@ def show():
         width=540,
         allowMultiSelection=False,
         allowDragAndDrop=False,
-        hideButtons=True,
         selectCommand=_git_asset_tree_select,
         selectionChangedCommand=_update_git_asset_details
     )
