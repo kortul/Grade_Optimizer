@@ -105,6 +105,15 @@ assert.match(entrySource, /snowy_conifer_atlas\.webp/, 'active app must load the
 assert.match(entrySource, /AI_PINE_VARIANTS\s*=\s*\[/, 'tree variants array missing');
 assert.match(entrySource, /new THREE\.InstancedMesh\(geometry,material,variantTrees\.length\)/, 'single-plane instanced tree mesh missing');
 assert.doesNotMatch(entrySource, /_Cross|geoB\.rotateY\(Math\.PI\s*\*\s*0\.5\)/, 'crossed tree billboards reintroduced');
+const aiForestStart=entrySource.indexOf('if(aiPineTextures&&aiPineTextures.length===AI_PINE_VARIANTS.length){');
+const aiForestEnd=entrySource.indexOf('const mesh=new THREE.InstancedMesh(geometry,material,variantTrees.length)',aiForestStart);
+assert.ok(aiForestStart>=0&&aiForestEnd>aiForestStart,'AI tree atlas rendering branch missing');
+const aiForestMaterialSource=entrySource.slice(aiForestStart,aiForestEnd);
+assert.ok(aiForestMaterialSource.includes('new THREE.MeshStandardMaterial'), 'AI tree billboards must respond to scene lighting');
+assert.doesNotMatch(aiForestMaterialSource,/MeshBasicMaterial|toneMapped:false/, 'AI tree billboards must not bypass daylight / tone mapping');
+assert.ok(aiForestMaterialSource.includes('emissive:0x000000')&&aiForestMaterialSource.includes('emissiveIntensity:0'), 'AI tree atlas must not self-illuminate at dusk');
+assert.ok(entrySource.includes('emissive:0x000000, emissiveIntensity:0, roughness:0.96'), 'procedural tree foliage must not self-illuminate at dusk');
+assert.ok(entrySource.includes('emissive:0x000000, emissiveIntensity:0,\n    roughness:1'), 'fallback tree billboards must not self-illuminate at dusk');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
 assert.ok(entrySource.includes('drone-controller.v72.js'), 'active app must use the current drone controller');
