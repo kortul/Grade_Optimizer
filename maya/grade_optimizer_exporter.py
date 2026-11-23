@@ -944,7 +944,7 @@ def show():
         WINDOW,
         title="Grade Optimizer Scene Asset Exporter " + VERSION,
         sizeable=True,
-        widthHeight=(540, 410)
+        widthHeight=(640, 650)
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=7, columnAttach=("both", 12))
     cmds.text(

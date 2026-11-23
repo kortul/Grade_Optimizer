@@ -502,7 +502,7 @@ assert.ok(mayaExporter.includes('def prepare_client_asset_export(repo, component
 assert.ok(mayaExporter.includes('def list_replaceable_client_assets(repo):') && mayaExporter.includes('def refresh_git_asset_list(*_):'), 'Maya exporter must list existing client FBX files from the local Git scene manifest');
 assert.ok(mayaExporter.includes('def replace_selected_scene_asset(*_):') && mayaExporter.includes('_export_scene(replace_asset_id=asset.get("id"))'), 'Maya exporter must expose explicit target replacement');
 assert.ok(mayaExporter.includes('ЗАМЕНИТЬ ВЫБРАННУЮ ГЕОМЕТРИЮ В GIT') && mayaExporter.includes('ДОБАВИТЬ КАК НОВЫЙ ОБЪЕКТ'), 'Maya UI must keep new and replace operations separate');
-assert.ok(mayaExporter.includes('^models/[A-Za-z0-9_.-]+\\\\.fbx
+assert.ok(mayaExporter.includes('re.match(r"^models/') && mayaExporter.includes('_safe_existing_fbx_path'), 'Maya replacement must be restricted to safe models/ FBX paths');
 assert.ok(mayaExporter.includes('"activeTerrain": False') && mayaExporter.includes('"category": category'), 'new Maya scene assets must default to non-active geometry');
 assert.ok(mayaExporter.includes('MAYA_LINEAR_UNIT_TO_METERS') && mayaExporter.includes('"scale": [meters_per_unit, meters_per_unit, meters_per_unit]'), 'Maya asset units must be converted to metres in the client manifest');
 assert.ok(mayaExporter.includes('def write_client_asset_manifest('), 'Maya client scene manifest writer missing');
