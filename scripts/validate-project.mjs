@@ -158,7 +158,7 @@ assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD r
 assert.ok(entrySource.includes('skier-controller.v79.js'), 'active app must use the current skier controller');
 const skierSource = read('skier-controller.v79.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
-assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
+assert.ok(skierSource.includes('pushing:push,\n      airborne:this.airborneHeight>0.02,\n      tuck'), 'skier push, airborne and stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
 assert.ok(droneSource.includes("this.keys.has('shift')?this.boostSpeed:this.speed"), 'Shift must activate drone boost');
 assert.ok(droneSource.includes("(this.keys.has('control')?1:0)"), 'Ctrl must control drone descent');
