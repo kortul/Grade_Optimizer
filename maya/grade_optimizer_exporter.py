@@ -14,7 +14,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.7.1"
+VERSION = "0.7.2"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -717,6 +717,7 @@ def prepare_client_asset_export(repo, components, node_metadata, replace_asset_i
     source_root_name = selected[0].rsplit("|", 1)[-1] if selected else str(components[0].get("name") or "Maya Asset")
 
     existing = None
+    existing_size_bytes = 0
     if replace_asset_id:
         matches = [item for item in assets if isinstance(item, dict) and str(item.get("id") or "") == str(replace_asset_id)]
         if len(matches) != 1:
@@ -728,6 +729,7 @@ def prepare_client_asset_export(repo, components, node_metadata, replace_asset_i
         asset_name = str(existing.get("name") or asset_id)
         relative_file = str(existing.get("file") or "").replace("\\", "/")
         model_path = _safe_existing_fbx_path(client_dir, relative_file, require_exists=True)
+        existing_size_bytes = os.path.getsize(model_path)
     else:
         asset_name = source_root_name
         base_id = _safe_asset_id(asset_name)
@@ -808,6 +810,7 @@ def prepare_client_asset_export(repo, components, node_metadata, replace_asset_i
     return {
         "client_slug": client_slug, "asset_id": asset_id, "asset_name": asset_name,
         "source_root_name": source_root_name, "is_replacement": bool(existing),
+        "existing_size_bytes": existing_size_bytes,
         "relative_file": relative_file, "model_path": model_path,
         "temporary_model_path": temporary_model_path, "manifest_path": scene_path,
         "temporary_manifest_path": temporary_manifest_path, "manifest": manifest
@@ -950,6 +953,24 @@ def _export_scene(replace_asset_id=None):
         size = os.path.getsize(temporary_model_path)
         if size <= 0:
             raise RuntimeError("Maya создала пустой FBX. Экспорт отменён.")
+
+        # A replacement must not destroy a healthy asset with a header-only or
+        # otherwise truncated export. Compare before writing the manifest or
+        # swapping either file, so the previous FBX remains untouched on failure.
+        previous_size = int(export_info.get("existing_size_bytes") or 0)
+        if export_info["is_replacement"] and previous_size:
+            minimum_safe_size = max(16 * 1024, int(previous_size * 0.01))
+            if size < minimum_safe_size:
+                raise RuntimeError(
+                    "Замена остановлена: новый FBX подозрительно мал.\n\n"
+                    "Старый файл: %s bytes\n"
+                    "Новый файл: %s bytes\n"
+                    "Минимум для безопасной замены: %s bytes\n\n"
+                    "Исходная геометрия сохранена. Проверь выделение Maya и "
+                    "экспортируй нужную группу через «Новый объект», если "
+                    "требуется добавить отдельную модель."
+                    % (previous_size, size, minimum_safe_size)
+                )
 
         write_client_asset_manifest(export_info, size, material_conversion_summary)
 
