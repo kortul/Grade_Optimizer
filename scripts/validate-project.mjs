@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v143.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v144.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -33,6 +33,11 @@ assert.ok(entrySource.includes('expectedNames.some(expected=>names.some(name=>na
 pass('canonical Maya terrainShape FBX loading, units, UV scale and A1 fallback are present');
 assert.ok(entrySource.includes("if(/\\.fbx$/i.test(String(fileName||'')))"), 'generic model parser must route .fbx files through FBXLoader');
 pass('generic FBX parser extension detection routes .fbx assets through FBXLoader');
+assert.ok(html.includes('id="editorEmissiveEnabled"'), 'material editor must expose an independent emissive enable toggle');
+assert.ok(entrySource.includes('function updateEditorEmissiveControls('), 'emissive toggle must control the color / strength inputs');
+assert.ok(entrySource.includes('material.emissiveIntensity=emissiveEnabled?emissiveStrength:0'), 'disabling emission must zero emissive intensity without changing Base Color');
+assert.ok(entrySource.includes('gradeOptimizerEmissiveEnabled')&&entrySource.includes('emissiveEnabled:savedMaterial.emissiveEnabled'), 'emissive enable state and strength must be serialized and restored');
+pass('per-material emissive toggle, strength preservation and project serialization are present');
 
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
 assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
