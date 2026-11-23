@@ -114,6 +114,7 @@ pass('Scene Editor desktop / tablet / mobile fit guards and overview-on-open beh
 assert.ok(html.includes('id="mobileControls"')&&html.includes('id="mobileMoveStick"')&&html.includes('id="mobileLookStick"'), 'mobile control layer and virtual sticks are missing');
 for(const id of ['overviewMode','skierMode','droneModeButton'])assert.ok(html.includes('id="'+id+'"'), 'mobile mode selector missing: '+id);
 assert.ok(html.includes('grade-optimizer-mobile-mode-v132'), 'mobile-only toolbar and control styling is missing');
+assert.ok(html.includes('#app.mobile-mode #homeBtn,#app.mobile-mode #measureBtn{display:none!important}'), 'mobile mode must hide desktop-only home and measure tools');
 assert.ok(entrySource.includes("window.matchMedia('(pointer: coarse) and (max-width: 900px), (pointer: coarse) and (max-height: 520px)'"), 'mobile mode must detect coarse touch phone viewports');
 assert.ok(entrySource.includes('controls.enableZoom=enabled'), 'mobile overview must support pinch zoom');
 assert.ok(entrySource.includes('function bindMobileStick(')&&entrySource.includes('updateMobileMoveKeys(dx,dy)'), 'virtual movement and look sticks must be wired');
