@@ -86,5 +86,5 @@ Open the page through HTTPS (for example, the GitHub Pages preview for the featu
 - Directional horizon scatter follows the sun azimuth and warms naturally around sunrise / sunset.
 - The volumetric cloud field combines broad cloud masses, mid-scale structure, fine erosion and thin upper cirrus, with six vertical integration samples instead of eight.
 - Night stars have subtle warm / cool color variation and twinkle in one point draw call.
-- Hidden volumetric clouds no longer receive per-frame camera / time uniform updates; scene matrices are left to the renderer's normal update pass.
+- Snowfall motion is computed from static instance attributes in the vertex shader, removing the per-flake CPU matrix-update loop. Hidden volumetric clouds no longer receive per-frame camera / time uniform updates; scene matrices are left to the renderer's normal update pass.
 - The previous `app.v154.js` and `weather-system.v6.js` remain in the repository for rollback.
