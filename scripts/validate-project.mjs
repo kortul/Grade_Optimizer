@@ -353,13 +353,13 @@ assert.ok(mayaFixture.includes('5 верхнеуровневых веток, 7 m
 assert.ok(read('maya/GradeOptimizer.mod').toString('utf8').includes('MAYA_PLUG_IN_PATH +:= plug-ins'), 'Maya module descriptor missing plug-in path');
 assert.ok(read('maya/install_maya_module.bat').toString('utf8').includes('install_maya_module.ps1'), 'Windows Maya module installer missing');
 assert.match(entry, /^app\.v\d+\.js$/, 'active app must use a versioned app.vNN.js runtime module');
-assert.ok(html.includes('id="clientWorkspaceHint"') && html.includes('PROJECT WORKSPACE'), 'Project Workspace must explain the Project ID and default project');
+assert.ok(html.includes('id="clientWorkspaceHint"') && html.includes('ABOUT PROJECTS') && html.includes('placeholder="alpine-resort"'), 'compact Project Workspace must retain its help text and default project ID');
 assert.ok(entrySource.includes("WORKSPACE_QUERY.get('project')||WORKSPACE_QUERY.get('client')||''"), 'project query must be supported with legacy client URL compatibility');
 assert.ok(entrySource.includes("REQUESTED_PROJECT_ID||'alpine-resort'"), 'primary alpine-resort workspace must open automatically');
 assert.ok(entrySource.includes('await restoreProjectFolderHandle()'), 'project open must restore the chosen local repository folder handle');
 assert.ok(entrySource.includes("Date.parse(localBackup.manifest.updatedAt||'')>Date.parse(remoteManifest.updatedAt||'')"), 'newer unsynced browser draft must take precedence over older deployed manifest');
 assert.ok(entrySource.includes('90*1024*1024'), 'local folder sync must guard regular-Git model file size');
-assert.ok(html.includes('LOCAL REPOSITORY · AUTO-SYNC'), 'Scene Editor must explain direct local repository synchronization');
+assert.ok(html.includes('class="workspace-sync-title">LOCAL SYNC') && html.includes('GITHUB DESKTOP'), 'compact Scene Editor sync section must identify GitHub Desktop');
 assert.ok(entrySource.includes('function pulseEditorSelection(target){'), 'scene editor selection pulse effect missing');
 assert.ok(entrySource.includes('updateEditorSelectionPulses(now);'), 'scene editor selection pulse animation must run in the render loop');
 assert.ok(entrySource.includes('color:0xffd52f'), 'selection pulse must use the yellow highlight material');
@@ -371,8 +371,8 @@ assert.ok(entrySource.includes("window.addEventListener('beforeunload'"), 'unsav
 assert.ok(entrySource.includes("removeButton.disabled=asset.sourceType==='scene'"), 'non-persistent built-in scene component deletion must be disabled');
 assert.ok(entrySource.includes("persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить импортированную JSON-конфигурацию модели:'"), 'imported model JSON changes must be persisted into the model file');
 assert.ok(html.includes('id="editorNodeRole" type="text"'), 'node role must accept custom values');
-assert.ok(html.includes('CONNECT LOCAL PROJECT FOLDER'), 'Scene Editor must provide direct local repository access');
-assert.ok(html.includes('IndexedDB'), 'Scene Editor must explain browser backup remains available');
+assert.ok(html.includes('id="connectProjectFolderButton"') && html.includes('>CONNECT FOLDER</button>'), 'Scene Editor must provide the compact local repository folder control');
+assert.ok(html.includes('id="clientWorkspaceStatus"') && entrySource.includes('function readProjectBrowserBackup(') && entrySource.includes('function autosaveProjectToBrowser('), 'browser backup and autosave status must remain available without verbose help text');
 assert.ok(read('maya/grade_optimizer_exporter.py').toString('utf8').includes('_option_string(OPTION_PROJECT, "alpine-resort")'), 'Maya Exporter default Project ID must match the Web Editor default');
 assert.ok(html.includes('ЭКСПОРТ JSON-БЭКАПА'), 'manual JSON export must be clearly marked as an optional backup');
 
