@@ -7,11 +7,11 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v118.js`.
+- Current app: `app.v119.js`.
 - Weather: `weather-system.v2.js`; snowfall and wind streaks render through a scene-root camera-follow layer, with visible snow density and persistent controls in skier / drone modes.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
-- Scene Look is part of the Scene Editor and uses seven category-card tabs: General, Environment, Camera, Lens & Optics, Color, Materials, and Render. Lens and optical processing share one panel. Depth of field starts disabled.
-- Skier: `skier-controller.v79.js`, with detailed equipment, depth-safe opaque rendering at full visibility, articulated hips / knees and shoulders / elbows, bilateral knee angulation into turns, damped carving lean, pelvis counter-rotation, pole strokes and a reset eye-level first-person camera.
+- Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
+- Skier: `skier-controller.v80.js`, with a 75 kg skier-equipment point-mass reference, mass-scaled pole / jump impulses, ballistic take-off and terrain-aware landing, grounded ski-snow friction, speed-limited edge force, calculated inside / outside ski loads, load-aware stance animation and first / third-person cameras.
 - Drone: `drone-controller.v72.js`.
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
 
@@ -35,7 +35,7 @@ WASD controls use physical key codes, so they also work with a Russian keyboard 
 
 ## Quality checks
 
-GitHub Actions runs `scripts/validate-project.mjs` on pushes and pull requests. It checks the active entrypoint, local imports, JavaScript syntax, HTML IDs and DOM references, Scene Look tab panels / keyboard behavior / gear icon, the skier's detailed equipment and articulated animation rig, camera-optics GLSL declarations and render fallback, the tree atlas, forest safeguards, slope GLTF buffers and profile curves, the scene manifest, Maya exporter and project-save wiring.
+GitHub Actions runs `scripts/validate-project.mjs` on pushes and pull requests. It checks the active entrypoint, local imports, JavaScript syntax, HTML IDs and DOM references, Scene Look tab panels / keyboard behavior / gear icon, 75 kg skier force / impulse calculations and load transfer, terrain-aware jump landing, skier equipment and articulated animation, camera-optics GLSL declarations and render fallback, the tree atlas, forest safeguards, slope GLTF buffers and profile curves, the scene manifest, Maya exporter and project-save wiring.
 
 Run locally with Node.js 22 or later:
 

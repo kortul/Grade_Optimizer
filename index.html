@@ -412,6 +412,14 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 .mode-stat strong small{font-size:10px;color:#aebdcb;font-weight:600}
 .mode-stat-primary{border-color:color-mix(in srgb,var(--mode-accent) 23%,transparent);background:var(--mode-accent-soft)}
 .mode-stat-primary strong{font-size:27px}
+.ski-load-readout{display:grid;gap:5px;margin:-5px 0 13px;padding:9px 11px;border:1px solid rgba(130,184,226,.16);border-radius:10px;background:rgba(255,255,255,.035)}
+.ski-load-readout-head,.ski-load-readout-values{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.ski-load-readout-head span{font-size:9px;font-weight:850;letter-spacing:.1em;color:#b7cce0}
+.ski-load-readout-head small,.ski-load-readout-total{font-size:9px;color:#8fa4b7}
+.ski-load-readout-values strong{font-size:10px;font-weight:750;color:#e5eef6;font-variant-numeric:tabular-nums}
+.ski-load-readout-values strong:first-child{color:#9fd3f1}
+.ski-load-track{height:5px;overflow:hidden;border-radius:99px;background:rgba(160,184,204,.2)}
+#outsideSkiLoadBar{display:block;width:50%;height:100%;border-radius:99px;background:linear-gradient(90deg,#5d9fc7,#9ad3ef);transition:width .12s ease}
 .mode-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 9px}
 .mode-section-heading>span:first-child{font-size:10px;letter-spacing:.12em;font-weight:850;color:#e7f0f7}
 .mode-section-note{font-size:8px;letter-spacing:.08em;color:#8499ab;text-align:right}
@@ -1183,17 +1191,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
       <div class="scene-look-panels">
       <section class="scene-look-panel scene-look-panel--general" id="sceneLookPanel-general" data-look-panel="general" role="tabpanel" aria-labelledby="sceneLookTab-general" hidden>
               <div class="scene-look-note scene-look-persistence-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"/><path d="M8 4.5v5h8v-5M8 19v-5h8v5"/></svg><span>Настройки сохраняются в Scene Config и <code>clients/&lt;project&gt;/scene.json</code> и восстанавливаются вместе с проектом.</span></div>
-          <div class="editor-section ski-replacement-section">
-    <h3>ЗАМЕНА ЛЫЖ ЛЫЖНИКА <span class="editor-chip">SKIER RIG</span></h3>
-    <div class="editor-hint">Загрузи GLB одной лыжи. Модель автоматически подгоняется по длине и ориентации, затем устанавливается парой на лыжника. Крепления остаются на месте.</div>
-    <input id="skierSkiFileInput" type="file" accept=".glb,model/gltf-binary" hidden/>
-    <div class="editor-split">
-      <button id="importSkierSkiButton" type="button">＋ ЗАГРУЗИТЬ ОДНУ ЛЫЖУ · GLB</button>
-      <button id="resetSkierSkiButton" class="secondary" type="button">ВЕРНУТЬ СТАНДАРТНЫЕ</button>
-    </div>
-    <div id="skierSkiModelStatus" class="editor-hint" aria-live="polite">Используются стандартные лыжи.</div>
-  </div>
-  <select id="editorObjectSelect" hidden aria-hidden="true"><option value="">Сцена загружается…</option></select>
+          <select id="editorObjectSelect" hidden aria-hidden="true"><option value="">Сцена загружается…</option></select>
   <div class="editor-section">
     <h3>ОБЪЕКТ <span class="editor-chip">TRANSFORM</span></h3>
     <div id="editorSelectedName" class="editor-selected-name">Нет выбранного объекта</div>
@@ -1527,6 +1525,13 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     <div class="mode-stat"><span>УСКОРЕНИЕ</span><strong><span id="accelerationValue">0.00</span><small>м/с²</small></strong></div>
   </div>
 
+  <div id="skiLoadReadout" class="ski-load-readout" aria-label="Расчётная нагрузка на внешнюю и внутреннюю лыжу">
+    <div class="ski-load-readout-head"><span>НАГРУЗКА НА ЛЫЖИ</span><small>РАСЧЁТНАЯ СИЛА · N</small></div>
+    <div class="ski-load-readout-values"><strong id="outsideSkiLoadValue">Внешняя 50% · 0 N</strong><strong id="insideSkiLoadValue">Внутренняя 50% · 0 N</strong></div>
+    <div class="ski-load-track" aria-hidden="true"><span id="outsideSkiLoadBar"></span></div>
+    <small id="totalSkiLoadValue" class="ski-load-readout-total">Суммарная нагрузка 0 N · масса 75 кг</small>
+  </div>
+
   <div id="skierTutorialContent" class="mode-hud-collapsible">
   <section class="mode-tutorial">
     <div class="mode-section-heading"><span>КАК НАЧАТЬ</span><span class="mode-section-note">ВСЁ ПРОСТО</span></div>
@@ -1628,7 +1633,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v118.js"></script><style id="inspector-vertical-and-combined-lens">
+<script type="module" src="./app.v119.js"></script><style id="inspector-vertical-and-combined-lens">
 /* Inspector vertical workspace: use the full viewport height */
 #sceneEditorPanel{
   top:12px!important;
