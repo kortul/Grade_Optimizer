@@ -549,7 +549,7 @@ assert.ok(entrySource.includes('await restoreProjectFolderHandle()'), 'project o
 assert.ok(entrySource.includes("Date.parse(localBackup.manifest.updatedAt||'')>Date.parse(remoteManifest.updatedAt||'')"), 'newer unsynced browser draft must take precedence over older deployed manifest');
 assert.ok(entrySource.includes('90*1024*1024'), 'local folder sync must guard regular-Git model file size');
 assert.ok(html.includes('class="workspace-sync-title">LOCAL SYNC') && html.includes('GITHUB DESKTOP'), 'compact Scene Editor sync section must identify GitHub Desktop');
-assert.ok(entrySource.includes('function pulseEditorSelection(target){'), 'scene editor selection pulse effect missing');
+assert.ok(entrySource.includes('function pulseEditorSelection(target,materialFilter=null){'), 'scene editor selection pulse effect missing');
 assert.ok(entrySource.includes('updateEditorSelectionPulses(now);'), 'scene editor selection pulse animation must run in the render loop');
 assert.ok(entrySource.includes('color:0xffd52f'), 'selection pulse must use the yellow highlight material');
 assert.ok(entrySource.includes("markClientProjectDirty('назначение общего материала')"), 'shared material assignment must mark the client project dirty');
