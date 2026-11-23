@@ -1167,8 +1167,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
         </button>
         <button class="scene-look-tab" id="sceneLookTab-environment" type="button" role="tab" data-look-tab="environment" aria-controls="sceneLookPanel-environment" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17.5" cy="6.5" r="2.7"/><path d="M17.5 1.5v1.3M22.5 6.5h-1.3M17.5 11.5v-1.3M12.5 6.5h1.3M4 17.2a3.2 3.2 0 0 1 .3-6.4 5.2 5.2 0 0 1 9.9 1.4 2.8 2.8 0 0 1-.2 5.6H4Z"/></svg></span><span class="scene-look-tab-label">Environment</span><span class="scene-look-tab-meta">ATMOSPHERE</span></button>
         <button class="scene-look-tab" id="sceneLookTab-camera" type="button" role="tab" data-look-tab="camera" aria-controls="sceneLookPanel-camera" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h4l1.6-2h6.8l1.6 2h4v12H3z"/><circle cx="12" cy="13.5" r="4.1"/><circle cx="12" cy="13.5" r="1.5"/></svg></span><span class="scene-look-tab-label">Camera</span><span class="scene-look-tab-meta">FRAMING</span></button>
-        <button class="scene-look-tab" id="sceneLookTab-lens" type="button" role="tab" data-look-tab="lens" aria-controls="sceneLookPanel-lens" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.4"/><circle cx="12" cy="12" r="2"/><path d="m18.4 5.6 1.2-1.2M4.4 19.6l1.2-1.2"/></svg></span><span class="scene-look-tab-label">Lens</span><span class="scene-look-tab-meta">CHARACTER</span></button>
-        <button class="scene-look-tab active" id="sceneLookTab-optics" type="button" role="tab" data-look-tab="optics" aria-controls="sceneLookPanel-optics" aria-selected="true" tabindex="0"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 14.2 8l5.3 1-4 3.7 1 5.4-4.5-2.7-4.5 2.7 1-5.4-4-3.7 5.3-1L12 2.8Z"/><path d="M19.2 18.2 21 20M3 20l1.8-1.8"/></svg></span><span class="scene-look-tab-label">Optics</span><span class="scene-look-tab-meta">EFFECTS</span></button>
+        <button class="scene-look-tab active" id="sceneLookTab-lens" type="button" role="tab" data-look-tab="lens" aria-controls="sceneLookPanel-lens" aria-selected="true" tabindex="0"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.4"/><circle cx="12" cy="12" r="2"/><path d="m18.4 5.6 1.2-1.2M4.4 19.6l1.2-1.2"/></svg></span><span class="scene-look-tab-label">Lens &amp; Optics</span><span class="scene-look-tab-meta">LENS · EFFECTS</span></button>
+        
         <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a2 2 0 0 0 1.3-3.5 1.7 1.7 0 0 1 1.1-3h.7A4.5 4.5 0 0 0 21 10c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="6.8" r=".8"/><circle cx="16" cy="8" r=".8"/></svg></span><span class="scene-look-tab-label">Color</span><span class="scene-look-tab-meta">PALETTE</span></button>
         
         <button class="scene-look-tab" id="sceneLookTab-materials" type="button" role="tab" data-look-tab="materials" aria-controls="sceneLookPanel-materials" aria-selected="false" tabindex="-1">
@@ -1335,7 +1335,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
         </div>
       </section>
 
-      <section class="scene-look-panel scene-look-panel--lens" id="sceneLookPanel-lens" data-look-panel="lens" role="tabpanel" aria-labelledby="sceneLookTab-lens" hidden>
+      <section class="scene-look-panel scene-look-panel--lens scene-look-panel--optics" id="sceneLookPanel-lens" data-look-panel="lens" role="tabpanel" aria-labelledby="sceneLookTab-lens" >
         <div class="scene-look-lens-groups">
           <div class="scene-look-subsection">
             <div class="scene-look-subhead"><strong>LENS CHARACTER</strong><span>EDGE RESPONSE · DISTORTION</span></div>
@@ -1353,10 +1353,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
             </div>
           </div>
         </div>
-        <div class="scene-look-note">Lens Character отвечает за характер оптики по краям кадра и микродеталь. Bloom, flare и глубина резкости находятся отдельно во вкладке Optics.</div>
-      </section>
-      <section class="scene-look-panel scene-look-panel--optics" id="sceneLookPanel-optics" data-look-panel="optics" role="tabpanel" aria-labelledby="sceneLookTab-optics">
-        <div class="scene-look-switches">
+        
+        <div class="scene-look-lens-groups scene-look-optics-groups">
+          <div class="scene-look-subhead"><strong>OPTICAL PROCESSING</strong><span>BLOOM · FLARE · DEPTH OF FIELD</span></div>
+          <div class="scene-look-switches">
           <label for="sceneOpticsEnabled"><input id="sceneOpticsEnabled" type="checkbox" checked/> Post-processing enabled</label>
           <label for="sceneBokeh"><input id="sceneBokeh" type="checkbox"/> Depth of field / Bokeh <small class="scene-look-switch-hint">Off by default · extra GPU cost</small></label>
           <label for="sceneFlareEnabled"><input id="sceneFlareEnabled" type="checkbox" checked/> Lens flare / ghosts</label>
@@ -1376,7 +1376,9 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
           </div>
         </div>
         <div class="scene-look-note">Depth of field is disabled on startup to preserve a sharp, responsive viewport. Enable it deliberately when a shallow-focus shot is required.</div>
+        </div>
       </section>
+      
       <section class="scene-look-panel scene-look-panel--color" id="sceneLookPanel-color" data-look-panel="color" role="tabpanel" aria-labelledby="sceneLookTab-color" hidden>
         
         <div class="scene-look-grid">
@@ -1622,4 +1624,22 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v116.js"></script></body></html>
+<script type="module" src="./app.v116.js"></script><style id="inspector-vertical-and-combined-lens">
+/* Inspector vertical workspace: use the full viewport height */
+#sceneEditorPanel{
+  top:12px!important;
+  bottom:12px!important;
+  height:auto!important;
+  max-height:none!important;
+}
+@media(max-width:980px){
+  #sceneEditorPanel{top:112px!important;bottom:8px!important}
+}
+@media(max-width:700px){
+  #sceneEditorPanel{top:150px!important;bottom:8px!important}
+}
+/* The Lens workspace now also owns all optical processing controls. */
+#sceneEditorPanel .scene-look-panel--lens .scene-look-switches{grid-template-columns:1fr 1fr}
+#sceneEditorPanel .scene-look-optics-groups{margin-top:2px}
+</style>
+</body></html>
