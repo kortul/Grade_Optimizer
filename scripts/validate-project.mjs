@@ -334,7 +334,7 @@ assert.ok(skierSource.includes('if(!locked)this.keys.clear();'), 'lost pointer l
 assert.ok(skierSource.includes('const grounded=!!nextHit&&!airborne;'), 'HUD grounded state must be false while airborne');
 assert.ok(skierSource.includes('grounded: this.active&&this.airborneWorldY===null'), 'friction control must preserve airborne HUD state');
 assert.ok(skierSource.includes('this.terrain.traverse(object=>{\n      if(object.isMesh&&object.geometry?.attributes?.position)meshes.push(object);'), 'skier spawn search must support grouped Terrain meshes');
-assert.ok(skierSource.includes('const sampleStride=Math.max(1,Math.ceil(totalVertices/12000));'), 'grouped terrain spawn sampling must have a bounded vertex workload');
+assert.ok(skierSource.includes('const sampleStride=Math.max(1,Math.ceil(totalVertices/3500));'), 'grouped terrain spawn sampling must have a bounded vertex workload');
 assert.ok(skierSource.includes('setSkiModel(source)') && skierSource.includes('Prepare and validate the next model completely before removing the'), 'custom ski replacement must validate before replacing the existing pair');
 pass('detailed skier equipment, articulated limbs, safe input release, pole physics, terrain-group spawn and transactional ski import are present');
 
