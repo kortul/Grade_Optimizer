@@ -36,7 +36,7 @@ pass('generic FBX parser extension detection routes .fbx assets through FBXLoade
 assert.ok(html.includes('id="editorEmissiveEnabled"'), 'material editor must expose an independent emissive enable toggle');
 assert.ok(entrySource.includes('function updateEditorEmissiveControls('), 'emissive toggle must control the color / strength inputs');
 assert.ok(entrySource.includes('material.emissiveIntensity=emissiveEnabled?emissiveStrength:0'), 'disabling emission must zero emissive intensity without changing Base Color');
-assert.ok(entrySource.includes('gradeOptimizerEmissiveEnabled')&&entrySource.includes('emissiveEnabled:savedMaterial.emissiveEnabled'), 'emissive enable state and strength must be serialized and restored');
+assert.ok(entrySource.includes('gradeOptimizerEmissiveEnabled')&&entrySource.includes('gradeOptimizerEmissiveStrength')&&entrySource.includes('gradeOptimizerEmissiveEnabled:savedMaterial.emissiveEnabled'), 'emissive enable state and strength must be serialized and restored');
 pass('per-material emissive toggle, strength preservation and project serialization are present');
 
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
