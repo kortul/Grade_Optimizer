@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v135.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v136.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -23,6 +23,13 @@ assert.ok(entrySource.includes('setTerrainSnowMaterial(canonicalTerrain.terrainM
 assert.ok(entrySource.includes("if(id==='A1')") && entrySource.includes("использую резервный A1.gltf"), 'real terrain must be preferred for the primary slope while preserving A1 fallback');
 assert.ok(entrySource.includes('expectedNames.some(expected=>names.some(name=>name===expected))'), 'FBX loader must resolve terrainShape by its manifest name');
 pass('canonical Maya terrainShape FBX loading, units, UV scale and A1 fallback are present');
+
+assert.ok(entrySource.includes('function adaptSceneScaleToBounds(bounds){'), 'scene framing must adapt to the actual terrain bounds');
+assert.ok(entrySource.includes('controls.maxDistance=sceneViewMaxDistance') && entrySource.includes('d * factor, 30, sceneViewMaxDistance'), 'camera zoom range must grow with the real Maya terrain');
+assert.ok(entrySource.includes('shadowHalfSpan=Math.max(1200,horizontalDiagonal*0.55)'), 'directional shadow coverage must include the full-scale terrain');
+assert.ok(entrySource.includes('scene.fog.far=Math.max(9000,diagonal*1.5)'), 'fog distance must scale with the scene bounds');
+pass('kilometre-scale camera, fog and shadow coverage adapt without recentering / normalizing terrain');
+
 assert.ok(entrySource.includes('function collectVisibleOverviewMeshes(')&&entrySource.includes('function focusOverviewGeometryAt('), 'overview geometry focus helper is missing');
 assert.ok(entrySource.includes('lastOverviewTouchTap')&&entrySource.includes("event.pointerType!=='touch'")&&entrySource.includes("addEventListener('pointercancel'"), 'mobile overview double-tap recognition / cancel cleanup is missing');
 assert.ok(entrySource.includes('overviewTouchStart.maxMove')&&entrySource.includes('moved>8')&&entrySource.includes('now-start.time>260'), 'touch focus must reject dragging / long press rather than stealing the overview camera');
