@@ -117,8 +117,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v76.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v76.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v77.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v77.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
 assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
@@ -147,6 +147,16 @@ assert.ok(skierSource.includes('const insideKneeFlex=0.27*insideLoad'), 'inside 
 assert.ok(skierSource.includes('const outsideSupport=-0.025*outsideLoad'), 'outside leg must retain a longer support stance');
 assert.ok(/smooth\(\s*'kneeX'\+index,[\s\S]{0,260}?6\.2\s*\)/.test(skierSource), 'knee articulation must use damped transitions');
 assert.ok(skierSource.includes('this.avatarPelvis.position.y=this.avatarPelvisBaseY-pelvisCompression'), 'pelvis compression must use a stable base position');
+assert.ok(skierSource.includes('const kneeLateralLean=turnLean*(0.085+speedBlend*0.035)'), 'both knees must angle smoothly toward the slope on left and right turns');
+assert.ok(skierSource.includes('turnLean*(0.055+speedBlend*0.035)'), 'hip / knee alignment must share the signed turn direction');
+assert.ok(skierSource.includes('const fullyVisible=blend>=0.995'), 'skier materials must switch to opaque rendering when fully visible');
+assert.ok(skierSource.includes('mat.depthWrite=fullyVisible') && skierSource.includes('mat.needsUpdate=true'), 'fully visible skier materials must write depth to prevent distance-dependent part loss');
+assert.ok(skierSource.includes('object.frustumCulled=false'), 'skier avatar parts must not be culled independently');
+assert.ok(entrySource.includes('dayTime:16'), 'default scene time must start at 16:00');
+assert.match(html, /id="timeOfDay"[^>]*value="16"/, 'default time slider must start at 16:00');
+assert.ok(html.includes('id="timeValue">16:00') && html.includes('id="timeCompactValue">16:00'), 'both default time labels must show 16:00');
+assert.ok(html.indexOf('id="weatherToggle"') < html.indexOf('id="editorToggle"'), 'cloud weather button must be placed immediately before the gear');
+assert.ok(html.includes('class="weather-icon-button"') && html.includes('class="weather-cloud-icon"'), 'weather control must use its compact cloud icon');
 assert.ok(skierSource.includes("'Kneepad_Upper_Strap'") && skierSource.includes("'Kneepad_Lower_Stitch'"), 'layered knee protection details are missing');
 
 assert.ok(skierSource.includes("smooth('torsoRoll'"), 'damped turn lean animation is missing');
