@@ -3,14 +3,14 @@
  * Volumetric cloud and fog layers use density shaders; non-volume mode keeps a lightweight fallback.
  */
 
-const CLOUD_VOLUME_VERTEX_SHADER = \`
+const CLOUD_VOLUME_VERTEX_SHADER = `
 varying vec3 vWorldPosition;
 void main() {
   vec4 worldPosition = modelMatrix * vec4(position, 1.0);
   vWorldPosition = worldPosition.xyz;
   gl_Position = projectionMatrix * viewMatrix * worldPosition;
-}\`;
-const CLOUD_VOLUME_FRAGMENT_SHADER = \`
+}`;
+const CLOUD_VOLUME_FRAGMENT_SHADER = `
 uniform float uTime;
 uniform float uCoverage;
 uniform float uWind;
@@ -71,9 +71,9 @@ void main() {
   cloudColor+=uSunColor*forwardScatter*uRayStrength*1.65;
   cloudColor=mix(cloudColor,vec3(1.0,0.48,0.42),uTwilight*(0.08+field*0.12));
   gl_FragColor=vec4(cloudColor,alpha);
-}\`;
+}`;
 const GROUND_FOG_VERTEX_SHADER = CLOUD_VOLUME_VERTEX_SHADER;
-const GROUND_FOG_FRAGMENT_SHADER = \`
+const GROUND_FOG_FRAGMENT_SHADER = `
 uniform float uTime;
 uniform float uDensity;
 uniform float uWind;
@@ -116,7 +116,7 @@ void main(){
   vec3 fogColor=mix(nightFog,dayFog,uDaylight);
   fogColor=mix(fogColor,uSunColor*0.88,uTwilight*0.24+viewSun*0.08);
   gl_FragColor=vec4(fogColor,alpha);
-}\`;
+}`;
 
 export class WeatherSystem {
   static PRESETS = {
@@ -421,15 +421,15 @@ export class WeatherSystem {
     this.starsGeometry.setAttribute('aPhase',new THREE.BufferAttribute(phases,1));
     this.starsMaterial=new THREE.ShaderMaterial({
       uniforms:{uNight:{value:0},uTime:{value:0}},
-      vertexShader:\`
+      vertexShader:`
         attribute float aSize; attribute float aPhase; uniform float uTime; varying float vAlpha;
         void main(){
           vec4 mvPosition=modelViewMatrix*vec4(position,1.0); gl_Position=projectionMatrix*mvPosition;
           float twinkle=0.82+0.18*sin(uTime*(0.7+aSize*0.18)+aPhase);
           vAlpha=twinkle*(0.50+aSize*0.25);
           gl_PointSize=clamp(aSize*(1.2+420.0/max(1.0,-mvPosition.z)),1.0,3.4);
-        }\`,
-      fragmentShader:\`
+        }`,
+      fragmentShader:`
         uniform float uNight; varying float vAlpha;
         void main(){
           float d=length(gl_PointCoord-vec2(0.5));
@@ -437,7 +437,7 @@ export class WeatherSystem {
           float alpha=(core*0.78+halo*0.20)*vAlpha*uNight;
           if(alpha<0.008)discard;
           gl_FragColor=vec4(vec3(0.78,0.86,1.0),alpha);
-        }\`,
+        }`,
       transparent:true,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending,toneMapped:false
     });
     this.stars=new THREE.Points(this.starsGeometry,this.starsMaterial);
