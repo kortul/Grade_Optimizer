@@ -727,6 +727,14 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 #skiWindFx .wind-edge i:nth-child(7){top:92%;left:8%;width:54%;animation-delay:-.2s}
 @keyframes ski-wind-streak{0%{transform:translate3d(-16px,-26px,0) scaleX(.4);opacity:0}18%{opacity:.24}48%{opacity:.9}100%{transform:translate3d(18px,38px,0) scaleX(1.15);opacity:0}}
 @media(prefers-reduced-motion:reduce){#skiWindFx .wind-edge i{animation:none;opacity:.2}}
+
+/* Scene hierarchy tabs: compact, full-height sections */
+#sceneHierarchyPanel .scene-hierarchy-tabs{position:sticky;top:0;z-index:8;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:5px;margin:-2px -2px 5px;border:1px solid rgba(135,178,205,.16);border-radius:9px;background:rgba(18,29,40,.98)}
+#sceneHierarchyPanel .scene-hierarchy-tab{min-height:32px;padding:5px 4px;border:1px solid transparent;border-radius:6px;background:transparent;color:#879eaf;font-size:9px;font-weight:800;letter-spacing:.45px}
+#sceneHierarchyPanel .scene-hierarchy-tab.active{color:#e7f5fc;border-color:rgba(131,195,220,.24);background:linear-gradient(180deg,rgba(65,117,150,.3),rgba(41,75,98,.22))}
+#sceneHierarchyPanel .scene-hierarchy-panel[hidden]{display:none!important}
+#sceneHierarchyPanel .scene-hierarchy-panel{min-width:0;flex:1;display:flex;flex-direction:column;gap:7px}
+#sceneHierarchyPanel .client-workspace .editor-hint{font-size:8px;line-height:1.45}
 </style>
 
 <style id="gradeOptimizerWeatherStyles">
@@ -1068,6 +1076,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 
 <div id="sceneHierarchyPanel" aria-label="Scene hierarchy">
   <div class="hierarchy-header"><div class="hierarchy-title"><strong>SCENE</strong><span id="editorAssetCount" class="editor-chip">0 OBJECTS</span></div></div>
+  <div class="scene-hierarchy-tabs" role="tablist" aria-label="Scene panel sections"><button type="button" class="scene-hierarchy-tab active" data-hierarchy-tab="project" aria-selected="true">PROJECT</button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="import" aria-selected="false">IMPORT</button><button type="button" class="scene-hierarchy-tab" data-hierarchy-tab="hierarchy" aria-selected="false">HIERARCHY</button></div><div class="scene-hierarchy-panel" data-hierarchy-panel="project">
   <div class="client-workspace">
     <label for="clientWorkspaceId" class="tree-search-label">PROJECT WORKSPACE</label>
     <input id="clientWorkspaceId" type="text" maxlength="40" placeholder="Project ID · default: alpine-resort" autocomplete="off" aria-describedby="clientWorkspaceHint"/>
@@ -1085,6 +1094,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     </div>
     <div id="clientWorkspaceStatus" class="editor-hint" aria-live="polite">Основной проект alpine-resort открывается автоматически. Автосохранение в этом браузере включено после загрузки проекта.</div>
   </div>
+  </div><div class="scene-hierarchy-panel" data-hierarchy-panel="import" hidden>
   <label for="importAssetCategory" class="tree-search-label">IMPORT AS</label>
   <select id="importAssetCategory" aria-label="Категория импортируемой модели">
     <option value="model" selected>General model · без категории</option>
@@ -1101,6 +1111,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   <button id="importGlbButton" type="button">＋ IMPORT MODEL · GLB / FBX</button>
   <button id="resetTerrainButton" class="secondary" type="button" disabled>↺ RESTORE ORIGINAL TERRAIN</button>
   <input id="glbFileInput" type="file" accept=".glb,.fbx,model/gltf-binary,application/octet-stream" multiple hidden/>
+  </div><div class="scene-hierarchy-panel" data-hierarchy-panel="hierarchy" hidden>
   <label for="editorTreeSearch" class="tree-search-label">SCENE HIERARCHY</label>
   <input id="editorTreeSearch" type="search" placeholder="Filter groups, objects, meshes, materials…" autocomplete="off"/>
   <div class="editor-tree-toolbar">
@@ -1109,6 +1120,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   </div>
   <div id="editorTreeList" role="tree" aria-label="Иерархия сцены Maya"></div>
   <div class="editor-hint">Раскрывай группы до mesh и material slots. Общие материалы связываются через PBR Library; GLB / FBX можно перетащить сюда.</div>
+  </div>
 </div>
 
 <div id="sceneEditorPanel" aria-label="Scene and material inspector">
