@@ -681,16 +681,12 @@ def refresh_git_asset_list(*_):
         note += ". Список читается из локального клона — сначала сделай Pull в GitHub Desktop."
         cmds.text(WINDOW + "_git_asset_status", edit=True, label=note)
 
+        # Do not auto-select the first FBX: replacement must require an
+        # explicit user choice. Preserve a previous selection only on refresh.
         if previous_tree_item:
             cmds.treeView(
                 tree_control, edit=True,
                 selectItem=(previous_tree_item, True)
-            )
-        elif assets:
-            first_asset = assets[0]
-            cmds.treeView(
-                tree_control, edit=True,
-                selectItem=(first_asset["_tree_item"], True)
             )
         _update_git_asset_details()
 
