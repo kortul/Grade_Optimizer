@@ -493,12 +493,16 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.5.0"'), 'Maya scene-asset exporter version must be 0.5.0');
+assert.ok(mayaExporter.includes('VERSION = "0.6.0"'), 'Maya scene-asset exporter version must be 0.6.0');
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
 assert.ok(mayaExporter.includes('restore_fbx_compatible_materials(material_overrides)') && mayaExporter.includes('"fbxMaterialConversions"'), 'Maya exporter must always restore source shader connections and record compatibility conversions');
 assert.ok(mayaExporter.includes('def find_client_scene_manifest(repo):') && mayaExporter.includes('if len(matches) != 1'), 'Maya exporter must safely detect exactly one client scene without asking for a Project ID');
-assert.ok(mayaExporter.includes('def prepare_client_asset_export(') && mayaExporter.includes('"file": relative_file'), 'Maya exporter must prepare a separate asset path and client manifest entry');
+assert.ok(mayaExporter.includes('def prepare_client_asset_export(repo, components, node_metadata, replace_asset_id=None):') && mayaExporter.includes('"file": relative_file'), 'Maya exporter must prepare new and replacement asset paths');
+assert.ok(mayaExporter.includes('def list_replaceable_client_assets(repo):') && mayaExporter.includes('def refresh_git_asset_list(*_):'), 'Maya exporter must list existing client FBX files from the local Git scene manifest');
+assert.ok(mayaExporter.includes('def replace_selected_scene_asset(*_):') && mayaExporter.includes('_export_scene(replace_asset_id=asset.get("id"))'), 'Maya exporter must expose explicit target replacement');
+assert.ok(mayaExporter.includes('ЗАМЕНИТЬ ВЫБРАННУЮ ГЕОМЕТРИЮ В GIT') && mayaExporter.includes('ДОБАВИТЬ КАК НОВЫЙ ОБЪЕКТ'), 'Maya UI must keep new and replace operations separate');
+assert.ok(mayaExporter.includes('^models/[A-Za-z0-9_.-]+\\\\.fbx
 assert.ok(mayaExporter.includes('"activeTerrain": False') && mayaExporter.includes('"category": category'), 'new Maya scene assets must default to non-active geometry');
 assert.ok(mayaExporter.includes('MAYA_LINEAR_UNIT_TO_METERS') && mayaExporter.includes('"scale": [meters_per_unit, meters_per_unit, meters_per_unit]'), 'Maya asset units must be converted to metres in the client manifest');
 assert.ok(mayaExporter.includes('def write_client_asset_manifest('), 'Maya client scene manifest writer missing');
@@ -519,7 +523,260 @@ assert.ok(!mayaExporter.includes('WINDOW + "_node_collision"') && !mayaExporter.
 const mayaCollector = mayaExporter.slice(mayaExporter.indexOf('def collect_node_metadata('), mayaExporter.indexOf('def _set_string_attribute'));
 assert.ok(!mayaCollector.includes('goCollision') && !mayaCollector.includes('goForestBlocker'), 'Maya exporter must not import editor-owned flags from Maya attributes');
 
-assert.ok(mayaPlugin.includes('VERSION = "0.5.0"'), 'Maya plug-in version must match exporter');
+assert.ok(mayaPlugin.includes('VERSION = "0.6.0"'), 'Maya plug-in version must match exporter');
+assert.ok(mayaPlugin.includes('def maya_useNewAPI():'), 'Maya Python API 2.0 marker missing');
+assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
+assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');
+assert.ok(mayaPlugin.includes('maya_utils.executeDeferred(_build_menu)'), 'Maya menu must be created through deferred UI');
+assert.ok(mayaPlugin.includes('Create FBX Test Scene…'), 'Maya plugin test-scene menu item missing');
+assert.ok(mayaPlugin.includes('grade_optimizer_test_scene'), 'Maya plugin test-scene loader missing');
+const mayaFixture = read('maya/grade_optimizer_test_scene.py').toString('utf8');
+assert.ok(mayaFixture.includes('def create_test_scene():'), 'Maya FBX test-scene builder missing');
+assert.ok(mayaFixture.includes('def _metadata(node, role="", tags="")'), 'Maya test fixture must seed descriptive Role / Tags only');
+assert.ok(!mayaFixture.includes('_add_bool') && !mayaFixture.includes('collision=True') && !mayaFixture.includes('forest_blocker=True'), 'Maya test fixture must leave Collision / Forest blocker for Web Editor');
+
+assert.ok(mayaFixture.includes('cmds.file(new=True, force=True)'), 'test scene must explicitly replace the current scene only after confirmation');
+assert.ok(mayaFixture.includes('CONFIRM_BUTTON'), 'test-scene destructive action must require confirmation');
+assert.ok(mayaFixture.includes('GO_Shared_Snow_MAT'), 'shared test material missing');
+assert.ok(mayaFixture.includes('station_body + ".f[0:2]"'), 'test scene must create multiple material slots on one mesh');
+assert.ok(mayaFixture.includes('Hidden_Survey_Marker') && mayaFixture.includes('".visibility", False'), 'hidden test node missing');
+assert.ok(mayaFixture.includes('cmds.rename(south_pylon, "Pylon")'), 'duplicate hierarchy leaf-name test missing');
+assert.ok(mayaFixture.includes('5 верхнеуровневых веток, 7 mesh objects'), 'test-scene summary must match the generated hierarchy and mesh count');
+assert.ok(mayaFixture.includes('cmds.select(terrain_group, replace=True)'), 'test scene must preselect only its terrain group for the exporter');
+assert.ok(read('maya/GradeOptimizer.mod').toString('utf8').includes('MAYA_PLUG_IN_PATH +:= plug-ins'), 'Maya module descriptor missing plug-in path');
+assert.ok(read('maya/install_maya_module.bat').toString('utf8').includes('install_maya_module.ps1'), 'Windows Maya module installer missing');
+assert.match(entry, /^app\.v\d+\.js$/, 'active app must use a versioned app.vNN.js runtime module');
+assert.ok(html.includes('id="clientWorkspaceHint"') && html.includes('ABOUT PROJECTS') && html.includes('placeholder="alpine-resort"'), 'compact Project Workspace must retain its help text and default project ID');
+assert.ok(entrySource.includes("WORKSPACE_QUERY.get('project')||WORKSPACE_QUERY.get('client')||''"), 'project query must be supported with legacy client URL compatibility');
+assert.ok(entrySource.includes("REQUESTED_PROJECT_ID||'alpine-resort'"), 'primary alpine-resort workspace must open automatically');
+assert.ok(entrySource.includes('await restoreProjectFolderHandle()'), 'project open must restore the chosen local repository folder handle');
+assert.ok(entrySource.includes("Date.parse(localBackup.manifest.updatedAt||'')>Date.parse(remoteManifest.updatedAt||'')"), 'newer unsynced browser draft must take precedence over older deployed manifest');
+assert.ok(entrySource.includes('90*1024*1024'), 'local folder sync must guard regular-Git model file size');
+assert.ok(html.includes('class="workspace-sync-title">LOCAL SYNC') && html.includes('GITHUB DESKTOP'), 'compact Scene Editor sync section must identify GitHub Desktop');
+assert.ok(entrySource.includes('function pulseEditorSelection(target,materialFilter=null){'), 'scene editor selection pulse effect missing');
+assert.ok(entrySource.includes('updateEditorSelectionPulses(now);'), 'scene editor selection pulse animation must run in the render loop');
+assert.ok(entrySource.includes('color:0xffd52f'), 'selection pulse must use the yellow highlight material');
+assert.ok(entrySource.includes("markClientProjectDirty('назначение общего материала')"), 'shared material assignment must mark the client project dirty');
+assert.ok(entrySource.includes("markClientProjectDirty('создание уникального материала')"), 'unique material creation must mark the client project dirty');
+assert.ok(entrySource.includes("markClientProjectDirty('удаление карты текстуры')"), 'texture removal must mark the client project dirty');
+assert.ok(entrySource.includes("markClientProjectDirty('смена активного рельефа')"), 'active terrain selection must mark the client project dirty');
+assert.ok(entrySource.includes("window.addEventListener('beforeunload'"), 'unsaved client project changes must warn before leaving');
+assert.ok(entrySource.includes("removeButton.disabled=asset.sourceType==='scene'"), 'non-persistent built-in scene component deletion must be disabled');
+assert.ok(entrySource.includes("persistImportedEditorAsset(asset).catch(error=>console.warn('Не удалось сохранить импортированную JSON-конфигурацию модели:'"), 'imported model JSON changes must be persisted into the model file');
+assert.ok(html.includes('id="editorNodeRole" type="text"'), 'node role must accept custom values');
+assert.ok(html.includes('id="connectProjectFolderButton"') && html.includes('>CONNECT FOLDER</button>'), 'Scene Editor must provide the compact local repository folder control');
+assert.ok(html.includes('id="clientWorkspaceStatus"') && entrySource.includes('function readProjectBrowserBackup(') && entrySource.includes('function autosaveProjectToBrowser('), 'browser backup and autosave status must remain available without verbose help text');
+assert.ok(!read('maya/grade_optimizer_exporter.py').toString('utf8').includes('OPTION_PROJECT'), 'Maya exporter must remain independent of client Project IDs');
+assert.ok(html.includes('ЭКСПОРТ JSON-БЭКАПА'), 'manual JSON export must be clearly marked as an optional backup');
+
+
+
+pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
+
+assert.ok(html.includes("if(event.code!=='KeyV'||event.repeat)return"), 'global V mode switch must be available in overview, skier and drone modes');
+assert.ok(!entrySource.includes("e.code==='Tab'"), 'Tab must not switch between skier and drone');
+assert.match(entrySource, /skierSwitchDrone/, 'skier-to-drone HUD button binding missing');
+assert.match(entrySource, /droneSwitchSkier/, 'drone-to-skier HUD button binding missing');
+assert.match(html, /id="skierSwitchDrone"/, 'skier HUD action button missing');
+assert.match(html, /id="droneSwitchSkier"/, 'drone HUD action button missing');
+assert.match(html, /id="skierTutorialContent"/, 'skier tutorial collapsible content missing');
+assert.match(html, /id="droneTutorialContent"/, 'drone tutorial collapsible content missing');
+assert.match(html, /id="toggleSkierTutorial"/, 'skier tutorial visibility button missing');
+assert.match(html, /id="toggleDroneTutorial"/, 'drone tutorial visibility button missing');
+assert.match(entrySource, /e\.code==='KeyH'/, 'H tutorial visibility shortcut missing');
+assert.match(entrySource, /setTutorialVisible/, 'tutorial visibility handler missing');
+assert.ok(entrySource.includes("if(e.code==='KeyH'&&(state.mode==='skier'||state.mode==='drone'))"), 'H must toggle even when a HUD button has focus');
+const skierHudMarkup = html.slice(html.indexOf('<div id="skierHud"'), html.indexOf('<div id="droneHud"'));
+const droneHudMarkup = html.slice(html.indexOf('<div id="droneHud"'), html.indexOf('<div id="legend"'));
+assert.ok(skierHudMarkup.indexOf('id="speedValue"') < skierHudMarkup.indexOf('id="skierTutorialContent"'), 'skier speed must stay outside collapsible tutorial');
+assert.ok(skierHudMarkup.indexOf('id="slopeValue"') < skierHudMarkup.indexOf('id="skierTutorialContent"'), 'skier slope angle must stay outside collapsible tutorial');
+assert.ok(skierHudMarkup.indexOf('id="accelerationValue"') < skierHudMarkup.indexOf('id="skierTutorialContent"'), 'skier acceleration must stay outside collapsible tutorial');
+assert.ok(droneHudMarkup.indexOf('id="droneSpeedValue"') < droneHudMarkup.indexOf('id="droneTutorialContent"'), 'drone speed must stay outside collapsible tutorial');
+assert.match(html, /\.mode-hud-collapsible\[hidden\]/, 'collapsed tutorial display rule missing');
+assert.match(html, /max-height:calc\(100dvh - 84px\)/, 'viewport-aware HUD sizing missing');
+assert.match(html, /КАК НАЧАТЬ/, 'beginner skier tutorial missing');
+assert.match(html, /КАК УПРАВЛЯТЬ/, 'beginner drone tutorial missing');
+assert.ok(!html.includes('V / TAB') && !html.includes('<kbd>TAB</kbd>'), 'Tab shortcut must be removed from the mode switch UI');
+assert.ok(html.includes('SHIFT</kbd> — ускорение до 120 км/ч'), 'drone tutorial must document Shift boost to 120 km/h');
+assert.ok(html.includes('<kbd>SPACE</kbd><span>/</span><kbd>CTRL</kbd>'), 'drone vertical controls must use Space and Ctrl');
+assert.ok(html.includes('id="groundState">Обычная езда</span>'), 'skier HUD must show normal skiing state');
+assert.ok(html.includes('.mode-hud .tutorial-step strong{font-size:11px!important'), 'tutorial headings must be slightly larger');
+assert.ok(html.includes('.mode-hud .tutorial-step small{font-size:9px!important'), 'tutorial descriptions must be slightly larger');
+
+assert.ok(html.includes('id="skierTutorialContent" class="mode-hud-collapsible"'), 'skier tutorial wrapper missing');
+assert.ok(html.includes('id="droneTutorialContent" class="mode-hud-collapsible"'), 'drone tutorial wrapper missing');
+assert.ok(html.includes('max-height:none!important;height:auto!important;overflow:visible!important;'), 'HUD must not scroll or clip vertically');
+assert.ok(html.includes('height:auto!important;overflow:visible!important;padding:0!important;margin:0!important;'), 'tutorial content must not scroll');
+assert.ok(html.includes('grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr)'), 'tutorial and key guide must use side-by-side layout');
+assert.ok(html.includes('transform-origin:bottom left!important'), 'HUD must scale from its bottom edge to stay inside the viewport');
+assert.ok(!html.includes('id="skierSkiFileInput"') && !html.includes('id="importSkierSkiButton"') && !html.includes('id="resetSkierSkiButton"') && !html.includes('id="skierSkiModelStatus"'), 'dedicated skier ski replacement UI must be absent');
+assert.ok(!entrySource.includes('saveSkierSkiLocally') && !entrySource.includes('loadSavedSkierSki') && !entrySource.includes('removeSavedSkierSki'), 'skier-only ski upload and restore handlers must be absent');
+assert.ok(entrySource.includes('openLocalAssetDatabase') && entrySource.includes('saveSceneAssetLocally'), 'shared Scene Editor local asset storage must remain');
+for(const id of ['outsideSkiLoadValue','insideSkiLoadValue','outsideSkiLoadBar','totalSkiLoadValue'])assert.ok(html.includes('id="'+id+'"'), 'ski load HUD element missing: '+id);
+assert.ok(entrySource.includes('outsideSkiLoadValueEl') && entrySource.includes('insideSkiLoadValueEl') && entrySource.includes('outsideSkiLoadBarEl'), 'ski loads must be shown in HUD');
+assert.ok(entrySource.includes("if(state.optimizeMode)setOptimizerOpen(false)"), 'Overview must close the optimization panel');
+assert.ok(entrySource.includes("if(state.mode!=='overview')setSceneMode('overview')"), 'optimizer must return to overview from skier / drone');
+assert.ok(entrySource.includes("if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.()"), 'optimizer must release renderer pointer lock');
+assert.ok(entrySource.includes('skierController.stop();')&&entrySource.includes('droneController.stop();'), 'optimizer must stop both interactive controllers');
+
+
+assert.ok(entrySource.includes('await skierController.start(terrain,spawnHint,{'), 'skier mode must await incremental terrain preparation');
+assert.ok(entrySource.includes("velocity:droneController.velocity.clone()"), 'drone pose and velocity must be captured before mode handoff');
+assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.includes("skierController.update(dt);"), 'skier controller must update continuously while active');
+assert.ok(entrySource.includes("if(state.mode==='drone')droneController.update(dt)"), 'drone controller must update continuously while active');
+assert.ok(!entrySource.includes('modeTransition'), 'stale transition lock must not block mode changes');
+assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate downhill run-out');
+assert.ok(skierSource.includes('if(!spawnFound)spawnFound=!!this._findSpawn()'), 'drone-local spawn failure must fall back to piste spawn');
+assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone handoff must initialize downhill movement');
+assert.ok(skierSource.includes('const fallbackDivisions=12'), 'skier spawn must have a bounded last-resort terrain scan');
+assert.ok(skierSource.includes('fallbackCandidates.slice(0,16)'), 'skier spawn fallback must select candidates and score downhill clearance');
+assert.ok(skierSource.includes('this.lastPointerLockError=null'), 'pointer-lock denial must not abort skier startup');
+assert.ok(entrySource.includes('let pendingSceneMode = null;'), 'skier mode requests during terrain loading must be queued');
+assert.ok(entrySource.includes("if(pendingSceneMode==='skier')"), 'queued skier mode must resume after slope loading');
+assert.ok(entrySource.includes("const reason=skierController.lastStartError||'UNKNOWN'"), 'skier startup failures must report the controller error code');
+
+pass('reliable skier/drone mode handoff, spawn fallback and active movement are present');
+assert.ok(entrySource.includes('const forestTerrain=state.baseTerrain;'), 'forest placement must sample only original base terrain');
+assert.ok(entrySource.includes('buildSlopeFootprintLookup(bounds,slopeAssets)')&&entrySource.includes('isTreePointOnSlope(candidate.x,candidate.z,slopeFootprint)'), 'visible piste meshes must be excluded from tree placement');
+assert.ok(entrySource.includes('function normalizeTreeAreas(')&&entrySource.includes('treeAreas:normalizeTreeAreas(state.treeAreas)'), 'tree areas must be normalized and saved in project manifest');
+assert.ok(entrySource.includes('state.treeAreas=normalizeTreeAreas(manifest.treeAreas)'), 'tree areas must restore from project manifest');
+assert.ok(entrySource.includes('pointInPoly(candidate.x,candidate.z,area.points)'), 'forest placement must be restricted to saved polygons when areas exist');
+assert.ok(entrySource.includes('onTreeAreaPointerDown')&&entrySource.includes('finishTreeAreaDrawing')&&entrySource.includes('treeAreaDrawButton'), 'Tree Areas drawing tool is missing');
+assert.ok(entrySource.includes("markClientProjectDirty('Tree Area: '+name)"), 'tree area changes must mark the project dirty');
+assert.ok(html.includes('id="sceneLookTab-trees"')&&html.includes('id="treeAreaDrawButton"')&&html.includes('id="treeAreaFinishButton"'), 'Scene Editor Tree Areas panel is missing');
+assert.ok(entrySource.includes("trees:['TREE PLACEMENT AREAS'")&&entrySource.includes("if(name==='trees')updateTreeAreaPanel();")&&entrySource.includes('updateTreeAreaOverlayVisibility();'), 'Tree Areas tab must show its heading, refresh the list and update saved polygon overlays');
+pass('original-terrain-only trees, slope exclusion and persistent world-space Tree Areas are present');
+assert.ok(entrySource.includes('function buildTestForest({reusePlacements=false}={})'), 'test forest builder must support cached placement reuse');
+assert.ok(entrySource.includes('forestPlacementCache={')&&entrySource.includes('reusePlacements&&forestPlacementCache?.terrain===forestTerrain'), 'forest placements must be cached for atlas upgrade');
+assert.ok(!entrySource.includes('const y=terrainY(x,z)'), 'forest generation must not Raycast thousands of times against the large terrain');
+assert.ok(entrySource.includes('requestIdleCallback(upgradeForest'), 'late forest atlas upgrade must wait for browser idle time');
+assert.ok(entrySource.includes('function resolveSkierTerrain()'), 'skier mode must resolve a terrain mesh before its early guard');
+assert.ok(entrySource.indexOf('const requestedTerrain=mode===\'skier\'?resolveSkierTerrain():null;')<entrySource.indexOf("if(mode==='skier'&&!requestedTerrain)"), 'terrain resolution must run before the early skier guard');
+assert.ok(entrySource.includes('const terrain=requestedTerrain;'), 'skier start must use the resolved terrain instance');
+assert.ok(entrySource.includes("const terrain=resolveSkierTerrain();"), 'queued skier mode must resolve its terrain when loading completes');
+assert.ok(entrySource.includes("START_EXCEPTION"), 'skier controller exceptions must be reported precisely');
+assert.ok(entrySource.includes("TERRAIN_NOT_RESOLVED"), 'mode API must report terrain resolution failures instead of NO_MODE_CHANGE');
+
+assert.ok(skierSource.includes('this._groundFromLookup(x,z)'), 'skier ground queries must have a direct triangle lookup fallback');
+assert.ok(skierSource.includes('await this._buildTerrainLookup('), 'skier start must await incremental spatial terrain lookup');
+assert.ok(skierSource.includes('occupiedCells:this.terrainLookup?.occupiedCells||0'), 'failed skier starts must report terrain lookup diagnostics');
+assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!state.root?'SCENE_ROOT_MISSING':'TERRAIN_NOT_RESOLVED')"), 'mode bridge must receive the precise terrain / startup failure code');
+assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
+assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
+assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
+assert.ok(html.includes('src="./app.v142.js"'), 'HTML must load the current application module');
+assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
+assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
+assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
+assert.ok(entrySource.includes("showModeSwitchFeedback(message)"), 'mode startup failures must be visible on screen');
+assert.ok(entrySource.includes('function resolveSkierTerrain()')&&entrySource.includes('const requestedTerrain=mode===\'skier\'?resolveSkierTerrain():null;'), 'skier mode must resolve a mesh before its early return guard');
+assert.ok(entrySource.includes("sceneLoadingEl.getClientRects().length>0"), 'loading-state detection must use rendered visibility');
+
+assert.ok(skierSource.includes("if (e.code === 'KeyC')"), 'C key third-person camera toggle missing');
+assert.ok(skierSource.includes("toggleCameraView()"), 'camera view toggle method missing');
+assert.ok(skierSource.includes("this.viewBlendTarget < 0.5 ? 1 : 0"), 'first/third-person camera switch state missing');
+assert.ok(skierSource.includes('this.camera.position.copy(this.firstPersonPosition).lerp('), 'camera must smoothly blend between first and third person positions');
+assert.ok(skierSource.includes('this.camera.quaternion.slerp(this.thirdPersonCameraQuaternion,this.viewBlend)'), 'camera rotation must smoothly blend between views');
+assert.ok(skierSource.includes('_createSkierAvatar()'), 'third-person skier avatar is missing');
+assert.ok(skierSource.includes('Third_Person_Skier_Avatar'), 'third-person skier avatar group is missing');
+assert.ok(skierSource.includes('this.skierAvatar.quaternion.copy(this.skiRig.quaternion)'), 'skier avatar must align to ski heading and terrain');
+assert.ok(skierSource.includes('cameraGround.point.y+1.35'), 'third-person camera terrain clearance missing');
+assert.ok(html.includes('id="skierViewStatus"'), 'skier camera view indicator missing');
+assert.ok(html.includes('<kbd>C</kbd>') && html.includes('Осмотреться / 3-е лицо'), 'C key camera control hint missing');
+
+
+assert.ok(entrySource.includes("appRoot.classList.toggle('tuck-mode',tuck)"), 'speed tuck CSS state missing');
+assert.ok(entrySource.includes("appRoot.style.setProperty('--ski-wind-opacity'"), 'speed-dependent wind effect intensity missing');
+assert.ok(entrySource.includes('function beginModeCameraTransition(')&&entrySource.includes('function prepareModeCameraTransitionFrame()')&&entrySource.includes('function advanceModeCameraTransition(dt)'), 'drone/skier camera handoff must use a time-based transition');
+assert.ok(entrySource.includes('if(modeCameraTransition)prepareModeCameraTransitionFrame();')&&entrySource.includes('if(modeCameraTransition)advanceModeCameraTransition(dt);'), 'camera handoff must preserve the destination controller camera state while blending output');
+assert.ok(skierSource.includes('this.airborneCameraPitch+=(flightPitchTarget-this.airborneCameraPitch)*(1-Math.exp(-dt*5.5))'), 'first-person jump pitch must be damped');
+assert.ok(!skierSource.includes('travelPitch+this.lookPitch'), 'first-person camera must not directly follow raw vertical flight velocity');
+assert.ok(entrySource.includes('skierController.showForDrone()'), 'first-person skier must be shown to the drone during handoff');
+assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='drone'})"), 'skier model must remain in the scene when entering drone mode');
+assert.ok(entrySource.includes("if(mode==='overview')skierController.hideForOverview()"), 'skier model must be hidden when leaving drone for overview');
+assert.ok(skierSource.includes('0.26*this.stanceCameraBlend'), 'first-person camera eye-height compensation in speed tuck missing');
+assert.ok(skierSource.includes('0.085*this.stanceCameraBlend'), 'camera pitch adjustment in speed tuck missing');
+assert.ok(skierSource.includes('this.avatarLegs.forEach'), 'third-person skier legs must bend into speed tuck');
+assert.ok(skierSource.includes('0.43*tuck'), 'third-person skier torso must lean into speed tuck');
+assert.ok(skierSource.includes('showForDrone(){'), 'skier avatar forced visibility handoff missing');
+assert.ok(skierSource.includes('_updateSkierAvatar(true)'), 'skier avatar handoff must force full opacity');
+assert.ok(skierSource.includes('hideForOverview(){'), 'external skier avatar cleanup missing');
+assert.ok(skierSource.includes('stop({keepSceneModel=false}={})'), 'skier stop must optionally preserve model in scene');
+assert.ok(html.includes('id="skiWindFx"'), 'peripheral wind visual overlay missing');
+assert.ok(html.includes('#app.skier-mode.tuck-mode #skiWindFx'), 'wind overlay must appear only in skier speed stance');
+assert.ok(html.includes('Скоростная стойка'), 'speed tuck help text missing');
+assert.ok(html.includes('id="groundState">Обычная езда</span>'), 'default skiing status label missing');
+
+pass('aerodynamic tuck camera, wind effect, avatar crouch and drone handoff are present');
+pass('first/third-person skier camera, avatar and C-key UI are present');
+pass('beginner controls, mode toggle and both mode-switch buttons are present');
+
+for (const path of ['maya/grade_optimizer_exporter.py','maya/plug-ins/grade_optimizer.py','maya/grade_optimizer_test_scene.py']) {
+  const syntax = spawnSync('python3', ['-c', 'import ast,sys; ast.parse(sys.stdin.read())'], {
+    input: read(path).toString('utf8'), encoding: 'utf8'
+  });
+  assert.equal(syntax.status, 0, 'Python syntax error in ' + path + ':\n' + (syntax.stderr || syntax.stdout));
+  pass('Python syntax valid: ' + path);
+}
+
+const slopeIds = JSON.parse(read('assets/slopes.json').toString('utf8'));
+assert.ok(Array.isArray(slopeIds) && slopeIds.length > 0, 'assets/slopes.json must contain at least one slope');
+for (const id of slopeIds) {
+  assert.match(id, /^[A-Za-z0-9_-]+$/, 'unsafe slope id: ' + id);
+  const gltfPath = 'assets/' + id + '.gltf';
+  const curvesPath = 'assets/' + id + '.curves.json';
+  const gltf = JSON.parse(read(gltfPath).toString('utf8'));
+  const curves = JSON.parse(read(curvesPath).toString('utf8'));
+  for (const key of ['centre','left','right']) {
+    assert.ok(Array.isArray(curves[key]) && curves[key].length > 1, id + ' curve missing or empty: ' + key);
+  }
+  for (const buffer of gltf.buffers || []) {
+    assert.ok(buffer.uri && !/^(?:https?:|data:|\/|\.\.)/i.test(buffer.uri), id + ' has a non-local or unsafe glTF buffer URI');
+    const bufferPath = resolve(root, 'assets', buffer.uri);
+    assert.ok(existsSync(bufferPath), id + ' glTF buffer is missing: ' + buffer.uri);
+    const bytes = readFileSync(bufferPath);
+    assert.ok(bytes.length >= buffer.byteLength, id + ' glTF buffer is shorter than byteLength');
+  }
+  for (const view of gltf.bufferViews || []) {
+    assert.ok(Number.isInteger(view.buffer) && view.buffer >= 0 && view.buffer < (gltf.buffers || []).length, id + ' has an invalid bufferView.buffer');
+    const buffer = gltf.buffers[view.buffer];
+    assert.ok((view.byteOffset || 0) + view.byteLength <= buffer.byteLength, id + ' has a bufferView outside its declared buffer');
+  }
+  pass('slope ' + id + ' glTF buffers and profile curves are valid');
+}
+
+const manifest = JSON.parse(read('scene-manifest.json').toString('utf8'));
+assert.equal(manifest.schemaVersion, '1.0');
+assert.ok(manifest.scene && manifest.scene.units === 'meters');
+assert.ok(Array.isArray(manifest.assets));
+pass('scene manifest parses');
+
+console.log('\nAll project checks passed.');
+) && mayaExporter.includes('_safe_existing_fbx_path'), 'Maya replacement must be restricted to existing client-model FBX paths');
+assert.ok(mayaExporter.includes('occupied_ids') && mayaExporter.includes('if asset_id not in occupied_ids and not os.path.exists(model_path)'), 'new exports must not silently overwrite an existing client asset');
+assert.ok(mayaExporter.includes('"replacement": bool(existing)') && mayaExporter.includes('entry = dict(existing or {})'), 'replacement must retain current manifest settings and record provenance');
+assert.ok(mayaExporter.includes('shutil.copy2(export_info["model_path"], backup_model_path)') && mayaExporter.includes('os.replace(backup_model_path, export_info["model_path"])'), 'replacement must restore the previous FBX if publishing fails');
+assert.ok(mayaExporter.includes('"activeTerrain": False') && mayaExporter.includes('"category": category'), 'new Maya scene assets must default to non-active geometry');
+assert.ok(mayaExporter.includes('MAYA_LINEAR_UNIT_TO_METERS') && mayaExporter.includes('"scale": [meters_per_unit, meters_per_unit, meters_per_unit]'), 'Maya asset units must be converted to metres in the client manifest');
+assert.ok(mayaExporter.includes('def write_client_asset_manifest('), 'Maya client scene manifest writer missing');
+assert.ok(mayaExporter.includes('collect_meshes(selection_only=True)') && mayaExporter.includes('collect_node_metadata(selection_only=True)'), 'Maya exporter must collect only selected objects and descendants');
+assert.ok(mayaExporter.includes('FBXExport -f "') && mayaExporter.includes('" -s;'), 'Maya scene asset export must always use FBX selection-only mode');
+assert.ok(mayaExporter.includes('os.replace(temporary_model_path, export_info["model_path"])') && mayaExporter.includes('os.replace(temporary_manifest_path, export_info["manifest_path"])'), 'Maya exporter must publish the separate model and manifest only after export succeeds');
+assert.ok(!mayaExporter.includes('FBX_NAME = "real-terrain.fbx"') && !mayaExporter.includes('FBX_RELATIVE_PATH') && !mayaExporter.includes('def write_terrain_manifest('), 'Maya exporter must never write selected geometry to the canonical base terrain path');
+assert.ok(mayaExporter.includes('METADATA_PRESETS = {'), 'Maya exporter metadata presets missing');
+const mayaPresetSource = mayaExporter.slice(mayaExporter.indexOf('METADATA_PRESETS = {'), mayaExporter.indexOf('def safe_path'));
+assert.ok(!mayaPresetSource.includes('"collision"') && !mayaPresetSource.includes('"forestBlocker"'), 'Maya metadata presets must not assign editor-owned Collision / Forest blocker flags');
+assert.ok(mayaExporter.includes('"Рельеф"') && mayaExporter.includes('"Здание"') && mayaExporter.includes('"Подъёмник / опора"'), 'common Maya metadata presets missing');
+assert.ok(mayaExporter.includes('cmds.optionMenuGrp(') && mayaExporter.includes('changeCommand=on_metadata_preset_changed'), 'metadata preset dropdown missing');
+assert.ok(mayaExporter.includes('OPTION_PRESET') && mayaExporter.includes('OPTION_REPO') && mayaExporter.includes('remember_export_settings'), 'Maya exporter settings must persist between launches');
+assert.ok(mayaExporter.includes('def clear_metadata_from_selection('), 'clear metadata selection action missing');
+assert.ok(mayaExporter.includes('collapsable=True') && mayaExporter.includes('collapse=True'), 'Maya metadata controls must be collapsed by default');
+assert.ok(!mayaExporter.includes('WINDOW + "_role"') && !mayaExporter.includes('WINDOW + "_tags"'), 'legacy always-visible Role / Tags text fields must not return');
+assert.ok(!mayaExporter.includes('WINDOW + "_node_collision"') && !mayaExporter.includes('WINDOW + "_node_forest"'), 'Collision / Forest blocker controls belong in Web Editor, not Maya Exporter');
+const mayaCollector = mayaExporter.slice(mayaExporter.indexOf('def collect_node_metadata('), mayaExporter.indexOf('def _set_string_attribute'));
+assert.ok(!mayaCollector.includes('goCollision') && !mayaCollector.includes('goForestBlocker'), 'Maya exporter must not import editor-owned flags from Maya attributes');
+
+assert.ok(mayaPlugin.includes('VERSION = "0.6.0"'), 'Maya plug-in version must match exporter');
 assert.ok(mayaPlugin.includes('def maya_useNewAPI():'), 'Maya Python API 2.0 marker missing');
 assert.ok(mayaPlugin.includes('def initializePlugin(plugin_object):'), 'Maya plug-in initializer missing');
 assert.ok(mayaPlugin.includes('registerCommand(COMMAND_NAME'), 'Maya plug-in command registration missing');

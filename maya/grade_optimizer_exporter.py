@@ -8,12 +8,13 @@ import os
 import re
 import json
 import datetime
+import shutil
 
 import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -25,6 +26,7 @@ OPTION_REPO = "gradeOptimizerRepoPath"
 OPTION_PRESET = "gradeOptimizerMetadataPreset"
 OPTION_CUSTOM_ROLE = "gradeOptimizerCustomRole"
 OPTION_EXTRA_TAGS = "gradeOptimizerExtraTags"
+GIT_ASSET_ITEMS = []
 PRESET_PLACEHOLDER = "— Выбрать тип объекта —"
 
 METADATA_PRESETS = {
@@ -192,6 +194,8 @@ def remember_export_settings(*_):
     try:
         repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
         _remember_option(OPTION_REPO, repo)
+        if cmds.control(WINDOW + "_git_asset", exists=True):
+            refresh_git_asset_list()
     except Exception:
         pass
 
@@ -479,126 +483,233 @@ def find_client_scene_manifest(repo):
     return matches[0]
 
 
-def prepare_client_asset_export(repo, components, node_metadata):
+def _read_client_scene(repo):
     client_slug, scene_path = find_client_scene_manifest(repo)
     with open(scene_path, "r", encoding="utf-8") as stream:
         manifest = json.load(stream)
     if not isinstance(manifest, dict):
         raise RuntimeError("Клиентский scene.json должен содержать JSON-объект.")
-
     assets = manifest.get("assets", [])
     if not isinstance(assets, list):
         raise RuntimeError("Поле assets в клиентском scene.json должно быть массивом.")
+    return client_slug, scene_path, manifest, assets
 
-    selected = _selected_transforms()
-    asset_name = (
-        selected[0].rsplit("|", 1)[-1]
-        if selected
-        else str(components[0].get("name") or "Maya Asset")
-    )
-    base_id = _safe_asset_id(asset_name)
 
-    asset_id = base_id
-    suffix = 2
-    while True:
-        existing = next(
-            (item for item in assets if isinstance(item, dict) and item.get("id") == asset_id),
-            None
+def _safe_existing_fbx_path(client_dir, relative_file, require_exists=True):
+    normalized = str(relative_file or "").replace("\\", "/").strip()
+    if not re.match(r"^models/[A-Za-z0-9_.-]+\.fbx$", normalized, re.IGNORECASE):
+        raise RuntimeError("Заменять можно только FBX внутри clients/<project>/models/: " + normalized)
+    absolute = os.path.abspath(os.path.join(client_dir, *normalized.split("/")))
+    base = os.path.abspath(client_dir)
+    if os.path.commonpath([base, absolute]) != base:
+        raise RuntimeError("Путь модели выходит за пределы папки клиентского проекта.")
+    if require_exists and not os.path.isfile(absolute):
+        raise RuntimeError("Текущий FBX не найден в локальном Git-репозитории: " + normalized)
+    return absolute
+
+
+def list_replaceable_client_assets(repo):
+    client_slug, scene_path, manifest, assets = _read_client_scene(repo)
+    client_dir = os.path.dirname(scene_path)
+    result = []
+    non_fbx = 0
+    missing_fbx = 0
+    for raw_asset in assets:
+        if not isinstance(raw_asset, dict):
+            continue
+        relative_file = str(raw_asset.get("file") or "").replace("\\", "/")
+        if not relative_file.lower().endswith(".fbx"):
+            non_fbx += 1
+            continue
+        try:
+            model_path = _safe_existing_fbx_path(client_dir, relative_file, require_exists=False)
+        except Exception:
+            continue
+        if not os.path.isfile(model_path):
+            missing_fbx += 1
+            continue
+        asset = dict(raw_asset)
+        asset["_model_path"] = model_path
+        asset["_relative_file"] = relative_file
+        asset["_size_bytes"] = os.path.getsize(model_path)
+        asset["_label"] = "%s  [%s]  ·  %s / %s" % (
+            asset.get("name") or asset.get("id") or "Без имени",
+            asset.get("id") or "no-id",
+            asset.get("category") or "model",
+            asset.get("phase") or "always"
         )
-        relative_file = "models/" + asset_id + ".fbx"
-        model_path = os.path.join(os.path.dirname(scene_path), "models", asset_id + ".fbx")
-        if existing or not os.path.exists(model_path):
-            break
-        asset_id = base_id + "_" + str(suffix)
-        suffix += 1
+        result.append(asset)
+    result.sort(key=lambda item: (str(item.get("name") or "").lower(), str(item.get("id") or "")))
+    return client_slug, result, non_fbx, missing_fbx
+
+
+def _selected_git_asset():
+    try:
+        label = cmds.optionMenuGrp(WINDOW + "_git_asset", query=True, value=True)
+    except Exception:
+        return None
+    return next((item for item in GIT_ASSET_ITEMS if item.get("_label") == label), None)
+
+
+def _update_git_asset_details(*_):
+    asset = _selected_git_asset()
+    if not cmds.control(WINDOW + "_git_asset_info", exists=True):
+        return
+    if not asset:
+        message = "Нет доступных FBX для замены. Новые модели можно экспортировать отдельно."
+    else:
+        size_mib = asset.get("_size_bytes", 0) / float(1024 * 1024)
+        message = "%s  ·  ID %s  ·  %.1f MiB" % (
+            asset.get("_relative_file", ""), asset.get("id", ""), size_mib
+        )
+    cmds.text(WINDOW + "_git_asset_info", edit=True, label=message)
+    if cmds.control(WINDOW + "_replace_asset", exists=True):
+        cmds.button(WINDOW + "_replace_asset", edit=True, enable=bool(asset))
+
+
+def refresh_git_asset_list(*_):
+    global GIT_ASSET_ITEMS
+    try:
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        if not os.path.isdir(repo):
+            raise RuntimeError("Укажи существующий локальный Git-репозиторий.")
+        client_slug, assets, non_fbx, missing_fbx = list_replaceable_client_assets(repo)
+        previous = _selected_git_asset()
+        previous_id = previous.get("id") if previous else ""
+        GIT_ASSET_ITEMS = assets
+        cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, deleteAllItems=True)
+        menu_parent = WINDOW + "_git_asset|OptionMenu"
+        if assets:
+            for asset in assets:
+                cmds.menuItem(parent=menu_parent, label=asset["_label"])
+            chosen = next((item for item in assets if item.get("id") == previous_id), assets[0])
+            cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, value=chosen["_label"], enable=True)
+        else:
+            cmds.menuItem(parent=menu_parent, label="— нет доступных FBX —")
+            cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, value="— нет доступных FBX —", enable=False)
+        note = "Git: clients/%s/scene.json · FBX для замены: %d" % (client_slug, len(assets))
+        if missing_fbx:
+            note += " · отсутствуют локально: %d" % missing_fbx
+        if non_fbx:
+            note += " · GLB/прочие: %d (не предлагаются для FBX-замены)" % non_fbx
+        note += ". Источник — локальный клон. Перед обновлением списка сделай Pull в GitHub Desktop."
+        cmds.text(WINDOW + "_git_asset_status", edit=True, label=note)
+        _update_git_asset_details()
+    except Exception as exc:
+        GIT_ASSET_ITEMS = []
+        try:
+            cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, deleteAllItems=True)
+            cmds.menuItem(parent=WINDOW + "_git_asset|OptionMenu", label="— список недоступен —")
+            cmds.optionMenuGrp(WINDOW + "_git_asset", edit=True, value="— список недоступен —", enable=False)
+            cmds.text(WINDOW + "_git_asset_status", edit=True, label="Не удалось прочитать Git-сцену: " + str(exc))
+        except Exception:
+            pass
+        _update_git_asset_details()
+        cmds.warning("[Grade Optimizer] Could not load Git asset list: " + str(exc))
+
+
+def prepare_client_asset_export(repo, components, node_metadata, replace_asset_id=None):
+    client_slug, scene_path, manifest, assets = _read_client_scene(repo)
+    client_dir = os.path.dirname(scene_path)
+    selected = _selected_transforms()
+    source_root_name = selected[0].rsplit("|", 1)[-1] if selected else str(components[0].get("name") or "Maya Asset")
+
+    existing = None
+    if replace_asset_id:
+        matches = [item for item in assets if isinstance(item, dict) and str(item.get("id") or "") == str(replace_asset_id)]
+        if len(matches) != 1:
+            raise RuntimeError("Объект для замены не найден или ID не уникален в scene.json: " + str(replace_asset_id))
+        existing = matches[0]
+        asset_id = str(existing.get("id") or "")
+        if not asset_id:
+            raise RuntimeError("У выбранного Git-объекта отсутствует ID.")
+        asset_name = str(existing.get("name") or asset_id)
+        relative_file = str(existing.get("file") or "").replace("\\", "/")
+        model_path = _safe_existing_fbx_path(client_dir, relative_file, require_exists=True)
+    else:
+        asset_name = source_root_name
+        base_id = _safe_asset_id(asset_name)
+        occupied_ids = {str(item.get("id") or "") for item in assets if isinstance(item, dict)}
+        suffix = 1
+        while True:
+            asset_id = base_id if suffix == 1 else base_id + "_" + str(suffix)
+            relative_file = "models/" + asset_id + ".fbx"
+            model_path = os.path.join(client_dir, *relative_file.split("/"))
+            if asset_id not in occupied_ids and not os.path.exists(model_path):
+                break
+            suffix += 1
 
     linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
     meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
     if meters_per_unit is None:
-        raise RuntimeError(
-            "Неизвестная линейная единица Maya: " + (linear_unit or "не указана")
-        )
+        raise RuntimeError("Неизвестная линейная единица Maya: " + (linear_unit or "не указана"))
 
-    lower_name = asset_name.lower()
+    lower_name = source_root_name.lower()
     is_slope = "slope" in lower_name or "piste" in lower_name
     is_stage_one = "stage1" in lower_name or "stage_1" in lower_name
     category = "slope" if is_slope else "prop"
     phase = "stage_1" if is_stage_one else "always"
 
-    serialized_node_metadata = []
+    # Merge Maya-authored Role / Tags with existing Web Editor node flags.
+    old_node_metadata = [dict(item) for item in (existing or {}).get("nodeMetadata", []) if isinstance(item, dict)]
+    old_by_path = {tuple(item.get("namePath") or []): index for index, item in enumerate(old_node_metadata)}
     for record in node_metadata:
-        serialized_node_metadata.append({
-            "namePath": record.get("namePath", []),
-            "role": record.get("role", ""),
-            "tags": record.get("tags", []),
-            "collision": False,
-            "forestBlocker": False
-        })
+        node_path = tuple(record.get("namePath") or [])
+        serialized = {"namePath": list(node_path), "role": record.get("role", ""), "tags": record.get("tags", [])}
+        if node_path in old_by_path:
+            old_node_metadata[old_by_path[node_path]].update(serialized)
+        else:
+            old_node_metadata.append({**serialized, "collision": False, "forestBlocker": False})
 
     entry = dict(existing or {})
     if not existing:
         entry.update({
-            "category": category,
-            "phase": phase,
-            "visible": True,
-            "collision": False,
-            "forestBlocker": is_slope,
-            "activeTerrain": False,
-            "transform": {
-                "position": [0, 0, 0],
-                "rotation": [0, 0, 0],
-                "scale": [meters_per_unit, meters_per_unit, meters_per_unit]
-            },
-            "nodeVisibility": [],
-            "nodeMetadata": []
+            "category": category, "phase": phase, "visible": True, "collision": False,
+            "forestBlocker": is_slope, "activeTerrain": False,
+            "transform": {"position": [0, 0, 0], "rotation": [0, 0, 0],
+                          "scale": [meters_per_unit, meters_per_unit, meters_per_unit]},
+            "nodeVisibility": [], "nodeMetadata": []
         })
 
+    # Preserve Web Editor placement, phase, visibility and flags when replacing a model.
     entry.update({
-        "id": asset_id,
-        "name": asset_name,
-        "file": relative_file,
+        "id": asset_id, "name": asset_name, "file": relative_file,
         "sourceFile": cmds.file(query=True, sceneName=True, shortName=True) or "",
         "mayaExport": {
             "pluginVersion": VERSION,
             "sourceScene": cmds.file(query=True, sceneName=True, shortName=True) or "",
             "mayaVersion": cmds.about(version=True),
-            "linearUnit": linear_unit,
-            "metersPerUnit": meters_per_unit,
-            "meshComponentCount": len(components),
-            "components": components
+            "linearUnit": linear_unit, "metersPerUnit": meters_per_unit,
+            "meshComponentCount": len(components), "exportedRootName": source_root_name,
+            "replacement": bool(existing), "components": components
         }
     })
-    if serialized_node_metadata:
-        entry["nodeMetadata"] = serialized_node_metadata
+    if old_node_metadata:
+        entry["nodeMetadata"] = old_node_metadata
 
     manifest["schemaVersion"] = manifest.get("schemaVersion") or "1.0"
     manifest["clientId"] = client_slug
     manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
-    manifest["assets"] = [
-        item for item in assets
-        if not (isinstance(item, dict) and item.get("id") == asset_id)
-    ] + [entry]
+    if existing:
+        existing_index = next(index for index, item in enumerate(assets)
+                              if isinstance(item, dict) and item.get("id") == asset_id)
+        assets[existing_index] = entry
+    else:
+        assets.append(entry)
+    manifest["assets"] = assets
 
-    client_dir = os.path.dirname(scene_path)
-    model_path = os.path.join(client_dir, *relative_file.split("/"))
     model_dir = os.path.dirname(model_path)
     if not os.path.isdir(model_dir):
         os.makedirs(model_dir)
-
-    temporary_model_path = os.path.join(model_dir, asset_id + ".exporting.fbx")
+    temporary_model_path = model_path + ".exporting.fbx"
     temporary_manifest_path = scene_path + ".exporting.tmp"
     return {
-        "client_slug": client_slug,
-        "asset_id": asset_id,
-        "asset_name": asset_name,
-        "relative_file": relative_file,
-        "model_path": model_path,
-        "temporary_model_path": temporary_model_path,
-        "manifest_path": scene_path,
-        "temporary_manifest_path": temporary_manifest_path,
-        "manifest": manifest
+        "client_slug": client_slug, "asset_id": asset_id, "asset_name": asset_name,
+        "source_root_name": source_root_name, "is_replacement": bool(existing),
+        "relative_file": relative_file, "model_path": model_path,
+        "temporary_model_path": temporary_model_path, "manifest_path": scene_path,
+        "temporary_manifest_path": temporary_manifest_path, "manifest": manifest
     }
-
 
 def write_client_asset_manifest(export_info, model_size, material_conversions=None):
     manifest = export_info["manifest"]
@@ -622,6 +733,33 @@ def browse_repo(*_):
 
 
 def export_scene(*_):
+    _export_scene()
+
+
+def replace_selected_scene_asset(*_):
+    asset = _selected_git_asset()
+    if not asset:
+        cmds.confirmDialog(title="Grade Optimizer", message="Сначала обнови список Git и выбери существующий FBX для замены.", button=["OK"])
+        return
+    message = (
+        "Будет заменён существующий FBX в локальном Git-репозитории.\n\n"
+        "Объект: %s\nID: %s\nФайл: %s\n\n"
+        "Геометрия и назначения материалов будут взяты из текущего выделения Maya.\n"
+        "ID, категория, фаза, transform / масштаб, видимость, Collision и Forest blocker останутся прежними.\n\n"
+        "Это изменит локальные файлы Git. Продолжить?"
+    ) % (asset.get("name") or asset.get("id"), asset.get("id"), asset.get("_relative_file"))
+    choice = cmds.confirmDialog(
+        title="Grade Optimizer · Replace Git Geometry",
+        message=message,
+        button=["ЗАМЕНИТЬ FBX", "ОТМЕНА"],
+        defaultButton="ОТМЕНА", cancelButton="ОТМЕНА", dismissString="ОТМЕНА"
+    )
+    if choice != "ЗАМЕНИТЬ FBX":
+        return
+    _export_scene(replace_asset_id=asset.get("id"))
+
+
+def _export_scene(replace_asset_id=None):
     repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
     remember_export_settings()
 
@@ -664,7 +802,7 @@ def export_scene(*_):
     material_overrides = []
     material_conversion_summary = []
     try:
-        export_info = prepare_client_asset_export(repo, components, node_metadata)
+        export_info = prepare_client_asset_export(repo, components, node_metadata, replace_asset_id=replace_asset_id)
         temporary_model_path = export_info["temporary_model_path"]
         temporary_manifest_path = export_info["temporary_manifest_path"]
         temporary_paths.extend([temporary_model_path, temporary_manifest_path])
@@ -713,13 +851,43 @@ def export_scene(*_):
 
         write_client_asset_manifest(export_info, size, material_conversion_summary)
 
-        # Publish the new asset file and its scene.json registration only after both are ready.
-        os.replace(temporary_model_path, export_info["model_path"])
-        os.replace(temporary_manifest_path, export_info["manifest_path"])
+        # Replace the FBX and scene manifest as one recoverable pair of files.
+        backup_model_path = export_info["model_path"] + ".go-backup"
+        backup_manifest_path = export_info["manifest_path"] + ".go-backup"
+        had_model = os.path.isfile(export_info["model_path"])
+        for backup_path in (backup_model_path, backup_manifest_path):
+            if os.path.isfile(backup_path):
+                os.remove(backup_path)
+        try:
+            if had_model:
+                shutil.copy2(export_info["model_path"], backup_model_path)
+            shutil.copy2(export_info["manifest_path"], backup_manifest_path)
+            os.replace(temporary_model_path, export_info["model_path"])
+            os.replace(temporary_manifest_path, export_info["manifest_path"])
+        except Exception:
+            if os.path.isfile(backup_model_path):
+                os.replace(backup_model_path, export_info["model_path"])
+            elif not had_model and os.path.isfile(export_info["model_path"]):
+                os.remove(export_info["model_path"])
+            if os.path.isfile(backup_manifest_path):
+                os.replace(backup_manifest_path, export_info["manifest_path"])
+            raise
+        finally:
+            for backup_path in (backup_model_path, backup_manifest_path):
+                try:
+                    if os.path.isfile(backup_path):
+                        os.remove(backup_path)
+                except Exception:
+                    pass
 
         mib = size / float(1024 * 1024)
+        action_label = (
+            "Геометрия и материалы существующего объекта заменены."
+            if export_info["is_replacement"]
+            else "Новая геометрия добавлена в клиентскую сцену."
+        )
         message = (
-            "Новая геометрия добавлена в клиентскую сцену.\n\n"
+            action_label + "\n\n"
             + export_info["model_path"]
             + "\n\n" + export_info["manifest_path"]
             + "\n\nAsset ID: " + export_info["asset_id"]
@@ -737,6 +905,7 @@ def export_scene(*_):
             message=message,
             button=["OK"]
         )
+        refresh_git_asset_list()
         print("[Grade Optimizer] " + message.replace("\n", " | "))
     except Exception as exc:
         for temporary_path in temporary_paths:
@@ -779,15 +948,16 @@ def show():
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=7, columnAttach=("both", 12))
     cmds.text(
-        label="Maya → New Scene Asset → Grade Optimizer",
+        label="Maya → Git Scene Geometry",
         align="left",
         height=26,
         font="boldLabelFont"
     )
     cmds.text(
-        label="Экспортируется только выделенная ветка Maya как отдельная модель сцены.",
+        label="Добавляй новую модель или замени конкретный FBX, уже зарегистрированный в клиентской сцене.",
         align="left",
-        height=22
+        height=30,
+        wordWrap=True
     )
 
     cmds.textFieldButtonGrp(
@@ -799,16 +969,38 @@ def show():
         changeCommand=remember_export_settings,
         columnWidth3=(65, 380, 85)
     )
+
+    cmds.frameLayout(
+        label="ТЕКУЩАЯ ГЕОМЕТРИЯ В GIT · ВЫБОР ЦЕЛИ ЗАМЕНЫ",
+        collapsable=False, marginWidth=8, marginHeight=7, borderStyle="etchedIn"
+    )
+    cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
     cmds.text(
-        label="Файл создаётся в clients/<client>/models/<имя-объекта>.fbx.",
-        align="left",
-        height=22,
-        font="boldLabelFont"
+        WINDOW + "_git_asset_status", label="Список ещё не загружен.",
+        align="left", wordWrap=True, height=38
+    )
+    cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(420, 90))
+    asset_menu = cmds.optionMenuGrp(
+        WINDOW + "_git_asset", label="Объект",
+        columnWidth2=(65, 345), changeCommand=_update_git_asset_details
+    )
+    cmds.menuItem(parent=asset_menu + "|OptionMenu", label="Загрузка списка…")
+    cmds.button(label="ОБНОВИТЬ", height=28, command=refresh_git_asset_list)
+    cmds.setParent("..")
+    cmds.text(
+        WINDOW + "_git_asset_info", label="Выбери объект, чтобы увидеть его текущий FBX.",
+        align="left", wordWrap=True, height=30
+    )
+    cmds.setParent("..")
+    cmds.setParent("..")
+
+    cmds.text(
+        label="При замене сохраняются ID и настройки размещения объекта. Новая геометрия и материалы берутся из текущего выделения Maya.",
+        align="left", height=36, wordWrap=True, font="boldLabelFont"
     )
     cmds.text(
-        label="Исходный assets/real-terrain.fbx не изменяется и остаётся базовой поверхностью.",
-        align="left",
-        height=22
+        label="Базовая поверхность assets/real-terrain.fbx защищена и не предлагается для замены.",
+        align="left", height=28, wordWrap=True
     )
 
     cmds.frameLayout(
@@ -893,17 +1085,21 @@ def show():
         height=22
     )
     cmds.button(
-        label="ЭКСПОРТИРОВАТЬ КАК НОВЫЙ ОБЪЕКТ",
-        height=42,
-        backgroundColor=(0.18, 0.48, 0.32),
-        command=export_scene
+        label="ДОБАВИТЬ КАК НОВЫЙ ОБЪЕКТ",
+        height=40, backgroundColor=(0.18, 0.48, 0.32), command=export_scene
+    )
+    cmds.button(
+        WINDOW + "_replace_asset",
+        label="ЗАМЕНИТЬ ВЫБРАННУЮ ГЕОМЕТРИЮ В GIT",
+        height=40, backgroundColor=(0.62, 0.30, 0.18),
+        enable=False, command=replace_selected_scene_asset
     )
     cmds.text(
-        label="Затем GitHub Desktop → Commit → Push.",
-        align="left",
-        height=22
+        label="После экспорта проверь FBX и scene.json в GitHub Desktop → Commit → Push.",
+        align="left", height=30, wordWrap=True
     )
     cmds.showWindow(WINDOW)
+    refresh_git_asset_list()
     return WINDOW
 
 
