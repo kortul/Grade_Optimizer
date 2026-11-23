@@ -11,10 +11,12 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v132.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v133.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
+assert.ok(entrySource.includes('function collectVisibleOverviewMeshes(')&&entrySource.includes('function focusOverviewGeometryAt('), 'overview geometry focus helper is missing');
+assert.ok(entrySource.includes('lastOverviewTouchTap')&&entrySource.includes("event.pointerType!=='touch'")&&entrySource.includes("addEventListener('pointercancel'"), 'mobile overview double-tap recognition / cancel cleanup is missing');
 
 const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(m => m[1]);
 const duplicateIds = ids.filter((id, i) => ids.indexOf(id) !== i);
@@ -119,7 +121,7 @@ assert.ok(entrySource.includes("window.matchMedia('(pointer: coarse) and (max-wi
 assert.ok(entrySource.includes('controls.enableZoom=enabled'), 'mobile overview must support pinch zoom');
 assert.ok(entrySource.includes('function bindMobileStick(')&&entrySource.includes('updateMobileMoveKeys(dx,dy)'), 'virtual movement and look sticks must be wired');
 assert.ok(entrySource.includes('mobileTouch.lookX*1.05*dt')&&entrySource.includes('mobileTouch.lookX*1.65*dt'), 'right mobile stick must drive drone and skier camera direction');
-assert.ok(read('skier-controller.v88.js').toString('utf8').includes('this.touchMode = false')&&read('skier-controller.v88.js').toString('utf8').includes('if(!this.touchMode){'), 'skier Pointer Lock must be disabled on mobile');
+assert.ok(read('skier-controller.v89.js').toString('utf8').includes('this.touchMode = false')&&read('skier-controller.v89.js').toString('utf8').includes('if(!this.touchMode){'), 'skier Pointer Lock must be disabled on mobile');
 assert.ok(read('drone-controller.v75.js').toString('utf8').includes('this.touchMode=false')&&read('drone-controller.v75.js').toString('utf8').includes('if(!this.touchMode){'), 'drone Pointer Lock must be disabled on mobile');
 pass('mobile-only 3-mode navigation, touch sticks, action buttons and Pointer Lock-free controls are present');
 
@@ -192,8 +194,9 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v88.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v88.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v89.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v89.js').toString('utf8');
+assert.ok(skierSource.includes('outline.lineTo(-0.050,0.8475)')&&skierSource.includes('outline.quadraticCurveTo(-0.048,1.7475,0,1.9125)')&&skierSource.includes('new THREE.BoxGeometry(0.009,0.004,1.7875)'), 'front ski overhang must be 1.5x longer while bindings and tails stay fixed');
 assert.ok(skierSource.includes("const outsideLoad=Math.max(0,side*turnSide)*carve*(0.85+0.15*loadShift);")&&skierSource.includes("'skiFlex'+index"), 'ski flex must compute outside-ski load within each ski-slot iteration');
 
 assert.ok(entrySource.includes("velocity:droneController.velocity.clone()"), 'drone-to-skier handoff must preserve the drone pose and velocity');
@@ -537,7 +540,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('app.v132.js'), 'HTML must load the current application module');
+assert.ok(html.includes('app.v133.js'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
