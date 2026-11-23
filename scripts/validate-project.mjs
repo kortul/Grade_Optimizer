@@ -782,7 +782,7 @@ assert.ok(manifest.scene && manifest.scene.units === 'meters');
 assert.ok(Array.isArray(manifest.assets));
 pass('scene manifest parses');
 
-console.log('\nAll project checks passed.');
+
 
 // Atmospheric release v7 regression checks.
 const weatherV7Source=read('weather-system.v7.js').toString('utf8');
@@ -794,3 +794,5 @@ pass('v7 sky atmosphere, cloud layers and night-sky regression checks');
 assert.ok(weatherV7Source.includes('InstancedBufferGeometry')&&weatherV7Source.includes('uFallSpeed')&&weatherV7Source.includes('uLateralSpeed'),'snow particle motion must be vertex-shader driven');
 assert.ok(!weatherV7Source.includes('this.snow.instanceMatrix.needsUpdate'),'snow must not upload per-instance matrices every frame');
 pass('GPU-animated snowfall regression checks');
+
+console.log('\nAll project checks passed.');
