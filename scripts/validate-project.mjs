@@ -560,16 +560,16 @@ assert.ok(entrySource.includes("if(document.pointerLockElement===renderer.domEle
 assert.ok(entrySource.includes('skierController.stop();')&&entrySource.includes('droneController.stop();'), 'optimizer must stop both interactive controllers');
 
 
-assert.ok(entrySource.includes("skierController.start(terrain,spawnHint)"), 'skier mode must start directly without deferred input');
+assert.ok(entrySource.includes('await skierController.start(terrain,spawnHint,{'), 'skier mode must await incremental terrain preparation');
 assert.ok(entrySource.includes("velocity:droneController.velocity.clone()"), 'drone pose and velocity must be captured before mode handoff');
-assert.ok(entrySource.includes("if(state.mode==='skier')skierController.update(dt)"), 'skier controller must update continuously while active');
+assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.includes("skierController.update(dt);"), 'skier controller must update continuously while active');
 assert.ok(entrySource.includes("if(state.mode==='drone')droneController.update(dt)"), 'drone controller must update continuously while active');
 assert.ok(!entrySource.includes('modeTransition'), 'stale transition lock must not block mode changes');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate downhill run-out');
 assert.ok(skierSource.includes('if(!spawnFound)spawnFound=!!this._findSpawn()'), 'drone-local spawn failure must fall back to piste spawn');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone handoff must initialize downhill movement');
-assert.ok(skierSource.includes('const fallbackDivisions=32'), 'skier spawn must have a dense last-resort terrain scan');
-assert.ok(skierSource.includes('fallbackCandidates.slice(0,36)'), 'skier spawn fallback must select candidates and score downhill clearance');
+assert.ok(skierSource.includes('const fallbackDivisions=12'), 'skier spawn must have a bounded last-resort terrain scan');
+assert.ok(skierSource.includes('fallbackCandidates.slice(0,16)'), 'skier spawn fallback must select candidates and score downhill clearance');
 assert.ok(skierSource.includes('this.lastPointerLockError=null'), 'pointer-lock denial must not abort skier startup');
 assert.ok(entrySource.includes('let pendingSceneMode = null;'), 'skier mode requests during terrain loading must be queued');
 assert.ok(entrySource.includes("if(pendingSceneMode==='skier')"), 'queued skier mode must resume after slope loading');
@@ -584,8 +584,8 @@ assert.ok(entrySource.includes("START_EXCEPTION"), 'skier controller exceptions 
 assert.ok(entrySource.includes("TERRAIN_NOT_RESOLVED"), 'mode API must report terrain resolution failures instead of NO_MODE_CHANGE');
 
 assert.ok(skierSource.includes('this._groundFromLookup(x,z)'), 'skier ground queries must have a direct triangle lookup fallback');
-assert.ok(skierSource.includes('this._buildTerrainLookup()'), 'skier start must build a spatial terrain lookup');
-assert.ok(skierSource.includes('occupiedCells:this.terrainLookup?.cells?.size||0'), 'failed skier starts must report terrain lookup diagnostics');
+assert.ok(skierSource.includes('await this._buildTerrainLookup('), 'skier start must await incremental spatial terrain lookup');
+assert.ok(skierSource.includes('occupiedCells:this.terrainLookup?.occupiedCells||0'), 'failed skier starts must report terrain lookup diagnostics');
 assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!state.root?'SCENE_ROOT_MISSING':'TERRAIN_NOT_RESOLVED')"), 'mode bridge must receive the precise terrain / startup failure code');
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
