@@ -421,7 +421,7 @@ assert.ok(html.includes('ЭКСПОРТ JSON-БЭКАПА'), 'manual JSON export
 
 pass('forest rendering, collision bounds and viewport-aware HUD safeguards present');
 
-assert.ok(entrySource.includes("if(event.code!=='KeyV'||event.repeat)return"), 'global V mode switch must be available in overview, skier and drone modes');
+assert.ok(html.includes("if(event.code!=='KeyV'||event.repeat)return"), 'global V mode switch must be available in overview, skier and drone modes');
 assert.ok(!entrySource.includes("e.code==='Tab'"), 'Tab must not switch between skier and drone');
 assert.match(entrySource, /skierSwitchDrone/, 'skier-to-drone HUD button binding missing');
 assert.match(entrySource, /droneSwitchSkier/, 'drone-to-skier HUD button binding missing');
@@ -487,7 +487,7 @@ pass('reliable skier/drone mode handoff, spawn fallback and active movement are 
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
 assert.ok(html.includes('app.v125.js'), 'HTML must load v125 module');
-assert.ok(entrySource.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use an early delegated click handler');
+assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
 assert.ok(entrySource.includes("showModeSwitchFeedback(message)"), 'mode startup failures must be visible on screen');
