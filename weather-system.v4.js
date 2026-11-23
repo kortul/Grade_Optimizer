@@ -63,7 +63,7 @@ void main() {
   alpha=clamp(alpha,0.0,0.72);
   if(alpha<0.012) discard;
   vec3 viewDirection=normalize(uCameraPosition-vWorldPosition);
-  float forwardScatter=pow(max(dot(viewDirection,normalize(uSunDirection)),0.0),7.0);
+  float forwardScatter=pow(max(dot(viewDirection,-normalize(uSunDirection)),0.0),7.0);
   vec3 coolUnderside=mix(vec3(0.075,0.105,0.16),vec3(0.34,0.42,0.51),uDaylight);
   vec3 sunlitCloud=uSunColor*(0.36+sunlightTransmittance*0.68);
   vec3 cloudColor=mix(coolUnderside,sunlitCloud,clamp(0.24+uDaylight*0.58,0.0,0.92));
@@ -111,7 +111,7 @@ void main(){
   float alpha=(1.0-exp(-integratedDensity*15.0))*uDensity;
   alpha=clamp(alpha,0.0,0.50);
   if(alpha<0.008) discard;
-  float viewSun=pow(max(dot(normalize(uCameraPosition-vWorldPosition),normalize(uSunDirection)),0.0),2.0);
+  float viewSun=pow(max(dot(normalize(uCameraPosition-vWorldPosition),-normalize(uSunDirection)),0.0),2.0);
   vec3 nightFog=vec3(0.14,0.19,0.28),dayFog=vec3(0.72,0.81,0.86);
   vec3 fogColor=mix(nightFog,dayFog,uDaylight);
   fogColor=mix(fogColor,uSunColor*0.88,uTwilight*0.24+viewSun*0.08);
@@ -698,7 +698,8 @@ export class WeatherSystem {
       this.lastSkyColors={top:top.clone(),horizon:horizon.clone(),bottom:bottom.clone(),twilight};
     }
     this.sunMaterial.color.copy(sunColor);
-    this.sunMaterial.opacity=this.THREE.MathUtils.clamp(sunStrength*(1-this.params.clouds*0.54)*(0.64+twilight*0.18),0,0.68);
+    const sunDiscStrength=Math.max(sunStrength,twilight*0.72);
+    this.sunMaterial.opacity=this.THREE.MathUtils.clamp(sunDiscStrength*(1-this.params.clouds*0.54)*(0.64+twilight*0.26),0,0.70);
     const nightStrength=sunDirection?1-this.THREE.MathUtils.smoothstep(sunDirection.y,-0.10,0.18):0;
     const cloudDayMix=this.THREE.MathUtils.clamp(sunStrength*1.35+0.06,0.06,1);
     const cloudTint=this.nightCloudColor.clone().lerp(this.dayCloudColor,cloudDayMix);
@@ -709,7 +710,7 @@ export class WeatherSystem {
     if(sunDirection){
       this.sunDirection.copy(sunDirection).normalize();
       this.moonDirection.copy(this.sunDirection).negate();
-      this.sunGlow.visible=!!sunVisible&&sunStrength>0.025;
+      this.sunGlow.visible=!!sunVisible&&(sunStrength>0.025||twilight>0.20);
       this.sunGlow.position.copy(this.camera.position).addScaledVector(this.sunDirection,10600);
       const cover=this.params.clouds;
       const cloudGate=this.THREE.MathUtils.smoothstep(cover,0.07,0.34)*(1-this.THREE.MathUtils.smoothstep(cover,0.76,0.96));
@@ -761,8 +762,8 @@ export class WeatherSystem {
     };
     const coverage=this.params.clouds,volumetrics=this.params.volumetrics;
     const active=Math.round(coverage*this.clouds.length);
-    this.clouds.forEach((cloud,index)=>{cloud.sprite.visible=!volumetrics&&index<active;});
-    this.cloudMaterials.forEach(material=>{material.opacity=volumetrics?0.18+coverage*0.13:0.50+coverage*0.30;});
+    this.clouds.forEach((cloud,index)=>{cloud.sprite.visible=index<active;});
+    this.cloudMaterials.forEach(material=>{material.opacity=volumetrics?0.12+coverage*0.12:0.50+coverage*0.30;});
     this.cloudVolume.visible=volumetrics&&coverage>0.015;
     this.cloudVolumeMaterial.uniforms.uCoverage.value=coverage;
     this.cloudVolumeMaterial.uniforms.uWind.value=this.params.wind;
