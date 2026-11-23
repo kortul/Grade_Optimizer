@@ -1709,6 +1709,30 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   </div>
   </div>
 </div>
+
+<div id="mobileControls" aria-label="Mobile controls">
+  <div class="mobile-status-row">
+    <div id="mobileModeHint" class="mobile-mode-hint">ОБЗОР · проведи пальцем, чтобы вращать сцену · два пальца — масштаб</div>
+    <div id="mobileSpeedBox" class="mobile-speed-box" hidden><strong id="mobileSpeedValue">0</strong><span>км/ч</span></div>
+  </div>
+  <div id="mobileMoveStick" class="mobile-stick mobile-stick-move" role="group" aria-label="Movement joystick">
+    <span class="mobile-stick-caption">MOVE</span><span class="mobile-stick-ring"></span><span class="mobile-stick-knob"></span>
+  </div>
+  <div id="mobileLookStick" class="mobile-stick mobile-stick-look" role="group" aria-label="Camera look joystick">
+    <span class="mobile-stick-caption">LOOK</span><span class="mobile-stick-ring"></span><span class="mobile-stick-knob"></span>
+  </div>
+  <div id="mobileSkierActions" class="mobile-actions mobile-actions-skier" role="group" aria-label="Skier actions">
+    <button type="button" data-mobile-key="shift">PUSH</button>
+    <button type="button" data-mobile-action="jump">JUMP</button>
+    <button type="button" data-mobile-action="camera">VIEW</button>
+  </div>
+  <div id="mobileDroneActions" class="mobile-actions mobile-actions-drone" role="group" aria-label="Drone actions">
+    <button type="button" data-mobile-key=" ">UP</button>
+    <button type="button" data-mobile-key="control">DOWN</button>
+    <button type="button" data-mobile-key="shift">BOOST</button>
+  </div>
+</div>
+
 <div id="legend">
 <div><span class="sw" style="background:#598cd9"></span>Насыпь</div><div><span class="sw" style="background:#d17a5c"></span>Выемка</div>
 <div><span class="sw" style="background:#c2c0b8"></span>Нейтральная зона</div><div><span class="sw" style="background:#eaf0f5"></span>Снежный рельеф</div>
@@ -1721,7 +1745,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v131.js"></script>
+<script type="module" src="./app.v132.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -1783,8 +1807,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v131.js"]');
-  moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить app.v131.js или один из его модулей.'));
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v132.js"]');
+  moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить app.v132.js или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
 /* Inspector vertical workspace: use the full viewport height */
@@ -2208,5 +2232,133 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 @media(max-height:590px){
   #materialLibraryWindow{top:8px;height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);min-height:0}
 }
+</style>
+
+<style id="grade-optimizer-mobile-mode-v132">
+#app.mobile-mode{touch-action:none;overscroll-behavior:none}
+#app.mobile-mode #view,#app.mobile-mode #view canvas{touch-action:none;overscroll-behavior:none}
+#app.mobile-mode #sceneBar{
+  position:absolute!important;z-index:40!important;
+  top:calc(env(safe-area-inset-top,0px) + 8px)!important;
+  left:9px!important;right:9px!important;
+  display:flex!important;flex-direction:row!important;align-items:stretch!important;
+  justify-content:stretch!important;width:auto!important;max-width:none!important;
+  gap:0!important;padding:0!important;pointer-events:none!important;
+  background:none!important;border:0!important;box-shadow:none!important;
+}
+#app.mobile-mode #sceneBar .sceneMode{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:stretch!important;gap:5px!important;width:100%!important;
+  min-width:0!important;max-width:none!important;padding:5px!important;
+  border:1px solid rgba(190,218,240,.2)!important;border-radius:13px!important;
+  background:rgba(12,22,32,.88)!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.04)!important;
+  backdrop-filter:blur(14px);pointer-events:auto!important;
+}
+#app.mobile-mode #sceneBar #optimizerToggle,
+#app.mobile-mode #sceneBar #weatherToggle,
+#app.mobile-mode #sceneBar #editorToggle,
+#app.mobile-mode #sceneBar .dayCycle{display:none!important}
+#app.mobile-mode #sceneBar .mode-pair{display:contents!important}
+#app.mobile-mode #sceneBar #overviewMode,
+#app.mobile-mode #sceneBar #skierMode,
+#app.mobile-mode #sceneBar #droneModeButton{
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;
+  width:100%!important;min-width:0!important;min-height:43px!important;height:auto!important;
+  margin:0!important;padding:8px 5px!important;border:1px solid rgba(177,205,229,.12)!important;
+  border-radius:8px!important;background:rgba(54,72,89,.72)!important;color:#d8e7f2!important;
+  font-size:10px!important;font-weight:850!important;letter-spacing:.5px!important;line-height:1.15!important;
+  white-space:nowrap!important;text-align:center!important;box-shadow:none!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#app.mobile-mode #sceneBar #overviewMode.active{background:linear-gradient(140deg,#3b7195,#28516e)!important;border-color:rgba(149,205,237,.52)!important;color:#fff!important}
+#app.mobile-mode #sceneBar #skierMode.active{background:linear-gradient(140deg,#218a5c,#2fa875)!important;border-color:rgba(115,235,178,.48)!important;color:#fff!important}
+#app.mobile-mode #sceneBar #droneModeButton.active{background:linear-gradient(140deg,#347ab6,#4e9bd5)!important;border-color:rgba(140,207,255,.5)!important;color:#fff!important}
+#app.mobile-mode #sceneHierarchyPanel,#app.mobile-mode #sceneEditorPanel,
+#app.mobile-mode #materialLibraryWindow,#app.mobile-mode #panel,#app.mobile-mode #legend,
+#app.mobile-mode #weatherPanel,#app.mobile-mode #skierHud,#app.mobile-mode #droneHud{display:none!important}
+
+#mobileControls{
+  display:none;position:absolute;z-index:35;inset:0;overflow:hidden;pointer-events:none;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+#app.mobile-mode #mobileControls{display:block}
+#app.mobile-mode:not(.skier-mode):not(.drone-mode) #mobileControls .mobile-stick,
+#app.mobile-mode:not(.skier-mode):not(.drone-mode) #mobileControls .mobile-actions{display:none!important}
+#mobileControls .mobile-status-row{
+  position:absolute;top:calc(env(safe-area-inset-top,0px) + 63px);left:12px;right:12px;
+  display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;
+}
+#mobileControls .mobile-mode-hint{
+  max-width:min(75vw,440px);padding:7px 10px;border:1px solid rgba(179,209,231,.14);
+  border-radius:999px;background:rgba(11,20,29,.72);color:#c3d5e3;
+  font-size:9px;font-weight:750;letter-spacing:.3px;line-height:1.25;text-align:center;
+  text-wrap:balance;box-shadow:0 5px 16px rgba(0,0,0,.18);backdrop-filter:blur(10px);
+}
+#mobileControls .mobile-speed-box{
+  display:inline-flex;flex:0 0 auto;align-items:baseline;gap:4px;padding:6px 9px;
+  border:1px solid rgba(126,207,170,.24);border-radius:999px;background:rgba(12,30,25,.78);
+  color:#d9f5e7;font-size:9px;
+}
+#mobileControls .mobile-speed-box[hidden]{display:none!important}
+#mobileControls .mobile-speed-box strong{font-size:13px;font-variant-numeric:tabular-nums}
+#mobileControls .mobile-stick{
+  --stick-x:0px;--stick-y:0px;position:absolute;
+  bottom:calc(env(safe-area-inset-bottom,0px) + 13px);
+  display:grid;place-items:center;width:clamp(104px,28vw,132px);aspect-ratio:1;
+  border:1px solid rgba(186,216,238,.27);border-radius:50%;
+  background:radial-gradient(circle,rgba(75,106,129,.36),rgba(18,31,43,.58) 70%);
+  box-shadow:inset 0 2px 12px rgba(0,0,0,.2),0 8px 24px rgba(0,0,0,.25);
+  pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;
+}
+#mobileControls .mobile-stick-move{left:14px}
+#mobileControls .mobile-stick-look{right:14px}
+#mobileControls .mobile-stick-ring{position:absolute;inset:22%;border:1px dashed rgba(187,218,239,.24);border-radius:50%;pointer-events:none}
+#mobileControls .mobile-stick-caption{
+  position:absolute;top:12px;left:0;right:0;z-index:2;color:rgba(208,226,239,.66);
+  font-size:8px;font-weight:900;letter-spacing:1.3px;text-align:center;pointer-events:none;
+}
+#mobileControls .mobile-stick-knob{
+  position:absolute;z-index:1;width:43%;height:43%;border:1px solid rgba(211,232,246,.45);
+  border-radius:50%;background:radial-gradient(circle at 34% 26%,rgba(127,165,194,.88),rgba(50,78,101,.94) 72%);
+  box-shadow:0 4px 14px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.18);
+  transform:translate(var(--stick-x),var(--stick-y));pointer-events:none;will-change:transform;
+}
+#mobileControls .mobile-actions{
+  position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + clamp(104px,28vw,132px) + 25px);
+  display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+  width:min(228px,calc(100vw - 30px));transform:translateX(-50%);pointer-events:auto;
+}
+#app.mobile-mode.skier-mode #mobileSkierActions{display:grid}
+#app.mobile-mode.drone-mode #mobileDroneActions{display:grid}
+#mobileControls .mobile-actions button{
+  display:flex;align-items:center;justify-content:center;min-width:0;min-height:38px;
+  margin:0;padding:7px 4px;border:1px solid rgba(194,220,239,.2);border-radius:9px;
+  background:rgba(20,34,47,.9);color:#edf6fc;font-size:9px;font-weight:900;
+  letter-spacing:.45px;line-height:1.1;box-shadow:0 5px 15px rgba(0,0,0,.22);
+  backdrop-filter:blur(10px);touch-action:none;-webkit-tap-highlight-color:transparent;
+}
+#mobileControls .mobile-actions button:active,#mobileControls .mobile-actions button.is-pressed{
+  transform:translateY(1px);border-color:rgba(136,222,182,.5);
+  background:rgba(36,118,80,.94);color:#fff;
+}
+#mobileControls .mobile-actions button[data-mobile-action=jump]{background:rgba(45,104,150,.92);border-color:rgba(138,202,245,.34)}
+#mobileControls .mobile-actions button[data-mobile-action=camera]{background:rgba(51,66,84,.92)}
+@media(orientation:landscape) and (max-height:520px){
+  #mobileControls .mobile-status-row{top:calc(env(safe-area-inset-top,0px) + 58px)}
+  #mobileControls .mobile-stick{width:clamp(94px,23vh,116px);bottom:calc(env(safe-area-inset-bottom,0px) + 8px)}
+  #mobileControls .mobile-actions{bottom:calc(env(safe-area-inset-bottom,0px) + clamp(94px,23vh,116px) + 17px);width:min(240px,35vw)}
+  #app.mobile-mode #sceneBar .sceneMode{gap:4px!important;padding:4px!important}
+  #app.mobile-mode #sceneBar #overviewMode,#app.mobile-mode #sceneBar #skierMode,
+  #app.mobile-mode #sceneBar #droneModeButton{min-height:38px!important;font-size:9px!important}
+}
+@media(max-width:360px){
+  #app.mobile-mode #sceneBar .sceneMode{gap:3px!important;padding:4px!important}
+  #app.mobile-mode #sceneBar #overviewMode,#app.mobile-mode #sceneBar #skierMode,
+  #app.mobile-mode #sceneBar #droneModeButton{font-size:9px!important;padding:7px 3px!important}
+  #mobileControls .mobile-stick{width:100px}
+  #mobileControls .mobile-actions{bottom:calc(env(safe-area-inset-bottom,0px) + 125px);gap:4px;width:calc(100vw - 24px)}
+}
+@media(prefers-reduced-motion:reduce){#mobileControls .mobile-stick-knob{will-change:auto}}
 </style>
 </body></html>
