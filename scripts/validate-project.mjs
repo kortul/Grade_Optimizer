@@ -503,7 +503,7 @@ assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
 assert.ok(entrySource.includes("showModeSwitchFeedback(message)"), 'mode startup failures must be visible on screen');
-assert.ok(entrySource.includes("if(!terrain&&state.root)"), 'skier mode must resolve a mesh when a named terrain node is missing');
+assert.ok(entrySource.includes('function resolveSkierTerrain()')&&entrySource.includes('const requestedTerrain=mode===\'skier\'?resolveSkierTerrain():null;'), 'skier mode must resolve a mesh before its early return guard');
 assert.ok(entrySource.includes("sceneLoadingEl.getClientRects().length>0"), 'loading-state detection must use rendered visibility');
 
 assert.ok(skierSource.includes("if (e.code === 'KeyC')"), 'C key third-person camera toggle missing');
