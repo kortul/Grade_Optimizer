@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1.0",
+  "assetId": "real-terrain",
+  "name": "Real Terrain",
+  "file": "assets/real-terrain.fbx",
+  "category": "terrain",
+  "activeTerrain": true,
+  "updatedAt": "2026-11-23T15:13:59Z",
+  "mayaExport": {
+    "pluginVersion": "0.3.0",
+    "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
+    "mayaVersion": "2026",
+    "linearUnit": "cm",
+    "modelSizeBytes": 4058272,
+    "meshComponentCount": 1,
+    "materialNames": [
+      "openPBR_shader1"
+    ],
+    "worldBounds": [
+      -265699.25,
+      1478.509033203125,
+      -374683.03125,
+      186625.75,
+      13422.923828125,
+      65470.09375
+    ],
+    "nodeMetadata": [],
+    "components": [
+      {
+        "dagPath": "|terrainShape",
+        "name": "terrainShape",
+        "shape": "terrainShapeShape",
+        "materials": [
+          "openPBR_shader1"
+        ]
+      }
+    ]
+  }
+}
