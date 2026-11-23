@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Grade Optimizer · WebGPU Snow Lab</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101923;color:#edf5fc;font:14px/1.45 Inter,system-ui,sans-serif}
+    #stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+    .panel{position:fixed;z-index:2;top:18px;left:18px;width:min(360px,calc(100vw - 36px));padding:16px 18px;border:1px solid #ffffff20;border-radius:14px;background:#111c28d9;backdrop-filter:blur(16px);box-shadow:0 12px 40px #0005}
+    h1{font-size:16px;letter-spacing:.04em;margin:0 0 4px}.sub{color:#a8bbcd;font-size:12px;margin-bottom:14px}
+    .status{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#ffffff0b;border-radius:8px;font-size:12px;margin-bottom:12px}
+    .dot{width:8px;height:8px;border-radius:50%;background:#e6b65d;box-shadow:0 0 12px currentColor;flex:none}.dot.ok{background:#55d69a}.dot.bad{background:#ff827a}
+    .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+    .metric{background:#ffffff0a;border-radius:8px;padding:9px 10px}.metric b{display:block;font-size:20px;font-variant-numeric:tabular-nums}.metric span{font-size:10px;color:#9db0c2;text-transform:uppercase;letter-spacing:.08em}
+    label{display:flex;justify-content:space-between;color:#c9d7e4;font-size:12px;margin:12px 0 5px}input{width:100%;accent-color:#73c8ee}
+    .note{font-size:11px;color:#91a5b8;margin-top:14px;line-height:1.5}.note a{color:#a9dfff}
+    #error{display:none;white-space:pre-wrap;color:#ffb0a8;font-size:11px;margin-top:10px}
+    .hint{position:fixed;right:18px;bottom:16px;padding:8px 11px;border-radius:8px;background:#111c28b8;color:#c3d2df;font-size:11px}
+    @media(max-width:600px){.panel{top:10px;left:10px;padding:13px;width:min(330px,calc(100vw - 20px))}.hint{right:10px;bottom:10px}}
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js",
+        "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js",
+        "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.tsl.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="stage"></div>
+  <section class="panel">
+    <h1>WEBGPU · SNOW LAB</h1>
+    <div class="sub">Изолированный прототип для Grade Optimizer · Three.js r187</div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="backendStatus">Инициализация renderer…</span></div>
+    <div class="metrics">
+      <div class="metric"><b id="fps">—</b><span>FPS</span></div>
+      <div class="metric"><b id="particleCount">50 000</b><span>Снежинки</span></div>
+    </div>
+    <label for="density"><span>Плотность снега</span><strong id="densityValue">50 000</strong></label>
+    <input id="density" type="range" min="10000" max="100000" step="5000" value="50000">
+    <label for="wind"><span>Боковой ветер</span><strong id="windValue">1.0×</strong></label>
+    <input id="wind" type="range" min="0" max="3" step=".1" value="1">
+    <div class="note">Снежинки анимируются в GPU vertex stage через TSL. WebGPURenderer автоматически выбирает WebGPU или WebGL 2 backend. Этот тест не подключён к рабочей сцене и не меняет её рендерер.<br><br><a href="./index.html">← Вернуться в Grade Optimizer</a></div>
+    <div id="error"></div>
+  </section>
+  <div class="hint">ЛКМ — вращение · колесо — масштаб · Shift + ЛКМ — панорама</div>
+  <script type="module" src="./webgpu-snow-lab.js"></script>
+</body>
+</html>

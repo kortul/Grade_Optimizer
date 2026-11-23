@@ -73,3 +73,9 @@ You are the only Scene Editor administrator. Viewers only need the generated vie
 - Browser IndexedDB remains a fallback backup. It is local to that browser and can be lost if site data is cleared; it is not cross-device sync.
 - The runtime needs `scene.json` plus separate binary GLB model files under `clients/<project-id>/models/`. The app writes them automatically; you do not manage them manually.
 - Keep individual model files below 90 MiB for the current regular-Git workflow. Larger assets require Git LFS or another storage strategy.
+
+## WebGPU prototype (isolated)
+
+An experimental snow-rendering lab is available at `webgpu-snow-lab.html` on the `feature/webgpu-snow-lab` branch. It uses a separately pinned Three.js r187 WebGPU build and TSL-driven vertex animation for a configurable 10k–100k particle field. `WebGPURenderer` selects its WebGPU backend when available and otherwise uses its WebGL 2 fallback.
+
+Open the page through HTTPS (for example, the GitHub Pages preview for the feature branch) or localhost. The lab is intentionally not imported by `index.html`: the production app remains on Three.js 0.160.0 / WebGLRenderer. This first prototype validates the modern renderer, TSL shader path, scene rendering and fallback without touching production materials, GLSL effects, loaders, or controls. It is GPU vertex animation, not yet a compute-shader simulation; GPU compute and a production integration require a separate measured follow-up.
