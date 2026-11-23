@@ -13,7 +13,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -293,6 +293,164 @@ def set_option(command):
         cmds.warning("FBX option skipped: " + command + " — " + str(exc))
 
 
+def _maya_color_triplet(value):
+    """Normalize Maya getAttr output for a color compound into an RGB tuple."""
+    while isinstance(value, (list, tuple)) and len(value) == 1 and isinstance(value[0], (list, tuple)):
+        value = value[0]
+    if not isinstance(value, (list, tuple)) or len(value) < 3:
+        return None
+    try:
+        return tuple(float(value[index]) for index in range(3))
+    except (TypeError, ValueError):
+        return None
+
+
+def _material_color_source(shader):
+    """Return the first usable base/diffuse color input on a Maya shader."""
+    for attribute in ("baseColor", "color", "diffuseColor", "base_color", "diffuse"):
+        try:
+            if not cmds.attributeQuery(attribute, node=shader, exists=True):
+                continue
+            incoming = cmds.listConnections(
+                shader + "." + attribute,
+                source=True,
+                destination=False,
+                plugs=True
+            ) or []
+            if incoming:
+                return attribute, incoming[0], None
+            color = _maya_color_triplet(cmds.getAttr(shader + "." + attribute))
+            if color is not None:
+                return attribute, None, color
+        except Exception:
+            continue
+    return None, None, None
+
+
+def _create_fbx_lambert_proxy(shader):
+    """Make a temporary FBX/Three.js-compatible Lambert shader without editing the source shader."""
+    safe_name = re.sub(r"[^A-Za-z0-9_]+", "_", str(shader))[:48] or "Material"
+    proxy = cmds.shadingNode("lambert", asShader=True, name="GO_FBX_" + safe_name + "_MAT")
+    color_attribute, color_connection, color_value = _material_color_source(shader)
+    if color_connection:
+        try:
+            cmds.connectAttr(color_connection, proxy + ".color", force=True)
+        except Exception:
+            color_connection = None
+    if not color_connection:
+        if color_value is None:
+            color_value = (0.72, 0.72, 0.72)
+            cmds.warning(
+                "[Grade Optimizer] No readable base/diffuse color on %s; "
+                "using neutral gray for the FBX compatibility material." % shader
+            )
+        cmds.setAttr(proxy + ".color", color_value[0], color_value[1], color_value[2], type="double3")
+    for weight_attribute in ("baseWeight", "base", "diffuse"):
+        try:
+            if not cmds.attributeQuery(weight_attribute, node=shader, exists=True):
+                continue
+            weight = cmds.getAttr(shader + "." + weight_attribute)
+            if isinstance(weight, (int, float)):
+                cmds.setAttr(proxy + ".diffuse", max(0.0, min(1.0, float(weight))))
+                break
+        except Exception:
+            continue
+    return proxy, color_attribute
+
+
+def prepare_fbx_compatible_materials(components):
+    """
+    Three.js FBXLoader reads Lambert / Phong FBX materials.
+    Temporarily connect a Lambert proxy to unsupported Maya shading groups so their
+    per-face assignments and source material graphs remain untouched in the Maya scene.
+    """
+    overrides = []
+    proxies_by_shader = {}
+    seen_shading_groups = set()
+    supported_node_types = {"lambert", "phong"}
+    try:
+        for component in components:
+            transform = component.get("dagPath")
+            shapes = cmds.listRelatives(transform, shapes=True, fullPath=True, type="mesh") or []
+            for shape in shapes:
+                shading_groups = cmds.listConnections(shape, type="shadingEngine") or []
+                for shading_group in shading_groups:
+                    if shading_group in seen_shading_groups:
+                        continue
+                    seen_shading_groups.add(shading_group)
+                    destination = shading_group + ".surfaceShader"
+                    source_plugs = cmds.listConnections(
+                        destination, source=True, destination=False, plugs=True
+                    ) or []
+                    if not source_plugs:
+                        continue
+                    source_plug = source_plugs[0]
+                    source_shader = source_plug.split(".", 1)[0]
+                    try:
+                        node_type = cmds.nodeType(source_shader)
+                    except Exception:
+                        continue
+                    if node_type in supported_node_types:
+                        continue
+                    proxy = proxies_by_shader.get(source_shader)
+                    color_attribute = None
+                    if not proxy:
+                        proxy, color_attribute = _create_fbx_lambert_proxy(source_shader)
+                        proxies_by_shader[source_shader] = proxy
+                    else:
+                        color_attribute, _, _ = _material_color_source(source_shader)
+                    overrides.append({
+                        "shadingGroup": shading_group,
+                        "destination": destination,
+                        "sourcePlug": source_plug,
+                        "sourceMaterial": source_shader,
+                        "sourceType": node_type,
+                        "proxyMaterial": proxy,
+                        "colorAttribute": color_attribute or ""
+                    })
+                    cmds.connectAttr(proxy + ".outColor", destination, force=True)
+    except Exception:
+        restore_fbx_compatible_materials(overrides)
+        raise
+    return overrides
+
+
+def restore_fbx_compatible_materials(overrides):
+    """Restore original shading-group connections and remove temporary Lambert proxies."""
+    proxies = set()
+    failed_restores = set()
+    for item in reversed(overrides or []):
+        destination = item.get("destination")
+        source_plug = item.get("sourcePlug")
+        proxy = item.get("proxyMaterial")
+        if proxy:
+            proxies.add(proxy)
+        try:
+            if destination and source_plug and cmds.objExists(source_plug.split(".", 1)[0]):
+                cmds.connectAttr(source_plug, destination, force=True)
+                if not cmds.isConnected(source_plug, destination):
+                    failed_restores.add(proxy)
+        except Exception as exc:
+            failed_restores.add(proxy)
+            cmds.warning(
+                "[Grade Optimizer] Could not restore original material connection %s: %s"
+                % (source_plug, exc)
+            )
+    for proxy in proxies - failed_restores:
+        try:
+            if cmds.objExists(proxy):
+                cmds.delete(proxy)
+        except Exception as exc:
+            cmds.warning("[Grade Optimizer] Could not remove temporary material %s: %s" % (proxy, exc))
+    if failed_restores:
+        cmds.warning(
+            "[Grade Optimizer] Temporary compatibility materials were kept because an original "
+            "shading connection could not be restored: " + ", ".join(sorted(failed_restores))
+        )
+    if isinstance(overrides, list):
+        overrides[:] = []
+
+
 def _safe_asset_id(value):
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value or "").strip())
     slug = slug.strip("._-").lower()
@@ -442,13 +600,14 @@ def prepare_client_asset_export(repo, components, node_metadata):
     }
 
 
-def write_client_asset_manifest(export_info, model_size):
+def write_client_asset_manifest(export_info, model_size, material_conversions=None):
     manifest = export_info["manifest"]
     entry = next(
         item for item in manifest["assets"]
         if isinstance(item, dict) and item.get("id") == export_info["asset_id"]
     )
     entry["mayaExport"]["modelSizeBytes"] = model_size
+    entry["mayaExport"]["fbxMaterialConversions"] = list(material_conversions or [])
     path = export_info["temporary_manifest_path"]
     with open(path, "w", encoding="utf-8") as stream:
         json.dump(manifest, stream, ensure_ascii=False, indent=2)
@@ -502,6 +661,8 @@ def export_scene(*_):
 
     export_info = None
     temporary_paths = []
+    material_overrides = []
+    material_conversion_summary = []
     try:
         export_info = prepare_client_asset_export(repo, components, node_metadata)
         temporary_model_path = export_info["temporary_model_path"]
@@ -524,9 +685,25 @@ def export_scene(*_):
         set_option("FBXExportCameras -v false;")
         set_option("FBXExportLights -v false;")
 
-        path = safe_path(temporary_model_path).replace('"', '\\"')
-        # Selection-only is intentional: only the selected branch becomes this scene asset.
-        mel.eval('FBXExport -f "' + path + '" -s;')
+        # FBXLoader in the browser supports Lambert / Phong shading models. Maya 2026
+        # OpenPBR / Standard Surface nodes are temporarily bridged through Lambert
+        # proxies on their existing shading groups, preserving per-face assignments.
+        material_overrides = prepare_fbx_compatible_materials(components)
+        path = safe_path(temporary_model_path).replace('"', '\\\\"')
+        try:
+            # Selection-only is intentional: only the selected branch becomes this scene asset.
+            mel.eval('FBXExport -f "' + path + '" -s;')
+        finally:
+            material_conversion_summary = [
+                {
+                    "sourceMaterial": item["sourceMaterial"],
+                    "sourceType": item["sourceType"],
+                    "exportMaterial": item["proxyMaterial"],
+                    "colorAttribute": item["colorAttribute"]
+                }
+                for item in material_overrides
+            ]
+            restore_fbx_compatible_materials(material_overrides)
 
         if not os.path.isfile(temporary_model_path):
             raise RuntimeError("Maya не создала FBX. Проверь FBX Exporter и выделение.")
@@ -534,7 +711,7 @@ def export_scene(*_):
         if size <= 0:
             raise RuntimeError("Maya создала пустой FBX. Экспорт отменён.")
 
-        write_client_asset_manifest(export_info, size)
+        write_client_asset_manifest(export_info, size, material_conversion_summary)
 
         # Publish the new asset file and its scene.json registration only after both are ready.
         os.replace(temporary_model_path, export_info["model_path"])
@@ -552,6 +729,8 @@ def export_scene(*_):
         )
         if size >= 90 * 1024 * 1024:
             message += "\n\nВНИМАНИЕ: размер достиг 90 MiB — обычный Git не подходит."
+        if material_conversion_summary:
+            message += "\n\nСовместимость материалов: %d неподдерживаемых shader узлов временно переведены в Lambert. Назначения faces и исходные материалы Maya восстановлены." % len(material_conversion_summary)
         message += "\n\nИсходный assets/real-terrain.fbx не изменён."
         cmds.confirmDialog(
             title="Grade Optimizer · Scene asset export complete",
@@ -573,6 +752,8 @@ def export_scene(*_):
             button=["OK"]
         )
     finally:
+        if material_overrides:
+            restore_fbx_compatible_materials(material_overrides)
         try:
             if previous_selection:
                 cmds.select(previous_selection, replace=True)
