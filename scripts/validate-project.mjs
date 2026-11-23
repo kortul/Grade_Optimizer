@@ -11,7 +11,7 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v117.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v118.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
@@ -69,7 +69,7 @@ assert.ok(opticsSource.includes('if (!this.enabled || this.composerFailed)'), 'c
 assert.ok(opticsSource.includes('this.syncComposerSize();'), 'composer size must use the allocation guard');
 pass('camera optics GLSL declarations and direct-render fallback are valid');
 
-const sceneLookKeys = ['general','environment','camera','lens','color','materials','render'];
+const sceneLookKeys = ['general','environment','camera','color','materials','render'];
 assert.ok(html.includes('role="tablist" aria-label="Scene Look categories"'), 'Scene Look tablist is missing');
 for (const key of sceneLookKeys) {
   assert.ok(html.includes('data-look-tab="' + key + '"'), 'Scene Look tab missing: ' + key);
@@ -88,22 +88,23 @@ assert.ok(html.includes('scene-look-tab-icon" aria-hidden="true"><svg'), 'Scene 
 assert.ok(html.includes('scene-look-switches input[type=checkbox]:checked'), 'Scene Look toggles need styled on/off states');
 assert.ok(html.includes('class="editor-section scene-look-section" aria-label="Global Scene Look"'), 'Scene Look should not require a nested accordion');
 pass('Scene Look finishing polish, live status, grouped Lens controls and range feedback are present');
-assert.ok(!html.includes('id="sceneLookTab-optics"') && !html.includes('id="sceneLookPanel-optics"'), 'Lens and Optics must remain a single tab');
-assert.ok(html.includes('id="sceneLookTab-lens"') && html.includes('id="sceneLookPanel-lens"'), 'combined Lens & Optics tab is missing');
-const lensPanelStart = html.indexOf('data-look-panel="lens"');
-const lensPanelEnd = html.indexOf('</section>', lensPanelStart);
-const lensPanelHtml = html.slice(lensPanelStart, lensPanelEnd);
-for (const control of ['sceneVignette','sceneChromatic','sceneDistortion','sceneGrain','sceneSharpness','sceneOpticsEnabled','sceneBokeh','sceneFlareEnabled','sceneBloom','sceneBloomThreshold','sceneFlare','sceneDirt']) {
-  assert.ok(lensPanelHtml.includes('id="' + control + '"'), 'combined Lens & Optics panel is missing ' + control);
+assert.ok(!html.includes('id="sceneLookTab-optics"') && !html.includes('id="sceneLookPanel-optics"'), 'separate Optics tab must remain removed');
+assert.ok(!html.includes('id="sceneLookTab-lens"') && !html.includes('id="sceneLookPanel-lens"'), 'separate Lens tab must remain removed');
+assert.ok(html.includes('id="sceneLookTab-camera"') && html.includes('id="sceneLookPanel-camera"'), 'combined Camera / Lens / Optics tab is missing');
+const cameraPanelStart = html.indexOf('data-look-panel="camera"');
+const cameraPanelEnd = html.indexOf('</section>', cameraPanelStart);
+const cameraPanelHtml = html.slice(cameraPanelStart, cameraPanelEnd);
+for (const control of ['sceneCameraFov','sceneExposure','sceneWhiteBalance','sceneFocusMode','sceneFocusDistance','sceneAperture','sceneVignette','sceneChromatic','sceneDistortion','sceneGrain','sceneSharpness','sceneOpticsEnabled','sceneBokeh','sceneFlareEnabled','sceneBloom','sceneBloomThreshold','sceneFlare','sceneDirt']) {
+  assert.ok(cameraPanelHtml.includes('id="' + control + '"'), 'combined Camera panel is missing ' + control);
 }
-assert.ok(html.includes('Lens &amp; Optics'), 'combined Lens & Optics tab label is missing');
+assert.ok(html.includes('CAMERA · LENS · OPTICS'), 'Camera tab label must indicate its combined contents');
 assert.ok(html.includes('grid-template-columns:repeat(3,minmax(0,1fr))'), 'Scene Look category-card grid is missing');
 assert.ok(html.includes('scene-look-tab-meta'), 'Scene Look category cards need second-line labels');
 assert.ok(entrySource.includes("const OPTICS_STORAGE_KEY = 'grade_optimizer_optics_v3'"), 'optics setting migration version is missing');
 assert.ok(entrySource.includes("currentOptics?['enabled','flare','bokeh','sunEnabled']:['enabled','flare','sunEnabled']"), 'legacy optics migration must leave depth of field disabled');
 assert.ok(entrySource.includes("['sceneOpticsEnabled','enabled'],['sceneFlareEnabled','flare'],['sceneBokeh','bokeh']"), 'Scene Editor must own enable / flare / DOF controls');
-assert.ok(entrySource.includes("let activeSceneLookTab='lens'"), 'combined Lens & Optics tab must be the default active view');
-pass('seven Scene Editor tabs, combined Lens & Optics controls, and DOF-off migration are present');
+assert.ok(entrySource.includes("let activeSceneLookTab='camera'"), 'combined Camera tab must be the default active view');
+pass('six Scene Editor tabs with Camera / Lens / Optics combined and DOF-off migration are present');
 
 
 assert.ok(entrySource.includes("['ArrowLeft','ArrowRight','Home','End']"), 'Scene Look keyboard navigation is missing');
@@ -154,7 +155,7 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v78.js'), 'active app must use the current skier controller');
+assert.ok(entrySource.includes('skier-controller.v79.js'), 'active app must use the current skier controller');
 const skierSource = read('skier-controller.v78.js').toString('utf8');
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push,\n      tuck'), 'skier stance state missing from movement HUD payload');
@@ -203,6 +204,18 @@ assert.ok(skierSource.includes('this.viewBlend=0;') && skierSource.includes('thi
 assert.ok(skierSource.includes('this.position.y+this.eyeHeight+this.airborneHeight-0.26*this.stanceCameraBlend'), 'first-person eye point must remain above skis in tuck');
 
 assert.ok(skierSource.includes('this.pushImpulse = 0.8') && skierSource.includes('this.pushInterval = 0.42'), 'pole push impulse / cadence must be controlled');
+assert.ok(skierSource.includes("if (e.code === 'Space')"), 'Space jump key handler missing');
+assert.ok(skierSource.includes('if (!e.repeat && this.inputEnabled) this._tryManualJump();'), 'Space must trigger once per press and respect transition lock');
+assert.ok(skierSource.includes('_tryManualJump() {') && skierSource.includes('this.manualJumpImpulse=4.8') || skierSource.includes('this.manualJumpImpulse = 4.8;'), 'manual jump take-off impulse missing');
+assert.ok(skierSource.includes('this.jumpCooldown=1.1;'), 'manual jump cooldown missing');
+assert.ok(skierSource.includes('const contact=this._groundAt(this.position.x,this.position.z);'), 'manual jump must confirm snow contact');
+assert.ok(skierSource.includes("const push=this.keys.has('shift');"), 'Space must not be treated as a pole-push key');
+assert.ok(skierSource.includes('airborne:this.airborneHeight>0.02'), 'skier HUD movement payload must expose airborne state');
+assert.ok(entrySource.includes("airborne?'ПРЫЖОК'"), 'skier HUD must display jump state');
+const skierHudSource = html.slice(html.indexOf('<div id="skierHud"'), html.indexOf('<div id="droneHud"'));
+assert.ok(skierHudSource.includes('<kbd>SHIFT</kbd> — толчок палками. <kbd>SPACE</kbd> — прыжок.'), 'skier tutorial must document separate push and jump keys');
+assert.ok(skierHudSource.includes('<kbd>SPACE</kbd></div><div><strong>Прыжок</strong>'), 'skier control grid must show Space jump');
+assert.ok(!skierHudSource.includes('<kbd>SHIFT</kbd> / <kbd>SPACE</kbd> — толчок'), 'old combined push hint must be removed');
 assert.ok(skierSource.includes('const yaw=this.headingYaw;'), 'pole strokes must follow ski heading, not camera look direction');
 assert.ok(skierSource.includes('if(!locked)this.keys.clear();'), 'lost pointer lock must clear stuck movement keys');
 assert.ok(skierSource.includes('let grounded=!!nextHit&&this.airborneHeight<=0.02&&this.airborneVelocityY<=0.02;'), 'HUD grounded state must become false during a bump jump');

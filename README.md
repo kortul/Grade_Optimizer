@@ -7,11 +7,11 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v117.js`.
+- Current app: `app.v118.js`.
 - Weather: `weather-system.v2.js`; snowfall and wind streaks render through a scene-root camera-follow layer, with visible snow density and persistent controls in skier / drone modes.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses seven category-card tabs: General, Environment, Camera, Lens & Optics, Color, Materials, and Render. Lens and optical processing share one panel. Depth of field starts disabled.
-- Skier: `skier-controller.v78.js`, with detailed equipment, depth-safe opaque rendering at full visibility, articulated hips / knees and shoulders / elbows, bilateral knee angulation into turns, damped carving lean, pelvis counter-rotation, pole strokes and a reset eye-level first-person camera.
+- Skier: `skier-controller.v79.js`, with detailed equipment, depth-safe opaque rendering at full visibility, articulated hips / knees and shoulders / elbows, bilateral knee angulation into turns, damped carving lean, pelvis counter-rotation, pole strokes and a reset eye-level first-person camera.
 - Drone: `drone-controller.v72.js`.
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime. Imported client models support binary GLB and FBX files.
 
@@ -21,7 +21,7 @@ For a new release, create new versioned app / controller files, update `index.ht
 
 The in-mode help cards explain the controls in Russian and are visible while skiing or flying.
 
-- **Skier:** W / ↑ tuck, S / ↓ brake, A / D or arrows turn, Shift / Space push.
+- **Skier:** W / ↑ tuck, S / ↓ brake, A / D or arrows turn, Shift pole push, Space jump.
 - **Drone:** W / S forward and backward, A / D strafe, Space / Shift change altitude, Ctrl boost.
 - **Mouse:** click the scene to capture the mouse; move it to look around. Esc releases the cursor; click the scene to capture it again.
 - **Switch skier ↔ drone:** V. The HUD also has a clickable switch button.
