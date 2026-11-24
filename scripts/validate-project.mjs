@@ -902,11 +902,13 @@ pass('GPU-animated snowfall regression checks');
 
 // Isolated WebGPU atmosphere lab: keep the production renderer entrypoint untouched.
 const webgpuAtmosphereHtml = read('webgpu-atmosphere-lab.html').toString('utf8');
-const webgpuAtmosphereSource = read('webgpu-atmosphere-lab.js').toString('utf8');
+const webgpuAtmosphereSource = read('webgpu-atmosphere-lab.v2.js').toString('utf8');
 const solarCycleSource = read('solar-cycle.v1.js').toString('utf8');
 assert.ok(webgpuAtmosphereHtml.includes('three@0.187.0') && webgpuAtmosphereHtml.includes('three/tsl'), 'atmosphere lab must use the pinned modern Three.js / TSL import map');
-assert.ok(webgpuAtmosphereHtml.includes('src="./webgpu-atmosphere-lab.js"'), 'atmosphere lab entry module is missing');
+assert.ok(webgpuAtmosphereHtml.includes('src="./webgpu-atmosphere-lab.v2.js"'), 'atmosphere lab entry module is missing');
 assert.ok(webgpuAtmosphereSource.includes("new THREE.WebGPURenderer") && webgpuAtmosphereSource.includes('await renderer.init()'), 'atmosphere lab must initialize WebGPURenderer asynchronously');
+assert.ok(webgpuAtmosphereSource.includes('ui.dayLengthValue.textContent')&&!webgpuAtmosphereSource.includes('ui.dayCycleLengthValue.textContent'),'atmosphere day-cycle label must reference the declared UI field');
+assert.ok(webgpuAtmosphereSource.includes('createFallbackTerrain')&&webgpuAtmosphereSource.includes('using procedural fallback'),'atmosphere lab must fall back to generated terrain when the FBX cannot be parsed');
 assert.ok(webgpuAtmosphereSource.includes('renderer.backend && renderer.backend.isWebGPUBackend === true'), 'atmosphere lab must report the active WebGPU / WebGL2 backend');
 assert.ok(webgpuAtmosphereSource.includes("new FBXLoader().loadAsync('./assets/real-terrain.fbx')") && webgpuAtmosphereSource.includes('mayaExport.metersPerUnit'), 'atmosphere lab must load canonical Maya terrain and honor its units');
 assert.ok(webgpuAtmosphereSource.includes('new SkyMesh()') && webgpuAtmosphereSource.includes('sky.cloudCoverage.value'), 'atmosphere lab must expose the procedural sky and cloud system');
