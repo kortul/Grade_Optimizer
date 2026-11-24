@@ -29,6 +29,14 @@ jobs:
       - name: Validate Maya exporter integration
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
-        run: node --input-type=module --check < app.v161.js
+        run: node --input-type=module --check < app.v164.js
+      - name: Check multiplayer module syntax
+        run: |
+          node --input-type=module --check < skier-controller.v98.js
+          node --input-type=module --check < multiplayer.v1.js
+          node --input-type=module --check < server/src/protocol.js
+          node --input-type=module --check < server/src/worker.js
+      - name: Test multiplayer protocol
+        run: node --test server/test/*.test.mjs
       - name: Validate project
         run: node scripts/validate-project.mjs
