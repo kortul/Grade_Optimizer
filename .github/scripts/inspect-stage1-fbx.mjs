@@ -119,6 +119,19 @@ allDescendantGroupsReset.traverse(node => {
   }
 });
 const groupsResetBounds = measure(allDescendantGroupsReset);
+const normalizedHierarchy = root.clone(true);
+normalizedHierarchy.position.fromArray(asset.transform?.position || [0, 0, 0]);
+normalizedHierarchy.rotation.fromArray(asset.transform?.rotation || [0, 0, 0]);
+normalizedHierarchy.scale.fromArray(scale || [1, 1, 1]);
+let sketchfabGroupInfo = null;
+normalizedHierarchy.traverse(node => {
+  if (node !== normalizedHierarchy) node.scale.set(1, 1, 1);
+  if (node.name === 'ToSketchfab') {
+    sketchfabGroupInfo = { originalPosition: node.position.toArray(), originalRotation: [node.rotation.x, node.rotation.y, node.rotation.z] };
+    node.position.set(0, 0, 0);
+  }
+});
+const normalizedHierarchyBounds = measure(normalizedHierarchy);
 const sceneRootNode = rebaseTest.getObjectByName('MAYA_WORKING_SCENE_001');
 const rebaseBefore = measure(rebaseTest);
 let sceneRootTransform = null;
@@ -188,7 +201,9 @@ console.log(JSON.stringify({
   scaleTests: {
     allDescendantScalesReset: allScalesResetBounds,
     descendantsWhoseScaleWasChanged: scaledNodes,
-    allNonRootGroupsScaleReset: groupsResetBounds
+    allNonRootGroupsScaleReset: groupsResetBounds,
+    normalizedWithoutToSketchfabOffset: normalizedHierarchyBounds,
+    toSketchfabGroup: sketchfabGroupInfo
   },
   targetMeshHierarchy: hierarchy,
   meshes
