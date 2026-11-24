@@ -44,7 +44,7 @@ export class PublicResort extends DurableObject {
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({
       id:requestedClientId||crypto.randomUUID(),clientId:requestedClientId,slot,name:'',state:null,lastSeen:Date.now(),
-      rateStart:Date.now(),rateCount:0,acceptedStates:0,rejectedStates:0,lastStateAt:0,lastStateSeq:0,left:false
+      rateStart:Date.now(),rateCount:0,acceptedStates:0,rejectedStates:0,lastStateAt:0,lastStateSeq:0,peerCount:0,lastBroadcastPeers:0,broadcastAttempts:0,left:false
     });
     return new Response(null,{status:101,webSocket:client});
   }
@@ -92,15 +92,20 @@ export class PublicResort extends DurableObject {
 
     if(msg.t==='ping'){
       player.lastSeen=now;socket.serializeAttachment(player);
+      const peers=this.activeSockets().filter(entry=>entry.socket!==socket&&entry.player.name);
+      player.peerCount=peers.length;socket.serializeAttachment(player);
       this.send(socket,{
         t:'pong',at:now,
         acceptedStates:Number(player.acceptedStates)||0,
         rejectedStates:Number(player.rejectedStates)||0,
         lastStateAt:Number(player.lastStateAt)||0,
-        lastStateSeq:Number(player.lastStateSeq)||0
+        lastStateSeq:Number(player.lastStateSeq)||0,
+        peerCount:peers.length,
+        broadcastPeers:Number(player.lastBroadcastPeers)||0,
+        broadcastAttempts:Number(player.broadcastAttempts)||0
       });
       const presence={t:'presence',id:player.id,name:player.name};
-      for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,presence);
+      for(const entry of peers)this.send(entry.socket,presence);
       return;
     }
 
@@ -131,7 +136,11 @@ export class PublicResort extends DurableObject {
     if(Number.isInteger(msg.seq))player.lastStateSeq=msg.seq;
     socket.serializeAttachment(player);
     const packet={t:'state',seq:msg.seq,player:this.publicPlayer(player)};
-    for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,packet);
+    const recipients=this.activeSockets().filter(entry=>entry.socket!==socket&&entry.player.name);
+    player.lastBroadcastPeers=recipients.length;
+    player.broadcastAttempts=(Number(player.broadcastAttempts)||0)+1;
+    socket.serializeAttachment(player);
+    for(const entry of recipients)this.send(entry.socket,packet);
   }
 
   webSocketClose(socket){this.announceLeave(socket);}
