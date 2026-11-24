@@ -7,8 +7,8 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v142.js`.
-- Weather: `weather-system.v2.js`; snowfall and wind streaks render through a scene-root camera-follow layer, with visible snow density and persistent controls in skier / drone modes.
+- Current app: `app.v155.js`.
+- Weather: `weather-system.v7.js`; layered procedural clouds, directional horizon scattering, a color-varied star field, snowfall and wind streaks render through the scene weather layers.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
 - Skier: `skier-controller.v94.js`, with a 75 kg skier-equipment point-mass reference, mass-scaled pole / jump impulses, 3D ballistic take-off inheriting slope velocity and terrain-aware landing, grounded ski-snow friction, speed-limited edge force, calculated inside / outside ski loads, load-aware stance animation and first / third-person cameras. Third-person camera orbit is independent of physical skier / ski heading; switching from the drone starts the first-person view aligned with the skis. When an imported `Slopes_Stage1` asset is present, skier physics uses that group and selects the highest skiable point with downhill clearance, including when switching from drone. Skier-mode preparation is non-modal and keeps the current view interactive. Forest placement uses cached terrain vertices to avoid large synchronous raycast batches. Terrain contact queries use a 192×192 triangle lookup with a Raycaster fallback; live counters and timings are available through `window.__GRADE_OPTIMIZER_MODE_API.diagnostics().terrainPerformance`.
@@ -73,3 +73,18 @@ You are the only Scene Editor administrator. Viewers only need the generated vie
 - Browser IndexedDB remains a fallback backup. It is local to that browser and can be lost if site data is cleared; it is not cross-device sync.
 - The runtime needs `scene.json` plus separate binary GLB model files under `clients/<project-id>/models/`. The app writes them automatically; you do not manage them manually.
 - Keep individual model files below 90 MiB for the current regular-Git workflow. Larger assets require Git LFS or another storage strategy.
+
+## WebGPU prototype (isolated)
+
+An experimental snow-rendering lab is available at [webgpu-snow-lab.html](https://kortul.github.io/Grade_Optimizer/webgpu-snow-lab.html) on the published site. It uses a separately pinned Three.js r187 WebGPU build and TSL-driven vertex animation for a configurable 10k–100k particle field. `WebGPURenderer` selects its WebGPU backend when available and otherwise uses its WebGL 2 fallback.
+
+Open the page through HTTPS (for example, the GitHub Pages preview for the feature branch) or localhost. The lab is intentionally not imported by `index.html`: the production app remains on Three.js 0.160.0 / WebGLRenderer while the WebGPU prototype is measured independently. This first prototype validates the modern renderer, TSL shader path, scene rendering and fallback without touching production materials, GLSL effects, loaders, or controls. It is GPU vertex animation, not yet a compute-shader simulation; GPU compute and a production integration require a separate measured follow-up.
+
+
+## Sky and atmosphere v7
+
+- Directional horizon scatter follows the sun azimuth and warms naturally around sunrise / sunset.
+- The volumetric cloud field combines broad cloud masses, mid-scale structure, fine erosion and thin upper cirrus, with six vertical integration samples instead of eight.
+- Night stars have subtle warm / cool color variation and twinkle in one point draw call.
+- Snowfall motion is computed from static instance attributes in the vertex shader, removing the per-flake CPU matrix-update loop. Hidden volumetric clouds no longer receive per-frame camera / time uniform updates; scene matrices are left to the renderer's normal update pass.
+- The previous `app.v154.js` and `weather-system.v6.js` remain in the repository for rollback.

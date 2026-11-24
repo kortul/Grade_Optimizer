@@ -11,17 +11,18 @@ const html = read('index.html').toString('utf8');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
-assert.equal(entry, 'app.v150.js', 'index.html must activate the current app release');
+assert.equal(entry, 'app.v155.js', 'index.html must activate the current app release');
 const entrySource = read(entry).toString('utf8');
 assert.ok(existsSync(resolve(root, entry)), 'active module does not exist: ' + entry);
 pass('active entrypoint exists: ' + entry);
-const weatherV4Source=read('weather-system.v4.js').toString('utf8');
+const weatherV4Source=read('weather-system.v7.js').toString('utf8');
 assert.ok(existsSync(resolve(root,'assets/cloud-atlas.v1.svg')),'AI cloud atlas asset is missing');
 assert.ok(weatherV4Source.includes('cloud-atlas.v1.svg')&&weatherV4Source.includes('cloudMaterials'),'AI cloud atlas is not used');
-assert.ok(weatherV4Source.includes('CLOUD_VOLUME_FRAGMENT_SHADER')&&weatherV4Source.includes('GROUND_FOG_FRAGMENT_SHADER'),'volumetric cloud/fog shaders are missing');
-assert.ok(weatherV4Source.includes('shadowOpticalDepth')&&weatherV4Source.includes('uRayStrength'),'volumetric god-ray scattering or cloud self-shadowing is missing');
+assert.ok(weatherV4Source.includes('CLOUD_VOLUME_FRAGMENT_SHADER')&&weatherV4Source.includes('GROUND_FOG_FRAGMENT_SHADER')&&weatherV4Source.includes('setSceneReady(ready)'),'volumetric cloud/fog shaders are missing');
+assert.ok(!weatherV4Source.includes('sin(dot(p, vec2(127.1, 311.7)))')&&!weatherV4Source.includes('for (int i = 0; i < 14; i++)'),'volumetric shaders must avoid expensive trigonometric hashes and 14-step fog loops');
+assert.ok(weatherV4Source.includes('shadowDensity')&&weatherV4Source.includes('uRayStrength'),'volumetric god-ray scattering or cloud self-shadowing is missing');
 assert.ok(weatherV4Source.includes('createNightSky()')&&weatherV4Source.includes('GO_StarField')&&weatherV4Source.includes('GO_Moon'),'night sky stars or moon are missing');
-assert.ok(entrySource.includes('./weather-system.v4.js')&&entrySource.includes('setVolumetrics'),'app must import the volumetric weather system');
+assert.ok(entrySource.includes('./weather-system.v7.js')&&entrySource.includes('setVolumetrics')&&entrySource.includes('weatherSystem.setSceneReady(false)')&&entrySource.includes('weatherSystem.setSceneReady(!!state.root)'),'app must import the volumetric weather system');
 assert.ok(html.includes('id="weatherVolumetrics"')&&html.includes('id="sceneVolumetrics"'),'volumetric toggle UI is missing');
 assert.ok(html.includes('id="timeOfDay" type="range" min="0" max="24"'),'time slider must span 24 hours');
 pass('AI cloud atlas, volume shaders, god rays, stars, moon, 24h time and toggle UI are present');
@@ -51,9 +52,12 @@ pass('per-material emissive toggle, strength preservation and project serializat
 assert.ok(entrySource.includes('function disableMaterialEmissionByDefault(')&&entrySource.includes('material.emissiveIntensity=enabled?savedStrength:0'), 'current and newly loaded model materials must default to emission OFF');
 assert.ok(entrySource.includes("gradeOptimizerEmissiveEnabled:false")&&entrySource.includes("if('emissiveIntensity' in material)material.emissiveIntensity=0"), 'legacy material configurations must migrate to emission OFF');
 pass('all current legacy and newly imported model materials default to emissive OFF');
-assert.ok(entrySource.includes("preserveSlopeAlbedo:/slopes[_ -]?stage[_ -]?1/i.test(String(fileName||''))"), 'Slopes_Stage1 FBX must enable the base-color recovery path');
+assert.ok(entrySource.includes("const isStageOneSlopes=/slopes[_ -]?stage[_ -]?1/i.test(String(fileName||''))"), 'Slopes_Stage1 parser must identify the named stage-one asset');
+assert.ok(entrySource.includes('prepareFbxMaterials(root,{preserveSlopeAlbedo:isStageOneSlopes})')&&entrySource.includes('applyStageOneSurfaceMaterials(root)'), 'Slopes_Stage1 must run its dedicated surface-material pass after FBX conversion');
+assert.ok(entrySource.includes("material.color.set(kind==='slopes'?0xffffff:0x383838)")&&entrySource.includes("if(/(^|_)angled?(_|$)/.test(value))return 'angled'")&&entrySource.includes("if(/(^|_)slopes?(_|$)/.test(value))return 'slopes'"), 'Stage 1 Slopes must be white and Angled surfaces dark grey based on imported material/object names');
+assert.ok(entrySource.includes('material.map=null')&&entrySource.includes('material.emissiveMap=null')&&entrySource.includes('material.vertexColors=false'), 'Stage 1 surface colors must not be tinted by imported albedo maps, emission maps or vertex colors');
 assert.ok(entrySource.includes('gradeOptimizerAlbedoRecovery')&&entrySource.includes('emissive-map-recovered-as-base-color-map')&&entrySource.includes('emissive-color-recovered-as-base-color'), 'black diffuse materials must recover usable albedo from FBX emission data');
-pass('Slopes_Stage1 FBX restores diffuse albedo when Maya exported visible color through Emission');
+pass('Slopes_Stage1 applies explicit white Slopes and dark-grey Angled materials');
 
 assert.ok(entrySource.includes('function editorMaterialsEquivalent(a,b)')&&entrySource.includes('function editorGeometryForMaterial(object,materialFilter,ownedGeometries)'), 'material identity matching and group-filtered geometry selection are missing');
 assert.ok(entrySource.includes('filtered.clearGroups()')&&entrySource.includes('filtered.addGroup(group.start,group.count,0)'), 'material highlight must isolate matching FBX geometry groups');
@@ -101,14 +105,14 @@ assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missi
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
 
 const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map(m => m[1]);
-assert.ok(entrySource.includes('weather-system.v4.js'), 'active app must use the updated atmospheric weather engine');
+assert.ok(entrySource.includes('weather-system.v7.js'), 'active app must use the updated atmospheric weather engine');
 const mayaExporterSource = read('maya/grade_optimizer_exporter.py').toString('utf8');
 assert.ok(mayaExporterSource.includes('def _inspect_git_worktree(repo):')&&mayaExporterSource.includes('"--show-toplevel"'), 'Maya exporter must verify the selected Git working tree');
 assert.ok(mayaExporterSource.includes('def _git_changes_for_paths(repo, paths):')&&mayaExporterSource.includes('"--short"'), 'Maya exporter must report exact Git status for the exported FBX and manifest');
 assert.ok(mayaExporterSource.includes('remote.origin.url')&&mayaExporterSource.includes('def check_git_repository(')&&mayaExporterSource.includes('"--short", "--branch"'), 'Maya exporter must expose Git origin diagnostics in its UI');
 assert.ok(mayaExporterSource.includes('ПРОВЕРКА GIT:')&&mayaExporterSource.includes('ПРОВЕРИТЬ ПАПКУ'), 'Maya exporter must show post-export Git diagnostics and a folder check button');
 pass('Maya exporter verifies local Git root and reports exact post-export file status');
-const weatherSource = read('weather-system.v4.js').toString('utf8');
+const weatherSource = read('weather-system.v7.js').toString('utf8');
 assert.ok(weatherSource.includes("this.cameraWeatherRig = new THREE.Group()"), 'weather camera-follow scene root missing');
 assert.ok(weatherSource.includes('this.scene.add(this.cameraWeatherRig)'), 'camera-follow weather layer must belong to the renderable scene graph');
 assert.ok(weatherSource.includes('this.cameraWeatherRig.add(this.snow)')&&weatherSource.includes('this.cameraWeatherRig.add(this.streaks)'), 'snow and wind streaks must be children of the renderable camera-follow root');
@@ -120,7 +124,7 @@ for (const preset of ['clear','light','partly','cloudy','overcast','snow','blizz
 }
 assert.ok(entrySource.includes('weatherPresetButtons.forEach(button =>')&&entrySource.includes('applyWeatherPreset(button.dataset.weatherPreset)'), 'weather preset buttons must apply the selected runtime preset');
 assert.ok(weatherSource.includes("this.params = { ...WeatherSystem.PRESETS.light, preset: 'light', groundFog: false, volumetrics: true }"), 'ground fog must default to OFF');
-assert.ok(weatherSource.includes('shadowOpticalDepth')&&weatherSource.includes('uRayStrength'), 'broken-cloud sun shafts must be present and weather-dependent');
+assert.ok(weatherSource.includes('shadowDensity')&&weatherSource.includes('uRayStrength'), 'broken-cloud sun shafts must be present and weather-dependent');
 assert.ok(weatherSource.includes('makeGroundFogTexture()')&&weatherSource.includes('setGroundFog(enabled)'), 'optional ground fog simulation is missing');
 assert.ok(entrySource.includes('dayTime:13.5'), 'default scene time must be sunny midday');
 assert.ok(html.includes('id="weatherGroundFog"')&&html.includes('id="sceneGroundFog"'), 'ground fog controls must be exposed in Weather and Scene Look');
@@ -691,7 +695,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('src="./app.v150.js"'), 'HTML must load the current application module');
+assert.ok(html.includes('src="./app.v155.js"'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
@@ -777,5 +781,18 @@ assert.equal(manifest.schemaVersion, '1.0');
 assert.ok(manifest.scene && manifest.scene.units === 'meters');
 assert.ok(Array.isArray(manifest.assets));
 pass('scene manifest parses');
+
+
+
+// Atmospheric release v7 regression checks.
+const weatherV7Source=read('weather-system.v7.js').toString('utf8');
+assert.ok(weatherV7Source.includes('aColor')&&weatherV7Source.includes('GO_StarField'),'night sky must include the updated star field');
+assert.ok(weatherV7Source.includes('azimuthDelta>0.045')&&weatherV7Source.includes('globalCompositeOperation=\'screen\''),'sky must include wrapped, directional atmospheric scattering');
+assert.ok(weatherV7Source.includes('cloudFbm')&&weatherV7Source.includes('cirrusLayer')&&weatherV7Source.includes('for(int i=0;i<6;i++)'),'cloud shader must retain layered detail with the reduced integration sample count');
+pass('v7 sky atmosphere, cloud layers and night-sky regression checks');
+
+assert.ok(weatherV7Source.includes('InstancedBufferGeometry')&&weatherV7Source.includes('uFallSpeed')&&weatherV7Source.includes('uLateralSpeed'),'snow particle motion must be vertex-shader driven');
+assert.ok(!weatherV7Source.includes('this.snow.instanceMatrix.needsUpdate'),'snow must not upload per-instance matrices every frame');
+pass('GPU-animated snowfall regression checks');
 
 console.log('\nAll project checks passed.');
