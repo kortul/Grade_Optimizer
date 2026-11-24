@@ -6114,7 +6114,13 @@ const multiplayerClient=new ResortMultiplayer({
   poseNodeNames:REMOTE_SKIER_POSE_NODES
 });
 multiplayerClient.connect();
-window.addEventListener('pagehide',()=>multiplayerClient.dispose(),{once:true});
+// Keep network state publication independent from the render loop: heavy scene
+// rendering must not throttle the other players' position updates.
+const multiplayerPublishTimer=window.setInterval(()=>multiplayerClient.publish(buildMultiplayerState()),33);
+window.addEventListener('pagehide',()=>{
+  window.clearInterval(multiplayerPublishTimer);
+  multiplayerClient.dispose();
+},{once:true});
 
 const mobileControlsLayer=document.getElementById('mobileControls');
 const mobileModeHint=document.getElementById('mobileModeHint');
@@ -6850,7 +6856,6 @@ let previousFrameTime = performance.now();
   if(controls.enabled) controls.update();
   if(editorSelectionHelper&&editorSelectionHelper.visible)editorSelectionHelper.update();
   updateEditorSelectionPulses(now);
-  multiplayerClient.publish(buildMultiplayerState());
   multiplayerClient.update(dt);
   weatherSystem.update(dt,camera.position,state.mode==='overview'?controls.target:camera.position);
   updateForestBillboards();
