@@ -1321,16 +1321,20 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
             )
         baked_root = copied_roots[0]
 
-    # Keep the CAD Bridge working-world transform exactly as authored.
-    # It is the common coordinate frame shared by A1.gltf and the browser scene.
-    # Inverting bridgeOriginalScale shrinks the ~4.5 km terrain to ~4.5 m.
+    # Remove the CAD Bridge wrapper from the duplicated root before sampling
+    # world-space vertices. This maps the working-scene coordinates back into
+    # the same project coordinate frame used by the existing terrain and A1.gltf.
+    # The original Maya hierarchy is untouched; only this temporary copy changes.
+    if bridge_context:
+        _apply_inverse_bridge_to_root_matrix(baked_root, bridge_context)
+
     transform_nodes = _all_transform_nodes(baked_root)
     # Preserve all Maya-authored transforms. The world-space vertex bake below
     # captures their combined positions without flattening nested scales or
     # zeroing ToSketchfab translation.
 
-    # Capture world-space points after preserving the full Maya hierarchy
-    # and CAD Bridge working-world transforms.
+    # Capture world-space points after preserving the authored hierarchy
+    # and removing only the CAD Bridge wrapper transform.
     mesh_components = collect_meshes(
         selection_only=True, selection_roots=[baked_root]
     )
@@ -1649,8 +1653,8 @@ def replace_canonical_terrain(*_):
                     selection_only=True, selection_roots=export_roots
                 ),
                 "cadBridge": {
-                    "inverseApplied": False,
-                    "workingTransformPreserved": bool(bridge_summaries),
+                    "inverseApplied": bool(bridge_summaries),
+                    "workingTransformPreserved": False,
                     "workingGroups": bridge_summaries,
                     "geometryBakedToMayaWorld": True
                 },
@@ -1893,8 +1897,8 @@ def _export_scene(replace_asset_id=None):
             if stage_one_export:
                 target_entry["mayaExport"]["stageOneTransformPolicy"] = "preserve Maya hierarchy transforms; bake world-space vertices"
             target_entry["mayaExport"]["cadBridge"] = {
-                "inverseApplied": False,
-                "workingTransformPreserved": bool(bridge_summaries),
+                "inverseApplied": bool(bridge_summaries),
+                "workingTransformPreserved": False,
                 "workingGroups": bridge_summaries
             }
         temporary_model_path = export_info["temporary_model_path"]
