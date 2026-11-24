@@ -16,6 +16,7 @@ assert.ok(maya.includes('VERSION = "0.9.1"'), 'Maya exporter must be 0.9.1');
 assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
 assert.ok(maya.includes('def _sample_slope_curve_points(') && maya.includes('"points": _sample_slope_curve_points('), 'Maya must export raw sampled NURBS points');
+assert.ok(maya.includes('def _slope_points_cm_to_meters('), 'Maya raw curve export must convert API world centimetres to metres');
 assert.ok(maya.includes('def export_slope_centerlines(*_):'), 'Maya centerline geometry export handler is missing');
 assert.ok(maya.includes('def _slope_curve_digest(') && maya.includes('sourceDigest'), 'Maya curve export must cache raw geometry by curve fingerprint');
 
