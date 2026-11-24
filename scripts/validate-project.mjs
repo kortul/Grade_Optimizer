@@ -556,7 +556,7 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.8.7"'), 'Maya scene-asset exporter version must be 0.8.6');
+assert.ok(mayaExporter.includes('VERSION = "0.8.8"'), 'Maya scene-asset exporter version must be 0.8.6');
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
 assert.ok(mayaExporter.includes('restore_fbx_compatible_materials(material_overrides)') && mayaExporter.includes('"fbxMaterialConversions"'), 'Maya exporter must always restore source shader connections and record compatibility conversions');
@@ -582,8 +582,8 @@ assert.ok(mayaExporter.includes('"_canonical_terrain": True') && mayaExporter.in
 assert.ok(mayaExporter.includes('def replace_canonical_terrain(*_):') && mayaExporter.includes('replace_canonical_terrain()'), 'Maya exporter must expose a dedicated canonical terrain replacement path');
 assert.ok(mayaExporter.includes('"stageOneTransformPolicy"') && mayaExporter.includes('stage_one=False,'), 'Stage 1 export must preserve Maya hierarchy transforms instead of resetting nested scales');
 assert.ok(mayaExporter.includes('terrain_diagonal_m < 1000.0'), 'canonical terrain export must reject a suspiciously tiny CAD terrain before replacing the published asset');
-assert.ok(mayaExporter.includes('def _bake_export_root_to_world_meshes(') && mayaExporter.includes('Keep the CAD Bridge working-world transform exactly as authored') && !mayaExporter.includes('_apply_inverse_bridge_to_root_matrix(baked_root, bridge_context)'), 'Maya export must preserve CAD Bridge working-world coordinates without inverse scaling');
-assert.ok(mayaExporter.includes('"cadBridge": {') && mayaExporter.includes('"inverseApplied": False') && mayaExporter.includes('"workingTransformPreserved": bool(bridge_summaries)'), 'canonical terrain sidecar must record the preserved CAD Bridge working transform');
+assert.ok(mayaExporter.includes('def _bake_export_root_to_world_meshes(') && mayaExporter.includes('_apply_inverse_bridge_to_root_matrix(baked_root, bridge_context)') && mayaExporter.includes('Remove the CAD Bridge wrapper from the duplicated root'), 'Maya export must remove the CAD Bridge wrapper from temporary copies before baking vertices');
+assert.ok(mayaExporter.includes('"cadBridge": {') && mayaExporter.includes('"inverseApplied": bool(bridge_summaries)') && mayaExporter.includes('"workingTransformPreserved": False'), 'canonical terrain sidecar must record CAD Bridge inverse conversion');
 assert.ok(mayaExporter.includes('os.replace(temporary_model_path, model_path)') && mayaExporter.includes('os.replace(temporary_manifest_path, manifest_path)'), 'canonical terrain FBX and JSON sidecar must be replaced as a recoverable pair');
 assert.ok(mayaExporter.includes('if shape in seen:'), 'Maya exporter must retain multiple mesh shapes under one transform as separate mesh components');
 assert.ok(mayaExporter.includes('METADATA_PRESETS = {'), 'Maya exporter metadata presets missing');
