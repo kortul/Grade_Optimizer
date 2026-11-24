@@ -955,7 +955,7 @@ assert.ok(alpineForestSource.includes("setLoadingMessage('Строим spatial h
 pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
 
 // Public resort multiplayer regression checks.
-const multiplayerImportMatch=entrySource.match(/import\\s+\\{\\s*ResortMultiplayer\\s*\\}\\s+from\\s+['"]\\.\\/(multiplayer\\.v\\d+\\.js)['"]/);
+const multiplayerImportMatch=entrySource.match(/import\s+\{\s*ResortMultiplayer\s*\}\s+from\s+['"]\.\/(multiplayer\.v\d+\.js)['"]/);
 assert.ok(multiplayerImportMatch,'active app must import a versioned multiplayer client');
 const multiplayerClientSource=read(multiplayerImportMatch[1]).toString('utf8');
 const multiplayerConfigSource=read('multiplayer-config.v1.js').toString('utf8');
