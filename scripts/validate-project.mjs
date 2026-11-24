@@ -375,8 +375,11 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v98.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v97.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v99.js'), 'active app must use the stable terrain-contact skier controller');
+const skierSource = read('skier-controller.v99.js').toString('utf8');
+const skierContactUtils = read('skier-terrain-contact.v1.js').toString('utf8');
+const skierContactTests = read('scripts/test-skier-terrain-contact.mjs').toString('utf8');
+assert.ok(skierContactTests.includes('overlapping piste and terrain choose the surface continuous with the skier height')&&skierContactTests.includes('near-vertical wall normals are rejected'), 'skier terrain-contact regression tests must cover surface transitions and wall rejection');
 assert.ok(skierSource.includes('respawnAtCustomSpawn(spawn)')&&skierSource.includes('spawnHint.headingYaw'), 'skier controller must apply custom spawn position and heading');
 assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), "imported Slopes_Stage1 geometry must take priority as the skier surface");
 assert.ok(entrySource.includes('position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true')&&entrySource.includes('resolveSkierTerrainForDroneSpawn(dronePose.position)')&&entrySource.includes('skierTerrainName:skierController.terrain?.name')&&entrySource.includes('skierSpawn:skierController.lastSpawnInfo')&&!entrySource.includes('velocity:dronePose.velocity,fromDrone:true,startAtTop:true'), 'drone handoff must try the drone world position before the summit fallback');
@@ -404,12 +407,18 @@ assert.ok(skierSource.includes('const cols=192,rows=192')&&skierSource.includes(
 assert.ok(skierSource.includes('async start(terrain,spawnHint=null')&&skierSource.includes('await this._buildTerrainLookup('), 'skier startup must await incremental terrain indexing');
 assert.ok(skierSource.includes('this.terrainBuildToken++'), 'stopping skier mode must cancel pending terrain indexing');
 assert.ok(!skierSource.includes('const skiGround=this._groundAt('), 'ski model positioning must not run an extra ground query every frame');
-const lookupQueryIndex=skierSource.indexOf('const lookupHit=this._groundFromLookup(x,z);')
-const raycastIndex=skierSource.indexOf('this.raycaster.intersectObject(this.terrain, true)');
-assert.ok(lookupQueryIndex>=0&&raycastIndex>lookupQueryIndex, 'skier ground queries must use the spatial lookup before Raycaster fallback');
+const lookupQueryIndex=skierSource.indexOf('const lookupHit=this._groundFromLookup(x,z,referenceY,maxVerticalDelta);');
+const raycastIndex=skierSource.indexOf('this.raycaster.intersectObject(this.terrain,true)');
+assert.ok(lookupQueryIndex>=0&&raycastIndex>lookupQueryIndex, 'skier ground queries must use continuity-aware spatial lookup before Raycaster fallback');
+assert.ok(skierSource.includes('faceNormal.y<MIN_TERRAIN_NORMAL_Y')&&skierSource.includes('MIN_SMOOTH_NORMAL_ALIGNMENT'), 'terrain contact must reject vertical walls and unreliable interpolated normals');
+assert.ok(skierSource.includes('groundedReferenceY')&&skierSource.includes('expectedNextGroundY')&&skierSource.includes('maxVerticalDelta'), 'ground sampling must preserve height continuity when switching between slope and terrain meshes');
+assert.ok(skierSource.includes('_smoothGroundNormal(nextHit.normal,dt)')&&skierSource.includes('new THREE.Matrix4().makeBasis(right,normal,back)'), 'skier orientation must be smoothed and re-orthogonalized at terrain transitions');
+assert.ok(skierSource.includes('this._isTerrainCollisionMesh(object)')&&skierContactUtils.includes('selectGroundContactCandidate'), 'only visible valid collision meshes may become skier support surfaces');
+assert.ok(skierContactUtils.includes('MIN_TERRAIN_NORMAL_Y')&&skierContactUtils.includes('blendGroundNormal'), 'engine-independent terrain-contact stability helpers are present');
+assert.ok(entrySource.includes('function isVisibleSkierPhysicsObject(')&&entrySource.includes('An active imported Terrain replaces the hidden base terrain')&&entrySource.includes('remove.forEach(object=>object.parent?.remove(object))'), 'skier collision composite must exclude hidden mesh geometry and not collide with stale base terrain');
 assert.ok(skierSource.includes('stats.raycastFallbacks++')&&skierSource.includes('getTerrainPerformanceDiagnostics()'), 'terrain lookup performance counters and diagnostics API are missing');
 const thirdPersonGuardIndex=skierSource.indexOf('const needsThirdPerson=this.viewBlendTarget>0.001||this.viewBlend>0.001;');
-const cameraGroundIndex=skierSource.indexOf('const cameraGround=this._groundAt(this.thirdPersonDesiredPosition.x,this.thirdPersonDesiredPosition.z);');
+const cameraGroundIndex=skierSource.indexOf(':this._groundAt(cameraX,cameraZ);');
 assert.ok(thirdPersonGuardIndex>=0&&cameraGroundIndex>thirdPersonGuardIndex, 'third-person camera terrain query must be skipped in first-person view');
 assert.ok(skierSource.includes('outline.lineTo(-0.050,0.8475)')&&skierSource.includes('outline.quadraticCurveTo(-0.048,1.7475,0,1.9125)')&&skierSource.includes('new THREE.BoxGeometry(0.009,0.004,1.7875)'), 'front ski overhang must be 1.5x longer while bindings and tails stay fixed');
 assert.ok(skierSource.includes("const outsideLoad=Math.max(0,side*turnSide)*carve*(0.85+0.15*loadShift);")&&skierSource.includes("'skiFlex'+index"), 'ski flex must compute outside-ski load within each ski-slot iteration');
