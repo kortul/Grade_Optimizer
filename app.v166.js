@@ -6116,7 +6116,7 @@ const multiplayerClient=new ResortMultiplayer({
 multiplayerClient.connect();
 // Keep network state publication independent from the render loop: heavy scene
 // rendering must not throttle the other players' position updates.
-const multiplayerPublishTimer=window.setInterval(()=>multiplayerClient.publish(buildMultiplayerState()),33);
+const multiplayerPublishTimer=window.setInterval(()=>multiplayerClient.publish(buildMultiplayerState()),50);
 window.addEventListener('pagehide',()=>{
   window.clearInterval(multiplayerPublishTimer);
   multiplayerClient.dispose();
