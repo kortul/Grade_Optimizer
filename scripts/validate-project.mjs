@@ -933,7 +933,9 @@ assert.ok(multiplayerClientSource.includes('SEND_INTERVAL_MS = 125')&&multiplaye
 assert.ok(multiplayerConfigSource.includes('MULTIPLAYER_SERVER_URL'), 'one-time WebSocket endpoint config is missing');
 assert.ok(multiplayerWorkerSource.includes("PUBLIC_RESORT='grade-optimizer-public-resort'")&&multiplayerWorkerSource.includes('idFromName(PUBLIC_RESORT)')&&multiplayerWorkerSource.includes('acceptWebSocket'), 'all visitors must connect to the same hibernatable Durable Object');
 assert.ok(multiplayerWorkerSource.includes("ALLOWED_ORIGIN='https://kortul.github.io'")&&multiplayerWorkerSource.includes('MAX_PLAYERS')&&multiplayerWorkerSource.includes('MAX_MESSAGES_PER_SECOND'), 'multiplayer relay must enforce origin, player and packet limits');
+assert.ok(multiplayerProtocolSource.includes('MAX_PLAYERS = 4'), 'public resort must allow four simultaneous players');
 assert.ok(multiplayerProtocolSource.includes('normalizeState')&&multiplayerProtocolSource.includes('Number.isFinite')&&multiplayerProtocolSource.includes('JOINT_FLOATS = 72'), 'server must validate transforms and skier joint data');
-pass('public shared multiplayer: one two-person resort, independent modes, validated player states');
+assert.ok(skierSource.includes('_findSpawn(spawnIndex=0)')&&skierSource.includes('multiplayerSlot:index')&&entrySource.includes('const multiplayerSlot=Number.isInteger(multiplayerClient.slot)'), 'multiplayer skiers must receive separated automatic spawn positions');
+pass('public shared multiplayer: four-player resort, independent modes, unique automatic starts and validated player states');
 
 console.log('\nAll project checks passed.');
