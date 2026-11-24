@@ -60,7 +60,7 @@ scene.add(sunDisc);
 const sunDirection = new THREE.Vector3();
 let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
-let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null;
+let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null,pineAtlasTextures=null;
 let fogPipeline,dayCyclePlaying=false;
 let solarState=null;
 
@@ -469,12 +469,6 @@ function buildFogPipeline() {
     }
   };
 }
-
-let terrainRoot = null;
-let stageOneRoot = null;
-let forestSystem = null;
-let terrainBounds = null;
-let pineAtlasTextures = null;
 
 function seededRandom(x, z, salt = 0) {
   let state = (Math.imul(Math.floor(x * 2), 374761393) ^
