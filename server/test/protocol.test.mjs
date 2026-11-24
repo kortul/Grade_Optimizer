@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,normalizeState,sanitizeName} from '../src/protocol.js';
 
-test('the shared resort is a single two-person session',()=>{
+test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
   assert.equal(MAX_IDLE_MS,180000);
   assert.equal(MAX_MESSAGE_CHARS,4096);
