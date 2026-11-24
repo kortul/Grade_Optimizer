@@ -113,7 +113,7 @@ export class ResortMultiplayer {
     this.socket=null;this.id='';this.slot=null;this.connected=false;this.disposed=false;this.full=false;
     this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';this.lastClose=null;this.superseded=false;
     this.slotWaiters=new Set();this.sentStates=0;this.receivedStates=0;this.lastStateAt=0;this.lastPong=0;
-    this.stateSequence=0;this.lastStateAckAt=0;this.serverAcceptedStates=0;this.serverRejectedStates=0;this.serverLastStateAt=0;this.lastPayloadChars=0;this.lastSendError='';
+    this.stateSequence=0;this.lastStateAckAt=0;this.serverAcceptedStates=0;this.serverRejectedStates=0;this.serverLastStateAt=0;this.serverPeerCount=0;this.serverBroadcastPeers=0;this.serverBroadcastAttempts=0;this.lastPayloadChars=0;this.lastSendError='';
     this.heartbeatTimer=this.endpoint?setInterval(()=>this.sendHeartbeat(),HEARTBEAT_INTERVAL_MS):null;
     this.players=new Map();this.names=new Map();this.lastSeen=new Map();this.leaveTimers=new Map();
     this.setStatus(this.endpoint?'connecting':'disabled');
@@ -239,6 +239,9 @@ export class ResortMultiplayer {
       if(Number.isFinite(msg.acceptedStates)){this.serverAcceptedStates=msg.acceptedStates;this.lastStateAckAt=this.lastPong;}
       if(Number.isFinite(msg.rejectedStates))this.serverRejectedStates=msg.rejectedStates;
       if(Number.isFinite(msg.lastStateAt))this.serverLastStateAt=msg.lastStateAt;
+      if(Number.isFinite(msg.peerCount))this.serverPeerCount=msg.peerCount;
+      if(Number.isFinite(msg.broadcastPeers))this.serverBroadcastPeers=msg.broadcastPeers;
+      if(Number.isFinite(msg.broadcastAttempts))this.serverBroadcastAttempts=msg.broadcastAttempts;
     }else if(msg.t==='presence'){
       const id=String(msg.id||'');
       if(id&&id!==this.id){
@@ -407,6 +410,7 @@ export class ResortMultiplayer {
       lastPong:this.lastPong,lastPongAgeMs:this.lastPong?Math.round(now-this.lastPong):null,
       serverAcceptedStates:this.serverAcceptedStates,serverRejectedStates:this.serverRejectedStates,
       serverLastStateAt:this.serverLastStateAt,serverLastStateAgeMs:this.serverLastStateAt?Math.max(0,Date.now()-this.serverLastStateAt):null,
+      serverPeerCount:this.serverPeerCount,serverBroadcastPeers:this.serverBroadcastPeers,serverBroadcastAttempts:this.serverBroadcastAttempts,
       lastStateAckAt:this.lastStateAckAt,lastStateAckAgeMs:this.lastStateAckAt?Math.round(now-this.lastStateAckAt):null,
       stateSequence:this.stateSequence,lastPayloadChars:this.lastPayloadChars,lastSendError:this.lastSendError,
       sendIntervalMs:SEND_INTERVAL_MS,heartbeatIntervalMs:HEARTBEAT_INTERVAL_MS,
