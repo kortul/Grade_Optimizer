@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGE_RATE,normalizeState,sanitizeName} from '../src/protocol.js';
+import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,normalizeState,sanitizeName} from '../src/protocol.js';
 
 test('the shared resort is a single two-person session',()=>{
   assert.equal(MAX_PLAYERS,2);
   assert.equal(MAX_IDLE_MS,30000);
   assert.equal(MAX_MESSAGE_CHARS,4096);
-  assert.equal(MAX_MESSAGE_RATE,12);
+  assert.equal(MAX_MESSAGES_PER_SECOND,12);
 });
 test('display names are bounded and sanitized',()=>{
   assert.equal(sanitizeName('  Павел  '),'Павел');
