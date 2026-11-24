@@ -7,7 +7,7 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v155.js`.
+- Current app: `app.v158.js`.
 - Weather: `weather-system.v7.js`; layered procedural clouds, directional horizon scattering, a color-varied star field, snowfall and wind streaks render through the scene weather layers.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
@@ -53,7 +53,7 @@ Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor, or open
 4. To replace Stage 1, select the `Slopes_Stage1` branch (or an object inside it) in Maya. In the Maya tree choose `Slopes_Stage1` and use the replacement button. The exporter resolves the `Slopes_Stage1` DAG branch from the selected geometry and excludes sibling `Stage2_40M` / `Slopes_Stage2` branches, even if the initial Maya selection is broader. Every mesh inside the Stage 1 branch remains a separate FBX object; do not combine them.
 5. Review the changed files in GitHub Desktop, then commit and push. Replacing the main terrain changes `assets/real-terrain.fbx` and `assets/real-terrain.json`; replacing Stage 1 changes the FBX and `clients/alpine-resort/scene.json`.
 
-For selections inside a `MAYA_WORKING_SCENE` created by CAD Bridge v14, the exporter keeps the working group world transform (including its offset and scale) because this is the coordinate frame shared with `A1.gltf` and the browser scene. It bakes the resulting world-space vertices into identity transforms, then the browser converts the Maya linear unit to metres. Do not reverse `bridgeOriginalScale`: that shrinks the roughly 4.5 km terrain to roughly 4.5 m and moves it away from the A1 scene. Stage 1 preserves its Maya hierarchy transforms; it does not reset nested scales or zero `ToSketchfab`. **The original Maya objects are never moved, rescaled, frozen or deleted.** Hierarchy and individual mesh shapes remain separate, and material assignments are retained.
+The canonical base Terrain currently uses exporter 0.8.7 metadata with `cadBridge.inverseApplied=false`: its FBX already contains the CAD working-world coordinates, so the browser leaves its vertices unchanged and converts Maya centimetres to metres. Stage 1 was re-exported with exporter 0.8.8 and `cadBridge.inverseApplied=true`: its FBX has the CAD Bridge wrapper removed before the world-space vertex bake. The browser restores that asset to the shared working-world frame using the saved `originalOffset` and `originalScale` before applying the same centimetre-to-metre conversion. This keeps Stage 1 aligned with the existing canonical Terrain without re-exporting or modifying Terrain. The correction applies only to source FBX files; GLB browser backups are already in the restored frame and are not transformed twice. **The original Maya objects are never moved, rescaled, frozen or deleted.** Hierarchy and individual mesh shapes remain separate, and material assignments are retained.
 
 The exporter refuses a mixed base-terrain selection containing Stage / slope or unrelated mesh components. Select a dedicated terrain branch for the base terrain and a dedicated Stage 1 branch for the client asset. It also verifies the temporary FBX size before replacing either published file.
 
@@ -62,7 +62,7 @@ The base-terrain export is written to the canonical pair:
 - `assets/real-terrain.fbx`
 - `assets/real-terrain.json`
 
-The JSON sidecar records the source scene, Maya version, units, bounds, components, materials and the preserved CAD Bridge working-world transform. Keep the FBX below 90 MiB for the current regular-Git workflow.
+The JSON sidecar records the source scene, Maya version, units, bounds, components, materials and the CAD Bridge working-world metadata. The viewer uses `inverseApplied` to determine whether the exported FBX vertices need to be restored to the shared working-world frame. Keep the FBX below 90 MiB for the current regular-Git workflow.
 
 **Runtime:** for the primary A1 slot, the app prefers `assets/real-terrain.fbx` + `assets/real-terrain.json`, resolves the terrain mesh by its manifest name, converts Maya source units to metres and applies snow materials. If either canonical file is missing or invalid, it falls back to the original `assets/A1.gltf`. The A1 optimizer profiles remain loaded from `A1.curves.json`.
 
