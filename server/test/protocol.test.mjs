@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,normalizeState,sanitizeClientId,sanitizeName} from '../src/protocol.js';
+import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_SHARED_MARKERS,normalizeMarker,normalizeState,sanitizeClientId,sanitizeName} from '../src/protocol.js';
 
 test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
@@ -13,6 +13,22 @@ test('multiplayer session IDs accept UUIDs only',()=>{
   assert.equal(sanitizeClientId('not-a-session-id'),'');
   assert.equal(sanitizeClientId('<script>'),'');
 });
+
+test('shared overview flags validate UUIDs, positions and owner names',()=>{
+  assert.equal(MAX_SHARED_MARKERS,50);
+  const marker=normalizeMarker({
+    id:'550e8400-e29b-41d4-a716-446655440000',
+    p:[125.5,42,-810]
+  },'  Pavel  ');
+  assert.ok(marker);
+  assert.equal(marker.id,'550e8400-e29b-41d4-a716-446655440000');
+  assert.equal(marker.owner,'Pavel');
+  assert.deepEqual(marker.p,[125.5,42,-810]);
+  assert.equal(normalizeMarker({id:'bad-id',p:[0,0,0]},'Pavel'),null);
+  assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[Infinity,0,0]},'Pavel'),null);
+  assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[50001,0,0]},'Pavel'),null);
+});
+
 test('display names are bounded and sanitized',()=>{
   assert.equal(sanitizeName('  Павел  '),'Павел');
   assert.equal(sanitizeName('<b>Client</b>'),'bClient/b');
