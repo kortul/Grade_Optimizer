@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_SHARED_MARKERS,normalizeMarker,normalizeState,sanitizeClientId,sanitizeName} from '../src/protocol.js';
+import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,normalizeMarker,normalizeState,sanitizeClientId,sanitizeName} from '../src/protocol.js';
 
 test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
@@ -14,19 +14,23 @@ test('multiplayer session IDs accept UUIDs only',()=>{
   assert.equal(sanitizeClientId('<script>'),'');
 });
 
-test('shared overview flags validate UUIDs, positions and owner names',()=>{
+test('shared overview flags validate UUIDs, positions, owner identity and per-player cap',()=>{
   assert.equal(MAX_SHARED_MARKERS,50);
+  assert.equal(MAX_MARKERS_PER_PLAYER,3);
+  const ownerId='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
   const marker=normalizeMarker({
     id:'550e8400-e29b-41d4-a716-446655440000',
     p:[125.5,42,-810]
-  },'  Pavel  ');
+  },'  Pavel  ',ownerId);
   assert.ok(marker);
   assert.equal(marker.id,'550e8400-e29b-41d4-a716-446655440000');
   assert.equal(marker.owner,'Pavel');
+  assert.equal(marker.ownerId,ownerId);
   assert.deepEqual(marker.p,[125.5,42,-810]);
-  assert.equal(normalizeMarker({id:'bad-id',p:[0,0,0]},'Pavel'),null);
-  assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[Infinity,0,0]},'Pavel'),null);
-  assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[50001,0,0]},'Pavel'),null);
+  assert.equal(normalizeMarker({id:'bad-id',p:[0,0,0]},'Pavel',ownerId),null);
+  assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[Infinity,0,0]},'Pavel',ownerId),null);
+  assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[50001,0,0]},'Pavel',ownerId),null);
+  assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[0,0,0]},'Pavel','invalid-owner'),null);
 });
 
 test('display names are bounded and sanitized',()=>{
