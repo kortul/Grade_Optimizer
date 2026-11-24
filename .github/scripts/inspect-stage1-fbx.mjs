@@ -130,6 +130,43 @@ terrainRoot.scale.multiplyScalar(terrainScale);
 terrainRoot.updateMatrixWorld(true);
 const terrainBounds = new Box3().setFromObject(terrainRoot);
 const terrainSize = terrainBounds.getSize(new Vector3());
+const terrainHeightLookup = buildTerrainHeightLookup(terrainRoot, terrainBounds, 25);
+const terrainHeightComparison = {
+  triangleCount: terrainHeightLookup.triangleCount,
+  cellSizeMeters: terrainHeightLookup.cellSize,
+  perMesh: [],
+  allMeshes: []
+};
+const allHeightDeltas = [];
+root.updateWorldMatrix(true, true);
+root.traverseVisible(mesh => {
+  if (!mesh.isMesh || !mesh.geometry?.attributes?.position) return;
+  mesh.updateWorldMatrix(true, false);
+  const positions = mesh.geometry.attributes.position;
+  const step = Math.max(1, Math.floor(positions.count / 1500));
+  const deltas = [];
+  let tested = 0, outsideTerrain = 0;
+  const point = new Vector3();
+  for (let index = 0; index < positions.count; index += step) {
+    point.fromBufferAttribute(positions, index).applyMatrix4(mesh.matrixWorld);
+    tested++;
+    const terrainY = sampleTerrainHeight(point.x, point.z, terrainHeightLookup);
+    if (terrainY === null) { outsideTerrain++; continue; }
+    deltas.push(point.y - terrainY);
+  }
+  allHeightDeltas.push(...deltas);
+  terrainHeightComparison.perMesh.push({
+    name: mesh.name || '(unnamed)',
+    testedVertices: tested,
+    outsideTerrain,
+    stageAboveTerrainMeters: summarizeValues(deltas)
+  });
+});
+terrainHeightComparison.allMeshes = {
+  testedMeshes: terrainHeightComparison.perMesh.length,
+  samples: allHeightDeltas.length,
+  stageAboveTerrainMeters: summarizeValues(allHeightDeltas)
+};
 const horizontalOverlap = terrainBounds.isEmpty() || bounds.isEmpty() ? [0, 0] : [
   Math.max(0, Math.min(bounds.max.x, terrainBounds.max.x) - Math.max(bounds.min.x, terrainBounds.min.x)),
   Math.max(0, Math.min(bounds.max.z, terrainBounds.max.z) - Math.max(bounds.min.z, terrainBounds.min.z))
@@ -146,6 +183,100 @@ function measure(rootObject) {
     size: dimensions.toArray()
   };
 }
+
+function buildTerrainHeightLookup(terrainRoot, bounds, cellSize = 25) {
+  const size = bounds.getSize(new Vector3());
+  const cols = Math.max(1, Math.ceil(size.x / cellSize));
+  const rows = Math.max(1, Math.ceil(size.z / cellSize));
+  const cells = new Map();
+  const large = [];
+  const a = new Vector3(), b = new Vector3(), c = new Vector3();
+  let triangleCount = 0;
+
+  const insert = (ax, ay, az, bx, by, bz, cx, cy, cz) => {
+    const denominator = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+    if (Math.abs(denominator) < 1e-10) return;
+    const triangle = {ax, ay, az, bx, by, bz, cx, cy, cz, denominator};
+    const ix0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - bounds.min.x) / cellSize));
+    const ix1 = Math.min(cols - 1, Math.floor((Math.max(ax, bx, cx) - bounds.min.x) / cellSize));
+    const iz0 = Math.max(0, Math.floor((Math.min(az, bz, cz) - bounds.min.z) / cellSize));
+    const iz1 = Math.min(rows - 1, Math.floor((Math.max(az, bz, cz) - bounds.min.z) / cellSize));
+    if (ix1 < ix0 || iz1 < iz0) return;
+    const cellCount = (ix1 - ix0 + 1) * (iz1 - iz0 + 1);
+    if (cellCount > 256) {
+      large.push(triangle);
+    } else {
+      for (let iz = iz0; iz <= iz1; iz++) {
+        for (let ix = ix0; ix <= ix1; ix++) {
+          const key = iz * cols + ix;
+          let bucket = cells.get(key);
+          if (!bucket) { bucket = []; cells.set(key, bucket); }
+          bucket.push(triangle);
+        }
+      }
+    }
+    triangleCount++;
+  };
+
+  terrainRoot.updateWorldMatrix(true, true);
+  terrainRoot.traverseVisible(mesh => {
+    if (!mesh.isMesh || !mesh.geometry?.attributes?.position) return;
+    mesh.updateWorldMatrix(true, false);
+    const geometry = mesh.geometry;
+    const positions = geometry.attributes.position;
+    const index = geometry.index;
+    const count = index ? index.count : positions.count;
+    for (let offset = 0; offset + 2 < count; offset += 3) {
+      const ia = index ? index.getX(offset) : offset;
+      const ib = index ? index.getX(offset + 1) : offset + 1;
+      const ic = index ? index.getX(offset + 2) : offset + 2;
+      a.fromBufferAttribute(positions, ia).applyMatrix4(mesh.matrixWorld);
+      b.fromBufferAttribute(positions, ib).applyMatrix4(mesh.matrixWorld);
+      c.fromBufferAttribute(positions, ic).applyMatrix4(mesh.matrixWorld);
+      insert(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);
+    }
+  });
+  return {originX:bounds.min.x,originZ:bounds.min.z,cellSize,cols,rows,cells,large,triangleCount};
+}
+
+function sampleTerrainHeight(x, z, lookup) {
+  const ix = Math.floor((x - lookup.originX) / lookup.cellSize);
+  const iz = Math.floor((z - lookup.originZ) / lookup.cellSize);
+  if (ix < 0 || iz < 0 || ix >= lookup.cols || iz >= lookup.rows) return null;
+  const candidates = [
+    ...(lookup.cells.get(iz * lookup.cols + ix) || []),
+    ...lookup.large
+  ];
+  for (const t of candidates) {
+    const wa = ((t.bz - t.cz) * (x - t.cx) + (t.cx - t.bx) * (z - t.cz)) / t.denominator;
+    const wb = ((t.cz - t.az) * (x - t.cx) + (t.ax - t.cx) * (z - t.cz)) / t.denominator;
+    const wc = 1 - wa - wb;
+    if (wa >= -1e-5 && wb >= -1e-5 && wc >= -1e-5) {
+      return wa * t.ay + wb * t.by + wc * t.cy;
+    }
+  }
+  return null;
+}
+
+function summarizeValues(values) {
+  if (!values.length) return null;
+  const sorted = values.slice().sort((a,b)=>a-b);
+  const percentile = p => sorted[Math.min(sorted.length-1,Math.floor((sorted.length-1)*p))];
+  const mean = values.reduce((sum,value)=>sum+value,0)/values.length;
+  return {
+    samples: values.length,
+    min: sorted[0],
+    p05: percentile(0.05),
+    median: percentile(0.5),
+    mean,
+    p95: percentile(0.95),
+    max: sorted[sorted.length-1],
+    within0_5m: values.filter(value=>Math.abs(value)<=0.5).length,
+    within2m: values.filter(value=>Math.abs(value)<=2).length,
+    within5m: values.filter(value=>Math.abs(value)<=5).length
+  };
+}
+
 const rebaseTest = root.clone(true);
 const allDescendantScalesReset = root.clone(true);
 allDescendantScalesReset.position.fromArray(asset.transform?.position || [0, 0, 0]);
@@ -250,7 +381,8 @@ console.log(JSON.stringify({
       size: terrainSize.toArray()
     },
     stageOneTerrainHorizontalOverlapMeters: horizontalOverlap,
-    restoredStageOneSharesTerrainFrame
+    restoredStageOneSharesTerrainFrame,
+    stageOneTerrainHeightComparison: terrainHeightComparison
   },
   rootTransform,
   rebaseTest: { before: rebaseBefore, sceneRootTransform, afterRemovingSceneRootTranslation: boundsAfterRootOffsetRemoved },
