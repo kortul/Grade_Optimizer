@@ -37,8 +37,8 @@ Localhost is allowed by the Worker Origin check.
 - Skier: ski-rig transform, velocity and 12 articulated joint transforms.
 - Drone: drone/camera transform and velocity.
 - Overview: each remote visitor is shown as a camera marker with a view-direction ray and name.
-- Scene flags: a double-click on visible scene geometry in Overview creates a shared flag before the camera focus changes. Each participant can keep up to three flags; the newest flag is broadcast before older flags are removed.
+- Scene flags: a double-click on visible scene geometry in Overview creates an immediate local flag, even while the relay is reconnecting. The latest full set is replayed to the server after reconnect; removals are broadcast to all visitors. Each page session can keep up to three flags, and its flags are cleared when that page exits.
 - Shared ruler: Overview measurements (one picked endpoint or a completed two-point line) are broadcast to all visitors, included in the welcome snapshot, and cleared when the owner disables the ruler or disconnects.
-- Each browser keeps its own camera and runs its own physics. Remote transforms are eased locally between 20 Hz state updates; a heartbeat watchdog reconnects a stale WebSocket.
+- Remote player nameplates are displayed at double the previous size. Each browser keeps its own camera and runs its own physics. Remote transforms are eased locally between 20 Hz state updates; a heartbeat watchdog reconnects a stale WebSocket.
 
 Terrain geometry, weather, editor data, camera controls and collision physics are not sent over the network.
