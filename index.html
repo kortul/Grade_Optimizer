@@ -1155,21 +1155,39 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
     <div><strong>СЛОИ СКЛОНОВ</strong><small>Только режим «Обзор»</small></div>
     <button id="slopeLayersClose" type="button" aria-label="Закрыть слои">×</button>
   </div>
-  <label class="slope-layer-row" for="slopeLayer_angles">
-    <span class="slope-layer-symbol slope-angle-symbol">°</span>
-    <span><strong>Углы склонов</strong><small>Значения через каждые 20 м</small></span>
-    <input id="slopeLayer_angles" type="checkbox" checked/>
-  </label>
-  <label class="slope-layer-row" for="slopeLayer_difficulty">
-    <span class="slope-layer-symbol slope-difficulty-symbol"><i></i><i></i><i></i></span>
-    <span><strong>Сложность склонов</strong><small>Цвет линии по участкам</small></span>
-    <input id="slopeLayer_difficulty" type="checkbox" checked/>
-  </label>
-  <label class="slope-layer-row" for="slopeLayer_names">
-    <span class="slope-layer-symbol slope-name-symbol">A</span>
-    <span><strong>Названия склонов</strong><small>Подписи центральных линий</small></span>
-    <input id="slopeLayer_names" type="checkbox" checked/>
-  </label>
+  <div class="slope-layer-block">
+    <label class="slope-layer-row" for="slopeLayer_angles">
+      <span class="slope-layer-symbol slope-angle-symbol">°</span>
+      <span><strong>Углы склонов</strong><small>Шаг 20 м · метки до 100 м от камеры</small></span>
+      <input id="slopeLayer_angles" type="checkbox" checked/>
+    </label>
+    <div class="slope-layer-opacity">
+      <label for="slopeLayerOpacity_angles">Прозрачность <strong id="slopeLayerOpacityValue_angles">100%</strong></label>
+      <input id="slopeLayerOpacity_angles" type="range" min="0" max="100" step="1" value="100"/>
+    </div>
+  </div>
+  <div class="slope-layer-block">
+    <label class="slope-layer-row" for="slopeLayer_difficulty">
+      <span class="slope-layer-symbol slope-difficulty-symbol"><i></i><i></i><i></i></span>
+      <span><strong>Сложность склонов</strong><small>Толстая цветная линия по участкам</small></span>
+      <input id="slopeLayer_difficulty" type="checkbox" checked/>
+    </label>
+    <div class="slope-layer-opacity">
+      <label for="slopeLayerOpacity_difficulty">Прозрачность <strong id="slopeLayerOpacityValue_difficulty">100%</strong></label>
+      <input id="slopeLayerOpacity_difficulty" type="range" min="0" max="100" step="1" value="100"/>
+    </div>
+  </div>
+  <div class="slope-layer-block" style="border-bottom:0">
+    <label class="slope-layer-row" for="slopeLayer_names">
+      <span class="slope-layer-symbol slope-name-symbol">A</span>
+      <span><strong>Названия склонов</strong><small>Подписи центральных линий</small></span>
+      <input id="slopeLayer_names" type="checkbox" checked/>
+    </label>
+    <div class="slope-layer-opacity">
+      <label for="slopeLayerOpacity_names">Прозрачность <strong id="slopeLayerOpacityValue_names">100%</strong></label>
+      <input id="slopeLayerOpacity_names" type="range" min="0" max="100" step="1" value="100"/>
+    </div>
+  </div>
   <div id="slopeLayersStatus" role="status">Анализ ещё не экспортирован из Maya.</div>
 </div>
 
@@ -1918,7 +1936,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v179.js"></script>
+<script type="module" src="./app.v180.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -2560,7 +2578,12 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 .slope-layers-head strong{display:block;color:#c6d9eb;font-size:11px;letter-spacing:1px}
 .slope-layers-head small{display:block;margin-top:3px;color:#8196a8;font-size:9px}
 #slopeLayersPanel #slopeLayersClose{width:28px;height:28px;min-width:28px;margin:0;padding:0;border-radius:7px;background:#2b3947;color:#dce8f1;font-size:19px}
-.slope-layer-row{display:grid!important;grid-template-columns:28px minmax(0,1fr) 18px;align-items:center;gap:9px;padding:10px 2px;margin:0!important;border-bottom:1px solid rgba(255,255,255,.055);cursor:pointer}
+.slope-layer-block{padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.055)}
+.slope-layer-row{display:grid!important;grid-template-columns:28px minmax(0,1fr) 18px;align-items:center;gap:9px;padding:10px 2px 7px;margin:0!important;cursor:pointer}
+.slope-layer-opacity{padding:0 3px 4px 38px}
+.slope-layer-opacity label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 3px;color:#91a8ba;font-size:9px}
+.slope-layer-opacity label strong{color:#c8dbea;font-size:9px;font-variant-numeric:tabular-nums}
+.slope-layer-opacity input[type=range]{display:block;width:100%;height:15px;margin:0;accent-color:#74b8e8;cursor:pointer}
 .slope-layer-row>span:nth-child(2){min-width:0}
 .slope-layer-row strong{display:block;color:#e8f0f6;font-size:11px;font-weight:700}
 .slope-layer-row small{display:block;margin-top:3px;color:#879bac;font-size:9px}
