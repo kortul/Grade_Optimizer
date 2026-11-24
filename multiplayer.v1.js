@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
 const SEND_INTERVAL_MS = 125;
-const STALE_PEER_MS = 7000;
+const STALE_PEER_MS = 30000;
+const HEARTBEAT_INTERVAL_MS = 10000;
 const JOINT_FLOATS = 72;
 const JOINTS_PER_NODE = 6;
 
@@ -101,7 +102,8 @@ export class ResortMultiplayer {
     this.statusElement=statusElement||null;this.statusTextElement=statusTextElement||null;
     this.templateProvider=templateProvider||(()=>({}));this.poseNodeNames=poseNodeNames.slice();
     this.socket=null;this.id='';this.connected=false;this.disposed=false;this.full=false;
-    this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';
+    this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';this.lastClose=null;
+    this.heartbeatTimer=this.endpoint?setInterval(()=>this.sendHeartbeat(),HEARTBEAT_INTERVAL_MS):null;
     this.players=new Map();this.names=new Map();this.lastSeen=new Map();
     this.setStatus(this.endpoint?'connecting':'disabled');
   }
@@ -120,13 +122,22 @@ export class ResortMultiplayer {
       if(this.socket===socket&&!this.disposed&&typeof event.data==='string')this.onMessage(event.data);
     };
     socket.onerror=()=>{try{socket.close();}catch{}};
-    socket.onclose=()=>{
+    socket.onclose=event=>{
       if(this.socket!==socket)return;
+      this.lastClose={code:event.code,reason:event.reason||'',wasClean:event.wasClean};
+      console.warn('[Grade Optimizer multiplayer] WebSocket closed',this.lastClose);
       this.socket=null;this.connected=false;this.id='';this.clearPlayers();
       if(this.disposed)return;
       if(this.full){this.setStatus('full');return;}
       this.setStatus('reconnecting');this.scheduleReconnect();
     };
+  }
+
+  sendHeartbeat() {
+    const socket=this.socket;
+    if(this.disposed||!this.connected||socket?.readyState!==WebSocket.OPEN)return;
+    try{socket.send(JSON.stringify({t:'ping'}));}
+    catch(error){try{socket.close();}catch{}}
   }
 
   scheduleReconnect() {
@@ -155,6 +166,15 @@ export class ResortMultiplayer {
       this.setStatus('connected');
     }else if(msg.t==='state'){
       this.upsert(msg.player);this.setStatus('connected');
+    }else if(msg.t==='presence'){
+      const id=String(msg.id||'');
+      if(id&&id!==this.id){
+        const now=performance.now();
+        this.names.set(id,String(msg.name||this.names.get(id)||'Лыжник').slice(0,20));
+        this.lastSeen.set(id,now);
+        const peer=this.players.get(id);if(peer)peer.lastSeen=now;
+      }
+      this.setStatus('connected');
     }else if(msg.t==='leave'){
       this.remove(String(msg.id||''));this.setStatus('connected');
     }
@@ -275,12 +295,13 @@ export class ResortMultiplayer {
     this.setStatus(this.connected?'connected':(this.endpoint?'reconnecting':'disabled'));
   }
 
-  diagnostics(){return{configured:!!this.endpoint,connected:this.connected,players:this.names.size,endpoint:this.endpoint};}
+  diagnostics(){return{configured:!!this.endpoint,connected:this.connected,players:this.names.size,endpoint:this.endpoint,lastClose:this.lastClose};}
 
   dispose() {
     if(this.disposed)return;this.disposed=true;
     if(this.reconnectTimer)clearTimeout(this.reconnectTimer);
-    this.reconnectTimer=null;
+    if(this.heartbeatTimer)clearInterval(this.heartbeatTimer);
+    this.reconnectTimer=null;this.heartbeatTimer=null;
     const socket=this.socket;this.socket=null;this.connected=false;
     if(socket){socket.onclose=null;socket.onmessage=null;try{socket.close(1000,'page leaving');}catch{}}
     this.clearPlayers();
