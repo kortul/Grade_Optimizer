@@ -5,6 +5,7 @@ export const MAX_MESSAGES_PER_SECOND = 45;
 export const MAX_MESSAGE_RATE = MAX_MESSAGES_PER_SECOND;
 export const JOINT_FLOATS = 72;
 export const MAX_SHARED_MARKERS = 50;
+export const MAX_MARKERS_PER_PLAYER = 3;
 
 export function sanitizeClientId(value) {
   const id=String(value??'').trim().toLowerCase();
@@ -23,12 +24,13 @@ function finiteArray(value,length,maxAbs) {
 }
 
 
-export function normalizeMarker(input, owner) {
+export function normalizeMarker(input, owner, ownerId) {
   if(!input||typeof input!=='object'||Array.isArray(input))return null;
   const id=sanitizeClientId(input.id);
+  const cleanOwnerId=sanitizeClientId(ownerId);
   const p=finiteArray(input.p,3,50000);
-  if(!id||!p)return null;
-  return {id,owner:sanitizeName(owner),p,createdAt:Date.now()};
+  if(!id||!cleanOwnerId||!p)return null;
+  return {id,owner:sanitizeName(owner),ownerId:cleanOwnerId,p,createdAt:Date.now()};
 }
 
 export function normalizeState(input) {
