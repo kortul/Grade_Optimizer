@@ -57,6 +57,39 @@ terrainRoot.updateMatrixWorld(true);
 const terrainBounds = new Box3().setFromObject(terrainRoot);
 const terrainSize = terrainBounds.getSize(new Vector3());
 
+function measure(rootObject) {
+  rootObject.updateWorldMatrix(true, true);
+  const box = new Box3().setFromObject(rootObject);
+  const dimensions = box.getSize(new Vector3());
+  return box.isEmpty() ? null : {
+    min: box.min.toArray(),
+    max: box.max.toArray(),
+    size: dimensions.toArray()
+  };
+}
+const rebaseTest = root.clone(true);
+const sceneRootNode = rebaseTest.getObjectByName('MAYA_WORKING_SCENE_001');
+const rebaseBefore = measure(rebaseTest);
+let sceneRootTransform = null;
+let boundsAfterRootOffsetRemoved = null;
+if (sceneRootNode) {
+  sceneRootTransform = {
+    name: sceneRootNode.name,
+    position: sceneRootNode.position.toArray(),
+    scale: sceneRootNode.scale.toArray(),
+    matrixAutoUpdate: sceneRootNode.matrixAutoUpdate
+  };
+  sceneRootNode.position.set(0, 0, 0);
+  boundsAfterRootOffsetRemoved = measure(rebaseTest);
+}
+const rootTransform = {
+  name: root.name || '(unnamed)',
+  position: root.position.toArray(),
+  scale: root.scale.toArray(),
+  matrixAutoUpdate: root.matrixAutoUpdate,
+  matrix: root.matrix.toArray()
+};
+
 const hierarchy = [];
 for (let node = meshes.length ? root.getObjectByName(meshes.find(item => item.name === 'G1Slope_Mesh_30m')?.name) : null; node; node = node.parent) {
   hierarchy.push({
@@ -87,6 +120,8 @@ console.log(JSON.stringify({
       size: terrainSize.toArray()
     }
   },
+  rootTransform,
+  rebaseTest: { before: rebaseBefore, sceneRootTransform, afterRemovingSceneRootTranslation: boundsAfterRootOffsetRemoved },
   targetMeshHierarchy: hierarchy,
   meshes
 }, null, 2));
