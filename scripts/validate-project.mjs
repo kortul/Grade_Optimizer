@@ -627,6 +627,10 @@ assert.ok(entrySource.includes('await buildSlopeAnalysisFromManifest(manifest)')
 assert.ok(entrySource.includes('new THREE.LineSegments') && entrySource.includes('new CSS2DObject'), 'slope overlays must use line segments and CSS2D labels rather than meshes');
 assert.ok(html.includes('.slope-analysis-angle{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--slope-analysis-color);') && html.includes('text-shadow:none'), 'slope angle labels must be bare difficulty-coloured degree text without background, border or shadow');
 assert.ok(entrySource.includes("Number(section.angleDegrees).toFixed(1)+'°',difficulty,'angle'"), 'each 20 m angle label must use its own section angle and difficulty colour');
+assert.ok(entrySource.includes("black: '#000000'") && html.includes('.slope-difficulty-black{--slope-analysis-color:#000000}'), 'black difficulty angle text must render black');
+assert.ok(html.includes('font-size:15px') && html.includes('id="slopeLayerAngleDistance" type="range" min="0" max="1000"'), 'slope angle font must be 25% larger and camera distance control must reach 1000 m');
+assert.ok(entrySource.includes('Math.min(1000,number)') && entrySource.includes('Math.min(1000,Number(state.slopeAnalysisAngleMaxDistanceMeters)'), 'camera distance clamp and label visibility must both allow 1000 m');
+assert.ok(entrySource.includes('const SLOPE_ANALYSIS_LINE_WIDTH_PX = 4.125;') && entrySource.includes('green: 0x0b733a') && entrySource.includes('blue: 0x286bd6') && entrySource.includes('red: 0xe54848') && entrySource.includes('black: 0x2a2e34'), 'difficulty lines must be 25% thinner and use separate, slightly muted shades');
 assert.ok(entrySource.includes('slopeAnalysis:state.slopeAnalysisData||undefined') && entrySource.includes('slopeCurves:state.slopeCurvesData||undefined'), 'derived analysis and raw Maya centerlines must survive client manifest autosave');
 assert.ok(html.includes('id="slopeLayersToggle"') && html.includes('id="slopeLayer_angles"') && html.includes('id="slopeLayer_difficulty"') && html.includes('id="slopeLayer_names"'), 'three slope-analysis layer controls are missing');
 

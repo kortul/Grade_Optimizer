@@ -33,7 +33,7 @@ const clampSlopeOpacity=(value,fallback=1)=>{
 };
 const clampSlopeDistance=(value,fallback=500)=>{
   const number=Number(value);
-  return Number.isFinite(number)?Math.max(0,Math.min(500,number)):fallback;
+  return Number.isFinite(number)?Math.max(0,Math.min(1000,number)):fallback;
 };
 
 const state = {
@@ -153,16 +153,16 @@ scene.fog = new THREE.Fog(0x9bb4c8, 1800, 9000);
 // the viewer renders lightweight lines and CSS2D labels (never overlay meshes).
 // ---------------------------------------------------------------------------
 const SLOPE_ANALYSIS_PALETTE = {
-  green: 0x00843b,
-  blue: 0x0000ff,
-  red: 0xff0000,
-  black: 0x20242a
+  green: 0x0b733a,
+  blue: 0x286bd6,
+  red: 0xe54848,
+  black: 0x2a2e34
 };
 const SLOPE_ANALYSIS_CSS_COLORS = {
   green: '#128342',
   blue: '#3988ff',
   red: '#ff5353',
-  black: '#d5dce3'
+  black: '#000000'
 };
 
 function disposeSlopeAnalysisOverlays(){
@@ -281,7 +281,7 @@ function applySlopeAnalysisLayerVisibility(){
 // ---------------------------------------------------------------------------
 const SLOPE_ANALYSIS_INTERVAL_METERS = 20.0;
 
-const SLOPE_ANALYSIS_LINE_WIDTH_PX = 5.5;
+const SLOPE_ANALYSIS_LINE_WIDTH_PX = 4.125;
 const SLOPE_ANALYSIS_CACHE_VERSION = 'curve-analysis-v2';
 const SLOPE_ANALYSIS_ANGLE_LIMITS = {
   green: Math.atan(0.15) * 180 / Math.PI,
@@ -636,7 +636,7 @@ function updateSlopeAnalysisAngleLabelVisibility(){
   const group=state.slopeAnalysisGroup?.getObjectByName('SlopeAnalysis_Angles');
   if(!group)return;
   camera.getWorldPosition(slopeAnalysisCameraPosition);
-  const maxDistance=Math.max(0,Math.min(500,Number(state.slopeAnalysisAngleMaxDistanceMeters)||0));
+  const maxDistance=Math.max(0,Math.min(1000,Number(state.slopeAnalysisAngleMaxDistanceMeters)||0));
   const maxDistanceSquared=maxDistance*maxDistance;
   const queue1Visible=state.slopeAnalysisQueues.queue1!==false;
   for(const marker of group.children){
