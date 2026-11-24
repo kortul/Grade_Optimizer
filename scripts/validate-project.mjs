@@ -44,6 +44,18 @@ assert.ok(entrySource.includes('state.savedOverviewCameras=normalizeOverviewCame
 assert.ok(entrySource.includes('if(restoreSavedOverviewCameraForCurrentSlope())return;'), 'Home must restore the saved overview camera before using the automatic fallback');
 pass('Scene Editor camera-save icon, per-slope manifest persistence and Home restore are present');
 
+assert.ok(html.includes('id="skierSpawnSlots"')&&html.includes('id="placeSkierSpawnButton"')&&html.includes('id="deleteSkierSpawnButton"'), 'Scene Editor skier spawn tool controls are missing');
+for(const slot of ['1','2','3','4','5','6','7','8','9','0']){
+  assert.ok(html.includes('data-skier-spawn-slot="'+slot+'"'), 'Scene Editor spawn slot missing: '+slot);
+}
+assert.ok(entrySource.includes("const SKIER_SPAWN_KEYS=['1','2','3','4','5','6','7','8','9','0']"), 'exactly ten numeric skier spawn slots must be available');
+assert.ok(entrySource.includes('function normalizeSkierSpawnMap(')&&entrySource.includes('skierSpawns:normalizeSkierSpawnMap(state.skierSpawns)'), 'skier spawn points must be normalized and persisted in client scene.json');
+assert.ok(entrySource.includes('state.skierSpawns=normalizeSkierSpawnMap(manifest.skierSpawns)'), 'skier spawn points must be restored when opening a client project');
+assert.ok(entrySource.includes('function onSkierSpawnPlacementPointerDown(')&&entrySource.includes('function onSkierSpawnPlacementPointerMove(')&&entrySource.includes('pickSkierSpawnSurface(event)'), 'spawn placement must capture both surface position and facing direction');
+assert.ok(entrySource.includes('function respawnSkierAtSpawnSlot(')&&entrySource.includes('respawnAtCustomSpawn('), 'numeric spawn slots must teleport the active skier to saved custom locations');
+assert.ok(skierSource.includes('respawnAtCustomSpawn(spawn)')&&skierSource.includes('spawnHint.headingYaw'), 'skier controller must apply custom spawn position and heading');
+pass('Scene Editor ten-slot skier spawn placement, direction, manifest persistence and numeric respawn controls are present');
+
 assert.ok(entrySource.includes('async function loadCanonicalTerrainFbx('), 'canonical Maya terrain FBX loader is missing');
 assert.ok(entrySource.includes("'./assets/real-terrain.json'+bust()") && entrySource.includes("'./assets/real-terrain.fbx'+bust()"), 'runtime must load the canonical terrain JSON / FBX pair');
 assert.ok(entrySource.includes("cm:0.01") && entrySource.includes('root.scale.multiplyScalar(metersPerUnit)'), 'Maya centimetres must be converted to runtime metres');
@@ -342,15 +354,15 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v95.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v95.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v96.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v96.js').toString('utf8');
 assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), "imported Slopes_Stage1 geometry must take priority as the skier surface");
 assert.ok(entrySource.includes('position:dronePose.position')&&entrySource.includes('velocity:dronePose.velocity,fromDrone:true')&&entrySource.includes('skierTerrainName:skierController.terrain?.name')&&entrySource.includes('skierSpawn:skierController.lastSpawnInfo')&&!entrySource.includes('velocity:dronePose.velocity,fromDrone:true,startAtTop:true'), 'drone handoff must try the drone world position before the summit fallback');
 assert.ok(!entrySource.includes('droneController.setTerrain(terrain);\\n    applySkierPresentation();'), 'using a dedicated skier piste must not replace the drone collision surface');
 assert.ok(skierSource.includes('if(spawnHint?.position&&!spawnHint.startAtTop)'), 'explicit summit respawn must ignore the drone camera position');
 assert.ok(skierSource.includes('const insideBounds=x>=this.bounds.min.x')&&skierSource.includes('const px=x+Math.cos(angle)*radius;')&&!skierSource.includes('const clampedX=THREE.MathUtils.clamp(x,this.bounds.min.x'), 'drone-local spawn search must keep its true world origin and avoid snapping off-piste drones to the mesh edge');
 assert.ok(skierSource.includes('respawnAtTop(){')&&skierSource.includes("this.lastSpawnInfo={...this.lastSpawnInfo,spawnType:'stage1-summit'}"), 'key 1 summit respawn must reuse the cached terrain lookup');
-assert.ok(entrySource.includes("e.code==='Digit1'||e.code==='Numpad1'")&&entrySource.includes('respawnSkierAtStageOneSummit()'), 'key 1 must respawn the skier at the Stage 1 summit');
+assert.ok(entrySource.includes("const spawnKey=/^Digit[0-9]$/.test(e.code)")&&entrySource.includes("spawnKey==='1'")&&entrySource.includes('respawnSkierAtStageOneSummit()'), 'key 1 must keep the Stage 1 summit fallback when slot 1 is empty');
 assert.ok(html.includes('Спавн на вершине Stage 1'), 'skier HUD must explain the key 1 summit spawn');
 assert.ok(skierSource.includes('const topSamples=candidates.slice(0,Math.min(180,candidates.length));')&&!skierSource.includes('0.334')&&!skierSource.includes('0.187'), 'piste spawn search must prefer the highest mesh vertices instead of the old fixed A1 seed');
 assert.ok(skierSource.includes('const clearance=this._downhillClearance(hit.point.x,hit.point.z,hit.normal,[6,12,18,26]);')&&skierSource.includes('lastSpawnInfo={'), 'summit spawn must validate a downhill run and expose its world position');
