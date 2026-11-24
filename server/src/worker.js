@@ -27,9 +27,11 @@ export class PublicResort extends DurableObject {
       try{server.close(1013,'Shared resort is full');}catch{}
       return new Response(null,{status:101,webSocket:client});
     }
+    const occupiedSlots=new Set(existing.map(entry=>entry.player.slot).filter(slot=>Number.isInteger(slot)&&slot>=0&&slot<MAX_PLAYERS));
+    let slot=0;while(occupiedSlots.has(slot)&&slot<MAX_PLAYERS)slot++;
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({
-      id:crypto.randomUUID(),name:'',state:null,lastSeen:Date.now(),
+      id:crypto.randomUUID(),slot,name:'',state:null,lastSeen:Date.now(),
       rateStart:Date.now(),rateCount:0,left:false
     });
     return new Response(null,{status:101,webSocket:client});
@@ -49,7 +51,7 @@ export class PublicResort extends DurableObject {
   }
 
   send(socket,message){try{socket.send(JSON.stringify(message));}catch{try{socket.close(1011,'Send failed');}catch{}}}
-  publicPlayer(player){return{id:player.id,name:player.name,state:player.state};}
+  publicPlayer(player){return{id:player.id,slot:player.slot,name:player.name,state:player.state};}
 
   webSocketMessage(socket,raw){
     let player;try{player=socket.deserializeAttachment();}catch{return;}
@@ -73,8 +75,8 @@ export class PublicResort extends DurableObject {
     if(msg.t==='hello'){
       player.name=sanitizeName(msg.name);player.lastSeen=now;socket.serializeAttachment(player);
       const peers=this.activeSockets().filter(entry=>entry.socket!==socket&&entry.player.name).map(entry=>this.publicPlayer(entry.player));
-      this.send(socket,{t:'welcome',id:player.id,players:peers});
-      const joined={t:'join',player:{id:player.id,name:player.name}};
+      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers});
+      const joined={t:'join',player:{id:player.id,slot:player.slot,name:player.name}};
       for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,joined);
       return;
     }
