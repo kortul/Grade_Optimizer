@@ -33,6 +33,36 @@ export function normalizeMarker(input, owner, ownerId) {
   return {id,owner:sanitizeName(owner),ownerId:cleanOwnerId,p,createdAt:Date.now()};
 }
 
+export function appendSharedMarker(inputMarkers, marker) {
+  const markers=Array.isArray(inputMarkers)?inputMarkers.slice(-MAX_SHARED_MARKERS):[];
+  const removedMarkers=[];
+  // Older flags only stored the displayed owner name. Keep those grouped,
+  // then attach the active participant's legacy flags to their current ID.
+  for(const existing of markers){
+    if(existing&&!existing.ownerId)existing.ownerId='legacy:'+sanitizeName(existing.owner);
+  }
+  const legacyOwnerId='legacy:'+sanitizeName(marker.owner);
+  for(const existing of markers){
+    if(existing?.ownerId===legacyOwnerId)existing.ownerId=marker.ownerId;
+  }
+  let acceptedMarker=markers.find(existing=>existing?.id===marker.id);
+  if(!acceptedMarker){
+    markers.push(marker);
+    const ownerIds=new Set(markers.map(existing=>existing?.ownerId).filter(Boolean));
+    for(const ownerId of ownerIds){
+      const ownedMarkers=markers.filter(existing=>existing?.ownerId===ownerId);
+      while(ownedMarkers.length>MAX_MARKERS_PER_PLAYER){
+        const oldest=ownedMarkers.shift();
+        const index=markers.findIndex(existing=>existing?.id===oldest?.id);
+        if(index>=0)removedMarkers.push(markers.splice(index,1)[0]);
+      }
+    }
+    while(markers.length>MAX_SHARED_MARKERS)removedMarkers.push(markers.shift());
+    acceptedMarker=marker;
+  }
+  return {markers,acceptedMarker,removedMarkers};
+}
+
 export function normalizeState(input) {
   if(!input||typeof input!=='object'||Array.isArray(input)||!['overview','skier','drone'].includes(input.mode))return null;
   const p=finiteArray(input.p,3,50000),q=finiteArray(input.q,4,2),v=finiteArray(input.v,3,180);
