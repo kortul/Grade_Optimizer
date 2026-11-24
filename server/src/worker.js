@@ -62,6 +62,14 @@ export class PublicResort extends DurableObject {
     let msg;try{msg=JSON.parse(raw);}catch{return;}
     if(!msg||typeof msg!=='object'||Array.isArray(msg))return;
 
+    if(msg.t==='ping'){
+      player.lastSeen=now;socket.serializeAttachment(player);
+      this.send(socket,{t:'pong',at:now});
+      const presence={t:'presence',id:player.id,name:player.name};
+      for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,presence);
+      return;
+    }
+
     if(msg.t==='hello'){
       player.name=sanitizeName(msg.name);player.lastSeen=now;socket.serializeAttachment(player);
       const peers=this.activeSockets().filter(entry=>entry.socket!==socket&&entry.player.name).map(entry=>this.publicPlayer(entry.player));
