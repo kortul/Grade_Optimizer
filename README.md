@@ -19,7 +19,7 @@ For a new release, create new versioned app / controller files, update `index.ht
 
 ## Multiplayer
 
-All visitors automatically join one public resort session when `multiplayer-config.v1.js` contains the deployed WebSocket URL. There are no rooms, invitations or accounts. Skier and drone physics remain local to each browser; only player transforms and the skier's articulated pose are relayed. Each browser keeps its own camera and may switch modes independently. See [server/README.md](server/README.md) for one-time relay deployment.
+All visitors automatically join one public resort session when `multiplayer-config.v1.js` contains the deployed WebSocket URL. There are no rooms, invitations or accounts. Skier and drone physics remain local to each browser; only player transforms and the skier's articulated pose are relayed at 20 Hz. Each browser tab has a unique session identity, so reconnects replace the stale socket instead of appearing as a second skier. Each browser keeps its own camera and may switch modes independently. See [server/README.md](server/README.md) for one-time relay deployment.
 
 ## Modes and controls
 
