@@ -13,9 +13,10 @@ import subprocess
 
 import maya.cmds as cmds
 import maya.mel as mel
+import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.7.6"
+VERSION = "0.7.7"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -274,9 +275,11 @@ def collect_meshes(selection_only=False, selection_roots=None):
             for item in selection
         ):
             continue
-        if transform in seen:
+        # Track shape paths rather than transforms: one transform may
+        # legitimately contain several independent polygon mesh shapes.
+        if shape in seen:
             continue
-        seen.add(transform)
+        seen.add(shape)
         materials = []
         for sg in cmds.listConnections(shape, type="shadingEngine") or []:
             for shader in cmds.listConnections(
@@ -740,7 +743,39 @@ def list_replaceable_client_assets(repo):
             asset.get("phase") or "always"
         )
         result.append(asset)
-    result.sort(key=lambda item: (str(item.get("name") or "").lower(), str(item.get("id") or "")))
+    # The canonical base terrain is global (assets/), not a client asset.
+    # Expose it as a distinct selectable entry with its own replacement path.
+    terrain_manifest_path = os.path.join(repo, "assets", "real-terrain.json")
+    terrain_model_path = os.path.join(repo, "assets", "real-terrain.fbx")
+    if os.path.isfile(terrain_manifest_path):
+        with open(terrain_manifest_path, "r", encoding="utf-8") as stream:
+            terrain_manifest = json.load(stream)
+        if (
+            terrain_manifest.get("assetId") != "real-terrain"
+            or str(terrain_manifest.get("file") or "").replace("\\", "/") != "assets/real-terrain.fbx"
+            or terrain_manifest.get("category") != "terrain"
+        ):
+            raise RuntimeError(
+                "assets/real-terrain.json не описывает ожидаемый базовый рельеф real-terrain."
+            )
+        if os.path.isfile(terrain_model_path):
+            terrain_asset = dict(terrain_manifest)
+            terrain_asset.update({
+                "_canonical_terrain": True,
+                "_model_path": terrain_model_path,
+                "_relative_file": "assets/real-terrain.fbx",
+                "_size_bytes": os.path.getsize(terrain_model_path),
+                "_label": "Основной рельеф  [real-terrain]"
+            })
+            result.append(terrain_asset)
+        else:
+            missing_fbx += 1
+
+    result.sort(key=lambda item: (
+        str(item.get("category") or "").lower() != "terrain",
+        str(item.get("name") or "").lower(),
+        str(item.get("id") or "")
+    ))
     return client_slug, result, non_fbx, missing_fbx
 
 
@@ -811,6 +846,7 @@ def refresh_git_asset_list(*_):
         cmds.treeView(tree_control, edit=True, removeAll=True)
 
         category_labels = {
+            "terrain": "Основной рельеф",
             "slope": "Рельеф / склоны",
             "prop": "Объекты",
             "building": "Здания",
@@ -871,8 +907,10 @@ def refresh_git_asset_list(*_):
                 tree_control, edit=True, expandItem=(group_key, True)
             )
 
-        note = "Git: clients/%s/scene.json    ·    Доступно для замены: %d FBX" % (
-            client_slug, len(assets)
+        client_asset_count = sum(1 for item in assets if not item.get("_canonical_terrain"))
+        canonical_count = sum(1 for item in assets if item.get("_canonical_terrain"))
+        note = "Git: clients/%s/scene.json    ·    Клиентские FBX: %d    ·    Основной рельеф: %s" % (
+            client_slug, client_asset_count, "доступен" if canonical_count else "не найден"
         )
         if missing_fbx:
             note += "    ·    отсутствуют локально: %d" % missing_fbx
@@ -1042,10 +1080,415 @@ def export_scene(*_):
     _export_scene()
 
 
+def _terrain_mesh_shape_path(component):
+    """Resolve one component record to its exact Maya mesh shape path."""
+    transform = component.get("dagPath")
+    if not transform or not cmds.objExists(transform):
+        return None
+    shapes = cmds.listRelatives(transform, shapes=True, fullPath=True, type="mesh") or []
+    wanted = str(component.get("shape") or "")
+    for shape in shapes:
+        if shape.rsplit("|", 1)[-1] == wanted:
+            return shape
+    return shapes[0] if shapes else None
+
+
+def _create_canonical_terrain_export_copy(source_transform, suffix, bridge_data):
+    """
+    Duplicate one selected terrain transform, bake its Maya world placement,
+    then undo the CAD Bridge working-scene transform on the copied vertices.
+
+    CAD Bridge relationship:
+        working_world = bridge_scale * (original_maya - bridge_offset)
+    """
+    source_name = source_transform.rsplit("|", 1)[-1]
+    baked = cmds.duplicate(
+        source_transform,
+        name="%s_TERRAIN_EXPORT_%s" % (source_name, suffix),
+        rr=True
+    )[0]
+    parents = cmds.listRelatives(baked, parent=True, fullPath=True) or []
+    if parents:
+        baked = cmds.parent(baked, world=True, absolute=True)[0]
+
+    cmds.makeIdentity(
+        baked,
+        apply=True,
+        translate=True,
+        rotate=True,
+        scale=True,
+        normal=False,
+        preserveNormals=True
+    )
+
+    shapes = cmds.listRelatives(
+        baked, shapes=True, fullPath=True, type="mesh"
+    ) or []
+    if not shapes:
+        shapes = cmds.listRelatives(
+            baked, allDescendents=True, fullPath=True, type="mesh"
+        ) or []
+    if not shapes:
+        raise RuntimeError("В копии %s не найден polygon mesh." % source_name)
+
+    if bridge_data:
+        offset, bridge_scale = bridge_data
+        if abs(float(bridge_scale)) < 1e-9:
+            raise RuntimeError("CAD Bridge scale равен нулю для %s." % source_name)
+        for shape in shapes:
+            selection = om2.MSelectionList()
+            selection.add(shape)
+            dag_path = selection.getDagPath(0)
+            dag_path.extendToShape()
+            mesh_fn = om2.MFnMesh(dag_path)
+            points = mesh_fn.getPoints(om2.MSpace.kObject)
+            restored_points = om2.MPointArray()
+            for point in points:
+                restored_points.append(om2.MPoint(
+                    point.x / bridge_scale + offset[0],
+                    point.y / bridge_scale + offset[1],
+                    point.z / bridge_scale + offset[2]
+                ))
+            mesh_fn.setPoints(restored_points, om2.MSpace.kObject)
+            mesh_fn.updateSurface()
+
+    return baked
+
+
+def replace_canonical_terrain(*_):
+    """
+    Replace assets/real-terrain.fbx + its JSON sidecar as one recoverable pair.
+    This is deliberately separate from client-scene asset replacement.
+    """
+    repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+    remember_export_settings()
+    if not os.path.isdir(repo):
+        cmds.confirmDialog(title="Grade Optimizer", message="Укажи существующую локальную папку репозитория.", button=["OK"])
+        return
+
+    try:
+        git_info = _inspect_git_worktree(repo)
+        manifest_path = os.path.join(repo, "assets", "real-terrain.json")
+        model_path = os.path.join(repo, "assets", "real-terrain.fbx")
+        if not os.path.isfile(manifest_path) or not os.path.isfile(model_path):
+            raise RuntimeError("Не найдена пара assets/real-terrain.json + assets/real-terrain.fbx. Сначала сделай Pull.")
+        with open(manifest_path, "r", encoding="utf-8") as stream:
+            manifest = json.load(stream)
+        if (
+            manifest.get("assetId") != "real-terrain"
+            or manifest.get("category") != "terrain"
+            or str(manifest.get("file") or "").replace("\\", "/") != "assets/real-terrain.fbx"
+        ):
+            raise RuntimeError("Манифест assets/real-terrain.json не прошёл проверку ID / category / file.")
+
+        previous_selection = cmds.ls(selection=True, long=True) or []
+        if not previous_selection:
+            raise RuntimeError("Выдели только mesh основного рельефа внутри CAD-синхронизируемой группы.")
+        export_roots = _selected_transforms()
+        if not export_roots:
+            raise RuntimeError("Не удалось определить transform-объекты из выделения Maya.")
+        source_components = collect_meshes(selection_only=True, selection_roots=export_roots)
+        if not source_components:
+            raise RuntimeError("В выделении не найдены polygon mesh объекты.")
+
+        terrain_components = []
+        for component in source_components:
+            identity = " ".join((
+                str(component.get("dagPath") or ""),
+                str(component.get("name") or ""),
+                str(component.get("shape") or "")
+            )).lower()
+            if "terrain" in identity or "ground" in identity:
+                terrain_components.append(component)
+        if not terrain_components:
+            raise RuntimeError(
+                "В выделении не найден mesh с именем terrain / ground. "
+                "Выдели именно основной terrainShape, а не всю MAYA_WORKING_SCENE."
+            )
+        stage_components = [
+            item for item in source_components
+            if re.search(r"(stage[_ -]?[12]|slope|piste)", " ".join((
+                str(item.get("dagPath") or ""),
+                str(item.get("name") or ""),
+                str(item.get("shape") or "")
+            )).lower())
+        ]
+        if stage_components:
+            raise RuntimeError(
+                "Выделение содержит также геометрию Stage / slope (%d mesh). "
+                "Для основного рельефа выбери только terrainShape или его отдельную группу."
+                % len(stage_components)
+            )
+
+        # All selected components must share the same stored CAD Bridge transform.
+        bridge_records = []
+        no_bridge_records = []
+        for component in source_components:
+            shape = _terrain_mesh_shape_path(component)
+            if not shape:
+                continue
+            working_group = find_working_group(shape)
+            bridge_data = get_bridge_data(working_group) if working_group else None
+            if bridge_data:
+                offset, bridge_scale = bridge_data
+                key = (
+                    tuple(round(float(value), 8) for value in offset),
+                    round(float(bridge_scale), 8)
+                )
+                bridge_records.append((key, bridge_data))
+            else:
+                no_bridge_records.append(component)
+        unique_bridge_keys = {item[0] for item in bridge_records}
+        if len(unique_bridge_keys) > 1 or (bridge_records and no_bridge_records):
+            raise RuntimeError(
+                "Выбранные mesh относятся к разным CAD Bridge transform-группам. "
+                "Выдели основной рельеф из одной MAYA_WORKING_SCENE."
+            )
+        bridge_data = bridge_records[0][1] if bridge_records else None
+
+        linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
+        meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
+        if meters_per_unit is None:
+            raise RuntimeError("Неизвестная линейная единица Maya: " + (linear_unit or "не указана"))
+
+        existing_size = os.path.getsize(model_path)
+        minimum_safe_size = max(16 * 1024, int(existing_size * 0.01))
+        source_root_names = [root.rsplit("|", 1)[-1] for root in export_roots]
+        bridge_note = (
+            "CAD Bridge inverse: offset=%s, scale=%s"
+            % (bridge_data[0], bridge_data[1])
+            if bridge_data else "CAD Bridge metadata: не найдено; сохранены текущие world coordinates"
+        )
+        choice = cmds.confirmDialog(
+            title="Grade Optimizer · Replace Canonical Terrain",
+            message=(
+                "Будет заменён ОСНОВНОЙ рельеф для A1.\n\n"
+                "Файл: assets/real-terrain.fbx\n"
+                "Объекты: %s\n"
+                "Mesh shapes: %d\n"
+                "Старый размер: %.2f MiB\n\n"
+                "%s\n\n"
+                "Stage 1 и клиентская сцена не изменяются.\n"
+                "Отдельные mesh сохраняются отдельными объектами; объединения не будет.\n\n"
+                "Продолжить?"
+            ) % (
+                ", ".join(source_root_names), len(source_components),
+                existing_size / float(1024 * 1024), bridge_note
+            ),
+            button=["ЗАМЕНИТЬ ОСНОВНОЙ РЕЛЬЕФ", "ОТМЕНА"],
+            defaultButton="ОТМЕНА",
+            cancelButton="ОТМЕНА",
+            dismissString="ОТМЕНА"
+        )
+        if choice != "ЗАМЕНИТЬ ОСНОВНОЙ РЕЛЬЕФ":
+            return
+
+        temporary_model_path = model_path + ".exporting.fbx"
+        temporary_manifest_path = manifest_path + ".exporting.tmp"
+        backup_model_path = model_path + ".go-backup"
+        backup_manifest_path = manifest_path + ".go-backup"
+        temporary_paths = [temporary_model_path, temporary_manifest_path]
+        baked_nodes = []
+        material_overrides = []
+        conversion_summary = []
+        try:
+            for temporary_path in temporary_paths:
+                if os.path.isfile(temporary_path):
+                    os.remove(temporary_path)
+            for backup_path in (backup_model_path, backup_manifest_path):
+                if os.path.isfile(backup_path):
+                    os.remove(backup_path)
+
+            unique_source_transforms = []
+            seen_transforms = set()
+            for component in source_components:
+                transform = component.get("dagPath")
+                if transform and transform not in seen_transforms:
+                    unique_source_transforms.append(transform)
+                    seen_transforms.add(transform)
+            for index, transform in enumerate(unique_source_transforms, start=1):
+                baked = _create_canonical_terrain_export_copy(
+                    transform, "%03d" % index, bridge_data
+                )
+                baked_nodes.append(baked)
+
+            baked_components = collect_meshes(
+                selection_only=True, selection_roots=baked_nodes
+            )
+            if not baked_components:
+                raise RuntimeError("После CAD Bridge inverse не осталось polygon mesh объектов.")
+
+            enable_fbx()
+            set_option("FBXExportFileVersion -v FBX202000;")
+            set_option("FBXExportSmoothingGroups -v true;")
+            set_option("FBXExportHardEdges -v false;")
+            set_option("FBXExportTangents -v true;")
+            set_option("FBXExportMaterials -v true;")
+            set_option("FBXExportTextures -v true;")
+            set_option("FBXExportEmbeddedTextures -v true;")
+            set_option("FBXExportCameras -v false;")
+            set_option("FBXExportLights -v false;")
+
+            material_overrides = prepare_fbx_compatible_materials(baked_components)
+            path = safe_path(temporary_model_path).replace('"', '\\\\\"')
+            try:
+                cmds.select(baked_nodes, replace=True)
+                selected_for_fbx = cmds.ls(selection=True, long=True) or []
+                if not selected_for_fbx:
+                    raise RuntimeError("Не удалось выделить временные terrain-копии для FBXExport.")
+                missing_roots = [root for root in baked_nodes if root not in selected_for_fbx]
+                if missing_roots:
+                    raise RuntimeError("Перед FBXExport потеряны временные terrain-копии: " + ", ".join(missing_roots))
+                mel.eval('FBXExport -f "' + path + '" -s;')
+            finally:
+                conversion_summary = [
+                    {
+                        "sourceMaterial": item["sourceMaterial"],
+                        "sourceType": item["sourceType"],
+                        "exportMaterial": item["proxyMaterial"],
+                        "colorAttribute": item["colorAttribute"]
+                    }
+                    for item in material_overrides
+                ]
+                restore_fbx_compatible_materials(material_overrides)
+
+            if not os.path.isfile(temporary_model_path):
+                raise RuntimeError("Maya не создала временный FBX основного рельефа.")
+            new_size = os.path.getsize(temporary_model_path)
+            if new_size < minimum_safe_size:
+                raise RuntimeError(
+                    "Новый terrain FBX подозрительно мал (%d bytes; минимум %d). "
+                    "Старый основной рельеф сохранён."
+                    % (new_size, minimum_safe_size)
+                )
+
+            bounds = [cmds.exactWorldBoundingBox(node) for node in baked_nodes]
+            world_bounds = [
+                min(box[0] for box in bounds),
+                min(box[1] for box in bounds),
+                min(box[2] for box in bounds),
+                max(box[3] for box in bounds),
+                max(box[4] for box in bounds),
+                max(box[5] for box in bounds)
+            ]
+            updated_manifest = dict(manifest)
+            terrain_metadata = dict(updated_manifest.get("mayaExport") or {})
+            source_file = cmds.file(query=True, sceneName=True, shortName=True) or ""
+            material_names = sorted({
+                material
+                for component in source_components
+                for material in (component.get("materials") or [])
+            })
+            terrain_metadata.update({
+                "pluginVersion": VERSION,
+                "sourceScene": source_file,
+                "mayaVersion": cmds.about(version=True),
+                "linearUnit": linear_unit,
+                "metersPerUnit": meters_per_unit,
+                "modelSizeBytes": new_size,
+                "meshComponentCount": len(baked_components),
+                "exportedRootNames": source_root_names,
+                "worldBounds": world_bounds,
+                "materialNames": material_names,
+                "components": baked_components,
+                "sourceComponents": source_components,
+                "nodeMetadata": collect_node_metadata(
+                    selection_only=True, selection_roots=export_roots
+                ),
+                "cadBridge": {
+                    "inverseApplied": bool(bridge_data),
+                    "originalOffset": list(bridge_data[0]) if bridge_data else None,
+                    "originalScale": float(bridge_data[1]) if bridge_data else None
+                },
+                "fbxMaterialConversions": conversion_summary
+            })
+            updated_manifest["mayaExport"] = terrain_metadata
+            updated_manifest["assetId"] = "real-terrain"
+            updated_manifest["name"] = updated_manifest.get("name") or "Real Terrain"
+            updated_manifest["file"] = "assets/real-terrain.fbx"
+            updated_manifest["category"] = "terrain"
+            updated_manifest["activeTerrain"] = True
+            updated_manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+            with open(temporary_manifest_path, "w", encoding="utf-8") as stream:
+                json.dump(updated_manifest, stream, ensure_ascii=False, indent=2)
+                stream.write("\n")
+
+            had_model = os.path.isfile(model_path)
+            try:
+                if had_model:
+                    shutil.copy2(model_path, backup_model_path)
+                shutil.copy2(manifest_path, backup_manifest_path)
+                os.replace(temporary_model_path, model_path)
+                os.replace(temporary_manifest_path, manifest_path)
+            except Exception:
+                if os.path.isfile(backup_model_path):
+                    os.replace(backup_model_path, model_path)
+                if os.path.isfile(backup_manifest_path):
+                    os.replace(backup_manifest_path, manifest_path)
+                raise
+            finally:
+                for backup_path in (backup_model_path, backup_manifest_path):
+                    try:
+                        if os.path.isfile(backup_path):
+                            os.remove(backup_path)
+                    except Exception:
+                        pass
+
+            git_result = _git_changes_for_paths(repo, [model_path, manifest_path])
+            git_report = _format_git_export_report(git_info, git_result)
+            message = (
+                "Основной рельеф заменён.\n\n"
+                + model_path
+                + "\n\n" + manifest_path
+                + "\n\n" + str(len(baked_components)) + " mesh shapes · %.1f MiB\n\nПРОВЕРКА GIT:\n" % (new_size / float(1024 * 1024))
+                + git_report
+            )
+            cmds.confirmDialog(
+                title="Grade Optimizer · Canonical Terrain Export Complete",
+                message=message,
+                button=["OK"]
+            )
+        finally:
+            if material_overrides:
+                restore_fbx_compatible_materials(material_overrides)
+            for temporary_path in temporary_paths:
+                try:
+                    if os.path.isfile(temporary_path):
+                        os.remove(temporary_path)
+                except Exception:
+                    pass
+            if baked_nodes:
+                try:
+                    existing_nodes = [node for node in baked_nodes if cmds.objExists(node)]
+                    if existing_nodes:
+                        cmds.delete(existing_nodes)
+                except Exception as cleanup_error:
+                    cmds.warning("Не удалось удалить временные terrain-копии: " + str(cleanup_error))
+            try:
+                if previous_selection:
+                    valid_selection = [node for node in previous_selection if cmds.objExists(node)]
+                    if valid_selection:
+                        cmds.select(valid_selection, replace=True)
+                    else:
+                        cmds.select(clear=True)
+            except Exception:
+                pass
+    except Exception as exc:
+        cmds.warning("[Grade Optimizer] Canonical terrain replacement failed: " + str(exc))
+        cmds.confirmDialog(
+            title="Grade Optimizer · Terrain export failed",
+            message=str(exc) + "\n\nСуществующие assets/real-terrain.fbx и assets/real-terrain.json не заменены.",
+            button=["OK"]
+        )
+
+
 def replace_selected_scene_asset(*_):
     asset = _selected_git_asset()
     if not asset:
         cmds.confirmDialog(title="Grade Optimizer", message="Сначала обнови список Git и выбери существующий FBX для замены.", button=["OK"])
+        return
+    if asset.get("_canonical_terrain"):
+        replace_canonical_terrain()
         return
     message = (
         "Будет заменён существующий FBX в локальном Git-репозитории.\n\n"
@@ -1419,8 +1862,8 @@ def show():
         command=replace_selected_scene_asset
     )
     cmds.text(
-        label="Защита: базовый рельеф assets/real-terrain.fbx не входит в список и не может быть заменён этим Exporter.",
-        align="left", height=40, wordWrap=True
+        label="«Основной рельеф» показан отдельной категорией. При его замене выбирай только terrainShape; CAD Bridge offset / scale будут отменены на временных копиях.",
+        align="left", height=42, wordWrap=True
     )
     cmds.setParent("..")
     cmds.setParent("..")
