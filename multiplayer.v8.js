@@ -645,6 +645,7 @@ export class ResortMultiplayer {
     for(const id of [...this.players.keys()])this.remove(id);
     this.names.clear();this.lastSeen.clear();
     this.clearMarkers();
+    for(const ownerId of [...this.measurements.keys()])this.removeMeasurement(ownerId);
   }
 
   setStatus(state) {
