@@ -3,14 +3,15 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 
 const read = path => readFileSync(path, 'utf8');
 const maya = read('maya/grade_optimizer_exporter.py');
-const app = read('app.v158.js');
+const app = read('app.v159.js');
 const html = read('index.html');
 const terrain = JSON.parse(read('assets/real-terrain.json'));
 const clientScene = JSON.parse(read('clients/alpine-resort/scene.json'));
 
 assert.ok(maya.includes('VERSION = "0.8.8"'), 'Maya exporter must be 0.8.8');
-assert.ok(html.includes('src="./app.v158.js"'), 'index.html must activate app.v158.js');
+assert.ok(html.includes('src="./app.v159.js"'), 'index.html must activate app.v159.js');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
+assert.ok(app.includes('logarithmicDepthBuffer:true'), 'large-scale terrain renderer must enable logarithmic depth buffering');
 
 assert.ok(maya.includes('def find_working_group(node):'), 'nested CAD Bridge working-group lookup is missing');
 assert.ok(maya.includes('def get_bridge_data(working_group):'), 'CAD Bridge metadata reader is missing');
