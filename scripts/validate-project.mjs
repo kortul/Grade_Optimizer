@@ -55,6 +55,7 @@ assert.ok(entrySource.includes('state.skierSpawns=normalizeSkierSpawnMap(manifes
 assert.ok(entrySource.includes('function onSkierSpawnPlacementPointerDown(')&&entrySource.includes('function onSkierSpawnPlacementPointerMove(')&&entrySource.includes('pickSkierSpawnSurface(event)'), 'spawn placement must capture both surface position and facing direction');
 assert.ok(entrySource.includes('lastSkierSpawnPlacementPointerAt=performance.now();')&&entrySource.includes('if(performance.now()-lastSkierSpawnPlacementPointerAt<700)'), 'spawn placement clicks must bypass Inspector geometry selection / yellow pulse');
 assert.ok(entrySource.includes('function respawnSkierAtSpawnSlot(')&&entrySource.includes('respawnAtCustomSpawn('), 'numeric spawn slots must teleport the active skier to saved custom locations');
+assert.ok(entrySource.includes('function getSkierSpawnKeyFromEvent(event)')&&entrySource.includes('const spawnKey=getSkierSpawnKeyFromEvent(e)')&&entrySource.includes("const editingText=!!(eventTarget?.isContentEditable||/^(INPUT|TEXTAREA)$/.test(eventTarget?.tagName||''));"), 'number-row and numpad spawn shortcuts must work even when a Scene Editor select retains focus');
 pass('Scene Editor ten-slot skier spawn placement, direction, manifest persistence and numeric respawn controls are present');
 
 assert.ok(entrySource.includes('async function loadCanonicalTerrainFbx('), 'canonical Maya terrain FBX loader is missing');
@@ -97,13 +98,15 @@ pass('Slopes_Stage1 applies explicit white Slopes and dark-grey Angled materials
 assert.ok(entrySource.includes('function editorMaterialsEquivalent(a,b)')&&entrySource.includes('function editorGeometryForMaterial(object,materialFilter,ownedGeometries)'), 'material identity matching and group-filtered geometry selection are missing');
 assert.ok(entrySource.includes('filtered.clearGroups()')&&entrySource.includes('filtered.addGroup(group.start,group.count,0)'), 'material highlight must isolate matching FBX geometry groups');
 assert.ok(entrySource.includes('hit.face?.materialIndex')&&entrySource.includes('selectEditorNode(picked,picked.root,-1,hitMaterial)')&&entrySource.includes('pulseEditorSelection(picked.root,hitMaterial)'), 'viewport click must select and highlight all faces assigned to the clicked material');
-assert.ok(entrySource.includes('persistent:!!materialFilter')&&entrySource.includes('if(effect.persistent){'), 'the selected material faces must remain highlighted after the click');
+assert.ok(entrySource.includes('duration:1000')&&!entrySource.includes('persistent:!!materialFilter')&&!entrySource.includes('if(effect.persistent){'), 'all Scene Editor selection highlights must fade and be removed after one second');
 pass('viewport and material-list selection highlight all matching material groups across the selected asset');
 
 assert.ok(entrySource.includes('function editorTexturesEquivalent(a,b)')&&entrySource.includes('function mergeEquivalentEditorMaterials(root)'), 'conservative duplicate-material matching and FBX-wide material consolidation are missing');
 const parseModelSource=entrySource.slice(entrySource.indexOf('function parseSceneModel('),entrySource.indexOf('const loadGLTF'));
 assert.ok(parseModelSource.includes('mergeEquivalentEditorMaterials(root)')&&parseModelSource.includes('mergeEquivalentEditorMaterials(sceneRoot)'), 'FBX and GLB imports must consolidate equivalent material instances after material normalization');
 assert.ok(entrySource.includes('const byMaterial=new Map()')&&entrySource.includes('byMaterial.get(id)')&&entrySource.includes('target.bindings.push({owner:asset,mesh:object,material,index})'), 'Materials tab must group each shared material into one entry while retaining all mesh-slot bindings');
+assert.ok(entrySource.includes('editorMaterialTargets=collectEditorMaterials(editorSelectedAsset,editorSelectedAsset?.root)'), 'Materials inspector must enumerate material bindings across the full selected FBX asset, not only the selected mesh');
+assert.ok(entrySource.includes('const canonicalMaterials=new Map()')&&entrySource.includes("material.name=kind==='slopes'?'Slopes':'Angled'")&&entrySource.includes('gradeOptimizerStageOneSurfaceKind'), 'Stage 1 FBX assignments must consolidate into two shared Slopes / Angled material instances');
 assert.ok(entrySource.includes("materialCount.textContent=editorMaterialTargets.length+' MATERIALS'")&&html.includes('Unique Material · Whole Asset'), 'Materials tab must report unique asset-wide material count');
 assert.ok(entrySource.includes('const bindings=target.bindings?.length?target.bindings:[target]')&&entrySource.includes('bindings.forEach(binding=>'), 'assign and Make Unique operations must update every grouped material slot');
 pass('FBX-wide unique material list, shared slot bindings and multi-mesh material edits are present');
@@ -291,7 +294,7 @@ assert.ok(entrySource.includes('controls.enableZoom=enabled'), 'mobile overview 
 assert.ok(entrySource.includes('function bindMobileStick(')&&entrySource.includes('updateMobileMoveKeys(dx,dy)'), 'virtual movement and look sticks must be wired');
 assert.ok(entrySource.includes('mobileTouch.lookX*1.05*dt')&&entrySource.includes('mobileTouch.lookX*1.65*dt'), 'right mobile stick must drive drone and skier camera direction');
 assert.ok(read('skier-controller.v94.js').toString('utf8').includes('this.touchMode = false')&&read('skier-controller.v94.js').toString('utf8').includes('if(requestPointerLock&&!this.touchMode){'), 'skier Pointer Lock must be disabled on mobile and deferable during async preparation');
-assert.ok(read('drone-controller.v75.js').toString('utf8').includes('this.touchMode=false')&&read('drone-controller.v75.js').toString('utf8').includes('if(!this.touchMode){'), 'drone Pointer Lock must be disabled on mobile');
+assert.ok(read('drone-controller.v76.js').toString('utf8').includes('this.touchMode=false')&&read('drone-controller.v76.js').toString('utf8').includes('if(!this.touchMode){'), 'drone Pointer Lock must be disabled on mobile');
 pass('mobile-only 3-mode navigation, touch sticks, action buttons and Pointer Lock-free controls are present');
 
 
@@ -353,8 +356,8 @@ assert.ok(entrySource.includes('emissiveMap:map, emissiveIntensity:forestEmissiv
 assert.ok(entrySource.includes('emissive:0x4d875c, emissiveIntensity:forestEmissiveIntensity'), 'procedural 3D tree foliage must receive daylight-matched fill');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
-assert.ok(entrySource.includes('drone-controller.v75.js'), 'active app must use the current drone controller');
-const droneSource = read('drone-controller.v75.js').toString('utf8');
+assert.ok(entrySource.includes('drone-controller.v76.js'), 'active app must use the current drone controller');
+const droneSource = read('drone-controller.v76.js').toString('utf8');
 assert.ok(droneSource.includes('intersectObject(this.terrain,true)'), 'drone terrain raycast missing');
 assert.ok(droneSource.includes('minimumTerrainClearance=2.5'), 'drone terrain clearance missing');
 assert.ok(droneSource.includes('enforceTerrainClearance(nextPosition)'), 'drone movement collision guard missing');
@@ -418,7 +421,7 @@ assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(init
 
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push&&!airborne,airborne,tuck'), 'skier push, airborne and stance state missing from movement HUD payload');
-assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
+assert.ok(droneSource.includes('boostSpeed=200/3.6'), 'drone boost must cap at 200 km/h');
 assert.ok(droneSource.includes("this.keys.has('shift')?this.boostSpeed:this.speed"), 'Shift must activate drone boost');
 assert.ok(droneSource.includes("(this.keys.has('control')?1:0)"), 'Ctrl must control drone descent');
 assert.ok(entrySource.includes("tuck?'Скоростная стойка':'Обычная езда'"), 'ordinary skiing / speed tuck status labels missing from HUD');
@@ -721,7 +724,7 @@ assert.match(html, /max-height:calc\(100dvh - 84px\)/, 'viewport-aware HUD sizin
 assert.match(html, /КАК НАЧАТЬ/, 'beginner skier tutorial missing');
 assert.match(html, /КАК УПРАВЛЯТЬ/, 'beginner drone tutorial missing');
 assert.ok(!html.includes('V / TAB') && !html.includes('<kbd>TAB</kbd>'), 'Tab shortcut must be removed from the mode switch UI');
-assert.ok(html.includes('SHIFT</kbd> — ускорение до 120 км/ч'), 'drone tutorial must document Shift boost to 120 km/h');
+assert.ok(html.includes('SHIFT</kbd> — ускорение до 200 км/ч'), 'drone tutorial must document Shift boost to 200 km/h');
 assert.ok(html.includes('<kbd>SPACE</kbd><span>/</span><kbd>CTRL</kbd>'), 'drone vertical controls must use Space and Ctrl');
 assert.ok(html.includes('id="groundState">Обычная езда</span>'), 'skier HUD must show normal skiing state');
 assert.ok(html.includes('.mode-hud .tutorial-step strong{font-size:11px!important'), 'tutorial headings must be slightly larger');
