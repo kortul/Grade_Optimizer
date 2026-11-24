@@ -894,6 +894,7 @@ assert.ok(webgpuAtmosphereSource.includes('Loop(marchSteps') && webgpuAtmosphere
 assert.ok(webgpuAtmosphereSource.includes('depthAware') || webgpuAtmosphereSource.includes('function buildFogPipeline()'), 'depth-aware volumetric upsampling pipeline is missing');
 assert.ok(webgpuAtmosphereSource.includes('cameraWorld.value.copy(camera.matrixWorld)') && webgpuAtmosphereSource.includes('fogPipeline.updateCamera()'), 'volumetric reconstruction must track camera matrices each frame');
 assert.ok(webgpuAtmosphereSource.includes('lowResFog.setResolutionScale(value)') && webgpuAtmosphereSource.includes('performance: { pixelRatio: 1.0'), 'atmosphere quality profiles must control fog resolution and pixel ratio');
+assert.ok(webgpuAtmosphereSource.indexOf('camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);') < webgpuAtmosphereSource.indexOf('fogPipeline = buildFogPipeline()'), 'atmosphere camera aspect must be initialized before the first pipeline render');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
 console.log('\nAll project checks passed.');

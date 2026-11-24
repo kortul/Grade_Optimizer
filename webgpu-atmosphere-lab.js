@@ -297,6 +297,8 @@ async function start() {
   renderer.toneMappingExposure = 0.82;
   stage.appendChild(renderer.domElement);
   await renderer.init();
+  camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
+  camera.updateProjectionMatrix();
   const isWebGPU = renderer.backend && renderer.backend.isWebGPUBackend === true;
   statusText.textContent = isWebGPU ? 'WebGPU backend активен · TSL + RenderPipeline' : 'WebGL 2 fallback активен · тот же TSL pipeline';
   statusDot.classList.add('ok');
