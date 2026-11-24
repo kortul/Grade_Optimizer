@@ -2780,14 +2780,15 @@ function restoreCadBridgeWorkingCoordinates(root,mayaExport,assetLabel='Maya ass
 
   const geometries=new Set();
   let meshCount=0,vertexCount=0;
-  const transformAttribute=attribute=>{
+  const transformAttribute=(attribute,{relative=false}={})=>{
     if(!attribute)return;
     for(let index=0;index<attribute.count;index++){
+      const x=attribute.getX(index),y=attribute.getY(index),z=attribute.getZ(index);
       attribute.setXYZ(
         index,
-        (attribute.getX(index)-offset[0])*scale,
-        (attribute.getY(index)-offset[1])*scale,
-        (attribute.getZ(index)-offset[2])*scale
+        relative?x*scale:(x-offset[0])*scale,
+        relative?y*scale:(y-offset[1])*scale,
+        relative?z*scale:(z-offset[2])*scale
       );
     }
     attribute.needsUpdate=true;
@@ -2802,7 +2803,7 @@ function restoreCadBridgeWorkingCoordinates(root,mayaExport,assetLabel='Maya ass
     geometries.add(geometry);
     transformAttribute(position);
     for(const morphPosition of geometry.morphAttributes?.position||[]){
-      transformAttribute(morphPosition);
+      transformAttribute(morphPosition,{relative:geometry.morphTargetsRelative===true});
     }
     geometry.boundingBox=null;
     geometry.boundingSphere=null;
@@ -2864,7 +2865,7 @@ async function loadCanonicalTerrainFbx(isCurrentLoad=()=>true){
   if(bounds.isEmpty()||!Number.isFinite(size.x)||!Number.isFinite(size.z)||size.x<=0||size.z<=0){
     throw new Error('FBX terrainShape не имеет корректных world bounds.');
   }
-  return {root,terrainMesh,metersPerUnit,linearUnit,bounds,size,component};
+  return {root,terrainMesh,metersPerUnit,linearUnit,bounds,size,component,cadBridgeRestoration};
 }
 
 function adaptSceneScaleToBounds(bounds){
