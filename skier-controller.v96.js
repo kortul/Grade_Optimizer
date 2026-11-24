@@ -1397,10 +1397,13 @@ export class SkierController {
     const spawnStarted=performance.now();
     let spawnFound=false;
     if(spawnHint?.position&&!spawnHint.startAtTop){
-      // Scene Editor spawn points are exact world-space locations on the
-      // currently selected skier surface; do not silently slide them nearby.
-      const hit=this._groundAt(spawnHint.position.x,spawnHint.position.z);
-      if(hit&&this._isUsableSkiStart(hit,6)){
+      // Drone handoff keeps its validated nearby search; authored Scene Editor
+      // positions are exact world-space points and must not be silently moved.
+      const hit=spawnHint.fromDrone
+        ?this._findGroundNear(spawnHint.position.x,spawnHint.position.z)
+        :this._groundAt(spawnHint.position.x,spawnHint.position.z);
+      const minClearance=spawnHint.fromDrone?12:6;
+      if(hit&&this._isUsableSkiStart(hit,minClearance)){
         const center=this.bounds.getCenter(new THREE.Vector3());
         this._setSpawn(hit,center);
         if(Number.isFinite(spawnHint.headingYaw)){
@@ -1408,7 +1411,9 @@ export class SkierController {
           this._syncCamera(0);
           this._updateSkiRig();
         }
-        this.lastSpawnInfo={...this.lastSpawnInfo,spawnType:'scene-editor',slot:String(spawnHint.slot||'')};
+        if(!spawnHint.fromDrone){
+          this.lastSpawnInfo={...this.lastSpawnInfo,spawnType:'scene-editor',slot:String(spawnHint.slot||'')};
+        }
         spawnFound=true;
       }
     }
