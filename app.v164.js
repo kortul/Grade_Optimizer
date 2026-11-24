@@ -6607,13 +6607,16 @@ async function setSceneMode(mode){
 
     if(!state.terrain)state.terrain=terrain;
     applySkierPresentation();
-    const multiplayerSlot=Number.isInteger(multiplayerClient.slot)?multiplayerClient.slot:0;
-    const spawnHint=dronePose?{
-      position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true,multiplayerSlot
-    }:{multiplayerSlot};
     skierModePreparing=true;
     let skierStarted=false;
     try{
+      // Wait briefly for the server-assigned slot. This avoids spawning several
+      // visitors into slot 0 while their WebSocket welcome packet is in flight.
+      const receivedSlot=dronePose?null:await multiplayerClient.waitForSlot(1800);
+      const multiplayerSlot=Number.isInteger(receivedSlot)?receivedSlot:multiplayerClient.getSpawnSlot();
+      const spawnHint=dronePose?{
+        position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true,multiplayerSlot
+      }:{multiplayerSlot};
       // Keep the current scene interactive while the terrain index is prepared.
       // Mouse look is captured by the existing canvas click handler once ready.
       skierStarted=await skierController.start(terrain,spawnHint,{requestPointerLock:false});
@@ -6724,7 +6727,7 @@ window.__GRADE_OPTIMIZER_MODE_API=Object.freeze({
   toggle(){const current=state.mode;return this.set(current==='drone'?'skier':current==='skier'?'drone':'skier');},
   respawnTop(){return respawnSkierAtStageOneSummit();},
   respawnSpawn(slot){return respawnSkierAtSpawnSlot(String(slot));},
-  diagnostics(){return {mode:state.mode,terrain:!!state.terrain,baseTerrain:!!state.baseTerrain,treeAreaCount:state.treeAreas.length,treeAreas:normalizeTreeAreas(state.treeAreas),treeAreaDrawing,skierSpawns:normalizeSkierSpawnMap(state.skierSpawns),skierSpawnDrawing:skierSpawnPlacementStep,root:!!state.root,skierTerrainName:skierController.terrain?.name||null,skierSpawn:skierController.lastSpawnInfo,startError:skierController.lastStartError,start:skierController.lastStartDiagnostics,skierModePreparing,controlsEnabled:controls.enabled,sceneLoadingVisible:sceneLoadingEl.getClientRects().length>0,terrainPerformance:skierController.getTerrainPerformanceDiagnostics(),runtimePerformance:{...runtimePerformance}};}
+  diagnostics(){return {mode:state.mode,terrain:!!state.terrain,baseTerrain:!!state.baseTerrain,treeAreaCount:state.treeAreas.length,treeAreas:normalizeTreeAreas(state.treeAreas),treeAreaDrawing,skierSpawns:normalizeSkierSpawnMap(state.skierSpawns),skierSpawnDrawing:skierSpawnPlacementStep,root:!!state.root,skierTerrainName:skierController.terrain?.name||null,skierSpawn:skierController.lastSpawnInfo,startError:skierController.lastStartError,start:skierController.lastStartDiagnostics,skierModePreparing,controlsEnabled:controls.enabled,sceneLoadingVisible:sceneLoadingEl.getClientRects().length>0,terrainPerformance:skierController.getTerrainPerformanceDiagnostics(),skierInput:skierController.diagnostics(),multiplayer:multiplayerClient.diagnostics(),runtimePerformance:{...runtimePerformance}};}
 });
 overviewModeButton.addEventListener('click',()=>{
   if(state.optimizeMode)setOptimizerOpen(false);
