@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-24T10:03:43Z",
+  "updatedAt": "2026-11-24T10:14:30Z",
   "assets": [
     {
       "id": "slopes_stage1",
@@ -372,7 +372,7 @@
         }
       ],
       "mayaExport": {
-        "pluginVersion": "0.8.7",
+        "pluginVersion": "0.8.8",
         "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
         "mayaVersion": "2026",
         "linearUnit": "cm",
@@ -590,8 +590,8 @@
         "stageOneHierarchyNormalizedAtExport": false,
         "stageOneTransformPolicy": "preserve Maya hierarchy transforms; bake world-space vertices",
         "cadBridge": {
-          "inverseApplied": false,
-          "workingTransformPreserved": true,
+          "inverseApplied": true,
+          "workingTransformPreserved": false,
           "workingGroups": [
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
@@ -793,7 +793,7 @@
             }
           ]
         },
-        "modelSizeBytes": 2763200,
+        "modelSizeBytes": 2328624,
         "fbxMaterialConversions": [
           {
             "sourceMaterial": "openPBR_shader1",
