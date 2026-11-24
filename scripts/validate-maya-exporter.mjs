@@ -3,13 +3,13 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 
 const read = path => readFileSync(path, 'utf8');
 const maya = read('maya/grade_optimizer_exporter.py');
-const app = read('app.v160.js');
+const app = read('app.v163.js');
 const html = read('index.html');
 const terrain = JSON.parse(read('assets/real-terrain.json'));
 const clientScene = JSON.parse(read('clients/alpine-resort/scene.json'));
 
 assert.ok(maya.includes('VERSION = "0.8.8"'), 'Maya exporter must be 0.8.8');
-assert.ok(html.includes('src="./app.v160.js"'), 'index.html must activate app.v160.js');
+assert.ok(html.includes('src="./app.v163.js"'), 'index.html must activate app.v163.js');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
 assert.ok(app.includes('gradeOptimizerTerrainTexture') && app.includes('low-frequency-albedo-no-bump'), 'terrain snow must not use the old high-frequency bump detail');
 
