@@ -1836,7 +1836,7 @@ def show():
         columnWidth2=(435, 95)
     )
     cmds.text(
-        label="ОБЪЕКТЫ ИЗ КЛИЕНТСКОЙ СЦЕНЫ",
+        label="ОБЪЕКТЫ ПРОЕКТА + БАЗОВЫЙ РЕЛЬЕФ",
         align="left", font="smallBoldLabelFont"
     )
     cmds.button(
