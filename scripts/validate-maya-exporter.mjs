@@ -20,7 +20,7 @@ assert.ok(maya.includes('float(matrix[12]) / scale + offset[0]') &&
 assert.ok(maya.includes('mesh_fn.getPoints(om2.MSpace.kWorld)') &&
           maya.includes('mesh_fn.setPoints(points_world, om2.MSpace.kObject)'),
           'temporary FBX copies must bake world-space points into identity transforms');
-assert.ok(maya.includes('stage_one=True') && maya.includes('node.rsplit("|", 1)[-1].lower() == "tosketchfab"'),
+assert.ok(maya.includes('if stage_one:') && maya.includes('node.rsplit("|", 1)[-1].lower() == "tosketchfab"'),
           'Stage1 export must normalize CAD/ToSketchfab scale hierarchy before baking');
 assert.ok(maya.includes('target_entry["mayaExport"]["geometryBakedToMayaWorld"] = True') &&
           maya.includes('target_entry["mayaExport"]["stageOneHierarchyNormalizedAtExport"] = bool(stage_one_export)'),
