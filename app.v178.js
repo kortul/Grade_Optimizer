@@ -876,7 +876,7 @@ function setWeatherPanelOpen(open) {
 }
 weatherToggle.addEventListener('click', () => setWeatherPanelOpen(!document.getElementById('app').classList.contains('weather-open')));
 weatherClose.addEventListener('click', () => setWeatherPanelOpen(false));
-bindSlopeAnalysisLayerControls();
+
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
     if (document.getElementById('app').classList.contains('weather-open')) setWeatherPanelOpen(false);
@@ -3719,6 +3719,7 @@ document.getElementById('reset').addEventListener('click',()=>{
 
 
 const appRoot = document.getElementById('app');
+bindSlopeAnalysisLayerControls();
 const optimizerToggleButton = document.getElementById('optimizerToggle');
 const overviewModeButton = document.getElementById('overviewMode');
 async function setOptimizerOpen(open) {
