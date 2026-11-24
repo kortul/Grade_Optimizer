@@ -25,7 +25,9 @@ export class PublicResort extends DurableObject {
     if(requestedClientId){
       for(const entry of previous){
         if(entry.player.clientId!==requestedClientId)continue;
-        this.announceLeave(entry.socket);
+        // Reconnects reuse the client ID; do not broadcast a leave that would
+        // make every viewer destroy and recreate this skier.
+        this.announceLeave(entry.socket,{broadcast:false});
         try{entry.socket.close(4001,'Session replaced by reconnect');}catch{}
       }
     }
@@ -41,7 +43,7 @@ export class PublicResort extends DurableObject {
     let slot=0;while(occupiedSlots.has(slot)&&slot<MAX_PLAYERS)slot++;
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({
-      id:crypto.randomUUID(),clientId:requestedClientId,slot,name:'',state:null,lastSeen:Date.now(),
+      id:requestedClientId||crypto.randomUUID(),clientId:requestedClientId,slot,name:'',state:null,lastSeen:Date.now(),
       rateStart:Date.now(),rateCount:0,left:false
     });
     return new Response(null,{status:101,webSocket:client});
@@ -119,10 +121,11 @@ export class PublicResort extends DurableObject {
 
   webSocketClose(socket){this.announceLeave(socket);}
   webSocketError(socket){this.announceLeave(socket);}
-  announceLeave(socket){
+  announceLeave(socket,{broadcast=true}={}){
     let player;try{player=socket.deserializeAttachment();}catch{player=null;}
     if(!player||player.left||!player.id)return;
     player.left=true;try{socket.serializeAttachment(player);}catch{}
+    if(!broadcast)return;
     const packet={t:'leave',id:player.id};
     const now=Date.now();
     for(const otherSocket of this.ctx.getWebSockets()){
