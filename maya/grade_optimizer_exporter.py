@@ -1229,6 +1229,12 @@ def replace_canonical_terrain(*_):
                 continue
             working_group = find_working_group(shape)
             bridge_data = get_bridge_data(working_group) if working_group else None
+            if working_group and not bridge_data:
+                raise RuntimeError(
+                    "На %s отсутствуют bridgeOriginalOffset / bridgeOriginalScale. "
+                    "Не экспортирую terrain из рабочей группы без исходного CAD transform."
+                    % working_group.rsplit("|", 1)[-1]
+                )
             if bridge_data:
                 offset, bridge_scale = bridge_data
                 key = (
@@ -1330,7 +1336,7 @@ def replace_canonical_terrain(*_):
             set_option("FBXExportLights -v false;")
 
             material_overrides = prepare_fbx_compatible_materials(baked_components)
-            path = safe_path(temporary_model_path).replace('"', '\\\\\"')
+            path = safe_path(temporary_model_path).replace('"', '\\\\"')
             try:
                 cmds.select(baked_nodes, replace=True)
                 selected_for_fbx = cmds.ls(selection=True, long=True) or []
@@ -1434,8 +1440,14 @@ def replace_canonical_terrain(*_):
                     except Exception:
                         pass
 
-            git_result = _git_changes_for_paths(repo, [model_path, manifest_path])
-            git_report = _format_git_export_report(git_info, git_result)
+            try:
+                git_result = _git_changes_for_paths(repo, [model_path, manifest_path])
+                git_report = _format_git_export_report(git_info, git_result)
+            except Exception as git_error:
+                git_report = (
+                    "Файлы уже заменены, но Git не смог проверить изменения: %s"
+                    % git_error
+                )
             message = (
                 "Основной рельеф заменён.\n\n"
                 + model_path
