@@ -15,7 +15,7 @@ There is one fixed Durable Object named `grade-optimizer-public-resort`. There a
    npx wrangler deploy
    ```
 
-   The Wrangler configuration applies Durable Object code updates immediately. Deploying while players are connected closes their WebSockets; browsers reconnect automatically.
+   The Wrangler configuration applies Durable Object code updates immediately. Deploying while players are connected closes their WebSockets; browsers reconnect automatically. Deploy again after changes to `server/src/worker.js` or `server/src/protocol.v2.js`; publishing GitHub Pages does not publish the Worker.
 
 3. Wrangler prints an HTTPS address similar to `https://grade-optimizer-multiplayer.<your-subdomain>.workers.dev`.
 4. Change `https://` to `wss://`, append `/ws`, and paste it into `MULTIPLAYER_SERVER_URL` in the repository-root file `multiplayer-config.v1.js`.
@@ -37,7 +37,7 @@ Localhost is allowed by the Worker Origin check.
 - Skier: ski-rig transform, velocity and 12 articulated joint transforms.
 - Drone: drone/camera transform and velocity.
 - Overview: each remote visitor is shown as a camera marker with a view-direction ray and name.
-- Scene flags: a double-click on visible scene geometry in Overview creates an immediate local flag, even while the relay is reconnecting. Each page session can keep up to ten flags numbered 1–10; number labels update after a removal. The top-bar `ФЛАЖКИ · N/10` control clears all flags owned by that page session. The server broadcasts an authoritative marker snapshot so removals and renumbering appear in every browser. A stale local cache is never replayed after reconnect. Flags clear when their owner page exits.
+- Scene flags: a double-click on visible scene geometry in Overview creates an immediate local flag, even while the relay is reconnecting. Each page session can keep up to ten flags numbered 1–10; number labels update after a removal. Each flag shows only its sequential number (1–10) in a badge above the pole; there is no top-bar flag counter. The server broadcasts an authoritative marker snapshot so removals and renumbering appear in every browser. A stale local cache is never replayed after reconnect. Flags clear when their owner page exits, and orphaned flags from sessions that are no longer connected are pruned on the next join.
 - Shared ruler: Overview measurements (one picked endpoint or a completed two-point line) are broadcast to all visitors, included in the welcome snapshot, and cleared when the owner disables the ruler or disconnects. Unacknowledged placements and clears retry after reconnect, with server revisions preventing an old measurement from replacing a newer action.
 - Remote player nameplates are displayed at double the previous size. Each browser keeps its own camera and runs its own physics. Remote transforms are eased locally between 30 Hz state updates. Client and server drop stale state frames when the WebSocket send buffer grows, preventing a backlog of old positions; the heartbeat no longer sends redundant presence broadcasts.
 
