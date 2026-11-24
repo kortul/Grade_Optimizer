@@ -625,6 +625,8 @@ assert.ok(entrySource.includes('function classifySlopeAnalysisRoute(') && entryS
 assert.ok(entrySource.includes('indexedDB.open(\'grade-optimizer-slope-analysis\',1)') && entrySource.includes('curve.sourceDigest'), 'unchanged curve analysis must be cached persistently by Maya geometry digest');
 assert.ok(entrySource.includes('await buildSlopeAnalysisFromManifest(manifest)') && entrySource.includes('manifest?.slopeCurves'), 'raw Maya centerlines must be analyzed when the project scene is loaded');
 assert.ok(entrySource.includes('new THREE.LineSegments') && entrySource.includes('new CSS2DObject'), 'slope overlays must use line segments and CSS2D labels rather than meshes');
+assert.ok(html.includes('.slope-analysis-angle{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--slope-analysis-color);') && html.includes('text-shadow:none'), 'slope angle labels must be bare difficulty-coloured degree text without background, border or shadow');
+assert.ok(entrySource.includes("Number(section.angleDegrees).toFixed(1)+'°',difficulty,'angle'"), 'each 20 m angle label must use its own section angle and difficulty colour');
 assert.ok(entrySource.includes('slopeAnalysis:state.slopeAnalysisData||undefined') && entrySource.includes('slopeCurves:state.slopeCurvesData||undefined'), 'derived analysis and raw Maya centerlines must survive client manifest autosave');
 assert.ok(html.includes('id="slopeLayersToggle"') && html.includes('id="slopeLayer_angles"') && html.includes('id="slopeLayer_difficulty"') && html.includes('id="slopeLayer_names"'), 'three slope-analysis layer controls are missing');
 
