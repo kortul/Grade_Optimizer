@@ -1,4 +1,3 @@
-// Paste the wss:// URL printed by "npx wrangler deploy" here.
-// Example: wss://grade-optimizer-multiplayer.<account-subdomain>.workers.dev/ws
-// Keep empty until the free relay is deployed; the viewer still works offline.
-export const MULTIPLAYER_SERVER_URL = '';
+// Public two-person resort relay deployed on Cloudflare Workers.
+// The worker is shared by all visitors to the GitHub Pages site.
+export const MULTIPLAYER_SERVER_URL = 'wss://grade-optimizer-multiplayer.gradeoptimizer.workers.dev/ws';
