@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.4"
+VERSION = "0.8.5"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1322,8 +1322,9 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
             )
         baked_root = copied_roots[0]
 
-    _apply_inverse_bridge_to_root_matrix(baked_root, bridge_context)
-
+    # Keep the CAD Bridge working-world transform exactly as authored.
+    # It is the common coordinate frame shared by A1.gltf and the browser scene.
+    # Inverting bridgeOriginalScale shrinks the ~4.5 km terrain to ~4.5 m.
     transform_nodes = _all_transform_nodes(baked_root)
     if stage_one:
         for node in transform_nodes:
@@ -1534,7 +1535,7 @@ def replace_canonical_terrain(*_):
         minimum_safe_size = max(16 * 1024, int(existing_size * 0.01))
         source_root_names = [root.rsplit("|", 1)[-1] for root in export_roots]
         bridge_note = (
-            "CAD Bridge inverse: будет снят с временной копии; исходные объекты не меняются"
+            "CAD Bridge world transform сохраняется на временной копии; исходные объекты не меняются"
         )
         choice = cmds.confirmDialog(
             title="Grade Optimizer · Replace Canonical Terrain",
@@ -1660,7 +1661,8 @@ def replace_canonical_terrain(*_):
                     selection_only=True, selection_roots=export_roots
                 ),
                 "cadBridge": {
-                    "inverseApplied": bool(bridge_summaries),
+                    "inverseApplied": False,
+                    "workingTransformPreserved": bool(bridge_summaries),
                     "workingGroups": bridge_summaries,
                     "geometryBakedToMayaWorld": True
                 },
@@ -1672,7 +1674,17 @@ def replace_canonical_terrain(*_):
             updated_manifest["file"] = "assets/real-terrain.fbx"
             updated_manifest["category"] = "terrain"
             updated_manifest["activeTerrain"] = True
-            updated_manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+            terrain_width_m = (world_bounds[3] - world_bounds[0]) * meters_per_unit
+            terrain_depth_m = (world_bounds[5] - world_bounds[2]) * meters_per_unit
+            terrain_diagonal_m = (terrain_width_m ** 2 + terrain_depth_m ** 2) ** 0.5
+            if terrain_diagonal_m < 1000.0:
+                raise RuntimeError(
+                    "Размер экспортируемого основного рельефа подозрительно мал: "
+                    "%.1f × %.1f m (диагональ %.1f m). Ожидается крупный CAD terrain. "
+                    "Проверь CAD Bridge transforms; существующий FBX не заменён."
+                    % (terrain_width_m, terrain_depth_m, terrain_diagonal_m)
+                )
+            updated_manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z
             with open(temporary_manifest_path, "w", encoding="utf-8") as stream:
                 json.dump(updated_manifest, stream, ensure_ascii=False, indent=2)
                 stream.write("\n")
@@ -1999,7 +2011,8 @@ def _export_scene(replace_asset_id=None):
             if stage_one_export:
                 target_entry["mayaExport"]["stageOneTransformPolicy"] = "preserve Maya hierarchy transforms; bake world-space vertices"
             target_entry["mayaExport"]["cadBridge"] = {
-                "inverseApplied": bool(bridge_summaries),
+                "inverseApplied": False,
+                "workingTransformPreserved": bool(bridge_summaries),
                 "workingGroups": bridge_summaries
             }
         temporary_model_path = export_info["temporary_model_path"]
