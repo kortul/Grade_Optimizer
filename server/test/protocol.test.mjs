@@ -36,25 +36,24 @@ test('shared overview flags validate UUIDs, positions, owner identity and per-pl
 test('each participant keeps only their three newest shared flags',()=>{
   const ownerA='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
   const ownerB='54395181-3418-4593-af6c-1bd9f4a2173c';
-  const make=(suffix,owner,name)=>normalizeMarker({
-    id:'550e8400-e29b-41d4-a716-'+suffix,
-    p:[Number(suffix.slice(-1)),0,0]
+  const makeId=number=>'550e8400-e29b-41d4-a716-'+String(number).padStart(12,'0');
+  const make=(number,owner,name)=>normalizeMarker({
+    id:makeId(number),
+    p:[number,0,0]
   },name,owner);
   let markers=[];
-  for(const suffix of ['000001','000002','000003','000004']){
-    const result=appendSharedMarker(markers,make(suffix,ownerA,'Pavel'));
+  for(const number of [1,2,3,4]){
+    const result=appendSharedMarker(markers,make(number,ownerA,'Pavel'));
     markers=result.markers;
-    if(suffix==='000004')assert.deepEqual(result.removedMarkers.map(item=>item.id),['550e8400-e29b-41d4-a716-000001']);
+    if(number===4)assert.deepEqual(result.removedMarkers.map(item=>item.id),[makeId(1)]);
   }
   assert.deepEqual(markers.filter(item=>item.ownerId===ownerA).map(item=>item.id),[
-    '550e8400-e29b-41d4-a716-000002',
-    '550e8400-e29b-41d4-a716-000003',
-    '550e8400-e29b-41d4-a716-000004'
+    makeId(2),makeId(3),makeId(4)
   ]);
-  for(const suffix of ['000005','000006','000007','000008']){
-    const result=appendSharedMarker(markers,make(suffix,ownerB,'Skier B'));
+  for(const number of [5,6,7,8]){
+    const result=appendSharedMarker(markers,make(number,ownerB,'Skier B'));
     markers=result.markers;
-    if(suffix==='000008')assert.deepEqual(result.removedMarkers.map(item=>item.id),['550e8400-e29b-41d4-a716-000005']);
+    if(number===8)assert.deepEqual(result.removedMarkers.map(item=>item.id),[makeId(5)]);
   }
   assert.equal(markers.filter(item=>item.ownerId===ownerA).length,3);
   assert.equal(markers.filter(item=>item.ownerId===ownerB).length,3);
@@ -62,12 +61,13 @@ test('each participant keeps only their three newest shared flags',()=>{
 
 test('legacy flags are migrated and counted against the three-flag limit',()=>{
   const ownerId='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
-  const legacy=['000001','000002','000003'].map((suffix,index)=>({
-    id:'550e8400-e29b-41d4-a716-'+suffix,owner:'Pavel',p:[index,0,0],createdAt:index+1
+  const makeId=number=>'550e8400-e29b-41d4-a716-'+String(number).padStart(12,'0');
+  const legacy=[1,2,3].map((number,index)=>({
+    id:makeId(number),owner:'Pavel',p:[index,0,0],createdAt:index+1
   }));
-  const next=normalizeMarker({id:'550e8400-e29b-41d4-a716-000004',p:[4,0,0]},'Pavel',ownerId);
+  const next=normalizeMarker({id:makeId(4),p:[4,0,0]},'Pavel',ownerId);
   const result=appendSharedMarker(legacy,next);
-  assert.deepEqual(result.removedMarkers.map(item=>item.id),['550e8400-e29b-41d4-a716-000001']);
+  assert.deepEqual(result.removedMarkers.map(item=>item.id),[makeId(1)]);
   assert.equal(result.markers.length,3);
   assert.ok(result.markers.every(item=>item.ownerId===ownerId));
 });
