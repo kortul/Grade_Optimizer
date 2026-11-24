@@ -29,6 +29,6 @@ jobs:
       - name: Validate Maya exporter integration
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
-        run: node --input-type=module --check < app.v160.js
+        run: node --input-type=module --check < app.v161.js
       - name: Validate project
         run: node scripts/validate-project.mjs
