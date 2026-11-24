@@ -485,10 +485,10 @@ assert.ok(skierSource.includes('this.position.y+this.eyeHeight+this.airborneHeig
 
 assert.ok(skierSource.includes('this.massKg = 75;'), 'skier reference mass must be 75 kg');
 assert.ok(skierSource.includes('this.maxEdgeG = 1.25;'), 'turn edge-force ceiling missing');
-assert.ok(skierSource.includes('this.pushImpulseNs = 60;') && skierSource.includes('this.pushInterval = 0.42'), 'pole push must use a mass-scaled impulse');
+assert.ok(skierSource.includes('this.pushImpulseNs = 90;') && skierSource.includes('this.pushInterval = 0.42'), 'pole push must use a mass-scaled impulse');
 assert.ok(skierSource.includes("if (e.code === 'Space')"), 'Space jump key handler missing');
 assert.ok(skierSource.includes('if (!e.repeat && this.inputEnabled) this._tryManualJump();'), 'Space must trigger once per press and respect transition lock');
-assert.ok(skierSource.includes('this.manualJumpImpulseNs = 195;'), 'manual jump impulse missing');
+assert.ok(skierSource.includes('this.manualJumpImpulseNs = 255;'), 'manual jump impulse missing');
 assert.ok(skierSource.includes('this.airborneVelocityY=this.velocity.y+this.manualJumpImpulseNs/this.massKg;'), 'take-off speed must be impulse divided by mass');
 assert.ok(skierSource.includes('this.airborneWorldY=contact.point.y+0.055;'), 'jump must start at ski contact height');
 assert.ok(skierSource.includes('this.velocity.y=0;'), 'launch must transfer slope-tangent vertical speed into the flight state');
@@ -509,9 +509,9 @@ const maxLateralForceN=bodyWeightN*1.25;
 const combinedTurnLoadN=Math.hypot(bodyWeightN,maxLateralForceN);
 assert.ok(combinedTurnLoadN>1150&&combinedTurnLoadN<1200, 'maximum modeled ski reaction must remain physically bounded');
 assert.ok(Math.abs((combinedTurnLoadN*0.6)/(combinedTurnLoadN*0.4)-1.5)<1e-9, 'outside ski must carry 1.5 times the inside ski load at the modeled limit');
-const jumpTakeoffSpeed=195/referenceMassKg;
+const jumpTakeoffSpeed=255/referenceMassKg;
 const jumpApexM=jumpTakeoffSpeed*jumpTakeoffSpeed/(2*9.81);
-assert.ok(jumpApexM>0.32&&jumpApexM<0.37, 'manual jump should be a modest ~0.34 m hop');
+assert.ok(jumpApexM>0.57&&jumpApexM<0.61, 'manual jump should be a modest ~0.59 m hop');
 const skierHudSource = html.slice(html.indexOf('<div id="skierHud"'), html.indexOf('<div id="droneHud"'));
 assert.ok(skierHudSource.includes('<kbd>SHIFT</kbd> — толчок палками. <kbd>SPACE</kbd> — прыжок.'), 'skier tutorial must document separate push and jump keys');
 assert.ok(skierHudSource.includes('<kbd>SPACE</kbd></div><div><strong>Прыжок</strong>'), 'skier control grid must show Space jump');
@@ -520,7 +520,7 @@ assert.ok(skierSource.includes('const yaw=this.headingYaw;'), 'pole strokes must
 assert.ok(skierSource.includes('if(!locked)this.keys.clear();'), 'lost pointer lock must clear stuck movement keys');
 assert.ok(skierSource.includes('const grounded=!!nextHit&&!airborne;'), 'HUD grounded state must be false while airborne');
 assert.ok(skierSource.includes('grounded: this.active&&this.airborneWorldY===null'), 'friction control must preserve airborne HUD state');
-assert.ok(skierSource.includes('this.terrain.traverse(object=>{\n      if(object.isMesh&&object.geometry?.attributes?.position)meshes.push(object);'), 'skier spawn search must support grouped Terrain meshes');
+assert.ok(skierSource.includes('this.terrain.traverse(object=>{\n      if(!object.isMesh||!object.geometry?.attributes?.position)return;\n      if(this._isTerrainCollisionMesh(object))meshes.push(object);'), 'skier spawn search must support grouped visible Terrain meshes and skip hidden collision geometry');
 assert.ok(skierSource.includes('const sampleStride=Math.max(1,Math.ceil(totalVertices/3500));'), 'grouped terrain spawn sampling must have a bounded vertex workload');
 assert.ok(skierSource.includes('setSkiModel(source)') && skierSource.includes('Prepare and validate the next model completely before removing the'), 'custom ski replacement must validate before replacing the existing pair');
 pass('detailed skier equipment, articulated limbs, safe input release, pole physics, terrain-group spawn and transactional ski import are present');
