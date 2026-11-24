@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.6"
+VERSION = "0.8.7"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1778,59 +1778,6 @@ def replace_selected_scene_asset(*_):
     _export_scene(replace_asset_id=asset.get("id"))
 
 
-def _stage_one_branch_selection(repo, components):
-    """
-    Resolve a Stage 1 replacement to the actual Slopes_Stage1 DAG branch.
-
-    The Maya selection can contain a broad working-scene parent or several
-    individually selected meshes. The Git target is authoritative: Stage 1
-    must never serialize siblings from Stage2_40M / Slopes_Stage2.
-    """
-    branch_roots = []
-    for component in components:
-        dag_path = str(component.get("dagPath") or "")
-        parts = [part for part in dag_path.split("|") if part]
-        # Prefer the exact Stage 1 geometry group. The enclosing Stage1_40m*
-        # group is a fallback for older scenes without Slopes_Stage1.
-        candidates = [
-            index for index, part in enumerate(parts)
-            if part.lower() == "slopes_stage1"
-        ]
-        if not candidates:
-            candidates = [
-                index for index, part in enumerate(parts)
-                if re.match(r"^stage1[_ -]?40m", part, re.IGNORECASE)
-            ]
-        if not candidates:
-            continue
-        root = "|" + "|".join(parts[:candidates[-1] + 1])
-        if root not in branch_roots:
-            branch_roots.append(root)
-
-    if not branch_roots:
-        raise RuntimeError(
-            "Для замены Slopes_Stage1 не найдена отдельная ветка Slopes_Stage1 "
-            "или Stage1_40m* в DAG-путях выделенной геометрии. "
-            "Экспорт остановлен: нельзя угадывать Stage 1 по именам отдельных mesh."
-        )
-
-    # Prune nested roots; selecting Slopes_Stage1 already includes its children.
-    minimal_roots = []
-    for root in sorted(branch_roots, key=lambda value: (value.count("|"), value)):
-        if any(root == parent or root.startswith(parent.rstrip("|") + "|")
-               for parent in minimal_roots):
-            continue
-        minimal_roots.append(root)
-
-    stage_one_components = collect_meshes(
-        selection_only=True, selection_roots=minimal_roots
-    )
-    if not stage_one_components:
-        raise RuntimeError("В отдельной ветке Slopes_Stage1 не найдено polygon mesh.")
-
-    return minimal_roots, stage_one_components
-
-
 def _export_scene(replace_asset_id=None):
     repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
     remember_export_settings()
@@ -1897,23 +1844,15 @@ def _export_scene(replace_asset_id=None):
             return
         target_phase = str(target_matches[0].get("phase") or "")
 
-    # A Stage 1 Git target selects its own Maya branch by DAG ancestry. This
-    # prevents a broad/multi-object Maya selection from leaking Stage 2 meshes.
-    if target_phase == "stage_1":
-        try:
-            export_roots, components = _stage_one_branch_selection(repo, components)
-            node_metadata = collect_node_metadata(selection_only=True, selection_roots=export_roots)
-        except Exception as stage_error:
-            cmds.confirmDialog(title="Grade Optimizer · Stage 1 selection error",
-                               message=str(stage_error), button=["OK"])
-            return
+    # The Maya selection is the sole source of export geometry for every target.
+    # Asset phase and Maya node names must never rewrite or filter that selection.
 
     export_info = None
     temporary_paths = []
     material_overrides = []
     material_conversion_summary = []
     try:
-        source_root_override = export_roots[0].rsplit("|", 1)[-1] if target_phase == "stage_1" else None
+        source_root_override = None
         export_info = prepare_client_asset_export(
             repo, components, node_metadata, replace_asset_id=replace_asset_id,
             source_root_name_override=source_root_override
@@ -1924,10 +1863,12 @@ def _export_scene(replace_asset_id=None):
         )
         stage_one_export = str(target_entry.get("phase") or "") == "stage_1"
         if stage_one_export:
-            # The Git target is resolved to the Slopes_Stage1 DAG branch above.
-            # Mesh leaf names are labels, not export filters.
+            # Record exactly the geometry collected from the current Maya selection.
             target_entry["mayaExport"]["components"] = list(components)
-            target_entry["mayaExport"]["exportedRootName"] = export_roots[0].rsplit("|", 1)[-1]
+            target_entry["mayaExport"]["exportedRootName"] = (
+                export_roots[0].rsplit("|", 1)[-1] if len(export_roots) == 1
+                else ", ".join(root.rsplit("|", 1)[-1] for root in export_roots)
+            )
         fbx_export_roots = list(export_roots)
         temporary_export_roots = []
         export_components = list(components)
