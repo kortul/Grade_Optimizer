@@ -183,7 +183,7 @@ pass('sunny midday default, atmospheric god rays and persistent optional ground 
 assert.ok(!entrySource.includes("weather-open'))setWeatherPanelOpen(false)"), 'changing to skier / drone mode must not forcibly close weather settings');
 assert.doesNotMatch(html,/#[^\n]*skier-mode #weatherPanel[^\n]*display:none|#[^\n]*drone-mode #weatherPanel[^\n]*display:none/, 'weather panel must remain available in skier and drone modes');
 assert.ok(html.includes('#app.weather-open #weatherPanel{display:block}'), 'weather panel open state CSS missing');
-const modulePaths = [entry, ...localImports.map(p => resolve(dirname(entry), p))];
+const modulePaths = [entryPath, ...localImports.map(p => resolve(dirname(entryPath), p))];
 for (const path of modulePaths) {
   assert.ok(existsSync(resolve(root, path)), 'missing local JS import: ' + path);
   const source = read(path).toString('utf8');
