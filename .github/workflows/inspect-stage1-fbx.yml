@@ -1,0 +1,30 @@
+name: Inspect Stage1 FBX geometry
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'clients/alpine-resort/models/slopes_stage1.fbx'
+      - '.github/workflows/inspect-stage1-fbx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Assimp CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y assimp-utils
+      - name: Inspect FBX geometry and bounds
+        run: |
+          echo "FBX file size:"
+          stat -c '%n %s bytes' clients/alpine-resort/models/slopes_stage1.fbx
+          echo
+          assimp info clients/alpine-resort/models/slopes_stage1.fbx
