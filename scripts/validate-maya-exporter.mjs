@@ -6,7 +6,7 @@ const app = readFileSync('app.v157.js', 'utf8');
 const terrain = JSON.parse(readFileSync('assets/real-terrain.json', 'utf8'));
 const clientScene = JSON.parse(readFileSync('clients/alpine-resort/scene.json', 'utf8'));
 
-assert.ok(maya.includes('VERSION = "0.7.8"'), 'Maya exporter must be 0.7.7');
+assert.ok(maya.includes('VERSION = "0.7.9"'), 'Maya exporter must be 0.7.9');
 assert.ok(maya.includes('"_canonical_terrain": True'), 'canonical base terrain must appear in the replacement tree');
 assert.ok(maya.includes('"_relative_file": "assets/real-terrain.fbx"'), 'canonical terrain must use the global FBX path');
 assert.ok(maya.includes('if asset.get("_canonical_terrain"):'), 'tree selection must route canonical terrain to its dedicated replacement handler');
@@ -36,5 +36,9 @@ assert.equal(terrain.file, 'assets/real-terrain.fbx');
 assert.ok(clientScene.assets.some(asset => asset.id === 'slopes_stage1'), 'Stage1 client asset must remain registered');
 assert.ok(app.includes('function loadCanonicalTerrainFbx('), 'runtime canonical terrain loader is missing');
 
-console.log('✓ Maya 0.7.8 base-terrain and Stage1 CAD Bridge baking are wired correctly');
+assert.ok(maya.includes('def find_working_group(node):'), 'nested CAD Bridge working-group lookup is missing');
+assert.ok(maya.includes('def get_bridge_data(working_group):'), 'CAD Bridge metadata reader is missing');
+assert.ok(maya.includes('cmds.listRelatives(current, parent=True, fullPath=True)'), 'working-group lookup must walk nested DAG parents');
+assert.ok(maya.includes('leaf.startswith("MAYA_WORKING_SCENE")'), 'working-group lookup must resolve the enclosing Maya working scene');
+console.log('✓ Maya 0.7.9 nested CAD Bridge lookup, base terrain and Stage1 baking are wired correctly');
 console.log('✓ Stage1 remains an independent client-scene asset; no mesh-merge requirement was introduced');
