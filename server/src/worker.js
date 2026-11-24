@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
   MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,
-  normalizeState,sanitizeName
+  normalizeState,sanitizeClientId,sanitizeName
 } from './protocol.js';
 
 const ALLOWED_ORIGIN='https://kortul.github.io';
@@ -20,6 +20,15 @@ export class PublicResort extends DurableObject {
     const origin=request.headers.get('Origin');
     const localDev=/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin||'');
     if(origin!==ALLOWED_ORIGIN&&!localDev)return new Response('Origin not allowed',{status:403});
+    const requestedClientId=sanitizeClientId(url.searchParams.get('clientId'));
+    const previous=this.activeSockets();
+    if(requestedClientId){
+      for(const entry of previous){
+        if(entry.player.clientId!==requestedClientId)continue;
+        this.announceLeave(entry.socket);
+        try{entry.socket.close(4001,'Session replaced by reconnect');}catch{}
+      }
+    }
     const existing=this.activeSockets();
     this.assignMissingSlots(existing);
     const pair=new WebSocketPair(),client=pair[0],server=pair[1];
@@ -32,7 +41,7 @@ export class PublicResort extends DurableObject {
     let slot=0;while(occupiedSlots.has(slot)&&slot<MAX_PLAYERS)slot++;
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({
-      id:crypto.randomUUID(),slot,name:'',state:null,lastSeen:Date.now(),
+      id:crypto.randomUUID(),clientId:requestedClientId,slot,name:'',state:null,lastSeen:Date.now(),
       rateStart:Date.now(),rateCount:0,left:false
     });
     return new Response(null,{status:101,webSocket:client});
@@ -53,7 +62,10 @@ export class PublicResort extends DurableObject {
     const now=Date.now(),result=[];
     for(const socket of this.ctx.getWebSockets()){
       let player;try{player=socket.deserializeAttachment();}catch{player=null;}
-      if(!player||(player.lastSeen&&now-player.lastSeen>MAX_IDLE_MS)){
+      if(!player){try{socket.close(1001,'Missing player attachment');}catch{}continue;}
+      if(player.left)continue;
+      if(player.lastSeen&&now-player.lastSeen>MAX_IDLE_MS){
+        this.announceLeave(socket);
         try{socket.close(1001,'Idle connection');}catch{}
         continue;
       }
@@ -85,6 +97,12 @@ export class PublicResort extends DurableObject {
     }
 
     if(msg.t==='hello'){
+      const messageClientId=sanitizeClientId(msg.clientId);
+      if(player.clientId&&messageClientId&&player.clientId!==messageClientId){
+        try{socket.close(1008,'Session identity mismatch');}catch{}
+        return;
+      }
+      if(!player.clientId&&messageClientId)player.clientId=messageClientId;
       player.name=sanitizeName(msg.name);player.lastSeen=now;socket.serializeAttachment(player);
       const peers=this.activeSockets().filter(entry=>entry.socket!==socket&&entry.player.name).map(entry=>this.publicPlayer(entry.player));
       this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers});
@@ -106,7 +124,13 @@ export class PublicResort extends DurableObject {
     if(!player||player.left||!player.id)return;
     player.left=true;try{socket.serializeAttachment(player);}catch{}
     const packet={t:'leave',id:player.id};
-    for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,packet);
+    const now=Date.now();
+    for(const otherSocket of this.ctx.getWebSockets()){
+      if(otherSocket===socket)continue;
+      let other;try{other=otherSocket.deserializeAttachment();}catch{other=null;}
+      if(!other||other.left||!other.name||(other.lastSeen&&now-other.lastSeen>MAX_IDLE_MS))continue;
+      this.send(otherSocket,packet);
+    }
   }
 }
 
