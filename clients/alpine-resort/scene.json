@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-24T05:44:11Z",
+  "updatedAt": "2026-11-24T07:37:24Z",
   "assets": [
     {
       "id": "slopes_stage1",
@@ -372,7 +372,7 @@
         }
       ],
       "mayaExport": {
-        "pluginVersion": "0.7.4",
+        "pluginVersion": "0.8.1",
         "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
         "mayaVersion": "2026",
         "linearUnit": "cm",
@@ -586,7 +586,212 @@
             ]
           }
         ],
-        "modelSizeBytes": 2726848,
+        "geometryBakedToMayaWorld": true,
+        "stageOneHierarchyNormalizedAtExport": true,
+        "cadBridge": {
+          "inverseApplied": true,
+          "workingGroups": [
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            },
+            {
+              "workingGroup": "|MAYA_WORKING_SCENE_001",
+              "originalOffset": [
+                218704.14299926758,
+                0.0,
+                -50152.88024902344
+              ],
+              "originalScale": 1000.0
+            }
+          ]
+        },
+        "modelSizeBytes": 2800192,
         "fbxMaterialConversions": [
           {
             "sourceMaterial": "openPBR_shader1",
