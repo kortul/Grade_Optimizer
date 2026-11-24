@@ -15,7 +15,7 @@ test('multiplayer session IDs accept UUIDs only',()=>{
 });
 
 test('shared overview flags validate UUIDs, positions, owner identity and per-player cap',()=>{
-  assert.equal(MAX_SHARED_MARKERS,50);
+  assert.equal(MAX_SHARED_MARKERS,40);
   assert.equal(MAX_MARKERS_PER_PLAYER,10);
   const ownerId='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
   const marker=normalizeMarker({
