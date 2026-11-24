@@ -12,7 +12,7 @@ const app = read(entryPath);
 const terrain = JSON.parse(read('assets/real-terrain.json'));
 const clientScene = JSON.parse(read('clients/alpine-resort/scene.json'));
 
-assert.ok(maya.includes('VERSION = "0.9.1"'), 'Maya exporter must be 0.9.0');
+assert.ok(maya.includes('VERSION = "0.9.1"'), 'Maya exporter must be 0.9.1');
 assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
 assert.ok(maya.includes('def _sample_slope_curve_points(') && maya.includes('"points": _sample_slope_curve_points('), 'Maya must export raw sampled NURBS points');
