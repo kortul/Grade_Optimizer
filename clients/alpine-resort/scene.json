@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-24T15:28:37.473Z",
+  "updatedAt": "2026-11-24T15:31:10.799Z",
   "assets": [
     {
       "id": "slopes_stage1",
@@ -468,7 +468,7 @@
   ],
   "editorSettings": {
     "schemaVersion": "1.0",
-    "savedAt": "2026-11-24T15:28:37.473Z",
+    "savedAt": "2026-11-24T15:31:10.799Z",
     "units": "meters",
     "assets": [
       {
