@@ -87,6 +87,10 @@ if (!root) throw new Error('FBXLoader returned no root object');
 
 const exportedBounds = new Box3().setFromObject(root);
 const cadBridgeRestoration = restoreCadBridgeWorkingCoordinates(root, asset.mayaExport);
+const position = asset.transform?.position;
+if (Array.isArray(position) && position.length === 3) root.position.fromArray(position);
+const rotation = asset.transform?.rotation;
+if (Array.isArray(rotation) && rotation.length === 3) root.rotation.fromArray(rotation);
 const scale = asset.transform?.scale;
 if (Array.isArray(scale) && scale.length === 3) root.scale.fromArray(scale);
 root.updateWorldMatrix(true, true);
