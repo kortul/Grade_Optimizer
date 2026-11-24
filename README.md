@@ -7,13 +7,13 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v174.js` (low-frequency terrain snow texture; direct drone-to-ground skier handoff also supports off-piste Terrain).
+- Current app: `app.v175.js` (asset-wide shared FBX materials; Maya Stage 1 exposes only the shared Slopes / Angled material pair).
 - Weather: `weather-system.v7.js`; layered procedural clouds, directional horizon scattering, a color-varied star field, snowfall and wind streaks render through the scene weather layers.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
 - Skier: `skier-controller.v98.js`, with a 75 kg skier-equipment point-mass reference, mass-scaled pole / jump impulses, 3D ballistic take-off inheriting slope velocity and terrain-aware landing, grounded ski-snow friction, speed-limited edge force, calculated inside / outside ski loads, load-aware stance animation and first / third-person cameras. Third-person camera orbit is independent of physical skier / ski heading; switching from the drone starts the first-person view aligned with the skis. When an imported `Slopes_Stage1` asset is present, skier physics uses that group and selects the highest skiable point with downhill clearance, including when switching from drone. Skier-mode preparation is non-modal and keeps the current view interactive. Forest placement uses cached terrain vertices to avoid large synchronous raycast batches. Terrain contact queries use a 192×192 triangle lookup with a Raycaster fallback; live counters and timings are available through `window.__GRADE_OPTIMIZER_MODE_API.diagnostics().terrainPerformance`.
 - Drone: `drone-controller.v76.js`.
-- Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime for the viewer. The optional public multiplayer relay lives in `server/` and uses one shared Cloudflare Durable Object. Imported client models support binary GLB and FBX files.
+- Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime for the viewer. The optional public multiplayer relay lives in `server/` and uses one shared Cloudflare Durable Object. Imported client models support binary GLB and FBX files. FBX materials are consolidated by their source Maya shader name; the Stage 1 Maya export maps copied Slopes aliases and its technical OpenPBR fallback into two scene-wide material instances shared by all 22 mesh components. The Scene Editor Materials tab lists unique asset-wide materials, so editing Slopes or Angled changes every corresponding material group across the FBX.
 
 For a new release, create new versioned app / controller files, update `index.html`, and keep the previous files for rollback.
 
