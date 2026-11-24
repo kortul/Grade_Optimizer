@@ -1672,7 +1672,7 @@ def replace_canonical_terrain(*_):
                     "Проверь CAD Bridge transforms; существующий FBX не заменён."
                     % (terrain_width_m, terrain_depth_m, terrain_diagonal_m)
                 )
-            updated_manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z
+            updated_manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
             with open(temporary_manifest_path, "w", encoding="utf-8") as stream:
                 json.dump(updated_manifest, stream, ensure_ascii=False, indent=2)
                 stream.write("\n")
