@@ -388,6 +388,10 @@ export class ResortMultiplayer {
     }else if(msg.t==='welcome'){
       this.full=false;
       this.id=String(msg.id||'');this.slot=Number.isInteger(msg.slot)?msg.slot:null;this.connected=!!this.id;this.retries=0;this.lastPong=performance.now();
+      if(this.markerSyncPending){
+        this.markerSyncRevision=Math.max(this.markerSyncRevision,Number(msg.markerRevision)||0)+1;
+        this.markerSyncSentRevision=0;
+      }
       this.sessionSentBaseline=this.sentStates;this.sessionReceivedBaseline=this.receivedStates;this.sessionStartedAt=this.lastPong;
       this.serverAcceptedStates=0;this.serverRejectedStates=0;this.serverReceivedStates=0;this.serverLastStateAt=0;this.serverLastStateSeq=0;this.serverLastMessageAt=0;this.serverLastStateRejectReason='';
       this.resolveSlotWaiters(this.slot);
@@ -405,11 +409,18 @@ export class ResortMultiplayer {
       for(const ownerId of [...this.measurements.keys()])if(!measurementOwners.has(ownerId))this.removeMeasurement(ownerId);
       for(const measurement of measurements)this.upsertMeasurement(measurement);
       const ownMeasurement=measurements.find(item=>String(item?.ownerId||'')===this.id)||null;
+      const serverMeasurementRevision=Number(msg.measurementRevision)||0;
+      if(this.measurementClearPending||(this.measurementPending&&this.ownedMeasurement&&
+        (!ownMeasurement||ownMeasurement.id!==this.ownedMeasurement.id||
+        JSON.stringify(ownMeasurement.points)!==JSON.stringify(this.ownedMeasurement.points)))){
+        this.measurementRevision=Math.max(this.measurementRevision,serverMeasurementRevision)+1;
+        this.measurementSentRevision=0;
+      }
       if(ownMeasurement){
         if(this.ownedMeasurement&&this.ownedMeasurement.id===ownMeasurement.id&&JSON.stringify(this.ownedMeasurement.points)===JSON.stringify(ownMeasurement.points)){this.measurementPending=false;this.measurementClearPending=false;}
         else if(!this.ownedMeasurement&&!this.measurementClearPending)this.ownedMeasurement={id:ownMeasurement.id,points:ownMeasurement.points.map(point=>point.slice())};
         this.measurementRevision=Math.max(this.measurementRevision,Number(ownMeasurement.revision)||0);
-      }else if(this.ownedMeasurement&&!this.measurementClearPending){this.measurementPending=true;this.measurementRevision++;}
+      }else if(this.ownedMeasurement&&!this.measurementClearPending){this.measurementPending=true;this.measurementRevision=Math.max(this.measurementRevision,serverMeasurementRevision)+1;this.measurementSentRevision=0;}
       if(this.measurementPending||this.measurementClearPending)this.flushMeasurementSync();
       this.setStatus(this.connected?'connected':'error');
     }else if(msg.t==='join'){
