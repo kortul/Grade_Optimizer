@@ -148,7 +148,28 @@ function makeNameLabel(name) {
   return {sprite,dispose(){texture.dispose();material.dispose();}};
 }
 
-function makeFlagMarker(owner,number=1){
+function makeFlagNumberLabel(number) {
+  const canvas=document.createElement('canvas');
+  canvas.width=128;canvas.height=128;
+  const context=canvas.getContext('2d');
+  if(context){
+    context.fillStyle='rgba(12,22,31,0.94)';
+    context.strokeStyle='rgba(255,214,145,0.96)';
+    context.lineWidth=8;
+    context.beginPath();context.arc(64,64,54,0,Math.PI*2);context.fill();context.stroke();
+    context.fillStyle='#fff7e8';
+    context.font='800 68px system-ui,sans-serif';
+    context.textAlign='center';context.textBaseline='middle';
+    context.fillText(String(number),64,66,94);
+  }
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  const material=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false,depthTest:false,toneMapped:false});
+  const sprite=new THREE.Sprite(material);
+  sprite.scale.set(0.72,0.72,1);sprite.renderOrder=51;
+  return {sprite,dispose(){texture.dispose();material.dispose();}};
+}
+function makeFlagMarker(number=1){
   const root=new THREE.Group();root.name='GO_SharedFlagMarker';
   const geometries=[],materials=[
     new THREE.MeshStandardMaterial({color:0x263d4d,roughness:0.5,metalness:0.28}),
@@ -160,13 +181,13 @@ function makeFlagMarker(owner,number=1){
   add(new THREE.CylinderGeometry(0.022,0.035,1.65,8),materials[0],new THREE.Vector3(0,0.84,0));
   const flag=new THREE.BufferGeometry();flag.setAttribute('position',new THREE.Float32BufferAttribute([0,1.62,0,0.72,1.43,0,0,1.20,0],3));flag.setIndex([0,1,2]);flag.computeVertexNormals();
   add(flag,materials[1],new THREE.Vector3(0,0,0));add(new THREE.SphereGeometry(0.065,10,8),materials[1],new THREE.Vector3(0,1.69,0));
-  let labelOwner=String(owner||'Лыжник').slice(0,20),labelNumber=Math.max(1,Math.min(10,Math.floor(Number(number)||1)));
-  let label=makeNameLabel(labelNumber+' · '+labelOwner);
-  const attach=next=>{next.sprite.scale.set(2.85,0.64,1);next.sprite.position.set(0.88,1.98,0);root.add(next.sprite);};attach(label);
-  return {root,setLabel(nextOwner,nextNumber){
-    const name=String(nextOwner||'Лыжник').slice(0,20),n=Math.max(1,Math.min(10,Math.floor(Number(nextNumber)||1)));
-    if(name===labelOwner&&n===labelNumber)return;
-    root.remove(label.sprite);label.dispose();labelOwner=name;labelNumber=n;label=makeNameLabel(labelNumber+' · '+labelOwner);attach(label);
+  let labelNumber=Math.max(1,Math.min(10,Math.floor(Number(number)||1)));
+  let label=makeFlagNumberLabel(labelNumber);
+  const attach=next=>{next.sprite.position.set(0,2.28,0);root.add(next.sprite);};attach(label);
+  return {root,setNumber(nextNumber){
+    const n=Math.max(1,Math.min(10,Math.floor(Number(nextNumber)||1)));
+    if(n===labelNumber)return;
+    root.remove(label.sprite);label.dispose();labelNumber=n;label=makeFlagNumberLabel(labelNumber);attach(label);
   },dispose(){label.dispose();geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());}};
 }
 
@@ -561,8 +582,8 @@ export class ResortMultiplayer {
     const owner=String(marker.owner||'Лыжник').slice(0,20),ownerId=String(marker.ownerId||'');
     const number=Math.max(1,Math.min(10,Math.floor(Number(marker.number)||1))),createdAt=Number(marker.createdAt)||Date.now();
     const existing=this.markers.get(id);
-    if(existing){existing.group.position.fromArray(p);existing.owner=owner;existing.ownerId=ownerId;existing.number=number;existing.createdAt=createdAt;existing.setLabel?.(owner,number);return true;}
-    const visual=makeFlagMarker(owner,number);visual.root.position.fromArray(p);visual.root.userData.gradeOptimizerSharedMarkerId=id;this.scene.add(visual.root);
+    if(existing){existing.group.position.fromArray(p);existing.owner=owner;existing.ownerId=ownerId;existing.number=number;existing.createdAt=createdAt;existing.setNumber?.(number);return true;}
+    const visual=makeFlagMarker(number);visual.root.position.fromArray(p);visual.root.userData.gradeOptimizerSharedMarkerId=id;this.scene.add(visual.root);
     this.markers.set(id,{group:visual.root,dispose:visual.dispose,setLabel:visual.setLabel,owner,ownerId,number,createdAt});
     while(this.markers.size>MAX_VISIBLE_MARKERS)this.removeMarker(this.markers.keys().next().value);
     return true;
@@ -589,7 +610,7 @@ export class ResortMultiplayer {
   }
   renumberOwnedMarkersLocally(){
     const ordered=[...this.ownedMarkers.values()].sort((a,b)=>(Number(a.createdAt)||0)-(Number(b.createdAt)||0));
-    ordered.forEach((m,index)=>{m.number=index+1;this.markers.get(m.id)?.setLabel?.(this.name,m.number);});
+    ordered.forEach((m,index)=>{m.number=index+1;this.markers.get(m.id)?.setNumber?.(m.number);});
   }
   applyMarkerRemoval(packet){
     const id=String(packet?.id||'');if(!id)return;
