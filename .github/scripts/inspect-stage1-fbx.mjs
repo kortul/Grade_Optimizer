@@ -97,6 +97,24 @@ function measure(rootObject) {
   };
 }
 const rebaseTest = root.clone(true);
+const allDescendantScalesReset = root.clone(true);
+allDescendantScalesReset.scale.fromArray(scale || [1, 1, 1]);
+allDescendantScalesReset.traverse(node => {
+  if (node !== allDescendantScalesReset) node.scale.set(1, 1, 1);
+});
+const allScalesResetBounds = measure(allDescendantScalesReset);
+const allDescendantGroupsReset = root.clone(true);
+allDescendantGroupsReset.scale.fromArray(scale || [1, 1, 1]);
+const scaledNodes = [];
+allDescendantGroupsReset.traverse(node => {
+  if (node === allDescendantGroupsReset) return;
+  const current = node.scale.toArray();
+  if (current.some(v => Math.abs(v - 1) > 1e-4)) {
+    scaledNodes.push({name: node.name, oldScale: current});
+    node.scale.set(1, 1, 1);
+  }
+});
+const groupsResetBounds = measure(allDescendantGroupsReset);
 const sceneRootNode = rebaseTest.getObjectByName('MAYA_WORKING_SCENE_001');
 const rebaseBefore = measure(rebaseTest);
 let sceneRootTransform = null;
@@ -163,6 +181,11 @@ console.log(JSON.stringify({
   },
   rootTransform,
   rebaseTest: { before: rebaseBefore, sceneRootTransform, afterRemovingSceneRootTranslation: boundsAfterRootOffsetRemoved },
+  scaleTests: {
+    allDescendantScalesReset: allScalesResetBounds,
+    descendantsWhoseScaleWasChanged: scaledNodes,
+    allNonRootGroupsScaleReset: groupsResetBounds
+  },
   targetMeshHierarchy: hierarchy,
   meshes
 }, null, 2));
