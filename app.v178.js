@@ -403,7 +403,7 @@ function analyzeSlopeCenterline(curve){
     difficultyShares:shares,
     totalLengthMeters:totalLength,
     intervalMeters:SLOPE_ANALYSIS_INTERVAL_METERS,
-    namePosition:slopePointAtDistance(points,cumulative,totalLength*0.5).point,
+    namePosition:(()=>{const midpoint=slopePointAtDistance(points,cumulative,totalLength*0.5).point;return [midpoint[0]+20.0,midpoint[1],midpoint[2]];})(),
     sections
   };
 }
