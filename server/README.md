@@ -19,7 +19,7 @@ There is one fixed Durable Object named \`grade-optimizer-public-resort\`. There
 4. Change \`https://\` to \`wss://\`, append \`/ws\`, and paste it into \`MULTIPLAYER_SERVER_URL\` in the repository-root file \`multiplayer-config.v1.js\`.
 5. Commit and push that one-line config change. Every visitor to the GitHub Pages site then joins automatically.
 
-No custom domain, VPS, paid database or Workers Paid subscription is needed for the two-person setup. The Durable Object uses WebSocket Hibernation to sleep while idle without disconnecting clients.
+No custom domain, VPS, paid database or Workers Paid subscription is needed for the four-person setup. The Durable Object uses WebSocket Hibernation to sleep while idle without disconnecting clients.
 
 ## Local test
 
