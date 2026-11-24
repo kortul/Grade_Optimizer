@@ -5,24 +5,24 @@
   "file": "assets/real-terrain.fbx",
   "category": "terrain",
   "activeTerrain": true,
-  "updatedAt": "2026-11-24T07:41:57Z",
+  "updatedAt": "2026-11-24T09:55:05Z",
   "mayaExport": {
-    "pluginVersion": "0.8.2",
+    "pluginVersion": "0.8.7",
     "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
     "mayaVersion": "2026",
     "linearUnit": "cm",
-    "modelSizeBytes": 4764752,
+    "modelSizeBytes": 4934976,
     "meshComponentCount": 1,
     "materialNames": [
       "openPBR_shader1"
     ],
     "worldBounds": [
-      218438.4375,
-      1.52850341796875,
-      -50527.5625,
-      218890.765625,
-      13.472900390625,
-      -50087.41015625
+      -265699.25,
+      1528.5089111328125,
+      -374683.03125,
+      186625.75,
+      13472.923828125,
+      65470.09375
     ],
     "nodeMetadata": [],
     "components": [
@@ -50,7 +50,8 @@
       }
     ],
     "cadBridge": {
-      "inverseApplied": true,
+      "inverseApplied": false,
+      "workingTransformPreserved": true,
       "workingGroups": [
         {
           "workingGroup": "|MAYA_WORKING_SCENE_001",
