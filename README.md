@@ -19,7 +19,7 @@ For a new release, create new versioned app / controller files, update `index.ht
 
 ## Slope analysis overlays
 
-Maya exports central NURBS slope curves as cached analysis data in the client `scene.json`. Each route is measured in 20 m arc-length sections; the overview displays per-section angle labels, a green / blue / red / black difficulty line, and the slope name. The three overlays have independent switches in the **Layers** panel and are hidden in skier and drone modes. The viewer uses Three.js line segments and CSS2D labels rather than mesh geometry. A curve is recalculated only when its stored geometry / transform fingerprint changes.
+Maya exports only dense samples of central NURBS curve geometry in project-world metres to `slopeCurves` in the client `scene.json`; it does not calculate grades, difficulty, labels or colors. The browser derives the 20 m section angles, green / blue / red / black difficulty line and slope names from those raw points. The three overlays have independent switches in the **Layers** panel and are hidden in skier and drone modes. The viewer uses Three.js line segments and CSS2D labels rather than mesh geometry. Maya reuses unchanged raw curve samples by geometry / transform fingerprint.
 
 ## Multiplayer
 
