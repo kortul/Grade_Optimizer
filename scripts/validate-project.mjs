@@ -12,7 +12,7 @@ const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)[
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
 const entryPath = entry.split('?')[0];
-assert.match(entryPath, /^app\\.v\\d+\\.js$/, 'index.html must activate a versioned application release');
+assert.match(entryPath, /^app\.v\d+\.js$/, 'index.html must activate a versioned application release');
 const entrySource = read(entryPath).toString('utf8');
 assert.ok(entrySource.includes('TERRAIN_SNOW_TILE_METERS=120'), 'terrain snow texture must use a broad 120 m tile');
 assert.ok(entrySource.includes('gradeOptimizerTerrainTexture') && entrySource.includes('low-frequency-albedo-no-bump'), 'source terrain must avoid high-frequency bump mapping');
@@ -920,7 +920,9 @@ assert.ok(alpineForestHtml.includes('id="godRays"')&&alpineForestHtml.includes('
 pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
 
 // Public resort multiplayer regression checks.
-const multiplayerImportMatch=entrySource.match(/import\\s+\\{\\s*ResortMultiplayer\\s*\\}\\s+from\\s+['"]\\.\\/(multiplayer\\.v\\d+\\.js)['"]/);\nassert.ok(multiplayerImportMatch, 'active app must import a versioned multiplayer client');\nconst multiplayerClientSource=read(multiplayerImportMatch[1]).toString('utf8');
+const multiplayerImportMatch=entrySource.match(/import\s+\{\s*ResortMultiplayer\s*\}\s+from\s+['"]\.\/(multiplayer\.v\d+\.js)['"]/);
+assert.ok(multiplayerImportMatch, 'active app must import a versioned multiplayer client');
+const multiplayerClientSource=read(multiplayerImportMatch[1]).toString('utf8');
 const multiplayerConfigSource=read('multiplayer-config.v1.js').toString('utf8');
 const multiplayerWorkerSource=read('server/src/worker.js').toString('utf8');
 const multiplayerProtocolSource=read('server/src/protocol.js').toString('utf8');
