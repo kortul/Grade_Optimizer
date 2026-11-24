@@ -12,7 +12,7 @@ const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)[
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
 const entryPath = entry.split('?')[0];
-assert.equal(entryPath, 'app.v164.js', 'index.html must activate the current app release');
+assert.match(entryPath, /^app\\.v\\d+\\.js$/, 'index.html must activate a versioned application release');
 const entrySource = read(entryPath).toString('utf8');
 assert.ok(entrySource.includes('TERRAIN_SNOW_TILE_METERS=120'), 'terrain snow texture must use a broad 120 m tile');
 assert.ok(entrySource.includes('gradeOptimizerTerrainTexture') && entrySource.includes('low-frequency-albedo-no-bump'), 'source terrain must avoid high-frequency bump mapping');
@@ -780,7 +780,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('src="./app.v164.js"'), 'HTML must load the current application module');
+assert.ok(html.includes('src="./' + entryPath + '"'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
@@ -920,21 +920,21 @@ assert.ok(alpineForestHtml.includes('id="godRays"')&&alpineForestHtml.includes('
 pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
 
 // Public resort multiplayer regression checks.
-const multiplayerClientSource=read('multiplayer.v1.js').toString('utf8');
+const multiplayerImportMatch=entrySource.match(/import\\s+\\{\\s*ResortMultiplayer\\s*\\}\\s+from\\s+['"]\\.\\/(multiplayer\\.v\\d+\\.js)['"]/);\nassert.ok(multiplayerImportMatch, 'active app must import a versioned multiplayer client');\nconst multiplayerClientSource=read(multiplayerImportMatch[1]).toString('utf8');
 const multiplayerConfigSource=read('multiplayer-config.v1.js').toString('utf8');
 const multiplayerWorkerSource=read('server/src/worker.js').toString('utf8');
 const multiplayerProtocolSource=read('server/src/protocol.js').toString('utf8');
 const multiplayerSkierSource=read('skier-controller.v98.js').toString('utf8');
 assert.ok(html.includes('id="multiplayerStatus"')&&html.includes('id="multiplayerStatusText"'), 'multiplayer status UI is missing');
-assert.ok(entrySource.includes("import { ResortMultiplayer } from './multiplayer.v1.js'")&&entrySource.includes('new ResortMultiplayer(')&&entrySource.includes('multiplayerClient.publish(buildMultiplayerState())')&&entrySource.includes('multiplayerClient.update(dt)'), 'app frame loop must publish and render remote multiplayer states');
+assert.ok(entrySource.includes(multiplayerImportMatch[0])&&entrySource.includes('new ResortMultiplayer(')&&entrySource.includes('multiplayerClient.publish(buildMultiplayerState())')&&entrySource.includes('multiplayerClient.update(dt)'), 'app frame loop must publish and render remote multiplayer states');
 assert.ok(entrySource.includes("mode='skier'")&&entrySource.includes("mode='drone'")&&entrySource.includes('REMOTE_SKIER_POSE_NODES'), 'app must send independent skier and drone state');
 assert.ok(multiplayerSkierSource.includes('updatePoseWhenHidden=false')&&multiplayerSkierSource.includes('},true);'), 'skier joint pose must update while hidden in first-person');
-assert.ok(multiplayerClientSource.includes('SEND_INTERVAL_MS = 50')&&multiplayerClientSource.includes('cloneModel')&&multiplayerClientSource.includes('makeDrone')&&multiplayerClientSource.includes('peer.group.quaternion.slerp')&&multiplayerClientSource.includes('waitForSlot')&&multiplayerClientSource.includes('clientId')&&multiplayerClientSource.includes('crypto.randomUUID()')&&multiplayerClientSource.includes("event.code===4001"), 'multiplayer client must use per-tab identity, server slot negotiation and 20 Hz interpolation');
+assert.ok(multiplayerClientSource.includes('SEND_INTERVAL_MS = 50')&&multiplayerClientSource.includes('FULL_RETRY_BASE_MS = 2500')&&multiplayerClientSource.includes('FULL_RETRY_MAX_MS = 10000')&&multiplayerClientSource.includes('this.full=false;')&&multiplayerClientSource.includes('reconnectScheduled:!!this.reconnectTimer')&&multiplayerClientSource.includes('cloneModel')&&multiplayerClientSource.includes('makeDrone')&&multiplayerClientSource.includes('peer.group.quaternion.slerp')&&multiplayerClientSource.includes('waitForSlot')&&multiplayerClientSource.includes('clientId')&&multiplayerClientSource.includes('crypto.randomUUID()')&&multiplayerClientSource.includes("event.code===4001"), 'active multiplayer client must throttle states to 20 Hz, retry a full session and preserve unique tab identity');
 assert.ok(multiplayerConfigSource.includes('MULTIPLAYER_SERVER_URL'), 'one-time WebSocket endpoint config is missing');
 assert.ok(multiplayerWorkerSource.includes("PUBLIC_RESORT='grade-optimizer-public-resort'")&&multiplayerWorkerSource.includes('idFromName(PUBLIC_RESORT)')&&multiplayerWorkerSource.includes('acceptWebSocket'), 'all visitors must connect to the same hibernatable Durable Object');
 assert.ok(multiplayerWorkerSource.includes('assignMissingSlots(existing)')&&multiplayerWorkerSource.includes("slot:player.slot")&&multiplayerClientSource.includes("msg.t==='slot'"), 'existing and new multiplayer connections must receive unique server-assigned slots');
 assert.ok(multiplayerWorkerSource.includes("ALLOWED_ORIGIN='https://kortul.github.io'")&&multiplayerWorkerSource.includes('MAX_PLAYERS')&&multiplayerWorkerSource.includes('MAX_MESSAGES_PER_SECOND')&&multiplayerWorkerSource.includes('sanitizeClientId')&&multiplayerWorkerSource.includes('Session replaced by reconnect')&&multiplayerWorkerSource.includes('if(player.left)continue'), 'multiplayer relay must enforce origin, limits and replace duplicate tab sessions');
-assert.ok(multiplayerProtocolSource.includes('MAX_PLAYERS = 4')&&multiplayerProtocolSource.includes('MAX_IDLE_MS = 60000')&&multiplayerProtocolSource.includes('MAX_MESSAGES_PER_SECOND = 30')&&multiplayerProtocolSource.includes('sanitizeClientId'), 'public resort must allow four players with bounded sessions and validated client IDs');
+assert.ok(multiplayerProtocolSource.includes('MAX_PLAYERS = 4')&&multiplayerProtocolSource.includes('MAX_IDLE_MS = 60000')&&multiplayerProtocolSource.includes('MAX_MESSAGES_PER_SECOND = 45')&&multiplayerProtocolSource.includes('sanitizeClientId'), 'public resort must allow four players with bounded sessions and validated client IDs');
 assert.ok(multiplayerProtocolSource.includes('normalizeState')&&multiplayerProtocolSource.includes('Number.isFinite')&&multiplayerProtocolSource.includes('JOINT_FLOATS = 72'), 'server must validate transforms and skier joint data');
 assert.ok(multiplayerSkierSource.includes('_findSpawn(spawnIndex=0)')&&multiplayerSkierSource.includes('multiplayerSlot:requestedSlot')&&multiplayerSkierSource.includes('const across=new THREE.Vector3().crossVectors')&&multiplayerSkierSource.includes('selectSpawnPool')&&multiplayerSkierSource.includes("spawnSearch:'grid-fallback'")&&multiplayerSkierSource.includes("spawnSearch:'last-resort'")&&multiplayerSkierSource.includes('capture: true')&&multiplayerSkierSource.includes('if(!currentHit&&this.airborneWorldY===null)')&&entrySource.includes('await multiplayerClient.waitForSlot(1800)')&&entrySource.includes('skierController.diagnostics()'), 'multiplayer skiers must receive distinct starts, capture inputs and preserve jumps over terrain seams');
 pass('public shared multiplayer: four-player resort, independent modes, unique automatic starts and validated player states');
