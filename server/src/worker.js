@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
   MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,MAX_SHARED_MARKERS,
-  appendSharedMarker,normalizeMarker,normalizeState,sanitizeClientId,sanitizeName
+  appendSharedMarker,normalizeMarker,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName
 } from './protocol.js';
 
 const ALLOWED_ORIGIN='https://kortul.github.io';
@@ -122,10 +122,18 @@ export class PublicResort extends DurableObject {
       }
       if(!player.clientId&&messageClientId)player.clientId=messageClientId;
       player.name=sanitizeName(msg.name);player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
-      const peers=this.activeSockets().filter(entry=>entry.socket!==socket&&entry.player.name).map(entry=>this.publicPlayer(entry.player));
-      const storedMarkers=await this.ctx.storage.get('sharedMarkers');
-      const markers=Array.isArray(storedMarkers)?storedMarkers.slice(-MAX_SHARED_MARKERS):[];
-      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers,markers});
+      const markerUpdate=await this.ctx.storage.transaction(async transaction=>{
+        const storedMarkers=await transaction.get('sharedMarkers');
+        const update=pruneSharedMarkers(storedMarkers);
+        await transaction.put('sharedMarkers',update.markers);
+        return update;
+      });
+      const recipients=this.activeSockets().filter(entry=>entry.player.name);
+      for(const entry of recipients){
+        for(const removed of markerUpdate.removedMarkers)this.send(entry.socket,{t:'marker-remove',id:removed.id});
+      }
+      const peers=recipients.filter(entry=>entry.socket!==socket).map(entry=>this.publicPlayer(entry.player));
+      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers,markers:markerUpdate.markers});
       const joined={t:'join',player:{id:player.id,slot:player.slot,name:player.name}};
       for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,joined);
       return;
