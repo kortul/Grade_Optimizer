@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { Box3, Vector3 } from 'three';
 
@@ -11,6 +12,34 @@ if (!asset) throw new Error('slopes_stage1 entry is missing from scene.json');
 const bytes = readFileSync(file);
 const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 const root = new FBXLoader().parse(arrayBuffer, '');
+
+const previousBytes = execFileSync('git', [
+  'show',
+  '6851eb9ba3566b9f283dd961d7519ed3623bf9d9:clients/alpine-resort/models/slopes_stage1.fbx'
+]);
+const previousBuffer = previousBytes.buffer.slice(
+  previousBytes.byteOffset,
+  previousBytes.byteOffset + previousBytes.byteLength
+);
+const previousRoot = new FBXLoader().parse(previousBuffer, '');
+const previousRootInitial = {
+  name: previousRoot.name,
+  position: previousRoot.position.toArray(),
+  scale: previousRoot.scale.toArray()
+};
+previousRoot.position.fromArray(asset.transform?.position || [0, 0, 0]);
+previousRoot.rotation.fromArray(asset.transform?.rotation || [0, 0, 0]);
+previousRoot.scale.fromArray(asset.transform?.scale || [1, 1, 1]);
+previousRoot.updateMatrixWorld(true);
+const previousBounds = new Box3().setFromObject(previousRoot);
+const previousSize = previousBounds.getSize(new Vector3());
+let previousMeshCount = 0, previousVertexCount = 0;
+previousRoot.traverse(object => {
+  if (object.isMesh && object.geometry?.attributes?.position) {
+    previousMeshCount++;
+    previousVertexCount += object.geometry.attributes.position.count;
+  }
+});
 if (!root) throw new Error('FBXLoader returned no root object');
 
 const scale = asset.transform?.scale;
@@ -103,6 +132,18 @@ for (let node = meshes.length ? root.getObjectByName(meshes.find(item => item.na
 console.log(JSON.stringify({
   file,
   bytes: bytes.byteLength,
+  previousKnownGood: {
+    commit: '6851eb9ba3566b9f283dd961d7519ed3623bf9d9',
+    bytes: previousBytes.byteLength,
+    rootBeforeTransform: previousRootInitial,
+    meshCount: previousMeshCount,
+    vertexCount: previousVertexCount,
+    bounds: previousBounds.isEmpty() ? null : {
+      min: previousBounds.min.toArray(),
+      max: previousBounds.max.toArray(),
+      size: previousSize.toArray()
+    }
+  },
   fbxUnitScaleFactor: root.userData?.unitScaleFactor ?? null,
   manifestScale: scale ?? null,
   meshCount: meshes.length,
