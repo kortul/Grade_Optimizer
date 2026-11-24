@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.7.7"
+VERSION = "0.7.8"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1093,66 +1093,237 @@ def _terrain_mesh_shape_path(component):
     return shapes[0] if shapes else None
 
 
-def _create_canonical_terrain_export_copy(source_transform, suffix, bridge_data):
-    """
-    Duplicate one selected terrain transform, bake its Maya world placement,
-    then undo the CAD Bridge working-scene transform on the copied vertices.
+def _is_component_under_root(component, root):
+    transform = str(component.get("dagPath") or "")
+    root = str(root or "").rstrip("|")
+    return bool(transform and root and (transform == root or transform.startswith(root + "|")))
 
-    CAD Bridge relationship:
+
+def _bridge_context_for_export_root(source_root, components):
+    """
+    Read the CAD Bridge inverse for one selected DAG root.
+
+    CAD Bridge v14 documents this exact relation:
         working_world = bridge_scale * (original_maya - bridge_offset)
     """
-    source_name = source_transform.rsplit("|", 1)[-1]
-    baked = cmds.duplicate(
-        source_transform,
-        name="%s_TERRAIN_EXPORT_%s" % (source_name, suffix),
-        rr=True
-    )[0]
-    parents = cmds.listRelatives(baked, parent=True, fullPath=True) or []
-    if parents:
-        baked = cmds.parent(baked, world=True, absolute=True)[0]
+    relevant = [item for item in components if _is_component_under_root(item, source_root)]
+    if not relevant:
+        raise RuntimeError("В выделенной группе нет mesh-компонентов: " + source_root)
 
-    cmds.makeIdentity(
-        baked,
-        apply=True,
-        translate=True,
-        rotate=True,
-        scale=True,
-        normal=False,
-        preserveNormals=True
-    )
+    groups = set()
+    missing_group = []
+    for component in relevant:
+        working_group = find_working_group(component.get("dagPath"))
+        if working_group:
+            groups.add(working_group)
+        else:
+            missing_group.append(component.get("dagPath") or component.get("name") or "mesh")
 
-    shapes = cmds.listRelatives(
-        baked, shapes=True, fullPath=True, type="mesh"
+    if not groups:
+        return None
+    if missing_group or len(groups) != 1:
+        raise RuntimeError(
+            "Одна экспортируемая группа содержит mesh из разных CAD Bridge-контекстов. "
+            "Выдели отдельную ветку одной MAYA_WORKING_SCENE."
+        )
+
+    working_group = next(iter(groups))
+    bridge_data = get_bridge_data(working_group)
+    if not bridge_data:
+        raise RuntimeError(
+            "На %s отсутствуют bridgeOriginalOffset / bridgeOriginalScale. "
+            "Экспорт остановлен, чтобы не записать CAD-смещённые координаты."
+            % working_group.rsplit("|", 1)[-1]
+        )
+    offset, scale = bridge_data
+    if abs(float(scale)) < 1e-9:
+        raise RuntimeError("CAD Bridge scale равен нулю: " + working_group)
+
+    return {
+        "group": working_group,
+        "offset": [float(value) for value in offset],
+        "scale": float(scale)
+    }
+
+
+def _apply_inverse_bridge_to_root_matrix(export_root, bridge_context):
+    """
+    Remove the CAD Bridge ancestor transform from a temporary root.
+
+    Maya's row-vector 4x4 layout stores translation in indices 12..14.
+    Right-multiplying by the inverse uniform Bridge transform divides the
+    3x3 basis by scale and maps translation back by /scale + offset.
+    """
+    if not bridge_context:
+        return
+
+    offset = bridge_context["offset"]
+    scale = float(bridge_context["scale"])
+    matrix = cmds.xform(export_root, query=True, worldSpace=True, matrix=True)
+    if not matrix or len(matrix) != 16:
+        raise RuntimeError("Maya не вернула корректную world matrix для " + export_root)
+
+    corrected = list(matrix)
+    for row in range(3):
+        for column in range(3):
+            index = row * 4 + column
+            corrected[index] = float(matrix[index]) / scale
+
+    corrected[12] = float(matrix[12]) / scale + offset[0]
+    corrected[13] = float(matrix[13]) / scale + offset[1]
+    corrected[14] = float(matrix[14]) / scale + offset[2]
+    cmds.xform(export_root, worldSpace=True, matrix=corrected)
+
+
+def _all_transform_nodes(root):
+    descendants = cmds.listRelatives(
+        root, allDescendents=True, fullPath=True, type="transform"
     ) or []
-    if not shapes:
-        shapes = cmds.listRelatives(
-            baked, allDescendents=True, fullPath=True, type="mesh"
-        ) or []
-    if not shapes:
-        raise RuntimeError("В копии %s не найден polygon mesh." % source_name)
+    return [root] + list(dict.fromkeys(descendants))
 
-    if bridge_data:
-        offset, bridge_scale = bridge_data
-        if abs(float(bridge_scale)) < 1e-9:
-            raise RuntimeError("CAD Bridge scale равен нулю для %s." % source_name)
-        for shape in shapes:
-            selection = om2.MSelectionList()
-            selection.add(shape)
-            dag_path = selection.getDagPath(0)
-            dag_path.extendToShape()
-            mesh_fn = om2.MFnMesh(dag_path)
-            points = mesh_fn.getPoints(om2.MSpace.kObject)
-            restored_points = om2.MPointArray()
-            for point in points:
-                restored_points.append(om2.MPoint(
-                    point.x / bridge_scale + offset[0],
-                    point.y / bridge_scale + offset[1],
-                    point.z / bridge_scale + offset[2]
-                ))
-            mesh_fn.setPoints(restored_points, om2.MSpace.kObject)
-            mesh_fn.updateSurface()
 
-    return baked
+def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
+                                      stage_one=False):
+    """
+    Duplicate one selected branch, remove the CAD Bridge transform and bake
+    world-space mesh points into identity transforms. Original Maya nodes are
+    never changed. Each mesh shape remains a separate FBX object.
+
+    Stage 1 applies the same legacy compatibility normalisation previously
+    performed by the web loader: descendant scales -> 1 and ToSketchfab
+    translation -> 0. That result is baked before export.
+    """
+    short_name = str(source_root).rsplit("|", 1)[-1]
+    duplicate_name = "GO_EXPORT_%s_%03d" % (
+        re.sub(r"[^A-Za-z0-9_]+", "_", short_name)[:40] or "MESH",
+        int(suffix)
+    )
+    baked_root = cmds.duplicate(
+        source_root, name=duplicate_name, returnRootsOnly=True
+    )[0]
+
+    parents = cmds.listRelatives(baked_root, parent=True, fullPath=True) or []
+    if parents:
+        baked_root = cmds.parent(baked_root, world=True, absolute=True)[0]
+
+    _apply_inverse_bridge_to_root_matrix(baked_root, bridge_context)
+
+    transform_nodes = _all_transform_nodes(baked_root)
+    if stage_one:
+        for node in transform_nodes:
+            try:
+                cmds.setAttr(node + ".scaleX", 1.0)
+                cmds.setAttr(node + ".scaleY", 1.0)
+                cmds.setAttr(node + ".scaleZ", 1.0)
+            except Exception as error:
+                raise RuntimeError(
+                    "Не удалось нормализовать Maya scale на %s: %s" % (node, error)
+                )
+            if node.rsplit("|", 1)[-1].lower() == "tosketchfab":
+                cmds.setAttr(node + ".translateX", 0.0)
+                cmds.setAttr(node + ".translateY", 0.0)
+                cmds.setAttr(node + ".translateZ", 0.0)
+
+    # Capture world-space points after Bridge inversion and (for Stage 1)
+    # after the compatibility normalisation above.
+    mesh_components = collect_meshes(
+        selection_only=True, selection_roots=[baked_root]
+    )
+    if not mesh_components:
+        raise RuntimeError("В копии %s не осталось polygon mesh." % short_name)
+
+    point_records = []
+    for component in mesh_components:
+        shape = _terrain_mesh_shape_path(component)
+        if not shape:
+            raise RuntimeError(
+                "Не удалось разрешить mesh shape для %s." % component.get("name", short_name)
+            )
+        selection = om2.MSelectionList()
+        selection.add(shape)
+        dag_path = selection.getDagPath(0)
+        dag_path.extendToShape()
+        mesh_fn = om2.MFnMesh(dag_path)
+        points_world = mesh_fn.getPoints(om2.MSpace.kWorld)
+        point_records.append((shape, points_world))
+
+    # Make every local transform identity. The captured world coordinates
+    # are then written into object-space vertices; hierarchy / names / material
+    # assignments remain, but the CAD wrapper no longer affects the FBX.
+    identity = [
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    ]
+    for node in transform_nodes:
+        cmds.xform(node, objectSpace=True, matrix=identity)
+
+    for shape, points_world in point_records:
+        selection = om2.MSelectionList()
+        selection.add(shape)
+        dag_path = selection.getDagPath(0)
+        dag_path.extendToShape()
+        mesh_fn = om2.MFnMesh(dag_path)
+        mesh_fn.setPoints(points_world, om2.MSpace.kObject)
+        mesh_fn.updateSurface()
+
+    cmds.select(baked_root, replace=True)
+    dbg(
+        "Temporary CAD-normalized export copy: %s | meshes: %d | Bridge inverse: %s | Stage1 normalisation: %s"
+        % (baked_root, len(mesh_components), bool(bridge_context), bool(stage_one))
+    )
+    return baked_root
+
+
+def _prepare_export_roots(source_roots, components, stage_one=False, label="ASSET"):
+    """
+    Build temporary, CAD-independent copies for the selected roots.
+    Overlapping selected roots are pruned to prevent duplicate mesh export.
+    """
+    minimal_roots = []
+    for root in sorted(source_roots, key=lambda value: (str(value).count("|"), str(value))):
+        if any(root == parent or root.startswith(parent.rstrip("|") + "|") for parent in minimal_roots):
+            continue
+        minimal_roots.append(root)
+
+    temporary_roots = []
+    bridge_summaries = []
+    export_roots = []
+    try:
+        for index, source_root in enumerate(minimal_roots, start=1):
+            bridge_context = _bridge_context_for_export_root(source_root, components)
+            baked_root = _bake_export_root_to_world_meshes(
+                source_root,
+                index,
+                bridge_context=bridge_context,
+                stage_one=stage_one
+            )
+            temporary_roots.append(baked_root)
+            export_roots.append(baked_root)
+            if bridge_context:
+                bridge_summaries.append({
+                    "workingGroup": bridge_context["group"],
+                    "originalOffset": bridge_context["offset"],
+                    "originalScale": bridge_context["scale"]
+                })
+        if not export_roots:
+            raise RuntimeError("Не удалось подготовить временные FBX-копии для экспорта.")
+        export_components = collect_meshes(
+            selection_only=True, selection_roots=export_roots
+        )
+        if len(export_components) != len(components):
+            raise RuntimeError(
+                "После подготовки копий изменилось число mesh shapes: исходно %d, в копиях %d. "
+                "Экспорт остановлен."
+                % (len(components), len(export_components))
+            )
+        return export_roots, temporary_roots, export_components, bridge_summaries
+    except Exception:
+        existing = [node for node in temporary_roots if cmds.objExists(node)]
+        if existing:
+            cmds.delete(existing)
+        raise
 
 
 def replace_canonical_terrain(*_):
@@ -1220,37 +1391,15 @@ def replace_canonical_terrain(*_):
                 % len(stage_components)
             )
 
-        # All selected components must share the same stored CAD Bridge transform.
-        bridge_records = []
-        no_bridge_records = []
-        for component in source_components:
-            shape = _terrain_mesh_shape_path(component)
-            if not shape:
-                continue
-            working_group = find_working_group(shape)
-            bridge_data = get_bridge_data(working_group) if working_group else None
-            if working_group and not bridge_data:
-                raise RuntimeError(
-                    "На %s отсутствуют bridgeOriginalOffset / bridgeOriginalScale. "
-                    "Не экспортирую terrain из рабочей группы без исходного CAD transform."
-                    % working_group.rsplit("|", 1)[-1]
-                )
-            if bridge_data:
-                offset, bridge_scale = bridge_data
-                key = (
-                    tuple(round(float(value), 8) for value in offset),
-                    round(float(bridge_scale), 8)
-                )
-                bridge_records.append((key, bridge_data))
-            else:
-                no_bridge_records.append(component)
-        unique_bridge_keys = {item[0] for item in bridge_records}
-        if len(unique_bridge_keys) > 1 or (bridge_records and no_bridge_records):
+        # The selected terrain must be a dedicated branch, not a mixed
+        # selection containing Stage / slope / unrelated meshes.
+        if len(terrain_components) != len(source_components):
             raise RuntimeError(
-                "Выбранные mesh относятся к разным CAD Bridge transform-группам. "
-                "Выдели основной рельеф из одной MAYA_WORKING_SCENE."
+                "В выделении %d mesh, из них %d относятся к terrain / ground. "
+                "Выдели отдельную группу основного рельефа, без Stage 1 и других объектов."
+                % (len(source_components), len(terrain_components))
             )
-        bridge_data = bridge_records[0][1] if bridge_records else None
+        source_components = terrain_components
 
         linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
         meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
@@ -1261,9 +1410,7 @@ def replace_canonical_terrain(*_):
         minimum_safe_size = max(16 * 1024, int(existing_size * 0.01))
         source_root_names = [root.rsplit("|", 1)[-1] for root in export_roots]
         bridge_note = (
-            "CAD Bridge inverse: offset=%s, scale=%s"
-            % (bridge_data[0], bridge_data[1])
-            if bridge_data else "CAD Bridge metadata: не найдено; сохранены текущие world coordinates"
+            "CAD Bridge inverse: будет снят с временной копии; исходные объекты не меняются"
         )
         choice = cmds.confirmDialog(
             title="Grade Optimizer · Replace Canonical Terrain",
@@ -1305,21 +1452,8 @@ def replace_canonical_terrain(*_):
                 if os.path.isfile(backup_path):
                     os.remove(backup_path)
 
-            unique_source_transforms = []
-            seen_transforms = set()
-            for component in source_components:
-                transform = component.get("dagPath")
-                if transform and transform not in seen_transforms:
-                    unique_source_transforms.append(transform)
-                    seen_transforms.add(transform)
-            for index, transform in enumerate(unique_source_transforms, start=1):
-                baked = _create_canonical_terrain_export_copy(
-                    transform, "%03d" % index, bridge_data
-                )
-                baked_nodes.append(baked)
-
-            baked_components = collect_meshes(
-                selection_only=True, selection_roots=baked_nodes
+            baked_nodes, _, baked_components, bridge_summaries = _prepare_export_roots(
+                export_roots, source_components, stage_one=False, label="TERRAIN"
             )
             if not baked_components:
                 raise RuntimeError("После CAD Bridge inverse не осталось polygon mesh объектов.")
@@ -1402,9 +1536,9 @@ def replace_canonical_terrain(*_):
                     selection_only=True, selection_roots=export_roots
                 ),
                 "cadBridge": {
-                    "inverseApplied": bool(bridge_data),
-                    "originalOffset": list(bridge_data[0]) if bridge_data else None,
-                    "originalScale": float(bridge_data[1]) if bridge_data else None
+                    "inverseApplied": bool(bridge_summaries),
+                    "workingGroups": bridge_summaries,
+                    "geometryBakedToMayaWorld": True
                 },
                 "fbxMaterialConversions": conversion_summary
             })
@@ -1580,6 +1714,44 @@ def _export_scene(replace_asset_id=None):
     material_conversion_summary = []
     try:
         export_info = prepare_client_asset_export(repo, components, node_metadata, replace_asset_id=replace_asset_id)
+        target_entry = next(
+            item for item in export_info["manifest"]["assets"]
+            if isinstance(item, dict) and item.get("id") == export_info["asset_id"]
+        )
+        stage_one_export = str(target_entry.get("phase") or "") == "stage_1"
+        base_terrain_components = [
+            item for item in components
+            if "terrain" in (str(item.get("name") or "") + " " + str(item.get("shape") or "")).lower()
+            or "ground" in (str(item.get("name") or "") + " " + str(item.get("shape") or "")).lower()
+        ]
+        if str(replace_asset_id or "") == "slopes_stage1" and base_terrain_components:
+            raise RuntimeError(
+                "В выделение Stage 1 попал также основной terrain (%d mesh). "
+                "Выдели только ветку Slopes_Stage1 внутри MAYA_WORKING_SCENE."
+                % len(base_terrain_components)
+            )
+        fbx_export_roots = list(export_roots)
+        temporary_export_roots = []
+        export_components = list(components)
+        bridge_summaries = []
+        if stage_one_export or any(find_working_group(item.get("dagPath")) for item in components):
+            (
+                fbx_export_roots,
+                temporary_export_roots,
+                export_components,
+                bridge_summaries
+            ) = _prepare_export_roots(
+                export_roots,
+                components,
+                stage_one=stage_one_export,
+                label="STAGE1" if stage_one_export else "ASSET"
+            )
+            target_entry["mayaExport"]["geometryBakedToMayaWorld"] = True
+            target_entry["mayaExport"]["stageOneHierarchyNormalizedAtExport"] = bool(stage_one_export)
+            target_entry["mayaExport"]["cadBridge"] = {
+                "inverseApplied": bool(bridge_summaries),
+                "workingGroups": bridge_summaries
+            }
         temporary_model_path = export_info["temporary_model_path"]
         temporary_manifest_path = export_info["temporary_manifest_path"]
         temporary_paths.extend([temporary_model_path, temporary_manifest_path])
@@ -1603,19 +1775,18 @@ def _export_scene(replace_asset_id=None):
         # FBXLoader in the browser supports Lambert / Phong shading models. Maya 2026
         # OpenPBR / Standard Surface nodes are temporarily bridged through Lambert
         # proxies on their existing shading groups, preserving per-face assignments.
-        material_overrides = prepare_fbx_compatible_materials(components)
+        material_overrides = prepare_fbx_compatible_materials(export_components)
         path = safe_path(temporary_model_path).replace('"', '\\\\"')
         try:
-            # Creating temporary Lambert compatibility shaders can disturb Maya's
-            # active selection. Restore the captured DAG roots immediately before
-            # FBXExport; also convert component picks into whole transform objects.
-            cmds.select(export_roots, replace=True)
+            # Restore the exact, CAD-normalized temporary branch immediately
+            # before FBXExport -s. Original Maya objects are never exported or moved.
+            cmds.select(fbx_export_roots, replace=True)
             selected_for_fbx = cmds.ls(selection=True, long=True) or []
             if not selected_for_fbx:
                 raise RuntimeError(
                     "Maya потеряла выделение перед FBXExport. Экспорт отменён без изменения исходного FBX."
                 )
-            missing_roots = [root for root in export_roots if root not in selected_for_fbx]
+            missing_roots = [root for root in fbx_export_roots if root not in selected_for_fbx]
             if missing_roots:
                 raise RuntimeError(
                     "Не удалось восстановить выделение перед FBXExport: "
@@ -1715,6 +1886,8 @@ def _export_scene(replace_asset_id=None):
             message += "\n\nВНИМАНИЕ: размер достиг 90 MiB — обычный Git не подходит."
         if material_conversion_summary:
             message += "\n\nСовместимость материалов: %d неподдерживаемых shader узлов временно переведены в Lambert. Назначения faces и исходные материалы Maya восстановлены." % len(material_conversion_summary)
+        if 'temporary_export_roots' in locals() and temporary_export_roots:
+            message += "\n\nCAD / Maya transforms baked into temporary copies: %d root(s). Исходная Maya-геометрия не изменена." % len(temporary_export_roots)
         message += "\n\nИсходный assets/real-terrain.fbx не изменён."
         try:
             git_result = _git_changes_for_paths(repo, [export_info["model_path"], export_info["manifest_path"]])
@@ -1749,6 +1922,15 @@ def _export_scene(replace_asset_id=None):
     finally:
         if material_overrides:
             restore_fbx_compatible_materials(material_overrides)
+        if 'temporary_export_roots' in locals() and temporary_export_roots:
+            try:
+                existing_temp_roots = [
+                    node for node in temporary_export_roots if cmds.objExists(node)
+                ]
+                if existing_temp_roots:
+                    cmds.delete(existing_temp_roots)
+            except Exception as cleanup_error:
+                cmds.warning("[Grade Optimizer] Could not remove temporary export copies: " + str(cleanup_error))
         try:
             if previous_selection:
                 cmds.select(previous_selection, replace=True)
