@@ -4676,7 +4676,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       const gltf=await parseSceneModel(buffer,item.file,'./clients/'+slug+'/models/');
       const root=gltf.scene||gltf.scenes?.[0];
       if(!root)throw new Error('Модель без сцены: '+item.name);
-      if(/\\.fbx$/i.test(item.file))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id);
+      if(/\.fbx$/i.test(item.file))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id);
       captureEditorNodeVisibilityDefaults(root);
       root.name=item.name||root.name||'Project model';
       applyClientAssetTransform(root,item.transform||{});
