@@ -170,8 +170,10 @@ export class PublicResort extends DurableObject {
       });
       const storedMeasurements=await this.ctx.storage.get('sharedMeasurements');
       const measurements=Array.isArray(storedMeasurements)?storedMeasurements.slice(-MAX_PLAYERS):[];
+      const storedMeasurementRevisions=await this.ctx.storage.get('sharedMeasurementRevisions')||{};
+      const measurementRevision=Number(storedMeasurementRevisions[player.id])||0;
       const peers=this.activeSockets().filter(entry=>entry.player.name&&entry.socket!==socket).map(entry=>this.publicPlayer(entry.player));
-      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers,markers:markerState.markers,markerRevision:markerState.revision,measurements});
+      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers,markers:markerState.markers,markerRevision:markerState.revision,measurementRevision,measurements});
       if(markerState.removed.length)this.broadcastMarkerSnapshot(markerState.markers,'',null);
       const joined={t:'join',player:{id:player.id,slot:player.slot,name:player.name}};
       for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,joined);
