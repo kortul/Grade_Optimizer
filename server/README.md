@@ -2,7 +2,7 @@
 
 This WebSocket relay lets all visitors share one public resort. It does not run terrain, skier or drone physics: each browser keeps its own scene and camera, and sends only its current player transform and (for a skier) the articulated model pose.
 
-There is one fixed Durable Object named \`grade-optimizer-public-resort\`. There are no rooms, invitation codes, accounts or saved sessions. The initial connection limit is two clients, matching the intended owner + client workflow.
+There is one fixed Durable Object named \`grade-optimizer-public-resort\`. There are no rooms, invitation codes, accounts or saved sessions. The connection limit is four clients. Each browser receives a unique starting slot so skiers do not stack at the same automatic summit spawn.
 
 ## Deploy once on Cloudflare Free
 
