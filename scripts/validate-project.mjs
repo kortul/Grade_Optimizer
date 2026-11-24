@@ -897,4 +897,17 @@ assert.ok(webgpuAtmosphereSource.includes('lowResFog.setResolutionScale(value)')
 assert.ok(webgpuAtmosphereSource.indexOf('camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);') < webgpuAtmosphereSource.indexOf('fogPipeline = buildFogPipeline()'), 'atmosphere camera aspect must be initialized before the first pipeline render');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
+// WebGPU Alpine Forest Lab regression checks.
+const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
+const alpineForestSource=read('webgpu-forest-lab.js').toString('utf8');
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('src="./webgpu-forest-lab.js"'),'Alpine Forest lab must use pinned Three.js r187 and its isolated entrypoint');
+assert.ok(alpineForestSource.includes("new FBXLoader().loadAsync('./clients/alpine-resort/'+item.file)")&&alpineForestSource.includes('restoreStageOneCoordinates(root,item)'),'Alpine Forest lab must load published Slopes_Stage1 FBX and restore its saved CAD Bridge transform');
+assert.ok(alpineForestSource.includes('buildSlopeFootprint(root)')&&alpineForestSource.includes('buildTreePlacements(footprint'),'procedural forest must derive placements from the actual slope footprint');
+assert.ok(alpineForestSource.includes('createSplinePineGeometry')&&alpineForestSource.includes('THREE.CatmullRomCurve3')&&alpineForestSource.includes("distance<520")&&alpineForestSource.includes("distance<1900"),'spruce forest must provide near and mid spline-based geometry LODs');
+assert.ok(alpineForestSource.includes('snowy_conifer_atlas.webp')&&alpineForestSource.includes("lod==='far" ),'far forest must use the existing atlas billboard LOD');
+assert.ok(alpineForestSource.includes('new THREE.RenderPipeline(renderer)')&&alpineForestSource.includes('GO_LowResolutionGodRays')&&alpineForestSource.includes('upsampleRays'),'god rays must use a separate low-resolution TSL pass and depth-aware upsampling');
+assert.ok(alpineForestSource.includes('sunScreenUV.value.set(')&&alpineForestSource.includes('rayStrength.value=visible?'),'god rays must track the projected sun and disable when it is off-screen');
+assert.ok(alpineForestHtml.includes('id="godRays"')&&alpineForestHtml.includes('id="forestDensity"'),'Alpine Forest lab controls for god rays and forest density are missing');
+pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
+
 console.log('\nAll project checks passed.');
