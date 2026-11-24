@@ -15,7 +15,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.7.3"
+VERSION = "0.7.4"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -248,8 +248,13 @@ def check_git_repository(*_):
             cmds.text(WINDOW + "_repo_status", edit=True, label="Git не подтверждён · " + str(exc).split("\n")[0])
         cmds.confirmDialog(title="Grade Optimizer · Git check failed", message=str(exc), button=["OK"])
 
-def collect_meshes(selection_only=False):
-    selection = cmds.ls(selection=True, long=True) or []
+def collect_meshes(selection_only=False, selection_roots=None):
+    # Normalize object / face / vertex selections to their owning DAG transforms.
+    # FBXExport -s must receive transform roots, never a stale component selection.
+    selection = (
+        list(selection_roots) if selection_only and selection_roots is not None
+        else (_selected_transforms() if selection_only else [])
+    )
     result = []
     seen = set()
     for shape in cmds.ls(type="mesh", long=True) or []:
@@ -310,8 +315,11 @@ def _selected_node_matches(node, selection):
     )
 
 
-def collect_node_metadata(selection_only=False):
-    selection = cmds.ls(selection=True, long=True) or []
+def collect_node_metadata(selection_only=False, selection_roots=None):
+    selection = (
+        list(selection_roots) if selection_only and selection_roots is not None
+        else (_selected_transforms() if selection_only else [])
+    )
     records = []
     for node in cmds.ls(type="transform", long=True) or []:
         if selection_only and not _selected_node_matches(node, selection):
@@ -1089,8 +1097,19 @@ def _export_scene(replace_asset_id=None):
         )
         return
 
-    components = collect_meshes(selection_only=True)
-    node_metadata = collect_node_metadata(selection_only=True)
+    # Capture the real DAG targets before material compatibility nodes are created.
+    # Component selections (faces / vertices / edges) are normalized to whole meshes.
+    export_roots = _selected_transforms()
+    if not export_roots:
+        cmds.confirmDialog(
+            title="Grade Optimizer",
+            message="Не удалось определить transform-объекты в выделении. Выдели группу или mesh в Outliner.",
+            button=["OK"]
+        )
+        return
+
+    components = collect_meshes(selection_only=True, selection_roots=export_roots)
+    node_metadata = collect_node_metadata(selection_only=True, selection_roots=export_roots)
     if not components:
         cmds.confirmDialog(
             title="Grade Optimizer",
@@ -1131,6 +1150,21 @@ def _export_scene(replace_asset_id=None):
         material_overrides = prepare_fbx_compatible_materials(components)
         path = safe_path(temporary_model_path).replace('"', '\\\\"')
         try:
+            # Creating temporary Lambert compatibility shaders can disturb Maya's
+            # active selection. Restore the captured DAG roots immediately before
+            # FBXExport; also convert component picks into whole transform objects.
+            cmds.select(export_roots, replace=True)
+            selected_for_fbx = cmds.ls(selection=True, long=True) or []
+            if not selected_for_fbx:
+                raise RuntimeError(
+                    "Maya потеряла выделение перед FBXExport. Экспорт отменён без изменения исходного FBX."
+                )
+            missing_roots = [root for root in export_roots if root not in selected_for_fbx]
+            if missing_roots:
+                raise RuntimeError(
+                    "Не удалось восстановить выделение перед FBXExport: "
+                    + ", ".join(missing_roots)
+                )
             # Selection-only is intentional: only the selected branch becomes this scene asset.
             mel.eval('FBXExport -f "' + path + '" -s;')
         finally:
@@ -1163,10 +1197,15 @@ def _export_scene(replace_asset_id=None):
                     "Старый файл: %s bytes\n"
                     "Новый файл: %s bytes\n"
                     "Минимум для безопасной замены: %s bytes\n\n"
-                    "Исходная геометрия сохранена. Проверь выделение Maya и "
-                    "экспортируй нужную группу через «Новый объект», если "
-                    "требуется добавить отдельную модель."
-                    % (previous_size, size, minimum_safe_size)
+                    "Корни выделения: %s\n"
+                    "Mesh-объектов в выборке: %s\n\n"
+                    "Исходная геометрия сохранена. Exporter теперь нормализует "
+                    "выделение до целых transform-объектов; проверь, что выбрана "
+                    "именно нужная ветка Outliner."
+                    % (
+                        previous_size, size, minimum_safe_size,
+                        ", ".join(export_roots), len(components)
+                    )
                 )
 
         write_client_asset_manifest(export_info, size, material_conversion_summary)
@@ -1211,7 +1250,8 @@ def _export_scene(replace_asset_id=None):
             + export_info["model_path"]
             + "\n\n" + export_info["manifest_path"]
             + "\n\nAsset ID: " + export_info["asset_id"]
-            + " · " + str(len(components)) + " mesh objects · "
+            + " · " + str(len(export_roots)) + " selected roots · "
+            + str(len(components)) + " mesh objects · "
             + str(len(set(m for c in components for m in c["materials"])))
             + " materials · %.1f MiB" % mib
         )
