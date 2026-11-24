@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - 'clients/alpine-resort/models/slopes_stage1.fbx'
+      - 'clients/alpine-resort/scene.json'
+      - 'assets/real-terrain.fbx'
+      - 'assets/real-terrain.json'
+      - 'app.v158.js'
+      - 'index.html'
       - '.github/workflows/inspect-stage1-fbx.yml'
       - '.github/scripts/inspect-stage1-fbx.mjs'
   workflow_dispatch:
