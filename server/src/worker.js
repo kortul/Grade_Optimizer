@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,
-  normalizeState,sanitizeClientId,sanitizeName
+  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,MAX_SHARED_MARKERS,
+  normalizeMarker,normalizeState,sanitizeClientId,sanitizeName
 } from './protocol.js';
 
 const ALLOWED_ORIGIN='https://kortul.github.io';
@@ -44,7 +44,9 @@ export class PublicResort extends DurableObject {
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({
       id:requestedClientId||crypto.randomUUID(),clientId:requestedClientId,slot,name:'',state:null,lastSeen:Date.now(),
-      rateStart:Date.now(),rateCount:0,acceptedStates:0,rejectedStates:0,lastStateAt:0,lastStateSeq:0,peerCount:0,lastBroadcastPeers:0,broadcastAttempts:0,left:false
+      rateStart:Date.now(),rateCount:0,acceptedStates:0,rejectedStates:0,stateMessagesReceived:0,
+      lastStateAt:0,lastStateSeq:0,lastStateRejectReason:'',lastMessageAt:0,
+      peerCount:0,lastBroadcastPeers:0,broadcastAttempts:0,left:false
     });
     return new Response(null,{status:101,webSocket:client});
   }
@@ -79,7 +81,7 @@ export class PublicResort extends DurableObject {
   send(socket,message){try{socket.send(JSON.stringify(message));}catch{try{socket.close(1011,'Send failed');}catch{}}}
   publicPlayer(player){return{id:player.id,slot:player.slot,name:player.name,state:player.state};}
 
-  webSocketMessage(socket,raw){
+  async webSocketMessage(socket,raw){
     let player;try{player=socket.deserializeAttachment();}catch{return;}
     if(!player||player.left)return;
     if(typeof raw!=='string'||raw.length>MAX_MESSAGE_CHARS){try{socket.close(1009,'Message too large');}catch{}return;}
@@ -91,7 +93,7 @@ export class PublicResort extends DurableObject {
     if(!msg||typeof msg!=='object'||Array.isArray(msg))return;
 
     if(msg.t==='ping'){
-      player.lastSeen=now;socket.serializeAttachment(player);
+      player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
       const peers=this.activeSockets().filter(entry=>entry.socket!==socket&&entry.player.name);
       player.peerCount=peers.length;socket.serializeAttachment(player);
       this.send(socket,{
@@ -100,6 +102,9 @@ export class PublicResort extends DurableObject {
         rejectedStates:Number(player.rejectedStates)||0,
         lastStateAt:Number(player.lastStateAt)||0,
         lastStateSeq:Number(player.lastStateSeq)||0,
+        stateMessagesReceived:Number(player.stateMessagesReceived)||0,
+        lastMessageAt:Number(player.lastMessageAt)||0,
+        lastStateRejectReason:String(player.lastStateRejectReason||''),
         peerCount:peers.length,
         broadcastPeers:Number(player.lastBroadcastPeers)||0,
         broadcastAttempts:Number(player.broadcastAttempts)||0
@@ -116,20 +121,48 @@ export class PublicResort extends DurableObject {
         return;
       }
       if(!player.clientId&&messageClientId)player.clientId=messageClientId;
-      player.name=sanitizeName(msg.name);player.lastSeen=now;socket.serializeAttachment(player);
+      player.name=sanitizeName(msg.name);player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
       const peers=this.activeSockets().filter(entry=>entry.socket!==socket&&entry.player.name).map(entry=>this.publicPlayer(entry.player));
-      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers});
+      const storedMarkers=await this.ctx.storage.get('sharedMarkers');
+      const markers=Array.isArray(storedMarkers)?storedMarkers.slice(-MAX_SHARED_MARKERS):[];
+      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers,markers});
       const joined={t:'join',player:{id:player.id,slot:player.slot,name:player.name}};
       for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,joined);
       return;
     }
+    if(msg.t==='marker'){
+      if(!player.name)return;
+      const marker=normalizeMarker(msg.marker,player.name);
+      if(!marker){
+        player.lastStateRejectReason='invalid-marker';
+        player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
+        return;
+      }
+      const storedMarkers=await this.ctx.storage.get('sharedMarkers');
+      const markers=Array.isArray(storedMarkers)?storedMarkers.slice():[];
+      let acceptedMarker=markers.find(existing=>existing?.id===marker.id);
+      if(!acceptedMarker){
+        markers.push(marker);
+        while(markers.length>MAX_SHARED_MARKERS)markers.shift();
+        await this.ctx.storage.put('sharedMarkers',markers);
+        acceptedMarker=marker;
+      }
+      player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
+      const packet={t:'marker',marker:acceptedMarker};
+      for(const entry of this.activeSockets())if(entry.player.name)this.send(entry.socket,packet);
+      return;
+    }
     if(msg.t!=='state'||!player.name)return;
+    player.stateMessagesReceived=(Number(player.stateMessagesReceived)||0)+1;
+    player.lastMessageAt=now;
     const state=normalizeState(msg.state);
     if(!state){
       player.rejectedStates=(Number(player.rejectedStates)||0)+1;
+      player.lastStateRejectReason='invalid-state';
       player.lastSeen=now;socket.serializeAttachment(player);
       return;
     }
+    player.lastStateRejectReason='';
     player.state=state;player.lastSeen=now;
     player.acceptedStates=(Number(player.acceptedStates)||0)+1;
     player.lastStateAt=now;
