@@ -3669,10 +3669,14 @@ function editorTexturesEquivalent(a,b){
   if(!a||!b)return false;
   const source=texture=>{
     const image=texture.image||texture.source?.data||{};
-    return String(texture.name||image.currentSrc||image.src||image.name||'');
+    return {
+      name:String(texture.name||'').trim(),
+      image:String(image.currentSrc||image.src||image.name||'')
+    };
   };
-  if(source(a)!==source(b))return false;
-  if(!source(a)&&a.image!==b.image&&a.source?.data!==b.source?.data)return false;
+  const sourceA=source(a),sourceB=source(b);
+  if(sourceA.name!==sourceB.name||sourceA.image!==sourceB.image)return false;
+  if(!sourceA.name&&!sourceA.image&&a.image!==b.image&&a.source?.data!==b.source?.data)return false;
   const scalarFields=['mapping','channel','wrapS','wrapT','magFilter','minFilter','anisotropy',
     'format','type','colorSpace','flipY','generateMipmaps','premultiplyAlpha','unpackAlignment',
     'rotation','matrixAutoUpdate'];
