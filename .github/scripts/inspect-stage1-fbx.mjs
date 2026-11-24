@@ -16,7 +16,7 @@ const root = new FBXLoader().parse(arrayBuffer, '');
 const previousBytes = execFileSync('git', [
   'show',
   '6851eb9ba3566b9f283dd961d7519ed3623bf9d9:clients/alpine-resort/models/slopes_stage1.fbx'
-]);
+], { maxBuffer: 20 * 1024 * 1024 });
 const previousBuffer = previousBytes.buffer.slice(
   previousBytes.byteOffset,
   previousBytes.byteOffset + previousBytes.byteLength
