@@ -54,6 +54,8 @@ const CLIENT_REPO_OWNER='kortul',CLIENT_REPO_NAME='Grade_Optimizer';
 const WORKSPACE_QUERY=new URLSearchParams(window.location.search);
 const REQUESTED_PROJECT_ID=WORKSPACE_QUERY.get('project')||WORKSPACE_QUERY.get('client')||'';
 const FORCE_REMOTE_PROJECT=WORKSPACE_QUERY.get('remote')==='1';
+// Diagnostic only: append &shadows=off to isolate shadow-map artifacts on the large source terrain.
+const DISABLE_SHADOW_MAP_FOR_DIAGNOSTICS=WORKSPACE_QUERY.get('shadows')==='off';
 const RESTORE_LOCAL_PROJECT_DRAFT=!REQUESTED_PROJECT_ID;
 const CLIENT_ID_FROM_URL=REQUESTED_PROJECT_ID||'alpine-resort';
 let currentClientSlug=CLIENT_ID_FROM_URL;
@@ -81,7 +83,8 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
 const BASE_TONE_MAPPING_EXPOSURE = 1.12;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !DISABLE_SHADOW_MAP_FOR_DIAGNOSTICS;
+if(DISABLE_SHADOW_MAP_FOR_DIAGNOSTICS)console.info('[Grade Optimizer] Shadow diagnostic enabled: shadow map disabled by ?shadows=off.');
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 view.appendChild(renderer.domElement);
 
