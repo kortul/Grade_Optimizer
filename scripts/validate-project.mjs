@@ -87,12 +87,12 @@ assert.equal(stageOneAsset.category, 'slope', 'Slopes_Stage1 must remain an addi
 assert.equal(stageOneAsset.activeTerrain, false, 'Slopes_Stage1 must not replace the base terrain');
 assert.deepEqual(stageOneAsset.transform.scale, [0.01, 0.01, 0.01], 'Maya centimetres must be converted to metres for the imported piste');
 const stageOneComponents = stageOneAsset.mayaExport?.components || [];
-const stageTwoInStageOne = stageOneComponents.filter(component =>
-  /(stage[_ -]?2|slopes[_ -]?stage[_ -]?2)/i.test([
-    component?.dagPath, component?.name, component?.shape
-  ].filter(Boolean).join(' '))
+assert.ok(stageOneComponents.length > 0, 'Slopes_Stage1 manifest must list its exported mesh components');
+assert.equal(
+  stageOneComponents.length,
+  Number(stageOneAsset.mayaExport?.meshComponentCount),
+  'Slopes_Stage1 component manifest count must match the exported mesh count'
 );
-assert.equal(stageTwoInStageOne.length, 0, 'Slopes_Stage1 FBX must not contain meshes from Stage 2');
 assert.ok(existsSync(resolve(root, 'clients/alpine-resort', stageOneAsset.file)), 'Slopes_Stage1 FBX file is missing');
 pass('original base terrain is preserved and Slopes_Stage1 is registered as separate non-active piste geometry');
 
@@ -125,7 +125,22 @@ const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map
 assert.ok(entrySource.includes('weather-system.v7.js'), 'active app must use the updated atmospheric weather engine');
 const mayaExporterSource = read('maya/grade_optimizer_exporter.py').toString('utf8');
 assert.ok(mayaExporterSource.includes('def _inspect_git_worktree(repo):')&&mayaExporterSource.includes('"--show-toplevel"'), 'Maya exporter must verify the selected Git working tree');
-assert.ok(mayaExporterSource.includes('stage_two_components') && mayaExporterSource.includes('Экспорт Stage 1 остановлен') && mayaExporterSource.includes('def _stage_one_branch_selection(repo, components):') && mayaExporterSource.includes('if target_phase == "stage_1":'), 'Maya exporter must isolate the Stage 1 DAG branch and reject any Stage 2 leakage');
+assert.ok(
+  mayaExporterSource.includes('def _stage_one_branch_selection(repo, components):') &&
+  mayaExporterSource.includes('part.lower() == "slopes_stage1"') &&
+  !mayaExporterSource.includes('stage_two_components'),
+  'Stage 1 replacement must isolate the exact Slopes_Stage1 DAG branch without filtering mesh leaf names'
+);
+assert.ok(
+  mayaExporterSource.includes('node == item or node.startswith(item.rstrip("|") + "|")') &&
+  !mayaExporterSource.includes('item.startswith(node.rstrip("|") + "|")'),
+  'Maya node metadata must not leak from ancestor or sibling branches'
+);
+assert.ok(
+  mayaExporterSource.includes('Preserve all Maya-authored transforms') &&
+  !mayaExporterSource.includes('node.rsplit("|", 1)[-1].lower() == "tosketchfab"'),
+  'Maya export must preserve nested scales and ToSketchfab translation before world-space baking'
+);
 assert.ok(mayaExporterSource.includes('def _git_changes_for_paths(repo, paths):')&&mayaExporterSource.includes('"--short"'), 'Maya exporter must report exact Git status for the exported FBX and manifest');
 assert.ok(mayaExporterSource.includes('remote.origin.url')&&mayaExporterSource.includes('def check_git_repository(')&&mayaExporterSource.includes('"--short", "--branch"'), 'Maya exporter must expose Git origin diagnostics in its UI');
 assert.ok(mayaExporterSource.includes('ПРОВЕРКА GIT:')&&mayaExporterSource.includes('ПРОВЕРИТЬ ПАПКУ'), 'Maya exporter must show post-export Git diagnostics and a folder check button');
