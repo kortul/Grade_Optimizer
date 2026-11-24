@@ -1,0 +1,288 @@
+import * as THREE from 'three';
+
+const SEND_INTERVAL_MS = 125;
+const STALE_PEER_MS = 7000;
+const JOINT_FLOATS = 72;
+const JOINTS_PER_NODE = 6;
+
+function normalizeEndpoint(value) {
+  let url=String(value||'').trim();
+  if(!url)return '';
+  if(/^https?:\/\//i.test(url))url=url.replace(/^http/i,'ws');
+  if(!/^wss?:\/\//i.test(url))url='wss://'+url;
+  url=url.replace(/\/+$/,'');
+  if(!/\/ws$/i.test(url))url+='/ws';
+  return url;
+}
+
+function cloneModel(source) {
+  const root=source?source.clone(true):new THREE.Group();
+  root.position.set(0,0,0);
+  root.quaternion.identity();
+  const materials=new Set();
+  root.traverse(object=>{
+    object.visible=true;
+    if(!object.isMesh||!object.material)return;
+    const cloneMaterial=material=>{
+      if(!material?.clone)return material;
+      const copy=material.clone();
+      materials.add(copy);
+      // First person hides the local avatar by fading its materials.
+      if(copy.opacity<=0.01){
+        copy.opacity=1;copy.transparent=false;copy.depthWrite=true;copy.needsUpdate=true;
+      }
+      return copy;
+    };
+    object.material=Array.isArray(object.material)?object.material.map(cloneMaterial):cloneMaterial(object.material);
+    object.castShadow=true;object.receiveShadow=true;
+  });
+  return {root,dispose(){materials.forEach(material=>material.dispose?.());materials.clear();}};
+}
+
+function makeDrone() {
+  const root=new THREE.Group();
+  root.name='GO_RemoteDrone';
+  const frame=new THREE.MeshStandardMaterial({color:0x283846,roughness:0.42,metalness:0.55});
+  const accent=new THREE.MeshStandardMaterial({color:0x75c7ee,roughness:0.32,metalness:0.42,emissive:0x16384a});
+  const warning=new THREE.MeshStandardMaterial({color:0xf39a51,roughness:0.4,metalness:0.25});
+  const black=new THREE.MeshStandardMaterial({color:0x111a21,roughness:0.5,metalness:0.25});
+  const geometries=[],rotors=[],materials=[frame,accent,warning,black];
+  const add=(geometry,material,position,parent=root)=>{
+    geometries.push(geometry);
+    const mesh=new THREE.Mesh(geometry,material);
+    mesh.position.copy(position);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);
+    return mesh;
+  };
+  add(new THREE.BoxGeometry(0.34,0.105,0.31),frame,new THREE.Vector3(0,0,0));
+  add(new THREE.BoxGeometry(0.19,0.07,0.20),accent,new THREE.Vector3(0,0.035,-0.035));
+  const lens=add(new THREE.SphereGeometry(0.075,14,10),black,new THREE.Vector3(0,-0.035,-0.17));
+  lens.scale.set(1.15,0.8,0.78);
+  const armA=add(new THREE.BoxGeometry(0.78,0.035,0.052),frame,new THREE.Vector3(0,0.025,0));
+  armA.rotation.y=Math.PI*0.25;
+  const armB=add(new THREE.BoxGeometry(0.78,0.035,0.052),frame,new THREE.Vector3(0,0.025,0));
+  armB.rotation.y=-Math.PI*0.25;
+  for(const x of [-0.265,0.265])for(const z of [-0.265,0.265]){
+    const motor=new THREE.Group();motor.position.set(x,0.045,z);root.add(motor);
+    add(new THREE.CylinderGeometry(0.052,0.056,0.07,12),black,new THREE.Vector3(0,0.04,0),motor);
+    const rotor=new THREE.Group();rotor.position.y=0.085;motor.add(rotor);
+    const bladeA=add(new THREE.BoxGeometry(0.27,0.009,0.034),accent,new THREE.Vector3(0,0,0),rotor);
+    bladeA.rotation.y=0.18;
+    const bladeB=add(new THREE.BoxGeometry(0.27,0.009,0.034),accent,new THREE.Vector3(0,0,0),rotor);
+    bladeB.rotation.y=Math.PI*0.5+0.18;
+    add(new THREE.SphereGeometry(0.024,10,8),warning,new THREE.Vector3(0,0.008,0),rotor);
+    rotors.push(rotor);
+    const leg=add(new THREE.CylinderGeometry(0.012,0.015,0.16,7),frame,new THREE.Vector3(x*0.68,-0.095,z*0.68));
+    leg.rotation.z=Math.sign(x)*0.22;
+    add(new THREE.SphereGeometry(0.025,8,6),warning,new THREE.Vector3(x*0.68,-0.17,z*0.68));
+  }
+  root.scale.setScalar(1.35);
+  return {root,rotors,dispose(){geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());}};
+}
+
+function makeNameLabel(name) {
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=112;
+  const ctx=canvas.getContext('2d');
+  if(ctx){
+    ctx.fillStyle='rgba(9,17,25,0.86)';ctx.strokeStyle='rgba(185,216,239,0.7)';ctx.lineWidth=3;
+    ctx.beginPath();
+    if(typeof ctx.roundRect==='function')ctx.roundRect(8,8,496,96,22);else ctx.rect(8,8,496,96);
+    ctx.fill();ctx.stroke();ctx.fillStyle='#f1f7fc';ctx.font='bold 38px system-ui,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(name||'Лыжник').slice(0,20),256,57,450);
+  }
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  const material=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false,depthTest:false,toneMapped:false});
+  const sprite=new THREE.Sprite(material);sprite.scale.set(3.25,0.72,1);sprite.renderOrder=50;
+  return {sprite,dispose(){texture.dispose();material.dispose();}};
+}
+
+export class ResortMultiplayer {
+  constructor({scene,endpoint,name,statusElement,statusTextElement,templateProvider,poseNodeNames=[]}) {
+    this.scene=scene;this.endpoint=normalizeEndpoint(endpoint);this.name=String(name||'Лыжник').slice(0,20);
+    this.statusElement=statusElement||null;this.statusTextElement=statusTextElement||null;
+    this.templateProvider=templateProvider||(()=>({}));this.poseNodeNames=poseNodeNames.slice();
+    this.socket=null;this.id='';this.connected=false;this.disposed=false;this.full=false;
+    this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';
+    this.players=new Map();this.names=new Map();this.lastSeen=new Map();
+    this.setStatus(this.endpoint?'connecting':'disabled');
+  }
+
+  connect() {
+    if(this.disposed||this.socket||this.full)return;
+    if(!this.endpoint){this.setStatus('disabled');return;}
+    this.setStatus(this.retries?'reconnecting':'connecting');
+    let socket;
+    try{socket=new WebSocket(this.endpoint);}catch(error){this.scheduleReconnect();return;}
+    this.socket=socket;
+    socket.onopen=()=>{
+      if(this.socket===socket&&!this.disposed)socket.send(JSON.stringify({t:'hello',name:this.name}));
+    };
+    socket.onmessage=event=>{
+      if(this.socket===socket&&!this.disposed&&typeof event.data==='string')this.onMessage(event.data);
+    };
+    socket.onerror=()=>{try{socket.close();}catch{}};
+    socket.onclose=()=>{
+      if(this.socket!==socket)return;
+      this.socket=null;this.connected=false;this.id='';this.clearPlayers();
+      if(this.disposed)return;
+      if(this.full){this.setStatus('full');return;}
+      this.setStatus('reconnecting');this.scheduleReconnect();
+    };
+  }
+
+  scheduleReconnect() {
+    if(this.disposed||this.full||this.reconnectTimer)return;
+    this.retries=Math.min(this.retries+1,6);
+    const delay=Math.min(30000,1200*2**(this.retries-1));
+    this.reconnectTimer=setTimeout(()=>{this.reconnectTimer=null;this.connect();},delay);
+  }
+
+  onMessage(raw) {
+    if(raw.length>16000)return;
+    let msg;try{msg=JSON.parse(raw);}catch{return;}
+    if(msg.t==='full'){
+      this.full=true;this.connected=false;this.setStatus('full');
+      try{this.socket?.close();}catch{}return;
+    }
+    if(msg.t==='welcome'){
+      this.id=String(msg.id||'');this.connected=!!this.id;this.retries=0;
+      for(const peer of Array.isArray(msg.players)?msg.players:[])this.upsert(peer);
+      this.setStatus(this.connected?'connected':'error');
+    }else if(msg.t==='join'){
+      if(msg.player?.id){
+        const id=String(msg.player.id);this.names.set(id,String(msg.player.name||'Лыжник'));
+        this.lastSeen.set(id,performance.now());
+      }
+      this.setStatus('connected');
+    }else if(msg.t==='state'){
+      this.upsert(msg.player);this.setStatus('connected');
+    }else if(msg.t==='leave'){
+      this.remove(String(msg.id||''));this.setStatus('connected');
+    }
+  }
+
+  finiteArray(value,length) {
+    if(!Array.isArray(value)||value.length!==length)return null;
+    const result=value.map(Number);return result.every(Number.isFinite)?result:null;
+  }
+
+  upsert(peer) {
+    if(!peer?.id)return;
+    const id=String(peer.id);if(id===this.id)return;
+    const name=String(peer.name||this.names.get(id)||'Лыжник').slice(0,20);
+    this.names.set(id,name);this.lastSeen.set(id,performance.now());
+    const state=peer.state;
+    if(!state||!['overview','skier','drone'].includes(state.mode))return;
+    let remote=this.players.get(id);
+    if(state.mode==='overview'&&!remote)return;
+    const p=this.finiteArray(state.p,3),q=this.finiteArray(state.q,4),v=this.finiteArray(state.v,3);
+    if(!p||!q||!v)return;
+    if(!remote){remote=this.createPeer(id,name);this.players.set(id,remote);}
+    remote.mode=state.mode;remote.name=name;
+    remote.targetPosition.fromArray(p);remote.targetQuaternion.fromArray(q).normalize();remote.velocity.fromArray(v);
+    remote.targetPose=Array.isArray(state.pose)&&state.pose.length===this.poseNodeNames.length*JOINTS_PER_NODE&&
+      state.pose.every(value=>Number.isFinite(Number(value)))?state.pose.map(Number):[];
+    if(!remote.poseCurrent.length)remote.poseCurrent=remote.targetPose.slice();
+    remote.lastSeen=performance.now();
+    if(!remote.initialized){
+      remote.group.position.copy(remote.targetPosition);remote.group.quaternion.copy(remote.targetQuaternion);
+      remote.initialized=true;
+    }
+  }
+
+  createPeer(id,name) {
+    const group=new THREE.Group();group.name='GO_RemotePlayer_'+id;
+    const skier=new THREE.Group();skier.name='GO_RemoteSkier';
+    const templates=this.templateProvider()||{};
+    const avatar=cloneModel(templates.skierAvatar),skis=cloneModel(templates.skiRig);
+    avatar.root.name='GO_RemoteSkierAvatar';skis.root.name='GO_RemoteSkis';skier.add(avatar.root,skis.root);
+    const drone=makeDrone(),label=makeNameLabel(name);
+    group.add(skier,drone.root,label.sprite);this.scene.add(group);
+    const joints=this.poseNodeNames.map(nodeName=>avatar.root.getObjectByName(nodeName));
+    return {
+      id,name,group,skier,drone:drone.root,rotors:drone.rotors,disposeDrone:drone.dispose,
+      disposeAvatar:avatar.dispose,disposeSkis:skis.dispose,label,joints,
+      targetPosition:new THREE.Vector3(),targetQuaternion:new THREE.Quaternion(),velocity:new THREE.Vector3(),
+      targetPose:[],poseCurrent:[],mode:'overview',initialized:false,lastSeen:performance.now(),rotorTime:0
+    };
+  }
+
+  remove(id) {
+    const peer=this.players.get(id);
+    if(peer){
+      this.scene.remove(peer.group);peer.label.dispose();peer.disposeDrone();
+      peer.disposeAvatar();peer.disposeSkis();this.players.delete(id);
+    }
+    this.names.delete(id);this.lastSeen.delete(id);
+  }
+
+  clearPlayers() {
+    for(const id of [...this.players.keys()])this.remove(id);
+    this.names.clear();this.lastSeen.clear();
+  }
+
+  setStatus(state) {
+    if(!this.statusElement)return;
+    this.statusElement.dataset.state=state;
+    const count=this.names.size+(this.connected?1:0);
+    let label='Сервер не настроен';
+    if(state==='connecting')label='Подключение к склону…';
+    else if(state==='reconnecting')label='Восстанавливаем связь…';
+    else if(state==='connected')label=count>1?'Онлайн · '+count+' участника':'Онлайн · ожидаем клиента';
+    else if(state==='full')label='Сервер занят';
+    else if(state==='error')label='Ошибка подключения';
+    if(label!==this.lastStatus&&this.statusTextElement){
+      this.statusTextElement.textContent=label;this.lastStatus=label;
+    }
+  }
+
+  publish(state) {
+    if(!this.connected||this.socket?.readyState!==WebSocket.OPEN||!state)return;
+    const now=performance.now();if(now-this.lastSent<SEND_INTERVAL_MS)return;
+    this.lastSent=now;
+    try{this.socket.send(JSON.stringify({t:'state',state}));}catch(error){try{this.socket.close();}catch{}}
+  }
+
+  update(dt) {
+    const now=performance.now();
+    for(const [id,time] of this.lastSeen)if(now-time>STALE_PEER_MS)this.remove(id);
+    for(const [id,peer] of this.players){
+      if(now-peer.lastSeen>STALE_PEER_MS){this.remove(id);continue;}
+      const active=peer.mode!=='overview';
+      peer.group.visible=active;peer.skier.visible=peer.mode==='skier';peer.drone.visible=peer.mode==='drone';
+      peer.label.sprite.position.y=peer.mode==='drone'?1.35:2.25;
+      if(!active)continue;
+      const blend=1-Math.exp(-Math.max(0,dt)*15);
+      const prediction=peer.targetPosition.clone().addScaledVector(peer.velocity,0.075);
+      if(peer.group.position.distanceToSquared(prediction)>1600)peer.group.position.copy(prediction);
+      else peer.group.position.lerp(prediction,blend);
+      peer.group.quaternion.slerp(peer.targetQuaternion,blend);
+      if(peer.mode==='skier'&&peer.targetPose.length){
+        for(let i=0;i<peer.joints.length;i++){
+          const node=peer.joints[i];if(!node)continue;
+          const offset=i*JOINTS_PER_NODE;
+          for(let axis=0;axis<JOINTS_PER_NODE;axis++){
+            peer.poseCurrent[offset+axis]+=(peer.targetPose[offset+axis]-peer.poseCurrent[offset+axis])*blend;
+          }
+          node.position.set(peer.poseCurrent[offset],peer.poseCurrent[offset+1],peer.poseCurrent[offset+2]);
+          node.rotation.set(peer.poseCurrent[offset+3],peer.poseCurrent[offset+4],peer.poseCurrent[offset+5]);
+        }
+      }
+      if(peer.mode==='drone'){
+        peer.rotorTime+=Math.max(0,dt)*34;
+        peer.rotors.forEach((rotor,index)=>{rotor.rotation.y=peer.rotorTime*(index%2?-1:1);});
+      }
+    }
+    this.setStatus(this.connected?'connected':(this.endpoint?'reconnecting':'disabled'));
+  }
+
+  diagnostics(){return{configured:!!this.endpoint,connected:this.connected,players:this.names.size,endpoint:this.endpoint};}
+
+  dispose() {
+    if(this.disposed)return;this.disposed=true;
+    if(this.reconnectTimer)clearTimeout(this.reconnectTimer);
+    this.reconnectTimer=null;
+    const socket=this.socket;this.socket=null;this.connected=false;
+    if(socket){socket.onclose=null;socket.onmessage=null;try{socket.close(1000,'page leaving');}catch{}}
+    this.clearPlayers();
+  }
+}
