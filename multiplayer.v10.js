@@ -562,7 +562,7 @@ export class ResortMultiplayer {
     for(const id of [...this.markers.keys()])if(!ids.has(id))this.removeMarker(id);
     for(const marker of markers)this.upsertMarker(marker);
     const own=markers.filter(m=>String(m?.ownerId||'')===this.id);
-    if(String(ackOwnerId||'')===this.id&&Number.isFinite(Number(revision))&&Number(revision)>=this.markerSyncSentRevision){
+    if(String(ackOwnerId||'')===this.id&&this.markerSyncSentRevision>0&&Number.isFinite(Number(revision))&&Number(revision)>=this.markerSyncSentRevision){
       this.markerSyncPending=false;this.pendingMarkerChanges.clear();this.markerSyncRevision=Math.max(this.markerSyncRevision,Number(revision));
     }
     if(!this.markerSyncPending){
