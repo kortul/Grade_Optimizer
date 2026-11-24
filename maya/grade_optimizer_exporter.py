@@ -1182,15 +1182,26 @@ def _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit):
     curve_fn = om2.MFnNurbsCurve(selection.getDagPath(0))
     try:
         cvs = curve_fn.cvPositions(om2.MSpace.kObject)
-        cv_values = [[round(float(p.x), 5), round(float(p.y), 5), round(float(p.z), 5)] for p in cvs]
+        cv_values = [
+            [round(float(p.x), 5), round(float(p.y), 5), round(float(p.z), 5), round(float(p.w), 6)]
+            for p in cvs
+        ]
     except Exception:
         cv_values = []
+    try:
+        knot_values = [round(float(value), 8) for value in curve_fn.knots()]
+    except Exception:
+        knot_values = []
+    uuids = cmds.ls(curve, uuid=True) or []
+    source_uuid = str(uuids[0]) if uuids else ""
     matrix = cmds.xform(curve, query=True, worldSpace=True, matrix=True) or []
     payload = {
         "curve": str(curve),
+        "sourceUuid": source_uuid,
         "degree": int(curve_fn.degree),
         "spans": int(curve_fn.numSpans),
         "form": int(curve_fn.form),
+        "knots": knot_values,
         "cvs": cv_values,
         "worldMatrix": [round(float(value), 6) for value in matrix],
         "linearUnit": str(linear_unit),
@@ -1399,6 +1410,7 @@ def _build_slope_analysis_record(curve, digest, bridge_context, meters_per_unit)
         "id": _safe_asset_id(curve.rsplit("|", 1)[-1]),
         "name": curve.rsplit("|", 1)[-1],
         "sourcePath": str(curve),
+        "sourceUuid": str((cmds.ls(curve, uuid=True) or [""])[0]),
         "sourceDigest": digest,
         "lengthMeters": round(total_length_cm / 100.0, 3),
         "intervalMeters": SLOPE_ANALYSIS_INTERVAL_METERS,
@@ -1431,6 +1443,10 @@ def export_slope_centerlines(*_):
             if isinstance(item, dict) and item.get("sourcePath")
         ]
         cached_by_path = {str(item.get("sourcePath")): item for item in existing_curves}
+        cached_by_uuid = {
+            str(item.get("sourceUuid")): item
+            for item in existing_curves if item.get("sourceUuid")
+        }
         updated_by_path = dict(cached_by_path)
         linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
         meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
@@ -1442,12 +1458,23 @@ def export_slope_centerlines(*_):
         for curve in curves:
             bridge_context = _slope_bridge_context(curve)
             digest = _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit)
-            cached = cached_by_path.get(str(curve))
+            source_uuids = cmds.ls(curve, uuid=True) or []
+            source_uuid = str(source_uuids[0]) if source_uuids else ""
+            cached = cached_by_uuid.get(source_uuid) if source_uuid else None
+            if cached is None:
+                cached = cached_by_path.get(str(curve))
             if cached and cached.get("sourceDigest") == digest:
-                updated_by_path[str(curve)] = cached
+                refreshed = dict(cached)
+                refreshed["sourcePath"] = str(curve)
+                refreshed["sourceUuid"] = source_uuid
+                if cached.get("sourcePath") != str(curve):
+                    updated_by_path.pop(str(cached.get("sourcePath")), None)
+                updated_by_path[str(curve)] = refreshed
                 reused += 1
                 continue
             record = _build_slope_analysis_record(curve, digest, bridge_context, meters_per_unit)
+            if cached and cached.get("sourcePath") != str(curve):
+                updated_by_path.pop(str(cached.get("sourcePath")), None)
             updated_by_path[str(curve)] = record
             recalculated += 1
 
