@@ -8,7 +8,7 @@ on:
       - 'clients/alpine-resort/scene.json'
       - 'assets/real-terrain.fbx'
       - 'assets/real-terrain.json'
-      - 'app.v158.js'
+      - 'app.v160.js'
       - 'index.html'
       - '.github/workflows/inspect-stage1-fbx.yml'
       - '.github/scripts/inspect-stage1-fbx.mjs'
