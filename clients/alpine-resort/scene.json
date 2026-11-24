@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-24T07:37:24Z",
+  "updatedAt": "2026-11-24T10:03:43Z",
   "assets": [
     {
       "id": "slopes_stage1",
@@ -372,13 +372,13 @@
         }
       ],
       "mayaExport": {
-        "pluginVersion": "0.8.1",
+        "pluginVersion": "0.8.7",
         "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
         "mayaVersion": "2026",
         "linearUnit": "cm",
         "metersPerUnit": 0.01,
         "meshComponentCount": 22,
-        "exportedRootName": "G1Slope_Mesh_30m",
+        "exportedRootName": "G1Slope_Mesh_30m, Stage2_40mNew_Slopes3, polySurface849, sweep53_Topo_Intersection, sweep42_Topo_Intersection, sweep43_Topo_Intersection, sweep44_Topo_Intersection, H4Slope_Mesh_30m, sweep56_Topo_Intersection, sweep57_Topo_Intersection, A1FromRoad, sweep49_Topo_Intersection, sweep54_Topo_Intersection, sweep45_Topo_Intersection, sweep47_Topo_Intersection, polySurface848, Stage1_40M7, sweep48_Topo_Intersection, sweep46_Topo_Intersection, sweep55_Topo_Intersection, sweep51_Topo_Intersection, sweep52_Topo_Intersection",
         "replacement": true,
         "components": [
           {
@@ -587,9 +587,11 @@
           }
         ],
         "geometryBakedToMayaWorld": true,
-        "stageOneHierarchyNormalizedAtExport": true,
+        "stageOneHierarchyNormalizedAtExport": false,
+        "stageOneTransformPolicy": "preserve Maya hierarchy transforms; bake world-space vertices",
         "cadBridge": {
-          "inverseApplied": true,
+          "inverseApplied": false,
+          "workingTransformPreserved": true,
           "workingGroups": [
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
@@ -791,7 +793,7 @@
             }
           ]
         },
-        "modelSizeBytes": 2800192,
+        "modelSizeBytes": 2763200,
         "fbxMaterialConversions": [
           {
             "sourceMaterial": "openPBR_shader1",
