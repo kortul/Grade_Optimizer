@@ -1033,6 +1033,43 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 
 </style>
 
+<style id="skierSpawnEditorStyles">
+#sceneEditorPanel .skier-spawn-section{
+  background:radial-gradient(ellipse at 92% 0%,rgba(65,142,179,.13),transparent 55%),linear-gradient(155deg,rgba(30,49,65,.68),rgba(17,29,41,.82));
+  border-color:rgba(129,185,218,.22)
+}
+.skier-spawn-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#sceneEditorPanel .skier-spawn-heading h3{margin:0;color:#c5deef;font-size:10px;letter-spacing:1px}
+.skier-spawn-instructions{margin:7px 0 10px;color:#9fb1c2;font-size:10px;line-height:1.5}
+.skier-spawn-slot-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#sceneEditorPanel .skier-spawn-slot{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  min-width:0;min-height:47px;margin:0;padding:5px 3px;
+  border:1px solid rgba(153,190,216,.18);border-radius:8px;
+  background:linear-gradient(155deg,#263747,#1d2a37);color:#e6f1f8;
+  box-shadow:inset 0 1px rgba(255,255,255,.035)
+}
+#sceneEditorPanel .skier-spawn-slot kbd{
+  display:block;padding:0;background:none;border:0;color:#eaf5fc;
+  font:800 14px/1 system-ui,sans-serif
+}
+#sceneEditorPanel .skier-spawn-slot span{font-size:7px;line-height:1.1;letter-spacing:.7px;color:#8297a9}
+#sceneEditorPanel .skier-spawn-slot.assigned{border-color:rgba(91,204,153,.42);background:linear-gradient(155deg,rgba(41,105,82,.55),rgba(26,54,49,.82))}
+#sceneEditorPanel .skier-spawn-slot.assigned span{color:#91dbb5}
+#sceneEditorPanel .skier-spawn-slot.active{border-color:#79c9a4;background:linear-gradient(155deg,#286a50,#20483e);box-shadow:0 0 0 2px rgba(79,196,139,.13),inset 0 1px rgba(255,255,255,.07)}
+#sceneEditorPanel .skier-spawn-slot.active kbd{color:#fff}
+.skier-spawn-selection{display:flex;justify-content:space-between;gap:8px;margin-top:9px;padding:7px 8px;border-radius:6px;background:rgba(5,13,21,.28);color:#a9bdce;font-size:8px;font-weight:750;letter-spacing:.7px}
+.skier-spawn-selection span:first-child{color:#c4e4f4}
+#sceneEditorPanel #placeSkierSpawnButton{background:linear-gradient(135deg,#268b63,#36ad79);color:#f4fff9}
+#sceneEditorPanel #placeSkierSpawnButton.active{background:linear-gradient(135deg,#ad7c28,#d39a38);color:#fff9eb}
+#sceneEditorPanel #cancelSkierSpawnPlacementButton[hidden]{display:none!important}
+#sceneEditorPanel #skierSpawnStatus{min-height:30px;padding-top:5px}
+body.skier-spawn-placement #view canvas{cursor:crosshair!important}
+@media(max-width:480px){
+  #sceneEditorPanel .skier-spawn-slot{min-height:43px}
+  .skier-spawn-instructions{font-size:9px}
+}
+</style>
 </head>
 <body>
 <div id="app"><div id="panel">
@@ -1196,6 +1233,36 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
     </div>
   </div>
   <div id="editorStatus">Выбери объект в сцене, чтобы редактировать его свойства и материалы.</div>
+
+  <section class="editor-section skier-spawn-section" aria-label="Skier spawn points">
+    <div class="skier-spawn-heading">
+      <h3>SKIER SPAWN POINTS</h3>
+      <span id="skierSpawnCount" class="editor-chip">0 / 10 SET</span>
+    </div>
+    <p class="skier-spawn-instructions">Выбери слот и нажми PLACE SPAWN. Первый клик задаёт позицию на трассе, второй — направление взгляда лыжника.</p>
+    <div id="skierSpawnSlots" class="skier-spawn-slot-grid" role="group" aria-label="Слоты spawn-точек">
+      <button type="button" class="skier-spawn-slot active" data-skier-spawn-slot="1" aria-pressed="true"><kbd>1</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="2" aria-pressed="false"><kbd>2</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="3" aria-pressed="false"><kbd>3</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="4" aria-pressed="false"><kbd>4</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="5" aria-pressed="false"><kbd>5</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="6" aria-pressed="false"><kbd>6</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="7" aria-pressed="false"><kbd>7</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="8" aria-pressed="false"><kbd>8</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="9" aria-pressed="false"><kbd>9</kbd><span>EMPTY</span></button>
+      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="0" aria-pressed="false"><kbd>0</kbd><span>EMPTY</span></button>
+    </div>
+    <div class="skier-spawn-selection">
+      <span id="skierSpawnSelectionLabel">SLOT 1 · EMPTY</span>
+      <span>KEY TO TELEPORT</span>
+    </div>
+    <div class="editor-split">
+      <button id="placeSkierSpawnButton" type="button">＋ PLACE SPAWN</button>
+      <button id="deleteSkierSpawnButton" class="secondary" type="button" disabled>DELETE</button>
+    </div>
+    <button id="cancelSkierSpawnPlacementButton" class="secondary" type="button" hidden>✕ CANCEL PLACEMENT</button>
+    <div id="skierSpawnStatus" class="editor-hint" role="status" aria-live="polite">10 независимых точек старта. В режиме лыжника нажми назначенную цифру для перехода к точке.</div>
+  </section>
 
   <section class="editor-section scene-look-section" aria-label="Global Scene Look">
     <div class="scene-look-section-head">
@@ -1810,7 +1877,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v160.js"></script>
+<script type="module" src="./app.v161.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
