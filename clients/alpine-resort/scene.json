@@ -435,7 +435,7 @@
             }
           ]
         },
-        "modelSizeBytes": 2328624,
+        "modelSizeBytes": 2328640,
         "fbxMaterialConversions": [
           {
             "sourceMaterial": "openPBR_shader1",
