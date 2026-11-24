@@ -12,7 +12,7 @@ const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)[
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
 const entryPath = entry.split('?')[0];
-assert.equal(entryPath, 'app.v162.js', 'index.html must activate the current app release');
+assert.equal(entryPath, 'app.v163.js', 'index.html must activate the current app release');
 const entrySource = read(entryPath).toString('utf8');
 assert.ok(entrySource.includes('TERRAIN_SNOW_TILE_METERS=120'), 'terrain snow texture must use a broad 120 m tile');
 assert.ok(entrySource.includes('gradeOptimizerTerrainTexture') && entrySource.includes('low-frequency-albedo-no-bump'), 'source terrain must avoid high-frequency bump mapping');
@@ -44,7 +44,8 @@ assert.ok(entrySource.includes('state.savedOverviewCameras=normalizeOverviewCame
 assert.ok(entrySource.includes('if(restoreSavedOverviewCameraForCurrentSlope())return;'), 'Home must restore the saved overview camera before using the automatic fallback');
 pass('Scene Editor camera-save icon, per-slope manifest persistence and Home restore are present');
 
-assert.ok(html.includes('id="skierSpawnSlots"')&&html.includes('id="placeSkierSpawnButton"')&&html.includes('id="deleteSkierSpawnButton"'), 'Scene Editor skier spawn tool controls are missing');
+assert.ok(html.includes('id="skierSpawnSlots"')&&html.includes('id="placeSkierSpawnButton"')&&html.includes('id="deleteSkierSpawnButton"')&&html.includes('id="sceneLookTab-spawn"')&&html.includes('id="sceneLookPanel-spawn"'), 'Scene Editor skier spawn tool controls / dedicated tab are missing');
+assert.ok(html.includes('class="scene-look-panel scene-look-panel--spawn" id="sceneLookPanel-spawn" data-look-panel="spawn"')&&html.indexOf('id="sceneLookPanel-spawn"')>html.indexOf('<div class="scene-look-panels">'), 'spawn tool must live inside its dedicated Scene Editor tab panel');
 for(const slot of ['1','2','3','4','5','6','7','8','9','0']){
   assert.ok(html.includes('data-skier-spawn-slot="'+slot+'"'), 'Scene Editor spawn slot missing: '+slot);
 }
@@ -52,6 +53,7 @@ assert.ok(entrySource.includes("const SKIER_SPAWN_KEYS=['1','2','3','4','5','6',
 assert.ok(entrySource.includes('function normalizeSkierSpawnMap(')&&entrySource.includes('skierSpawns:normalizeSkierSpawnMap(state.skierSpawns)'), 'skier spawn points must be normalized and persisted in client scene.json');
 assert.ok(entrySource.includes('state.skierSpawns=normalizeSkierSpawnMap(manifest.skierSpawns)'), 'skier spawn points must be restored when opening a client project');
 assert.ok(entrySource.includes('function onSkierSpawnPlacementPointerDown(')&&entrySource.includes('function onSkierSpawnPlacementPointerMove(')&&entrySource.includes('pickSkierSpawnSurface(event)'), 'spawn placement must capture both surface position and facing direction');
+assert.ok(entrySource.includes('lastSkierSpawnPlacementPointerAt=performance.now();')&&entrySource.includes('if(performance.now()-lastSkierSpawnPlacementPointerAt<700)'), 'spawn placement clicks must bypass Inspector geometry selection / yellow pulse');
 assert.ok(entrySource.includes('function respawnSkierAtSpawnSlot(')&&entrySource.includes('respawnAtCustomSpawn('), 'numeric spawn slots must teleport the active skier to saved custom locations');
 pass('Scene Editor ten-slot skier spawn placement, direction, manifest persistence and numeric respawn controls are present');
 
@@ -230,7 +232,7 @@ assert.ok(opticsSource.includes('if (!this.enabled || this.composerFailed)'), 'c
 assert.ok(opticsSource.includes('this.syncComposerSize();'), 'composer size must use the allocation guard');
 pass('camera optics GLSL declarations and direct-render fallback are valid');
 
-const sceneLookKeys = ['general','environment','camera','color','materials','render'];
+const sceneLookKeys = ['general','environment','camera','color','materials','render','trees','spawn'];
 assert.ok(html.includes('role="tablist" aria-label="Scene Look categories"'), 'Scene Look tablist is missing');
 for (const key of sceneLookKeys) {
   assert.ok(html.includes('data-look-tab="' + key + '"'), 'Scene Look tab missing: ' + key);
@@ -238,7 +240,7 @@ for (const key of sceneLookKeys) {
 }
 assert.ok(html.includes('scene-editor-gear'), 'Scene Editor gear icon is missing');
 assert.ok(html.includes('aria-label="Scene Editor"'), 'Scene Editor icon button needs an accessible label');
-assert.ok(entrySource.includes('function bindSceneLookTabs()'), 'Scene Look tab behavior is missing');
+assert.ok(entrySource.includes('function bindSceneLookTabs()')&&entrySource.includes("spawn:['SKIER SPAWN POINTS','10 START SLOTS · POSITION & DIRECTION']")&&entrySource.includes("previousTab==='spawn'&&name!=='spawn'&&skierSpawnPlacementStep"), 'Scene Look Spawn tab label and safe placement cancellation are missing');
 assert.ok(html.includes('id="sceneLookPanelTitle"') && html.includes('id="sceneLookPanelSubtitle"'), 'active Scene Look tab heading must stay visible above panels');
 assert.ok(html.includes('id="sceneLookFxStatus"'), 'live post-processing status badge is missing');
 assert.ok(html.includes('class="scene-look-reset"'), 'Scene Look reset action should be accessible from the section header');
@@ -778,7 +780,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('src="./app.v160.js"'), 'HTML must load the current application module');
+assert.ok(html.includes('src="./app.v163.js"'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');

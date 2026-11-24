@@ -1234,35 +1234,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   </div>
   <div id="editorStatus">Выбери объект в сцене, чтобы редактировать его свойства и материалы.</div>
 
-  <section class="editor-section skier-spawn-section" aria-label="Skier spawn points">
-    <div class="skier-spawn-heading">
-      <h3>SKIER SPAWN POINTS</h3>
-      <span id="skierSpawnCount" class="editor-chip">0 / 10 SET</span>
-    </div>
-    <p class="skier-spawn-instructions">Выбери слот и нажми PLACE SPAWN. Первый клик задаёт позицию на трассе, второй — направление взгляда лыжника.</p>
-    <div id="skierSpawnSlots" class="skier-spawn-slot-grid" role="group" aria-label="Слоты spawn-точек">
-      <button type="button" class="skier-spawn-slot active" data-skier-spawn-slot="1" aria-pressed="true"><kbd>1</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="2" aria-pressed="false"><kbd>2</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="3" aria-pressed="false"><kbd>3</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="4" aria-pressed="false"><kbd>4</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="5" aria-pressed="false"><kbd>5</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="6" aria-pressed="false"><kbd>6</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="7" aria-pressed="false"><kbd>7</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="8" aria-pressed="false"><kbd>8</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="9" aria-pressed="false"><kbd>9</kbd><span>EMPTY</span></button>
-      <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="0" aria-pressed="false"><kbd>0</kbd><span>EMPTY</span></button>
-    </div>
-    <div class="skier-spawn-selection">
-      <span id="skierSpawnSelectionLabel">SLOT 1 · EMPTY</span>
-      <span>KEY TO TELEPORT</span>
-    </div>
-    <div class="editor-split">
-      <button id="placeSkierSpawnButton" type="button">＋ PLACE SPAWN</button>
-      <button id="deleteSkierSpawnButton" class="secondary" type="button" disabled>DELETE</button>
-    </div>
-    <button id="cancelSkierSpawnPlacementButton" class="secondary" type="button" hidden>✕ CANCEL PLACEMENT</button>
-    <div id="skierSpawnStatus" class="editor-hint" role="status" aria-live="polite">10 независимых точек старта. В режиме лыжника нажми назначенную цифру для перехода к точке.</div>
-  </section>
+
 
   <section class="editor-section scene-look-section" aria-label="Global Scene Look">
     <div class="scene-look-section-head">
@@ -1280,6 +1252,10 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
         <button class="scene-look-tab" id="sceneLookTab-general" type="button" role="tab" data-look-tab="general" aria-controls="sceneLookPanel-general" aria-selected="false" tabindex="-1">
           <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M22 12h-3M5 12H2M19.1 4.9 17 7M7 17l-2.1 2.1M19.1 19.1 17 17M7 7 4.9 4.9"/></svg></span>
           <span class="scene-look-tab-label">General</span><span class="scene-look-tab-meta">OBJECTS</span>
+        </button>
+        <button class="scene-look-tab" id="sceneLookTab-spawn" type="button" role="tab" data-look-tab="spawn" aria-controls="sceneLookPanel-spawn" aria-selected="false" tabindex="-1">
+          <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m5 3 5 18M19 3l-5 18"/><path d="M3 7h7M14 7h7M4 17h7M13 17h7"/><circle cx="12" cy="5" r="1.5"/></svg></span>
+          <span class="scene-look-tab-label">Spawn</span><span class="scene-look-tab-meta">SKIER STARTS</span>
         </button>
         <button class="scene-look-tab" id="sceneLookTab-trees" type="button" role="tab" data-look-tab="trees" aria-controls="sceneLookPanel-trees" aria-selected="false" tabindex="-1">
           <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2-4 7h3l-5 8h12l-5-8h3Z"/><path d="M12 17v5"/></svg></span>
@@ -1383,6 +1359,37 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
           <button id="treeAreaClearButton" class="secondary" type="button" disabled>УДАЛИТЬ ВСЕ ЗОНЫ</button>
           <div class="editor-hint">При рисовании: левый клик по исходному рельефу добавляет вершину. Колёсико и правая кнопка мыши управляют камерой. Нужны минимум три точки.</div>
         </div>
+      </section>
+      <section class="scene-look-panel scene-look-panel--spawn" id="sceneLookPanel-spawn" data-look-panel="spawn" role="tabpanel" aria-labelledby="sceneLookTab-spawn" hidden>
+          <div class="editor-section skier-spawn-section" aria-label="Skier spawn points">
+            <div class="skier-spawn-heading">
+              <h3>SKIER SPAWN POINTS</h3>
+              <span id="skierSpawnCount" class="editor-chip">0 / 10 SET</span>
+            </div>
+            <p class="skier-spawn-instructions">Выбери слот и нажми PLACE SPAWN. Первый клик задаёт позицию на трассе, второй — направление взгляда лыжника.</p>
+            <div id="skierSpawnSlots" class="skier-spawn-slot-grid" role="group" aria-label="Слоты spawn-точек">
+              <button type="button" class="skier-spawn-slot active" data-skier-spawn-slot="1" aria-pressed="true"><kbd>1</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="2" aria-pressed="false"><kbd>2</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="3" aria-pressed="false"><kbd>3</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="4" aria-pressed="false"><kbd>4</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="5" aria-pressed="false"><kbd>5</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="6" aria-pressed="false"><kbd>6</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="7" aria-pressed="false"><kbd>7</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="8" aria-pressed="false"><kbd>8</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="9" aria-pressed="false"><kbd>9</kbd><span>EMPTY</span></button>
+              <button type="button" class="skier-spawn-slot" data-skier-spawn-slot="0" aria-pressed="false"><kbd>0</kbd><span>EMPTY</span></button>
+            </div>
+            <div class="skier-spawn-selection">
+              <span id="skierSpawnSelectionLabel">SLOT 1 · EMPTY</span>
+              <span>KEY TO TELEPORT</span>
+            </div>
+            <div class="editor-split">
+              <button id="placeSkierSpawnButton" type="button">＋ PLACE SPAWN</button>
+              <button id="deleteSkierSpawnButton" class="secondary" type="button" disabled>DELETE</button>
+            </div>
+            <button id="cancelSkierSpawnPlacementButton" class="secondary" type="button" hidden>✕ CANCEL PLACEMENT</button>
+            <div id="skierSpawnStatus" class="editor-hint" role="status" aria-live="polite">10 независимых точек старта. В режиме лыжника нажми назначенную цифру для перехода к точке.</div>
+          </div>
       </section>
       <section class="scene-look-panel scene-look-panel--environment" id="sceneLookPanel-environment" data-look-panel="environment" role="tabpanel" aria-labelledby="sceneLookTab-environment" hidden>
         
@@ -1877,7 +1884,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v162.js"></script>
+<script type="module" src="./app.v163.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -1939,7 +1946,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v160.js"]');
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v163.js"]');
   moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить app.v158.js или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">

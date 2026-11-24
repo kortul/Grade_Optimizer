@@ -7,7 +7,7 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v162.js` (low-frequency terrain snow texture; direct drone-to-ground skier handoff also supports off-piste Terrain).
+- Current app: `app.v163.js` (low-frequency terrain snow texture; direct drone-to-ground skier handoff also supports off-piste Terrain).
 - Weather: `weather-system.v7.js`; layered procedural clouds, directional horizon scattering, a color-varied star field, snowfall and wind streaks render through the scene weather layers.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
