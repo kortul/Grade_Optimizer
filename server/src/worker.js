@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGE_RATE,MAX_PLAYERS,
+  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,
   normalizeState,sanitizeName
 } from './protocol.js';
 
@@ -58,7 +58,7 @@ export class PublicResort extends DurableObject {
     const now=Date.now();
     if(!player.rateStart||now-player.rateStart>=1000){player.rateStart=now;player.rateCount=0;}
     player.rateCount=(player.rateCount||0)+1;
-    if(player.rateCount>MAX_MESSAGE_RATE){try{socket.close(1008,'Message rate exceeded');}catch{}return;}
+    if(player.rateCount>MAX_MESSAGES_PER_SECOND){try{socket.close(1008,'Message rate exceeded');}catch{}return;}
     let msg;try{msg=JSON.parse(raw);}catch{return;}
     if(!msg||typeof msg!=='object'||Array.isArray(msg))return;
 
