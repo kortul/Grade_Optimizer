@@ -126,10 +126,9 @@ assert.ok(entrySource.includes('weather-system.v7.js'), 'active app must use the
 const mayaExporterSource = read('maya/grade_optimizer_exporter.py').toString('utf8');
 assert.ok(mayaExporterSource.includes('def _inspect_git_worktree(repo):')&&mayaExporterSource.includes('"--show-toplevel"'), 'Maya exporter must verify the selected Git working tree');
 assert.ok(
-  mayaExporterSource.includes('def _stage_one_branch_selection(repo, components):') &&
-  mayaExporterSource.includes('part.lower() == "slopes_stage1"') &&
-  !mayaExporterSource.includes('stage_two_components'),
-  'Stage 1 replacement must isolate the exact Slopes_Stage1 DAG branch without filtering mesh leaf names'
+  !mayaExporterSource.includes('def _stage_one_branch_selection(repo, components):') &&
+  mayaExporterSource.includes('The Maya selection is the sole source of export geometry for every target.'),
+  'Every Maya export target must use the exact current Maya selection without phase/name-based branch overrides'
 );
 assert.ok(
   mayaExporterSource.includes('node == item or node.startswith(item.rstrip("|") + "|")') &&
@@ -557,7 +556,7 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.8.6"'), 'Maya scene-asset exporter version must be 0.8.6');
+assert.ok(mayaExporter.includes('VERSION = "0.8.7"'), 'Maya scene-asset exporter version must be 0.8.6');
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
 assert.ok(mayaExporter.includes('restore_fbx_compatible_materials(material_overrides)') && mayaExporter.includes('"fbxMaterialConversions"'), 'Maya exporter must always restore source shader connections and record compatibility conversions');
