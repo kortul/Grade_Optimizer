@@ -1123,6 +1123,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
       <span class="multiplayer-status-dot" aria-hidden="true"></span>
       <span id="multiplayerStatusText">Сервер не настроен</span>
     </div>
+    <button id="clearMyFlags" class="multiplayer-clear-flags" type="button" title="Удалить все мои общие флажки" disabled>ФЛАЖКОВ НЕТ</button>
     <button id="weatherToggle" class="weather-icon-button" type="button" aria-label="Погода" title="Настройки погоды" aria-expanded="false">
       <svg class="weather-cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M6.8 18.25h10.4a4.05 4.05 0 0 0 .3-8.09A5.55 5.55 0 0 0 6.9 8.5a4.1 4.1 0 0 0-.1 9.75Z"/>
@@ -1888,7 +1889,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v175.js"></script>
+<script type="module" src="./app.v176.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -1950,7 +1951,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v175.js"]');
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v176.js"]');
   moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить приложение или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
@@ -2513,5 +2514,10 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 .multiplayer-status[data-state="error"] .multiplayer-status-dot,.multiplayer-status[data-state="full"] .multiplayer-status-dot{background:#ef8278;color:#ef8278}
 .multiplayer-status[data-state="connected"]{color:#c5f0d9;border-color:rgba(88,214,155,.24)}
 @media(max-width:620px){#sceneBar .sceneMode .multiplayer-status{grid-column:1/-1;justify-self:start;max-width:100%}}
+
+#sceneBar .multiplayer-clear-flags{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:5px 8px;border:1px solid rgba(239,130,120,.25);border-radius:8px;background:rgba(74,29,31,.45);color:#f0c5bd;font:800 9px/1 system-ui,sans-serif;letter-spacing:.035em;white-space:nowrap;cursor:pointer}
+#sceneBar .multiplayer-clear-flags:disabled{opacity:.38;cursor:default}
+#sceneBar .multiplayer-clear-flags:not(:disabled):hover{background:rgba(117,44,42,.7);border-color:rgba(239,130,120,.55)}
+@media(max-width:620px){#sceneBar .multiplayer-clear-flags{min-height:27px;padding:5px 7px;font-size:8px}}
 </style>
 </body></html>
