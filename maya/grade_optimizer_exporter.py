@@ -8,6 +8,9 @@ import os
 import re
 import json
 import datetime
+import hashlib
+import bisect
+import math
 import shutil
 import subprocess
 
@@ -16,7 +19,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.8"
+VERSION = "0.9.0"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -31,6 +34,9 @@ OPTION_EXTRA_TAGS = "gradeOptimizerExtraTags"
 GIT_ASSET_ITEMS = []
 GIT_ASSET_TREE_MAP = {}
 PRESET_PLACEHOLDER = "— Выбрать тип объекта —"
+SLOPE_ANALYSIS_INTERVAL_METERS = 20.0
+SLOPE_DIFFICULTY_ORDER = ("green", "blue", "red", "black")
+SLOPE_DIFFICULTY_COLORS = {"green": "#00ff00", "blue": "#0000ff", "red": "#ff0000", "black": "#000000"}
 
 METADATA_PRESETS = {
     "Рельеф": {
@@ -1100,6 +1106,410 @@ def write_client_asset_manifest(export_info, model_size, material_conversions=No
         stream.write("\n")
     return path
 
+
+
+# ============================================================================
+# SLOPE CENTERLINE ANALYSIS — data-only export (no Maya meshes or text meshes)
+# ============================================================================
+
+def _slope_curve_shape(curve):
+    shapes = cmds.listRelatives(
+        curve, shapes=True, noIntermediate=True, fullPath=True, type="nurbsCurve"
+    ) or []
+    if not shapes:
+        raise RuntimeError("Не найдена NURBS shape у центральной линии: " + str(curve))
+    return shapes[0]
+
+
+def _selected_nurbs_curve_transforms():
+    """Collect selected NURBS curves, including curves under selected groups."""
+    selected = cmds.ls(selection=True, long=True) or []
+    curves = []
+    seen = set()
+    for node in selected:
+        if not cmds.objExists(node):
+            continue
+        node_type = cmds.nodeType(node)
+        transform_nodes = []
+        if node_type == "nurbsCurve":
+            parents = cmds.listRelatives(node, parent=True, fullPath=True) or []
+            transform_nodes = parents[:1]
+        elif node_type == "transform":
+            transform_nodes = [node]
+            transform_nodes.extend(
+                cmds.listRelatives(node, allDescendents=True, fullPath=True, type="transform") or []
+            )
+        for transform in transform_nodes:
+            for shape in (cmds.listRelatives(
+                    transform, shapes=True, noIntermediate=True,
+                    fullPath=True, type="nurbsCurve"
+            ) or []):
+                parents = cmds.listRelatives(shape, parent=True, fullPath=True) or []
+                curve_transform = parents[0] if parents else transform
+                if curve_transform not in seen:
+                    seen.add(curve_transform)
+                    curves.append(curve_transform)
+    return sorted(curves)
+
+
+def _slope_bridge_context(curve):
+    working_group = find_working_group(curve)
+    if not working_group:
+        return None
+    bridge_data = get_bridge_data(working_group)
+    if not bridge_data:
+        raise RuntimeError(
+            "У центральной линии найден %s, но отсутствуют "
+            "bridgeOriginalOffset / bridgeOriginalScale. "
+            "Нельзя безопасно экспортировать координаты."
+            % working_group.rsplit("|", 1)[-1]
+        )
+    offset, scale = bridge_data
+    if abs(float(scale)) < 1e-9:
+        raise RuntimeError("CAD Bridge scale равен нулю: " + working_group)
+    return {
+        "group": working_group,
+        "offset": [float(value) for value in offset],
+        "scale": float(scale)
+    }
+
+
+def _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit):
+    """Cheap geometry fingerprint: CV positions + world transform + Bridge context."""
+    shape = _slope_curve_shape(curve)
+    selection = om2.MSelectionList()
+    selection.add(shape)
+    curve_fn = om2.MFnNurbsCurve(selection.getDagPath(0))
+    try:
+        cvs = curve_fn.cvPositions(om2.MSpace.kObject)
+        cv_values = [[round(float(p.x), 5), round(float(p.y), 5), round(float(p.z), 5)] for p in cvs]
+    except Exception:
+        cv_values = []
+    matrix = cmds.xform(curve, query=True, worldSpace=True, matrix=True) or []
+    payload = {
+        "curve": str(curve),
+        "degree": int(curve_fn.degree),
+        "spans": int(curve_fn.numSpans),
+        "form": int(curve_fn.form),
+        "cvs": cv_values,
+        "worldMatrix": [round(float(value), 6) for value in matrix],
+        "linearUnit": str(linear_unit),
+        "metersPerUnit": float(meters_per_unit),
+        "bridge": bridge_context
+    }
+    encoded = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _slope_correct_bridge_points(points_cm, bridge_context, meters_per_unit):
+    """Convert API world cm back from CAD Bridge working coordinates."""
+    if not bridge_context:
+        return [list(point) for point in points_cm]
+    cm_per_scene_unit = float(meters_per_unit) * 100.0
+    offset = bridge_context["offset"]
+    scale = float(bridge_context["scale"])
+    corrected = []
+    for point in points_cm:
+        scene_point = [float(value) / cm_per_scene_unit for value in point]
+        original_scene_point = [
+            scene_point[axis] / scale + float(offset[axis])
+            for axis in range(3)
+        ]
+        corrected.append([value * cm_per_scene_unit for value in original_scene_point])
+    return corrected
+
+
+def _sample_slope_curve(curve, bridge_context, meters_per_unit):
+    """Dense world-space curve sampling in corrected original Maya coordinates (API cm)."""
+    shape = _slope_curve_shape(curve)
+    selection = om2.MSelectionList()
+    selection.add(shape)
+    curve_fn = om2.MFnNurbsCurve(selection.getDagPath(0))
+    minimum, maximum = curve_fn.knotDomain
+    sample_count = max(4096, min(32768, int(curve_fn.numSpans) * 256))
+    sampled = []
+    for index in range(sample_count + 1):
+        fraction = float(index) / float(sample_count)
+        parameter = minimum + (maximum - minimum) * fraction
+        point = curve_fn.getPointAtParam(parameter, om2.MSpace.kWorld)
+        sampled.append((float(point.x), float(point.y), float(point.z)))
+    points = _slope_correct_bridge_points(sampled, bridge_context, meters_per_unit)
+    cumulative = [0.0]
+    for index in range(1, len(points)):
+        a, b = points[index - 1], points[index]
+        dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+        cumulative.append(cumulative[-1] + math.sqrt(dx * dx + dy * dy + dz * dz))
+    total_length_cm = cumulative[-1]
+    if total_length_cm <= 1e-8:
+        raise RuntimeError("Центральная линия имеет нулевую длину: " + str(curve))
+    return {"points": points, "cumulative": cumulative, "totalLengthCm": total_length_cm}
+
+
+def _slope_point_at_distance(points, cumulative, distance_cm):
+    total = cumulative[-1]
+    if distance_cm <= 0.0:
+        return list(points[0]), 0, 0.0
+    if distance_cm >= total:
+        return list(points[-1]), len(points) - 2, 1.0
+    segment_index = bisect.bisect_right(cumulative, float(distance_cm)) - 1
+    segment_index = max(0, min(segment_index, len(points) - 2))
+    while segment_index < len(points) - 2 and (
+            cumulative[segment_index + 1] - cumulative[segment_index] <= 1e-12):
+        segment_index += 1
+    segment_length = cumulative[segment_index + 1] - cumulative[segment_index]
+    fraction = 0.0 if segment_length <= 1e-12 else (
+        (float(distance_cm) - cumulative[segment_index]) / segment_length
+    )
+    fraction = max(0.0, min(1.0, fraction))
+    a, b = points[segment_index], points[segment_index + 1]
+    point = [
+        a[0] + (b[0] - a[0]) * fraction,
+        a[1] + (b[1] - a[1]) * fraction,
+        a[2] + (b[2] - a[2]) * fraction
+    ]
+    return point, segment_index, fraction
+
+
+def _slope_horizontal_distance(points, start_sample, end_sample):
+    """Match CurvePathAnalyzer: sum horizontal polyline distance along the section."""
+    start_point, start_segment, start_fraction = start_sample
+    end_point, end_segment, end_fraction = end_sample
+    if end_segment < start_segment:
+        return 0.0
+
+    def horizontal(a, b):
+        return math.hypot(float(b[0]) - float(a[0]), float(b[2]) - float(a[2]))
+
+    if start_segment == end_segment:
+        full = horizontal(points[start_segment], points[start_segment + 1])
+        return full * max(0.0, end_fraction - start_fraction)
+
+    total = horizontal(start_point, points[start_segment + 1])
+    for segment_index in range(start_segment + 1, end_segment):
+        total += horizontal(points[segment_index], points[segment_index + 1])
+    total += horizontal(points[end_segment], end_point)
+    return total
+
+
+def _slope_section_polyline(points, cumulative, start_sample, end_sample, end_distance_cm):
+    """Return actual NURBS samples between two stations for a smooth colored line."""
+    start_point, start_segment, _start_fraction = start_sample
+    end_point, end_segment, _end_fraction = end_sample
+    result = [start_point]
+    for index in range(start_segment + 1, end_segment + 1):
+        if cumulative[index] < float(end_distance_cm) - 1e-7:
+            point = points[index]
+            previous = result[-1]
+            if sum((float(point[axis]) - float(previous[axis])) ** 2 for axis in range(3)) > 1e-12:
+                result.append(list(point))
+    previous = result[-1]
+    if sum((float(end_point[axis]) - float(previous[axis])) ** 2 for axis in range(3)) > 1e-12:
+        result.append(list(end_point))
+    if len(result) == 1:
+        result.append(list(end_point))
+    return result
+
+
+def _slope_points_cm_to_meters(points):
+    return [[round(float(value) / 100.0, 5) for value in point] for point in points]
+
+
+def _slope_classify_angle(angle):
+    green_max = math.degrees(math.atan(0.15))
+    blue_max = math.degrees(math.atan(0.25))
+    red_max = math.degrees(math.atan(0.40))
+    if angle <= green_max:
+        return "green"
+    if angle <= blue_max:
+        return "blue"
+    if angle <= red_max:
+        return "red"
+    return "black"
+
+
+def _slope_route_class_from_shares(shares):
+    """Russian 20% harder-category allowance, matching CurvePathAnalyzer."""
+    allowance = 20.0
+    for index, category in enumerate(SLOPE_DIFFICULTY_ORDER[:-1]):
+        harder = SLOPE_DIFFICULTY_ORDER[index + 1:]
+        max_harder_share = max([float(shares.get(name, 0.0)) for name in harder] or [0.0])
+        if max_harder_share <= allowance + 1e-9:
+            return category, max_harder_share
+    return "black", 0.0
+
+
+def _build_slope_analysis_record(curve, digest, bridge_context, meters_per_unit):
+    sampler = _sample_slope_curve(curve, bridge_context, meters_per_unit)
+    points = sampler["points"]
+    cumulative = sampler["cumulative"]
+    total_length_cm = float(sampler["totalLengthCm"])
+    interval_cm = SLOPE_ANALYSIS_INTERVAL_METERS * 100.0
+    difficulty_lengths = dict((name, 0.0) for name in SLOPE_DIFFICULTY_ORDER)
+    sections = []
+    section_start = 0.0
+    section_index = 0
+
+    while section_start < total_length_cm - 1e-7:
+        section_end = min(total_length_cm, section_start + interval_cm)
+        start_sample = _slope_point_at_distance(points, cumulative, section_start)
+        end_sample = _slope_point_at_distance(points, cumulative, section_end)
+        horizontal_cm = _slope_horizontal_distance(points, start_sample, end_sample)
+        vertical_cm = abs(float(end_sample[0][1]) - float(start_sample[0][1]))
+        if horizontal_cm <= 1e-8:
+            angle = 90.0 if vertical_cm > 1e-8 else 0.0
+            grade_percent = 100000000.0 if vertical_cm > 1e-8 else 0.0
+        else:
+            grade_percent = (vertical_cm / horizontal_cm) * 100.0
+            angle = math.degrees(math.atan2(vertical_cm, horizontal_cm))
+
+        section_length_cm = section_end - section_start
+        category = _slope_classify_angle(angle)
+        difficulty_lengths[category] += section_length_cm
+        midpoint_sample = _slope_point_at_distance(
+            points, cumulative, (section_start + section_end) * 0.5
+        )
+        section_points = _slope_section_polyline(
+            points, cumulative, start_sample, end_sample, section_end
+        )
+        sections.append({
+            "index": section_index,
+            "startMeters": round(section_start / 100.0, 3),
+            "endMeters": round(section_end / 100.0, 3),
+            "lengthMeters": round(section_length_cm / 100.0, 3),
+            "angleDegrees": round(angle, 1),
+            "gradePercent": round(grade_percent, 2),
+            "difficulty": category,
+            "labelPosition": _slope_points_cm_to_meters([midpoint_sample[0]])[0],
+            "points": _slope_points_cm_to_meters(section_points)
+        })
+        section_start = section_end
+        section_index += 1
+
+    shares = {
+        key: round((value / total_length_cm) * 100.0, 3)
+        for key, value in difficulty_lengths.items()
+    }
+    route_class, harder_share = _slope_route_class_from_shares(shares)
+    dominant_class = max(
+        SLOPE_DIFFICULTY_ORDER,
+        key=lambda category: (shares.get(category, 0.0), SLOPE_DIFFICULTY_ORDER.index(category))
+    )
+    midpoint = _slope_point_at_distance(points, cumulative, total_length_cm * 0.5)[0]
+    return {
+        "id": _safe_asset_id(curve.rsplit("|", 1)[-1]),
+        "name": curve.rsplit("|", 1)[-1],
+        "sourcePath": str(curve),
+        "sourceDigest": digest,
+        "lengthMeters": round(total_length_cm / 100.0, 3),
+        "intervalMeters": SLOPE_ANALYSIS_INTERVAL_METERS,
+        "routeDifficulty": route_class,
+        "routeHarderSharePercent": round(harder_share, 3),
+        "dominantDifficulty": dominant_class,
+        "difficultyShares": shares,
+        "namePosition": _slope_points_cm_to_meters([midpoint])[0],
+        "sections": sections,
+        "analyzedAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    }
+
+
+def export_slope_centerlines(*_):
+    """Analyze selected NURBS centerlines once and store data in client scene.json."""
+    try:
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        git_info = _inspect_git_worktree(repo)
+        curves = _selected_nurbs_curve_transforms()
+        if not curves:
+            raise RuntimeError(
+                "Выдели одну или несколько центральных NURBS-кривых склонов. "
+                "Mesh-объекты для этого экспорта не подходят."
+            )
+
+        client_slug, scene_path, manifest, _assets = _read_client_scene(repo)
+        existing_analysis = manifest.get("slopeAnalysis") or {}
+        existing_curves = [
+            dict(item) for item in (existing_analysis.get("curves") or [])
+            if isinstance(item, dict) and item.get("sourcePath")
+        ]
+        cached_by_path = {str(item.get("sourcePath")): item for item in existing_curves}
+        updated_by_path = dict(cached_by_path)
+        linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
+        meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
+        if meters_per_unit is None:
+            raise RuntimeError("Неизвестная линейная единица Maya: " + (linear_unit or "не указана"))
+
+        recalculated = 0
+        reused = 0
+        for curve in curves:
+            bridge_context = _slope_bridge_context(curve)
+            digest = _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit)
+            cached = cached_by_path.get(str(curve))
+            if cached and cached.get("sourceDigest") == digest:
+                updated_by_path[str(curve)] = cached
+                reused += 1
+                continue
+            record = _build_slope_analysis_record(curve, digest, bridge_context, meters_per_unit)
+            updated_by_path[str(curve)] = record
+            recalculated += 1
+
+        ordered_curves = sorted(
+            updated_by_path.values(),
+            key=lambda item: (str(item.get("name") or "").lower(), str(item.get("sourcePath") or ""))
+        )
+        analysis_payload = {
+            "schemaVersion": "1.0",
+            "source": "maya-nurbs-centerlines",
+            "intervalMeters": SLOPE_ANALYSIS_INTERVAL_METERS,
+            "classification": {
+                "greenMaxGradePercent": 15.0,
+                "blueMaxGradePercent": 25.0,
+                "redMaxGradePercent": 40.0,
+                "harderCategoryAllowancePercent": 20.0
+            },
+            "colors": dict(SLOPE_DIFFICULTY_COLORS),
+            "curves": ordered_curves,
+            "updatedAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+        }
+        manifest["slopeAnalysis"] = analysis_payload
+        manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+        temporary_path = scene_path + ".slope-analysis.tmp"
+        try:
+            with open(temporary_path, "w", encoding="utf-8") as stream:
+                json.dump(manifest, stream, ensure_ascii=False, indent=2)
+                stream.write("\n")
+            os.replace(temporary_path, scene_path)
+        finally:
+            if os.path.isfile(temporary_path):
+                try:
+                    os.remove(temporary_path)
+                except Exception:
+                    pass
+
+        git_result = _git_changes_for_paths(repo, [scene_path])
+        git_report = _format_git_export_report(git_info, git_result)
+        message = (
+            "Анализ центральных линий экспортирован в clients/%s/scene.json.\n\n"
+            "Кривых в наборе: %d\nПересчитано: %d\nВзято из кэша без пересчёта: %d\n"
+            "Шаг измерения: %.0f м\n\n%s"
+        ) % (
+            client_slug, len(ordered_curves), recalculated, reused,
+            SLOPE_ANALYSIS_INTERVAL_METERS, git_report
+        )
+        cmds.confirmDialog(
+            title="Grade Optimizer · Анализ склонов",
+            message=message,
+            button=["OK"]
+        )
+        print("[Grade Optimizer] " + message.replace("\n", " | "))
+    except Exception as exc:
+        cmds.warning("[Grade Optimizer] Slope centerline export failed: " + str(exc))
+        cmds.confirmDialog(
+            title="Grade Optimizer · Ошибка анализа склонов",
+            message=str(exc),
+            button=["OK"]
+        )
+
+
 def browse_repo(*_):
     result = cmds.fileDialog2(fileMode=3, caption="Выбери корень локального репозитория Grade Optimizer")
     if result:
@@ -2130,6 +2540,29 @@ def show():
     cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(390, 145))
     cmds.text(WINDOW + "_repo_status", label="Git-папка ещё не проверена.", align="left", height=24, wordWrap=True)
     cmds.button(label="ПРОВЕРИТЬ ПАПКУ", height=26, command=check_git_repository)
+    cmds.setParent("..")
+
+    # Slope-analysis data is exported independently from FBX geometry.
+    cmds.frameLayout(
+        label="АНАЛИЗ ЦЕНТРАЛЬНЫХ ЛИНИЙ СКЛОНОВ",
+        collapsable=False, marginWidth=9, marginHeight=8,
+        borderStyle="etchedIn"
+    )
+    cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
+    cmds.text(
+        label="Выдели центральные NURBS-кривые склонов. Углы и сложность рассчитываются по участкам 20 м и сохраняются как данные — без создания mesh / 3D-текста.",
+        align="left", height=48, wordWrap=True
+    )
+    cmds.button(
+        label="ЭКСПОРТИРОВАТЬ АНАЛИЗ СКЛОНОВ",
+        height=42, backgroundColor=(0.22, 0.42, 0.63),
+        command=export_slope_centerlines
+    )
+    cmds.text(
+        label="Повторный экспорт использует кэш, если геометрия и world transform кривой не изменились.",
+        align="left", height=30, wordWrap=True
+    )
+    cmds.setParent("..")
     cmds.setParent("..")
 
     # 1. NEW ASSET — always creates a fresh ID and a separate FBX.
