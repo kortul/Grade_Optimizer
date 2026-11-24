@@ -131,6 +131,7 @@ terrainRoot.updateMatrixWorld(true);
 const terrainBounds = new Box3().setFromObject(terrainRoot);
 const terrainSize = terrainBounds.getSize(new Vector3());
 const terrainHeightLookup = buildTerrainHeightLookup(terrainRoot, terrainBounds, 25);
+const terrainGeometryDiagnostics = inspectTerrainGeometry(terrainRoot, terrainScale);
 const terrainHeightComparison = {
   triangleCount: terrainHeightLookup.triangleCount,
   cellSizeMeters: terrainHeightLookup.cellSize,
@@ -181,6 +182,154 @@ function measure(rootObject) {
     min: box.min.toArray(),
     max: box.max.toArray(),
     size: dimensions.toArray()
+  };
+}
+
+
+function inspectTerrainGeometry(rootObject, metersPerUnit) {
+  rootObject.updateWorldMatrix(true, true);
+  const meshes = [];
+  const aggregate = {
+    triangles: 0,
+    duplicateTriangleGroupsAt1mm: 0,
+    duplicateTrianglesAt1mm: 0,
+    duplicateTriangleGroupsAt1cm: 0,
+    duplicateTrianglesAt1cm: 0,
+    degenerateBelow1e8m2: 0,
+    tinyBelow1e6m2: 0,
+    smallBelow1e4m2: 0,
+    repeatedIndexFaces: 0,
+    nonManifoldEdges: 0,
+    boundaryEdges: 0
+  };
+  const p = [new Vector3(), new Vector3(), new Vector3()];
+  const edgeMap = new Map();
+  const q = (value, tolerance) => Math.round(value / tolerance);
+  const pointKey = (point, tolerance) =>
+    q(point.x, tolerance) + ',' + q(point.y, tolerance) + ',' + q(point.z, tolerance);
+  const edgeKey = (a, b) => a < b ? a + '|' + b : b + '|' + a;
+  const faceKey = keys => keys.slice().sort().join('|');
+
+  rootObject.traverseVisible(mesh => {
+    if (!mesh.isMesh || !mesh.geometry?.attributes?.position) return;
+    mesh.updateWorldMatrix(true, false);
+    const geometry = mesh.geometry;
+    const position = geometry.attributes.position;
+    const index = geometry.index;
+    const count = index ? index.count : position.count;
+    const duplicateFaces1mm = new Map();
+    const duplicateFaces1cm = new Map();
+    let triangles = 0;
+    let degenerateBelow1e8m2 = 0, tinyBelow1e6m2 = 0, smallBelow1e4m2 = 0;
+    let repeatedIndexFaces = 0;
+    let minArea = Infinity, maxArea = 0;
+    let sumArea = 0;
+    let maxAbsLocal = [0, 0, 0];
+
+    for (let vertex = 0; vertex < position.count; vertex++) {
+      maxAbsLocal[0] = Math.max(maxAbsLocal[0], Math.abs(position.getX(vertex)));
+      maxAbsLocal[1] = Math.max(maxAbsLocal[1], Math.abs(position.getY(vertex)));
+      maxAbsLocal[2] = Math.max(maxAbsLocal[2], Math.abs(position.getZ(vertex)));
+    }
+
+    for (let offset = 0; offset + 2 < count; offset += 3) {
+      const ids = [
+        index ? index.getX(offset) : offset,
+        index ? index.getX(offset + 1) : offset + 1,
+        index ? index.getX(offset + 2) : offset + 2
+      ];
+      if (ids[0] === ids[1] || ids[1] === ids[2] || ids[2] === ids[0]) {
+        repeatedIndexFaces++;
+      }
+      for (let corner = 0; corner < 3; corner++) {
+        p[corner].fromBufferAttribute(position, ids[corner]).applyMatrix4(mesh.matrixWorld);
+      }
+      const ab = p[1].clone().sub(p[0]);
+      const ac = p[2].clone().sub(p[0]);
+      const area = ab.cross(ac).length() * 0.5;
+      triangles++;
+      minArea = Math.min(minArea, area);
+      maxArea = Math.max(maxArea, area);
+      sumArea += area;
+      if (area < 1e-8) degenerateBelow1e8m2++;
+      if (area < 1e-6) tinyBelow1e6m2++;
+      if (area < 1e-4) smallBelow1e4m2++;
+
+      const keys1mm = p.map(point => pointKey(point, 0.001));
+      const keys1cm = p.map(point => pointKey(point, 0.01));
+      const key1mm = faceKey(keys1mm);
+      const key1cm = faceKey(keys1cm);
+      duplicateFaces1mm.set(key1mm, (duplicateFaces1mm.get(key1mm) || 0) + 1);
+      duplicateFaces1cm.set(key1cm, (duplicateFaces1cm.get(key1cm) || 0) + 1);
+
+      const exactEdgeKeys = keys1mm;
+      for (let edge = 0; edge < 3; edge++) {
+        const key = edgeKey(exactEdgeKeys[edge], exactEdgeKeys[(edge + 1) % 3]);
+        edgeMap.set(key, (edgeMap.get(key) || 0) + 1);
+      }
+    }
+
+    const duplicateGroups1mm = [...duplicateFaces1mm.values()].filter(value => value > 1);
+    const duplicateGroups1cm = [...duplicateFaces1cm.values()].filter(value => value > 1);
+    const duplicateTriangles1mm = duplicateGroups1mm.reduce((sum, count) => sum + count - 1, 0);
+    const duplicateTriangles1cm = duplicateGroups1cm.reduce((sum, count) => sum + count - 1, 0);
+    const float32UlpMeters = maxAbsLocal.map(value => {
+      if (!value) return 0;
+      return Math.pow(2, Math.floor(Math.log2(value)) - 23) * metersPerUnit;
+    });
+    const bounds = new Box3().setFromObject(mesh);
+    const geometryInfo = {
+      name: mesh.name || '(unnamed)',
+      indexed: !!index,
+      vertices: position.count,
+      triangles,
+      groups: geometry.groups?.length || 0,
+      attributes: Object.keys(geometry.attributes || {}),
+      localBounds: geometry.boundingBox ? {
+        min: geometry.boundingBox.min.toArray(),
+        max: geometry.boundingBox.max.toArray()
+      } : null,
+      worldBounds: bounds.isEmpty() ? null : {
+        min: bounds.min.toArray(),
+        max: bounds.max.toArray()
+      },
+      sourceFloat32MaxAbs: maxAbsLocal,
+      estimatedFloat32UlpMeters: float32UlpMeters,
+      triangleAreaM2: {
+        min: Number.isFinite(minArea) ? minArea : null,
+        mean: triangles ? sumArea / triangles : null,
+        max: maxArea || null
+      },
+      repeatedIndexFaces,
+      degenerateBelow1e8m2,
+      tinyBelow1e6m2,
+      smallBelow1e4m2,
+      duplicateTriangleGroupsAt1mm: duplicateGroups1mm.length,
+      duplicateTrianglesAt1mm: duplicateTriangles1mm,
+      duplicateTriangleGroupsAt1cm: duplicateGroups1cm.length,
+      duplicateTrianglesAt1cm: duplicateTriangles1cm
+    };
+    meshes.push(geometryInfo);
+    aggregate.triangles += triangles;
+    aggregate.duplicateTriangleGroupsAt1mm += duplicateGroups1mm.length;
+    aggregate.duplicateTrianglesAt1mm += duplicateTriangles1mm;
+    aggregate.duplicateTriangleGroupsAt1cm += duplicateGroups1cm.length;
+    aggregate.duplicateTrianglesAt1cm += duplicateTriangles1cm;
+    aggregate.degenerateBelow1e8m2 += degenerateBelow1e8m2;
+    aggregate.tinyBelow1e6m2 += tinyBelow1e6m2;
+    aggregate.smallBelow1e4m2 += smallBelow1e4m2;
+    aggregate.repeatedIndexFaces += repeatedIndexFaces;
+  });
+
+  for (const adjacentFaces of edgeMap.values()) {
+    if (adjacentFaces === 1) aggregate.boundaryEdges++;
+    else if (adjacentFaces > 2) aggregate.nonManifoldEdges++;
+  }
+  return {
+    coordinateScaleToMeters: metersPerUnit,
+    meshCount: meshes.length,
+    meshes,
+    aggregate: { ...aggregate, uniquePositionEdges: edgeMap.size }
   };
 }
 
@@ -375,6 +524,7 @@ console.log(JSON.stringify({
     sourceScene: realTerrainManifest.mayaExport?.sourceScene,
     realTerrainManifestBoundsCm: realTerrainManifest.mayaExport?.worldBounds ?? null,
     realTerrainScale: terrainScale,
+    terrainGeometryDiagnostics,
     realTerrainBoundsMeters: terrainBounds.isEmpty() ? null : {
       min: terrainBounds.min.toArray(),
       max: terrainBounds.max.toArray(),
