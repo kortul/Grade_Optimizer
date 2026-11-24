@@ -1123,6 +1123,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
       <span class="multiplayer-status-dot" aria-hidden="true"></span>
       <span id="multiplayerStatusText">Сервер не настроен</span>
     </div>
+    <button id="clearMyFlags" class="multiplayer-clear-flags" type="button" title="Удалить все мои флажки" aria-label="Удалить все мои флажки" disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M18 7l-1 13H7L6 7M10 11v5M14 11v5"/></svg></button>
     <button id="weatherToggle" class="weather-icon-button" type="button" aria-label="Погода" title="Настройки погоды" aria-expanded="false">
       <svg class="weather-cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M6.8 18.25h10.4a4.05 4.05 0 0 0 .3-8.09A5.55 5.55 0 0 0 6.9 8.5a4.1 4.1 0 0 0-.1 9.75Z"/>
@@ -2506,6 +2507,9 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 @media(prefers-reduced-motion:reduce){#mobileControls .mobile-stick-knob{will-change:auto}}
 </style>
 <style id="multiplayer-status-style">
+#sceneBar .multiplayer-clear-flags{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;padding:0;border:1px solid rgba(239,130,120,.25);border-radius:8px;background:rgba(74,29,31,.28);color:#e8b9b0;cursor:pointer}
+#sceneBar .multiplayer-clear-flags:disabled{opacity:.28;cursor:default}
+#sceneBar .multiplayer-clear-flags:not(:disabled):hover{background:rgba(117,44,42,.62);border-color:rgba(239,130,120,.55)}
 #sceneBar .multiplayer-status{display:inline-flex;align-items:center;gap:7px;min-height:28px;max-width:190px;padding:6px 9px;border:1px solid rgba(177,205,228,.16);border-radius:8px;background:rgba(9,16,24,.66);color:#b8cbd9;font-size:9px;font-weight:800;letter-spacing:.045em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .multiplayer-status-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#778896;box-shadow:0 0 8px currentColor}
 .multiplayer-status[data-state="connecting"] .multiplayer-status-dot,.multiplayer-status[data-state="reconnecting"] .multiplayer-status-dot{background:#e2b65d;color:#e2b65d}
