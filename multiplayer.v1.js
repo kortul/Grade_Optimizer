@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
-const SEND_INTERVAL_MS = 50;
+const SEND_INTERVAL_MS = 33;
 const STALE_PEER_MS = 45000;
+const LEAVE_GRACE_MS = 3500;
 const HEARTBEAT_INTERVAL_MS = 5000;
 const JOINT_FLOATS = 72;
 const JOINTS_PER_NODE = 6;
@@ -113,7 +114,7 @@ export class ResortMultiplayer {
     this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';this.lastClose=null;this.superseded=false;
     this.slotWaiters=new Set();this.sentStates=0;this.receivedStates=0;this.lastStateAt=0;this.lastPong=0;
     this.heartbeatTimer=this.endpoint?setInterval(()=>this.sendHeartbeat(),HEARTBEAT_INTERVAL_MS):null;
-    this.players=new Map();this.names=new Map();this.lastSeen=new Map();
+    this.players=new Map();this.names=new Map();this.lastSeen=new Map();this.leaveTimers=new Map();
     this.setStatus(this.endpoint?'connecting':'disabled');
   }
 
@@ -139,7 +140,10 @@ export class ResortMultiplayer {
       if(this.socket!==socket)return;
       this.lastClose={code:event.code,reason:event.reason||'',wasClean:event.wasClean};
       console.warn('[Grade Optimizer multiplayer] WebSocket closed',this.lastClose);
-      this.socket=null;this.connected=false;this.id='';this.slot=null;this.clearPlayers();this.resolveSlotWaiters(null);
+      this.socket=null;this.connected=false;this.id='';this.slot=null;
+      // A local transport reconnect does not mean every remote skier has left.
+      // Keep their last transforms until the server's next welcome snapshot reconciles them.
+      this.resolveSlotWaiters(null);
       if(this.disposed)return;
       if(event.code===4001){
         this.superseded=true;
@@ -213,11 +217,16 @@ export class ResortMultiplayer {
     }else if(msg.t==='welcome'){
       this.id=String(msg.id||'');this.slot=Number.isInteger(msg.slot)?msg.slot:null;this.connected=!!this.id;this.retries=0;this.lastPong=performance.now();
       this.resolveSlotWaiters(this.slot);
-      for(const peer of Array.isArray(msg.players)?msg.players:[])this.upsert(peer);
+      const peers=Array.isArray(msg.players)?msg.players:[];
+      const activeIds=new Set(peers.map(peer=>String(peer?.id||'')).filter(Boolean));
+      for(const peerId of [...this.names.keys()])if(!activeIds.has(peerId))this.remove(peerId);
+      for(const timer of this.leaveTimers.values())clearTimeout(timer);
+      this.leaveTimers.clear();
+      for(const peer of peers)this.upsert(peer);
       this.setStatus(this.connected?'connected':'error');
     }else if(msg.t==='join'){
       if(msg.player?.id){
-        const id=String(msg.player.id);this.names.set(id,String(msg.player.name||'Лыжник'));
+        const id=String(msg.player.id);this.cancelPendingRemoval(id);this.names.set(id,String(msg.player.name||'Лыжник'));
         this.lastSeen.set(id,performance.now());
       }
       this.setStatus('connected');
@@ -236,7 +245,7 @@ export class ResortMultiplayer {
       }
       this.setStatus('connected');
     }else if(msg.t==='leave'){
-      this.remove(String(msg.id||''));this.setStatus('connected');
+      this.scheduleRemoval(String(msg.id||''));this.setStatus('connected');
     }
   }
 
@@ -248,6 +257,7 @@ export class ResortMultiplayer {
   upsert(peer) {
     if(!peer?.id)return;
     const id=String(peer.id);if(id===this.id)return;
+    this.cancelPendingRemoval(id);
     const name=String(peer.name||this.names.get(id)||'Лыжник').slice(0,20);
     this.names.set(id,name);this.lastSeen.set(id,performance.now());
     const state=peer.state;
@@ -262,7 +272,7 @@ export class ResortMultiplayer {
     remote.targetPose=Array.isArray(state.pose)&&state.pose.length===this.poseNodeNames.length*JOINTS_PER_NODE&&
       state.pose.every(value=>Number.isFinite(Number(value)))?state.pose.map(Number):[];
     if(!remote.poseCurrent.length)remote.poseCurrent=remote.targetPose.slice();
-    remote.lastSeen=performance.now();
+    remote.lastSeen=performance.now();remote.lastStateAt=remote.lastSeen;
     if(!remote.initialized){
       remote.group.position.copy(remote.targetPosition);remote.group.quaternion.copy(remote.targetQuaternion);
       remote.initialized=true;
@@ -282,11 +292,28 @@ export class ResortMultiplayer {
       id,name,group,skier,drone:drone.root,rotors:drone.rotors,disposeDrone:drone.dispose,
       disposeAvatar:avatar.dispose,disposeSkis:skis.dispose,label,joints,
       targetPosition:new THREE.Vector3(),targetQuaternion:new THREE.Quaternion(),velocity:new THREE.Vector3(),
-      targetPose:[],poseCurrent:[],mode:'overview',initialized:false,lastSeen:performance.now(),rotorTime:0
+      targetPose:[],poseCurrent:[],mode:'overview',initialized:false,lastSeen:performance.now(),lastStateAt:performance.now(),rotorTime:0
     };
   }
 
+  cancelPendingRemoval(id) {
+    const timer=this.leaveTimers.get(id);
+    if(timer){clearTimeout(timer);this.leaveTimers.delete(id);}
+  }
+
+  scheduleRemoval(id) {
+    if(!id||id===this.id)return;
+    this.cancelPendingRemoval(id);
+    const timer=setTimeout(()=>{
+      this.leaveTimers.delete(id);
+      this.remove(id);
+      this.setStatus(this.connected?'connected':(this.endpoint?'reconnecting':'disabled'));
+    },LEAVE_GRACE_MS);
+    this.leaveTimers.set(id,timer);
+  }
+
   remove(id) {
+    this.cancelPendingRemoval(id);
     const peer=this.players.get(id);
     if(peer){
       this.scene.remove(peer.group);peer.label.dispose();peer.disposeDrone();
@@ -296,6 +323,8 @@ export class ResortMultiplayer {
   }
 
   clearPlayers() {
+    for(const timer of this.leaveTimers.values())clearTimeout(timer);
+    this.leaveTimers.clear();
     for(const id of [...this.players.keys()])this.remove(id);
     this.names.clear();this.lastSeen.clear();
   }
@@ -333,7 +362,8 @@ export class ResortMultiplayer {
       peer.label.sprite.position.y=peer.mode==='drone'?1.35:2.25;
       if(!active)continue;
       const blend=1-Math.exp(-Math.max(0,dt)*20);
-      const prediction=peer.targetPosition.clone().addScaledVector(peer.velocity,SEND_INTERVAL_MS/1000);
+      const predictionAge=Math.min(0.12,Math.max(0,(now-(peer.lastStateAt||now))/1000));
+      const prediction=peer.targetPosition.clone().addScaledVector(peer.velocity,predictionAge);
       if(peer.group.position.distanceToSquared(prediction)>1600)peer.group.position.copy(prediction);
       else peer.group.position.lerp(prediction,blend);
       peer.group.quaternion.slerp(peer.targetQuaternion,blend);
