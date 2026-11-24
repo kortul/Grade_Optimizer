@@ -32,6 +32,11 @@ jobs:
         run: |
           node --input-type=module --check < app.v174.js
           node --input-type=module --check < drone-controller.v76.js
+      - name: Check standalone WebGPU lab modules
+        run: |
+          node --input-type=module --check < solar-cycle.v1.js
+          node --input-type=module --check < webgpu-atmosphere-lab.js
+          node --input-type=module --check < webgpu-forest-lab.js
       - name: Check multiplayer module syntax
         run: |
           node --input-type=module --check < skier-controller.v98.js
