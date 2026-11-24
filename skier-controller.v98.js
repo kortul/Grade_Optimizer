@@ -1044,7 +1044,7 @@ export class SkierController {
     return this.gravity.clone().addScaledVector(normal, -this.gravity.dot(normal));
   }
 
-  _findSpawn() {
+  _findSpawn(spawnIndex=0) {
     this.terrain.updateWorldMatrix(true,true);
     this.bounds.setFromObject(this.terrain);
     const center=this.bounds.getCenter(new THREE.Vector3());
@@ -1141,7 +1141,20 @@ export class SkierController {
       b.hit.point.y-a.hit.point.y ||
       b.clearance-a.clearance
     );
-    if(starts.length)return this._setSpawn(starts[0].hit,center);
+    if(starts.length){
+      // Give each multiplayer client a deterministic, separated summit start.
+      const spaced=[];
+      for(const candidate of starts){
+        const point=candidate.hit.point;
+        if(spaced.every(other=>Math.hypot(point.x-other.hit.point.x,point.z-other.hit.point.z)>=10))spaced.push(candidate);
+        if(spaced.length>=4)break;
+      }
+      const pool=spaced.length?spaced:starts;
+      const index=THREE.MathUtils.clamp(Math.floor(Number(spawnIndex)||0),0,pool.length-1);
+      const hit=this._setSpawn(pool[index].hit,center);
+      this.lastSpawnInfo={...this.lastSpawnInfo,multiplayerSlot:index};
+      return hit;
+    }
 
     // Bounded fallback grid for irregular / heavily triangulated piste meshes.
     let best=null,bestScore=-Infinity;
@@ -1155,7 +1168,11 @@ export class SkierController {
       const score=hit.point.y+clearance*0.10-Math.abs(slope-16)*0.04;
       if(score>bestScore){bestScore=score;best=hit;}
     }
-    if(best)return this._setSpawn(best,center);
+    if(best){
+      const hit=this._setSpawn(best,center);
+      this.lastSpawnInfo={...this.lastSpawnInfo,multiplayerSlot:0};
+      return hit;
+    }
 
     // Last-resort adaptive scan: preserve a valid start on unusual meshes even
     // when the top-first surface search could not find a long clear run.
@@ -1184,7 +1201,10 @@ export class SkierController {
       if(score>fallbackScore){fallbackScore=score;fallback=candidate;}
     }
     if(!fallback&&fallbackCandidates.length)fallback=fallbackCandidates[0];
-    return fallback?this._setSpawn(fallback.hit,center):null;
+    if(!fallback)return null;
+    const hit=this._setSpawn(fallback.hit,center);
+    this.lastSpawnInfo={...this.lastSpawnInfo,multiplayerSlot:0};
+    return hit;
   }
 
   _setSpawn(hit, center) {
@@ -1444,7 +1464,10 @@ export class SkierController {
     }
 
     // A drone handoff never silently relocates to another piste.
-    if(!spawnFound&&!isDroneSpawn)spawnFound=!!this._findSpawn();
+    if(!spawnFound&&!isDroneSpawn){
+      const slot=THREE.MathUtils.clamp(Math.floor(Number(spawnHint?.multiplayerSlot)||0),0,3);
+      spawnFound=!!this._findSpawn(slot);
+    }
     this.terrainPerformance.spawnSearchMs=performance.now()-spawnStarted;
     if(buildToken!==this.terrainBuildToken||!isCurrent())return false;
     onProgress({phase:'spawn',progress:1});
