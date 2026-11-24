@@ -9,6 +9,7 @@ import re
 import json
 import datetime
 import hashlib
+import math
 import shutil
 import subprocess
 
@@ -17,7 +18,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.9.2"
+VERSION = "0.9.3"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -31,6 +32,7 @@ OPTION_CUSTOM_ROLE = "gradeOptimizerCustomRole"
 OPTION_EXTRA_TAGS = "gradeOptimizerExtraTags"
 GIT_ASSET_ITEMS = []
 GIT_ASSET_TREE_MAP = {}
+SLOPE_CURVE_TREE_MAP = {}
 PRESET_PLACEHOLDER = "— Выбрать тип объекта —"
 
 METADATA_PRESETS = {
@@ -427,6 +429,8 @@ def remember_export_settings(*_):
                 cmds.text(WINDOW + "_repo_status", edit=True, label="Git не подтверждён · " + str(exc).split("\n")[0])
         if cmds.control(WINDOW + "_git_asset", exists=True):
             refresh_git_asset_list()
+        if cmds.control(WINDOW + "_slope_curve_tree", exists=True):
+            refresh_slope_curve_list()
     except Exception:
         pass
 
@@ -1228,6 +1232,533 @@ def _sample_slope_curve_points(curve):
     return _slope_points_cm_to_meters(sampled)
 
 
+def _normalize_slope_queue(value, fallback="queue1"):
+    key = str(value or "").strip().lower().replace(" ", "").replace("_", "")
+    if key in ("queue2", "2", "очередь2", "q2"):
+        return "queue2"
+    if key in ("queue1", "1", "очередь1", "q1"):
+        return "queue1"
+    return "queue2" if str(fallback).lower() in ("queue2", "2") else "queue1"
+
+
+def _slope_queue_label(queue):
+    return "Очередь 2" if _normalize_slope_queue(queue) == "queue2" else "Очередь 1"
+
+
+def _slope_queue_from_control(control_name, default="queue1"):
+    try:
+        if cmds.control(control_name, exists=True):
+            value = cmds.optionMenuGrp(control_name, query=True, value=True)
+            return _normalize_slope_queue(value, default)
+    except Exception:
+        pass
+    return _normalize_slope_queue(default)
+
+
+def _polyline_length_meters(points):
+    if not isinstance(points, list) or len(points) < 2:
+        return 0.0
+    total = 0.0
+    previous = None
+    for point in points:
+        if not isinstance(point, (list, tuple)) or len(point) < 3:
+            continue
+        try:
+            current = (float(point[0]), float(point[1]), float(point[2]))
+        except Exception:
+            continue
+        if previous is not None:
+            dx = current[0] - previous[0]
+            dy = current[1] - previous[1]
+            dz = current[2] - previous[2]
+            total += math.sqrt(dx * dx + dy * dy + dz * dz)
+        previous = current
+    return total
+
+
+def _write_scene_manifest_atomic(scene_path, manifest, suffix):
+    temporary_path = scene_path + str(suffix)
+    try:
+        with open(temporary_path, "w", encoding="utf-8") as stream:
+            json.dump(manifest, stream, ensure_ascii=False, indent=2)
+            stream.write("\n")
+        os.replace(temporary_path, scene_path)
+    finally:
+        if os.path.isfile(temporary_path):
+            try:
+                os.remove(temporary_path)
+            except Exception:
+                pass
+
+
+def _selected_slope_curve_record():
+    try:
+        selected_items = cmds.treeView(
+            WINDOW + "_slope_curve_tree", query=True, selectItem=True
+        ) or []
+    except Exception:
+        return None
+    if isinstance(selected_items, str):
+        selected_items = [selected_items]
+    for item in selected_items:
+        record = SLOPE_CURVE_TREE_MAP.get(item)
+        if record:
+            return record
+    return None
+
+
+def _update_slope_curve_details(*_):
+    record = _selected_slope_curve_record()
+    info_control = WINDOW + "_slope_curve_info"
+    replace_control = WINDOW + "_slope_replace_curve"
+    queue_menu = WINDOW + "_slope_assign_queue_menu"
+    if not cmds.control(info_control, exists=True):
+        return
+    if not record:
+        message = "Выбери кривую в папке Очередь 1 или Очередь 2."
+    else:
+        message = "%s  ·  %s  ·  %.1f м  ·  %d точек\n%s" % (
+            record.get("name") or record.get("id") or "Без имени",
+            _slope_queue_label(record.get("queue")),
+            float(record.get("_length_meters") or 0.0),
+            len(record.get("points") or []),
+            record.get("sourcePath") or ""
+        )
+        if cmds.control(queue_menu, exists=True):
+            cmds.optionMenuGrp(
+                queue_menu, edit=True, value=_slope_queue_label(record.get("queue"))
+            )
+    cmds.text(info_control, edit=True, label=message)
+    if cmds.control(replace_control, exists=True):
+        cmds.button(replace_control, edit=True, enable=bool(record))
+    if cmds.control(WINDOW + "_slope_assign_queue_button", exists=True):
+        cmds.button(WINDOW + "_slope_assign_queue_button", edit=True, enable=bool(record))
+
+
+def refresh_slope_curve_list(*_):
+    global SLOPE_CURVE_TREE_MAP
+    tree_control = WINDOW + "_slope_curve_tree"
+    status_control = WINDOW + "_slope_curve_status"
+    if not cmds.control(tree_control, exists=True):
+        return
+    previous = _selected_slope_curve_record()
+    previous_id = str(previous.get("id") or "") if previous else ""
+    previous_path = str(previous.get("sourcePath") or "") if previous else ""
+    try:
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        if not os.path.isdir(repo):
+            raise RuntimeError("Укажи существующий локальный Git-репозиторий.")
+        client_slug, scene_path, manifest, _assets = _read_client_scene(repo)
+        payload = manifest.get("slopeCurves") or {}
+        curves = [
+            dict(item) for item in (payload.get("curves") or [])
+            if isinstance(item, dict)
+        ]
+        SLOPE_CURVE_TREE_MAP = {}
+        queue_groups = {"queue1": [], "queue2": []}
+        for record in curves:
+            queue = _normalize_slope_queue(record.get("queue"), "queue1")
+            record["queue"] = queue
+            record["_length_meters"] = _polyline_length_meters(record.get("points"))
+            queue_groups[queue].append(record)
+
+        cmds.treeView(tree_control, edit=True, removeAll=True)
+        previous_item = None
+        for queue_index, queue in enumerate(("queue1", "queue2"), 1):
+            root_item = "slope_queue_%d" % queue_index
+            records = queue_groups[queue]
+            cmds.treeView(tree_control, edit=True, addItem=(root_item, ""))
+            cmds.treeView(
+                tree_control, edit=True,
+                displayLabel=(root_item, "%s  (%d)" % (_slope_queue_label(queue), len(records)))
+            )
+            for index, record in enumerate(sorted(
+                    records, key=lambda item: (
+                        str(item.get("name") or item.get("id") or "").lower(),
+                        str(item.get("sourcePath") or "")
+                    )
+            )):
+                item_id = "slope_curve_%s_%04d" % (queue, index)
+                record["_tree_item"] = item_id
+                SLOPE_CURVE_TREE_MAP[item_id] = record
+                label = "%s    ·    %.1f м    [%s]" % (
+                    record.get("name") or record.get("id") or "Без имени",
+                    float(record.get("_length_meters") or 0.0),
+                    str(record.get("id") or "no-id")
+                )
+                cmds.treeView(tree_control, edit=True, addItem=(item_id, root_item))
+                cmds.treeView(tree_control, edit=True, displayLabel=(item_id, label))
+                if (
+                    str(record.get("id") or "") == previous_id
+                    or str(record.get("sourcePath") or "") == previous_path
+                ):
+                    previous_item = item_id
+            cmds.treeView(tree_control, edit=True, expandItem=(root_item, True))
+
+        count_q1 = len(queue_groups["queue1"])
+        count_q2 = len(queue_groups["queue2"])
+        note = (
+            "Git: clients/%s/scene.json  ·  Всего кривых: %d  ·  Очередь 1: %d  ·  Очередь 2: %d"
+            % (client_slug, len(curves), count_q1, count_q2)
+        )
+        cmds.text(status_control, edit=True, label=note)
+        if previous_item:
+            cmds.treeView(tree_control, edit=True, selectItem=(previous_item, True))
+        _update_slope_curve_details()
+    except Exception as exc:
+        SLOPE_CURVE_TREE_MAP = {}
+        cmds.treeView(tree_control, edit=True, removeAll=True)
+        cmds.text(status_control, edit=True, label="Не удалось прочитать список кривых: " + str(exc))
+        cmds.text(
+            WINDOW + "_slope_curve_info", edit=True,
+            label="Проверь Git repo и нажми «ОБНОВИТЬ СПИСОК КРИВЫХ»."
+        )
+        cmds.button(WINDOW + "_slope_replace_curve", edit=True, enable=False)
+        cmds.button(WINDOW + "_slope_assign_queue_button", edit=True, enable=False)
+        cmds.warning("[Grade Optimizer] Could not load slope curve list: " + str(exc))
+
+
+def assign_selected_slope_curve_queue(*_):
+    record = _selected_slope_curve_record()
+    if not record:
+        cmds.warning("[Grade Optimizer] Select a slope curve in the exporter list first.")
+        return
+    try:
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        client_slug, scene_path, manifest, _assets = _read_client_scene(repo)
+        payload = dict(manifest.get("slopeCurves") or {})
+        curves = [
+            dict(item) for item in (payload.get("curves") or [])
+            if isinstance(item, dict)
+        ]
+        target = None
+        for item in curves:
+            if (
+                str(item.get("id") or "") == str(record.get("id") or "")
+                or (
+                    record.get("sourceUuid")
+                    and str(item.get("sourceUuid") or "") == str(record.get("sourceUuid"))
+                )
+            ):
+                target = item
+                break
+        if target is None:
+            raise RuntimeError("Выбранная кривая больше не найдена в scene.json. Обнови список.")
+        queue = _slope_queue_from_control(WINDOW + "_slope_assign_queue_menu")
+        target["queue"] = queue
+        payload["curves"] = curves
+        manifest["slopeCurves"] = payload
+        manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+        _write_scene_manifest_atomic(scene_path, manifest, ".slope-queue.tmp")
+        refresh_slope_curve_list()
+        cmds.confirmDialog(
+            title="Grade Optimizer · Очередь кривой",
+            message="%s назначена в %s.\n\n%s" % (
+                target.get("name") or target.get("id"), _slope_queue_label(queue), scene_path
+            ),
+            button=["OK"]
+        )
+    except Exception as exc:
+        cmds.warning("[Grade Optimizer] Could not assign slope queue: " + str(exc))
+        cmds.confirmDialog(
+            title="Grade Optimizer · Ошибка очереди",
+            message=str(exc), button=["OK"]
+        )
+
+
+def replace_selected_slope_curve(*_):
+    target_record = _selected_slope_curve_record()
+    if not target_record:
+        cmds.warning("[Grade Optimizer] Select the destination curve in the exporter list first.")
+        return
+    try:
+        selected_curves = _selected_nurbs_curve_transforms()
+        if len(selected_curves) != 1:
+            raise RuntimeError(
+                "Для точечной замены выдели в Maya ровно одну NURBS-кривую "
+                "(или группу, внутри которой находится ровно одна кривая)."
+            )
+        curve = selected_curves[0]
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        client_slug, scene_path, manifest, _assets = _read_client_scene(repo)
+        payload = dict(manifest.get("slopeCurves") or {})
+        existing = [
+            dict(item) for item in (payload.get("curves") or [])
+            if isinstance(item, dict)
+        ]
+        target_index = None
+        for index, item in enumerate(existing):
+            if str(item.get("id") or "") == str(target_record.get("id") or ""):
+                target_index = index
+                break
+        if target_index is None:
+            raise RuntimeError("Кривая назначения больше не найдена. Обнови список и повтори замену.")
+
+        linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
+        meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
+        if meters_per_unit is None:
+            raise RuntimeError("Неизвестная линейная единица Maya: " + (linear_unit or "не указана"))
+        bridge_context = _slope_bridge_context(curve)
+        digest = _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit)
+        source_uuids = cmds.ls(curve, uuid=True) or []
+        source_uuid = str(source_uuids[0]) if source_uuids else ""
+        old_target = existing[target_index]
+        if old_target.get("sourceDigest") == digest and isinstance(old_target.get("points"), list):
+            points = list(old_target.get("points"))
+            reused = True
+        else:
+            points = _sample_slope_curve_points(curve)
+            reused = False
+
+        stable_id = str(old_target.get("id") or _safe_asset_id(curve.rsplit("|", 1)[-1]))
+        replacement = dict(old_target)
+        replacement.update({
+            "id": stable_id,
+            "name": curve.rsplit("|", 1)[-1],
+            "sourcePath": str(curve),
+            "sourceUuid": source_uuid,
+            "sourceDigest": digest,
+            "queue": _normalize_slope_queue(old_target.get("queue")),
+            "points": points
+        })
+        if bridge_context:
+            replacement["workingGroup"] = bridge_context["group"]
+        else:
+            replacement.pop("workingGroup", None)
+
+        updated_curves = []
+        for index, item in enumerate(existing):
+            if index == target_index:
+                continue
+            if (
+                (source_uuid and str(item.get("sourceUuid") or "") == source_uuid)
+                or str(item.get("sourcePath") or "") == str(curve)
+                or str(item.get("id") or "") == stable_id
+            ):
+                continue
+            updated_curves.append(item)
+        updated_curves.append(replacement)
+        updated_curves.sort(key=lambda item: (
+            str(item.get("name") or "").lower(), str(item.get("sourcePath") or "")
+        ))
+        payload.update({
+            "schemaVersion": payload.get("schemaVersion") or "1.0",
+            "source": payload.get("source") or "maya-nurbs-centerlines",
+            "coordinateSystem": payload.get("coordinateSystem") or "project-world",
+            "worldFrame": payload.get("worldFrame") or "maya-working-world",
+            "coordinateFrameVersion": payload.get("coordinateFrameVersion") or 2,
+            "units": payload.get("units") or "meters",
+            "curves": updated_curves
+        })
+        manifest["slopeCurves"] = payload
+        manifest.pop("slopeAnalysis", None)
+        manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+        _write_scene_manifest_atomic(scene_path, manifest, ".slope-replace.tmp")
+        try:
+            git_info = _inspect_git_worktree(repo)
+            git_result = _git_changes_for_paths(repo, [scene_path])
+            git_report = _format_git_export_report(git_info, git_result)
+        except Exception as git_error:
+            git_report = "Не удалось проверить Git: " + str(git_error)
+        refresh_slope_curve_list()
+        cmds.confirmDialog(
+            title="Grade Optimizer · Кривая заменена",
+            message=(
+                "Обновлена запись: %s\nОчередь сохранена: %s\n"
+                "Текущая Maya-кривая: %s\nТочки: %d · %s\n\n%s"
+            ) % (
+                replacement.get("id"), _slope_queue_label(replacement.get("queue")),
+                curve, len(points), "кэш" if reused else "геометрия пересэмплирована",
+                git_report
+            ),
+            button=["OK"]
+        )
+    except Exception as exc:
+        cmds.warning("[Grade Optimizer] Slope curve replacement failed: " + str(exc))
+        cmds.confirmDialog(
+            title="Grade Optimizer · Ошибка замены кривой",
+            message=str(exc), button=["OK"]
+        )
+
+
+def _selected_closed_nurbs_curve_transforms():
+    """Return selected closed / periodic NURBS curves; open slope splines are ignored."""
+    closed = []
+    for curve in _selected_nurbs_curve_transforms():
+        shape = _slope_curve_shape(curve)
+        selection = om2.MSelectionList()
+        selection.add(shape)
+        curve_fn = om2.MFnNurbsCurve(selection.getDagPath(0))
+        if curve_fn.form != om2.MFnNurbsCurve.kOpen:
+            closed.append(curve)
+    return closed
+
+
+def _tree_marker_center_radius_meters(curve):
+    """
+    Read the center of a closed survey ring in Maya working-world coordinates.
+
+    The exact world-space bounds center is invariant to the circle's rotation,
+    including rings drawn on sloped terrain. Marker curves are measurements,
+    not tree meshes; no CAD Bridge inverse is applied.
+    """
+    bounds = cmds.exactWorldBoundingBox(curve)
+    if not bounds or len(bounds) != 6:
+        raise RuntimeError("Не удалось прочитать world-space bounds маркера: " + str(curve))
+    center_cm = (
+        (float(bounds[0]) + float(bounds[3])) * 0.5,
+        (float(bounds[1]) + float(bounds[4])) * 0.5,
+        (float(bounds[2]) + float(bounds[5])) * 0.5
+    )
+    shape = _slope_curve_shape(curve)
+    selection = om2.MSelectionList()
+    selection.add(shape)
+    curve_fn = om2.MFnNurbsCurve(selection.getDagPath(0))
+    minimum, maximum = curve_fn.knotDomain
+    sample_count = max(64, min(512, int(curve_fn.numSpans) * 32))
+    radii = []
+    for index in range(sample_count):
+        fraction = float(index) / float(sample_count)
+        parameter = minimum + (maximum - minimum) * fraction
+        point = curve_fn.getPointAtParam(parameter, om2.MSpace.kWorld)
+        dx = float(point.x) - center_cm[0]
+        dy = float(point.y) - center_cm[1]
+        dz = float(point.z) - center_cm[2]
+        radii.append(math.sqrt(dx * dx + dy * dy + dz * dz))
+    if not radii:
+        raise RuntimeError("Не удалось вычислить радиус маркера: " + str(curve))
+    radius_cm = sum(radii) / float(len(radii))
+    if radius_cm <= 1e-5:
+        raise RuntimeError("У маркера нулевой радиус: " + str(curve))
+    radial_error = max(abs(value - radius_cm) for value in radii) / radius_cm
+    if radial_error > 0.20:
+        raise RuntimeError(
+            "Замкнутая кривая %s не похожа на круг-маркер (отклонение радиуса %.1f%%)."
+            % (curve.rsplit("|", 1)[-1], radial_error * 100.0)
+        )
+    return (
+        [round(value / 100.0, 5) for value in center_cm],
+        round(radius_cm / 100.0, 5)
+    )
+
+
+def export_tree_marker_positions(*_):
+    """
+    Export one selected set of closed Toro survey circle curves as tree marker points.
+
+    The selected set replaces the previous marker set intentionally. Select the
+    complete marker group before exporting so removed or deselected circles do
+    not leave stale tree positions in scene.json.
+    """
+    try:
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        git_info = _inspect_git_worktree(repo)
+        curves = _selected_closed_nurbs_curve_transforms()
+        if not curves:
+            raise RuntimeError(
+                "Выдели всю группу Toro survey с замкнутыми NURBS-кружками. "
+                "Открытые spline-кривые склонов автоматически пропускаются."
+            )
+        client_slug, scene_path, manifest, _assets = _read_client_scene(repo)
+        old_payload = manifest.get("treeMarkers") or {}
+        old_markers = [
+            dict(item) for item in (old_payload.get("markers") or [])
+            if isinstance(item, dict)
+        ]
+        old_by_uuid = {
+            str(item.get("sourceUuid")): item
+            for item in old_markers if item.get("sourceUuid")
+        }
+        old_by_path = {
+            str(item.get("sourcePath")): item
+            for item in old_markers if item.get("sourcePath")
+        }
+        linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
+        meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
+        if meters_per_unit is None:
+            raise RuntimeError("Неизвестная линейная единица Maya: " + (linear_unit or "не указана"))
+
+        markers = []
+        reused = 0
+        for curve in curves:
+            bridge_context = _slope_bridge_context(curve)
+            digest = _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit)
+            source_uuids = cmds.ls(curve, uuid=True) or []
+            source_uuid = str(source_uuids[0]) if source_uuids else ""
+            cached = old_by_uuid.get(source_uuid) if source_uuid else None
+            if cached is None:
+                cached = old_by_path.get(str(curve))
+            if (
+                cached
+                and cached.get("sourceDigest") == digest
+                and isinstance(cached.get("position"), list)
+                and len(cached.get("position")) == 3
+            ):
+                position = list(cached.get("position"))
+                radius_meters = float(cached.get("radiusMeters") or 0.0)
+                reused += 1
+            else:
+                position, radius_meters = _tree_marker_center_radius_meters(curve)
+            stable_source = source_uuid or str(curve)
+            stable_id = str(cached.get("id")) if cached and cached.get("id") else (
+                "tree_marker_" + hashlib.sha1(stable_source.encode("utf-8")).hexdigest()[:14]
+            )
+            marker = {
+                "id": stable_id,
+                "name": curve.rsplit("|", 1)[-1],
+                "sourcePath": str(curve),
+                "sourceUuid": source_uuid,
+                "sourceDigest": digest,
+                "markerType": "closed-nurbs-circle",
+                "position": position,
+                "radiusMeters": radius_meters
+            }
+            if bridge_context:
+                marker["workingGroup"] = bridge_context["group"]
+            markers.append(marker)
+
+        markers.sort(key=lambda item: (
+            str(item.get("name") or "").lower(), str(item.get("sourcePath") or "")
+        ))
+        manifest["treeMarkers"] = {
+            "schemaVersion": "1.0",
+            "source": "maya-toro-survey-circle-markers",
+            "coordinateSystem": "project-world",
+            "worldFrame": "maya-working-world",
+            "coordinateFrameVersion": 2,
+            "units": "meters",
+            "markerGeometry": "closed-nurbs-curve",
+            "positionMeaning": "world-space circle center",
+            "markers": markers
+        }
+        manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+        _write_scene_manifest_atomic(scene_path, manifest, ".tree-markers.tmp")
+        git_result = _git_changes_for_paths(repo, [scene_path])
+        git_report = _format_git_export_report(git_info, git_result)
+        if cmds.control(WINDOW + "_tree_marker_status", exists=True):
+            cmds.text(
+                WINDOW + "_tree_marker_status", edit=True,
+                label="Экспортировано маркеров: %d  ·  из кэша: %d  ·  новых / изменённых: %d"
+                % (len(markers), reused, len(markers) - reused)
+            )
+        cmds.confirmDialog(
+            title="Grade Optimizer · Toro tree markers",
+            message=(
+                "Набор координат деревьев экспортирован в clients/%s/scene.json.\n\n"
+                "Замкнутых NURBS-маркеров: %d\nИз кэша: %d\nНовых / пересчитанных: %d\n\n"
+                "Координаты: Maya working-world, метры. Набор полностью заменён выделенными кружками.\n"
+                "Spline-деревья пока не создаются: сайт сможет расставить по одной модели на каждую точку на следующем этапе.\n\n%s"
+            ) % (client_slug, len(markers), reused, len(markers) - reused, git_report),
+            button=["OK"]
+        )
+    except Exception as exc:
+        cmds.warning("[Grade Optimizer] Toro tree marker export failed: " + str(exc))
+        cmds.confirmDialog(
+            title="Grade Optimizer · Ошибка экспорта маркеров",
+            message=str(exc), button=["OK"]
+        )
+
+
 def export_slope_centerlines(*_):
     """Export selected NURBS centerlines as raw geometry; all analysis belongs to the browser."""
     try:
@@ -1256,6 +1787,9 @@ def export_slope_centerlines(*_):
         meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
         if meters_per_unit is None:
             raise RuntimeError("Неизвестная линейная единица Maya: " + (linear_unit or "не указана"))
+        default_queue = _slope_queue_from_control(
+            WINDOW + "_slope_export_queue", "queue1"
+        )
 
         exported = 0
         reused = 0
@@ -1282,7 +1816,10 @@ def export_slope_centerlines(*_):
                 "name": curve.rsplit("|", 1)[-1],
                 "sourcePath": str(curve),
                 "sourceUuid": source_uuid,
-                "sourceDigest": digest
+                "sourceDigest": digest,
+                "queue": _normalize_slope_queue(
+                    (cached or {}).get("queue"), default_queue
+                )
             })
             if bridge_context:
                 record["workingGroup"] = bridge_context["group"]
@@ -1333,6 +1870,7 @@ def export_slope_centerlines(*_):
             "кривых НЕ применяется: сайт использует ту же working-world систему, что и рельеф. "
             "Углы, интервалы и сложность рассчитывает сайт.\n\n%s"
         ) % (client_slug, len(ordered_curves), exported, reused, git_report)
+        refresh_slope_curve_list()
         cmds.confirmDialog(
             title="Grade Optimizer · Экспорт кривых",
             message=message,
@@ -2382,14 +2920,76 @@ def show():
 
     # Slope-analysis data is exported independently from FBX geometry.
     cmds.frameLayout(
+        WINDOW + "_slope_frame",
         label="ЭКСПОРТ ЦЕНТРАЛЬНЫХ ЛИНИЙ СКЛОНОВ",
-        collapsable=False, marginWidth=9, marginHeight=8,
+        collapsable=True, collapse=False, marginWidth=9, marginHeight=8,
         borderStyle="etchedIn"
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
     cmds.text(
         label="Выдели центральные NURBS-кривые склонов. Maya экспортирует только исходную геометрию кривых в мировых координатах. Углы, шаги 20 м и сложность рассчитывает сайт.",
         align="left", height=48, wordWrap=True
+    )
+    cmds.rowLayout(
+        numberOfColumns=2, adjustableColumn=1, columnWidth2=(420, 130)
+    )
+    cmds.text(
+        label="ТЕКУЩИЕ КРИВЫЕ В scene.json · ПАПКИ ПО ОЧЕРЕДЯМ",
+        align="left", font="smallBoldLabelFont"
+    )
+    cmds.button(label="ОБНОВИТЬ СПИСОК", height=26, command=refresh_slope_curve_list)
+    cmds.setParent("..")
+    cmds.treeView(
+        WINDOW + "_slope_curve_tree",
+        height=175, width=540,
+        allowMultiSelection=False, allowDragAndDrop=False,
+        selectionChangedCommand=_update_slope_curve_details
+    )
+    cmds.text(
+        WINDOW + "_slope_curve_status",
+        label="Список кривых ещё не загружен.",
+        align="left", height=26, wordWrap=True
+    )
+    cmds.text(
+        WINDOW + "_slope_curve_info",
+        label="Выбери кривую в папке Очередь 1 или Очередь 2.",
+        align="left", height=38, wordWrap=True,
+        font="smallPlainLabelFont"
+    )
+    cmds.rowLayout(
+        numberOfColumns=2, adjustableColumn=2, columnWidth2=(265, 265)
+    )
+    export_queue_menu = cmds.optionMenuGrp(
+        WINDOW + "_slope_export_queue", label="Очередь новых",
+        columnWidth2=(95, 130)
+    )
+    cmds.menuItem(parent=export_queue_menu + "|OptionMenu", label="Очередь 1")
+    cmds.menuItem(parent=export_queue_menu + "|OptionMenu", label="Очередь 2")
+    assign_queue_menu = cmds.optionMenuGrp(
+        WINDOW + "_slope_assign_queue_menu", label="Назначить",
+        columnWidth2=(75, 130)
+    )
+    cmds.menuItem(parent=assign_queue_menu + "|OptionMenu", label="Очередь 1")
+    cmds.menuItem(parent=assign_queue_menu + "|OptionMenu", label="Очередь 2")
+    cmds.optionMenuGrp(WINDOW + "_slope_export_queue", edit=True, value="Очередь 1")
+    cmds.optionMenuGrp(WINDOW + "_slope_assign_queue_menu", edit=True, value="Очередь 1")
+    cmds.setParent("..")
+    cmds.rowLayout(
+        numberOfColumns=2, adjustableColumn=2, columnWidth2=(265, 265)
+    )
+    cmds.button(
+        WINDOW + "_slope_assign_queue_button", label="НАЗНАЧИТЬ ОЧЕРЕДЬ",
+        height=30, enable=False, command=assign_selected_slope_curve_queue
+    )
+    cmds.button(
+        WINDOW + "_slope_replace_curve", label="ЗАМЕНИТЬ ВЫБРАННУЮ КРИВУЮ ИЗ MAYA",
+        height=30, enable=False, backgroundColor=(0.62, 0.30, 0.18),
+        command=replace_selected_slope_curve
+    )
+    cmds.setParent("..")
+    cmds.text(
+        label="Для точечной замены: выбери целевую кривую в этом списке, затем выдели ровно одну новую NURBS-кривую в Maya и нажми «ЗАМЕНИТЬ». ID и очередь целевой записи сохраняются.",
+        align="left", height=42, wordWrap=True
     )
     cmds.button(
         label="ЭКСПОРТИРОВАТЬ КРИВЫЕ СКЛОНОВ",
@@ -2403,10 +3003,40 @@ def show():
     cmds.setParent("..")
     cmds.setParent("..")
 
+    # Survey tree circles are exported as point data, not as meshes.
+    cmds.frameLayout(
+        WINDOW + "_tree_marker_frame",
+        label="TORO SURVEY · МАРКЕРЫ ДЕРЕВЬЕВ",
+        collapsable=True, collapse=True,
+        marginWidth=9, marginHeight=8,
+        borderStyle="etchedIn"
+    )
+    cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
+    cmds.text(
+        label="Выдели всю группу survey-маркеров: замкнутые NURBS-кружки, по одному на каждое реальное дерево. Открытые кривые склонов игнорируются. Центр каждого круга записывается в scene.json в метрах и в Maya working-world.",
+        align="left", height=60, wordWrap=True
+    )
+    cmds.button(
+        label="ЭКСПОРТИРОВАТЬ ПОЛНЫЙ НАБОР КРУЖКОВ",
+        height=38, backgroundColor=(0.22, 0.42, 0.63),
+        command=export_tree_marker_positions
+    )
+    cmds.text(
+        WINDOW + "_tree_marker_status",
+        label="Tree marker set ещё не экспортирован.",
+        align="left", height=28, wordWrap=True
+    )
+    cmds.text(
+        label="Экспорт заменяет весь предыдущий набор treeMarkers текущим выделением. Сначала выдели все кружки. Сами spline-деревья будут расставляться сайтом на следующем этапе — сейчас сохраняются точные позиции и радиусы маркеров.",
+        align="left", height=48, wordWrap=True
+    )
+    cmds.setParent("..")
+    cmds.setParent("..")
+
     # 1. NEW ASSET — always creates a fresh ID and a separate FBX.
     cmds.frameLayout(
         label="1. НОВЫЙ ОБЪЕКТ",
-        collapsable=False, marginWidth=9, marginHeight=8,
+        collapsable=True, collapse=True, marginWidth=9, marginHeight=8,
         borderStyle="etchedIn"
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
@@ -2425,7 +3055,7 @@ def show():
     # 2. REPLACE ASSET — choose an existing published FBX in a tree.
     cmds.frameLayout(
         label="2. ЗАМЕНА СУЩЕСТВУЮЩЕГО ОБЪЕКТА",
-        collapsable=False, marginWidth=9, marginHeight=8,
+        collapsable=True, collapse=True, marginWidth=9, marginHeight=8,
         borderStyle="etchedIn"
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=6)
@@ -2565,6 +3195,7 @@ def show():
     cmds.showWindow(WINDOW)
     remember_export_settings()
     refresh_git_asset_list()
+    refresh_slope_curve_list()
     return WINDOW
 
 # Maya Script Editor: execute this file, then call show().
