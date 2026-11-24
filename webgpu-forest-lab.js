@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
@@ -281,24 +282,82 @@ function sampleTerrainSurface(x,z,lookup){
   return best;
 }
 
+async function loadFBXTerrain(path) {
+  const response = await fetch(path, { cache: 'no-cache' });
+  if (!response.ok) throw new Error('FBX HTTP ' + response.status + ' при загрузке ' + path);
+  const buffer = await response.arrayBuffer();
+  const headerBytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 32));
+  const header = new TextDecoder().decode(headerBytes);
+  const isBinaryFBX = header.startsWith('Kaydara FBX Binary  \\0\\x1a\\0');
+  const isAsciiFBX = /^\\s*;\\s*FBX\\s+\\d+\\.\\d+/i.test(header.replace(/^\\uFEFF/, ''));
+  if (!isBinaryFBX && !isAsciiFBX) {
+    const preview = header.replace(/[^\\x20-\\x7E]/g, '.').slice(0, 32).trim() || 'пустой ответ';
+    throw new Error('Сервер вернул не FBX (первые байты: ' + preview + ').');
+  }
+  const basePath = path.slice(0, path.lastIndexOf('/') + 1);
+  return new FBXLoader().parse(buffer, basePath);
+}
+function createFallbackTerrain(manifest, metersPerUnit) {
+  const worldBounds = manifest?.mayaExport?.worldBounds;
+  const validBounds = Array.isArray(worldBounds) && worldBounds.length >= 6 && worldBounds.slice(0, 6).every(value => Number.isFinite(Number(value)));
+  const minX = validBounds ? Number(worldBounds[0]) * metersPerUnit : -2300;
+  const minY = validBounds ? Number(worldBounds[1]) * metersPerUnit : 0;
+  const minZ = validBounds ? Number(worldBounds[2]) * metersPerUnit : -2200;
+  const maxX = validBounds ? Number(worldBounds[3]) * metersPerUnit : 2300;
+  const maxZ = validBounds ? Number(worldBounds[5]) * metersPerUnit : 2200;
+  const width = Math.max(100, maxX - minX), depth = Math.max(100, maxZ - minZ);
+  const centerX = (minX + maxX) * 0.5, centerZ = (minZ + maxZ) * 0.5;
+  const geometry = new THREE.PlaneGeometry(width, depth, 180, 180);
+  geometry.rotateX(-Math.PI / 2);
+  const positions = geometry.attributes.position;
+  const noise = new ImprovedNoise();
+  const colors = [], color = new THREE.Color();
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i) + centerX, z = positions.getZ(i) + centerZ;
+    const broad = noise.noise(x * 0.00085, 0, z * 0.00085);
+    const ridge = 1 - Math.abs(noise.noise(x * 0.0022, 2.7, z * 0.0022));
+    const detail = noise.noise(x * 0.008, 7.1, z * 0.008);
+    const height = 35 + broad * 26 + Math.pow(Math.max(0, ridge), 2.2) * 50 + detail * 4;
+    positions.setY(i, height);
+    const h = THREE.MathUtils.clamp(height / 145, 0, 1);
+    color.setRGB(0.20 + h * 0.22, 0.27 + h * 0.20, 0.19 + h * 0.16);
+    colors.push(color.r, color.g, color.b);
+  }
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+  const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.98, metalness: 0 }));
+  mesh.name = 'GO_Forest_FallbackTerrainMesh';
+  const group = new THREE.Group();
+  group.name = 'GO_Forest_ProceduralTerrainFallback';
+  mesh.position.set(centerX, minY, centerZ);
+  group.add(mesh);
+  return group;
+}
 async function loadRealTerrain() {
   setLoadingMessage('Загружаем базовый рельеф…');
   await nextAnimationFrame();
-  const responses = await Promise.all([
-    fetch('./assets/real-terrain.json', { cache: 'no-cache' }).then(response => {
-      if (!response.ok) throw new Error('Не удалось загрузить real-terrain.json (' + response.status + ')');
-      return response.json();
-    }),
-    new FBXLoader().loadAsync('./assets/real-terrain.fbx')
-  ]);
-  const manifest = responses[0], root = responses[1];
+  const response = await fetch('./assets/real-terrain.json', { cache: 'no-cache' });
+  if (!response.ok) throw new Error('Не удалось загрузить real-terrain.json (' + response.status + ')');
+  const manifest = await response.json();
   const metersPerUnit = Number(manifest && manifest.mayaExport && manifest.mayaExport.metersPerUnit || 0.01);
   if (!Number.isFinite(metersPerUnit) || metersPerUnit <= 0 || metersPerUnit > 1) throw new Error('Некорректный metersPerUnit в real-terrain.json');
-  root.scale.multiplyScalar(metersPerUnit);
+  let root, usingFallback = false;
+  try {
+    root = await loadFBXTerrain('./assets/real-terrain.fbx');
+  } catch (error) {
+    usingFallback = true;
+    root = createFallbackTerrain(manifest, metersPerUnit);
+    const reason = error && error.message ? error.message : String(error);
+    statusText.textContent = 'Резервный процедурный рельеф · FBX недоступен';
+    statusText.title = reason;
+    statusDot.classList.add('bad');
+    console.warn('[Forest Lab] ' + reason + ' Используется процедурный рельеф.');
+  }
+  if (!usingFallback) root.scale.multiplyScalar(metersPerUnit);
   root.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(root);
   const size = bounds.getSize(new THREE.Vector3());
-  if (bounds.isEmpty() || size.x < 10 || size.z < 10) throw new Error('FBX рельеф не содержит корректную геометрию.');
+  if (bounds.isEmpty() || size.x < 10 || size.z < 10) { if (!usingFallback) throw new Error('FBX рельеф не содержит корректную геометрию.'); }
   const material = new THREE.MeshStandardMaterial({ color: 0xe7eff4, roughness: 0.96, metalness: 0 });
   root.traverse(object => {
     if (!object.isMesh || !object.geometry || !object.geometry.attributes.position) return;
@@ -323,7 +382,7 @@ async function loadRealTerrain() {
     center.z + Math.max(2600, terrainSize.z * 0.68)
   );
   controls.update();
-  terrainInfoEl.textContent = terrainMeshCount + ' mesh';
+  terrainInfoEl.textContent = terrainMeshCount + ' mesh' + (usingFallback ? ' · procedural' : '');
 }
 function buildFogPipeline() {
   const scenePass = pass(scene, camera);
@@ -929,7 +988,18 @@ async function loadStageOneAndForest() {
   const manifest=await response.json();
   const item=(manifest.assets||[]).find(asset=>asset.id==='slopes_stage1'&&asset.category==='slope');
   if(!item)throw new Error('В scene.json не найден Slopes_Stage1.');
-  const root=await new FBXLoader().loadAsync('./clients/alpine-resort/'+item.file);
+  const stageOneUrl='./clients/alpine-resort/'+item.file;
+  const extension=String(item.file||'').split('.').pop().toLowerCase();
+  let root;
+  if(extension==='glb'||extension==='gltf'){
+    const gltf=await new GLTFLoader().loadAsync(stageOneUrl);
+    root=gltf.scene||gltf.scenes?.[0];
+    if(!root)throw new Error('GLTF Slopes_Stage1 не содержит scene.');
+  }else if(extension==='fbx'){
+    root=await loadFBXTerrain(stageOneUrl);
+  }else{
+    throw new Error('Неподдерживаемый формат Slopes_Stage1: '+extension);
+  }
   restoreStageOneCoordinates(root,item);
   const slopeMaterial=new THREE.MeshStandardMaterial({color:0xcbd8e4,roughness:0.94,metalness:0});
   let slopeMeshCount=0;
