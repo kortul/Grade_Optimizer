@@ -6,6 +6,7 @@ on:
     paths:
       - 'clients/alpine-resort/models/slopes_stage1.fbx'
       - '.github/workflows/inspect-stage1-fbx.yml'
+      - '.github/scripts/inspect-stage1-fbx.mjs'
   workflow_dispatch:
 
 permissions:
@@ -18,13 +19,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Install Assimp CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y assimp-utils
-      - name: Inspect FBX geometry and bounds
-        run: |
-          echo "FBX file size:"
-          stat -c '%n %s bytes' clients/alpine-resort/models/slopes_stage1.fbx
-          echo
-          assimp info clients/alpine-resort/models/slopes_stage1.fbx
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the same Three.js version used by the app
+        run: npm install --no-save --no-package-lock three@0.160.0
+      - name: Parse FBX with the browser's FBXLoader
+        run: node .github/scripts/inspect-stage1-fbx.mjs
