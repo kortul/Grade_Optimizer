@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,MAX_SHARED_MARKERS,
+  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,
   normalizeMarker,normalizeState,sanitizeClientId,sanitizeName
 } from './protocol.js';
 
@@ -132,24 +132,41 @@ export class PublicResort extends DurableObject {
     }
     if(msg.t==='marker'){
       if(!player.name)return;
-      const marker=normalizeMarker(msg.marker,player.name);
+      const marker=normalizeMarker(msg.marker,player.name,player.id);
       if(!marker){
         player.lastStateRejectReason='invalid-marker';
         player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
         return;
       }
-      const storedMarkers=await this.ctx.storage.get('sharedMarkers');
-      const markers=Array.isArray(storedMarkers)?storedMarkers.slice():[];
-      let acceptedMarker=markers.find(existing=>existing?.id===marker.id);
-      if(!acceptedMarker){
-        markers.push(marker);
-        while(markers.length>MAX_SHARED_MARKERS)markers.shift();
-        await this.ctx.storage.put('sharedMarkers',markers);
-        acceptedMarker=marker;
-      }
+      const markerUpdate=await this.ctx.storage.transaction(async transaction=>{
+        const storedMarkers=await transaction.get('sharedMarkers');
+        const markers=Array.isArray(storedMarkers)?storedMarkers.slice(-MAX_SHARED_MARKERS):[];
+        // Upgrade flags created before per-player ownership IDs were introduced.
+        for(const existing of markers){
+          if(existing&&!existing.ownerId&&existing.owner===player.name)existing.ownerId=player.id;
+        }
+        let acceptedMarker=markers.find(existing=>existing?.id===marker.id);
+        const removedMarkers=[];
+        if(!acceptedMarker){
+          markers.push(marker);
+          const ownedMarkers=markers.filter(existing=>existing?.ownerId===player.id);
+          while(ownedMarkers.length>MAX_MARKERS_PER_PLAYER){
+            const oldest=ownedMarkers.shift();
+            const index=markers.findIndex(existing=>existing?.id===oldest?.id);
+            if(index>=0)removedMarkers.push(markers.splice(index,1)[0]);
+          }
+          while(markers.length>MAX_SHARED_MARKERS)removedMarkers.push(markers.shift());
+          acceptedMarker=marker;
+        }
+        await transaction.put('sharedMarkers',markers);
+        return {acceptedMarker,removedMarkers};
+      });
       player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
-      const packet={t:'marker',marker:acceptedMarker};
-      for(const entry of this.activeSockets())if(entry.player.name)this.send(entry.socket,packet);
+      const recipients=this.activeSockets().filter(entry=>entry.player.name);
+      for(const entry of recipients){
+        for(const removed of markerUpdate.removedMarkers)this.send(entry.socket,{t:'marker-remove',id:removed.id});
+        this.send(entry.socket,{t:'marker',marker:markerUpdate.acceptedMarker});
+      }
       return;
     }
     if(msg.t!=='state'||!player.name)return;
