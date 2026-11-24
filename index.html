@@ -1158,12 +1158,16 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   <div class="slope-layer-block">
     <label class="slope-layer-row" for="slopeLayer_angles">
       <span class="slope-layer-symbol slope-angle-symbol">°</span>
-      <span><strong>Углы склонов</strong><small>Шаг 20 м · метки до 100 м от камеры</small></span>
+      <span><strong>Углы склонов</strong><small>Шаг 20 м · дальность настраивается ниже (до 500 м)</small></span>
       <input id="slopeLayer_angles" type="checkbox" checked/>
     </label>
     <div class="slope-layer-opacity">
       <label for="slopeLayerOpacity_angles">Прозрачность <strong id="slopeLayerOpacityValue_angles">100%</strong></label>
       <input id="slopeLayerOpacity_angles" type="range" min="0" max="100" step="1" value="100"/>
+    </div>
+    <div class="slope-layer-opacity slope-layer-distance">
+      <label for="slopeLayerAngleDistance">Дальность от камеры <strong id="slopeLayerAngleDistanceValue">500 м</strong></label>
+      <input id="slopeLayerAngleDistance" type="range" min="0" max="500" step="10" value="500" aria-label="Дальность отображения углов от камеры в метрах"/>
     </div>
   </div>
   <div class="slope-layer-block">
@@ -1184,8 +1188,8 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
       <input id="slopeLayer_names" type="checkbox" checked/>
     </label>
     <div class="slope-layer-opacity">
-      <label for="slopeLayerOpacity_names">Прозрачность <strong id="slopeLayerOpacityValue_names">100%</strong></label>
-      <input id="slopeLayerOpacity_names" type="range" min="0" max="100" step="1" value="100"/>
+      <label for="slopeLayerOpacity_names">Прозрачность <strong id="slopeLayerOpacityValue_names">65%</strong></label>
+      <input id="slopeLayerOpacity_names" type="range" min="0" max="100" step="1" value="65"/>
     </div>
   </div>
   <div id="slopeLayersStatus" role="status">Анализ ещё не экспортирован из Maya.</div>
@@ -1323,6 +1327,10 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
         <button class="scene-look-tab" id="sceneLookTab-color" type="button" role="tab" data-look-tab="color" aria-controls="sceneLookPanel-color" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a2 2 0 0 0 1.3-3.5 1.7 1.7 0 0 1 1.1-3h.7A4.5 4.5 0 0 0 21 10c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="6.8" r=".8"/><circle cx="16" cy="8" r=".8"/></svg></span><span class="scene-look-tab-label">Color</span><span class="scene-look-tab-meta">PALETTE</span></button>
         
         <button class="scene-look-tab active" id="sceneLookTab-camera" type="button" role="tab" data-look-tab="camera" aria-controls="sceneLookPanel-camera" aria-selected="true" tabindex="0"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h4l1.6-2h6.8l1.6 2h4v12H3z"/><circle cx="12" cy="13.5" r="4.1"/><circle cx="12" cy="13.5" r="1.5"/></svg></span><span class="scene-look-tab-label">Camera</span><span class="scene-look-tab-meta">CAMERA · LENS · OPTICS</span></button><button class="scene-look-tab" id="sceneLookTab-render" type="button" role="tab" data-look-tab="render" aria-controls="sceneLookPanel-render" aria-selected="false" tabindex="-1"><span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><span class="scene-look-tab-label">Render</span><span class="scene-look-tab-meta">OUTPUT</span></button>
+        <button class="scene-look-tab" id="sceneLookTab-layers" type="button" role="tab" data-look-tab="layers" aria-controls="sceneLookPanel-layers" aria-selected="false" tabindex="-1">
+          <span class="scene-look-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></svg></span>
+          <span class="scene-look-tab-label">Слои</span><span class="scene-look-tab-meta">ОЧЕРЕДИ СКЛОНОВ</span>
+        </button>
       </div>
       <div class="scene-look-panel-heading scene-look-active-heading">
         <div class="scene-look-active-copy"><strong id="sceneLookPanelTitle">LENS &amp; OPTICS</strong><span id="sceneLookPanelSubtitle">LENS CHARACTER · BLOOM · FLARE · DEPTH OF FIELD</span></div>
@@ -1752,6 +1760,33 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
         </div>
         <div class="scene-look-note">Performance снижает нагрузку на GPU. High и Cinematic повышают детализацию композитинга. ACES и AgX сохраняют мягкий roll-off ярких участков; Linear предназначен для технического сравнения.</div>
       </section>
+      <section class="scene-look-panel scene-look-panel--layers" id="sceneLookPanel-layers" data-look-panel="layers" role="tabpanel" aria-labelledby="sceneLookTab-layers" hidden>
+        <div class="editor-section layer-queue-editor">
+          <h3>РЕДАКТОР СЛОЁВ <span class="editor-chip">SLOPE QUEUES</span></h3>
+          <p class="layer-queue-intro">Слои анализа склонов распределены по очередям. Текущие углы, линии сложности и названия находятся в Очереди 1.</p>
+          <details class="layer-queue-folder" open data-layer-queue="queue1">
+            <summary>
+              <span class="layer-queue-folder-icon">▰</span>
+              <span class="layer-queue-folder-title"><strong>Очередь 1</strong><small>Текущие слои · 3 элемента</small></span>
+              <span class="layer-queue-folder-state">АКТИВНАЯ</span>
+            </summary>
+            <label class="layer-queue-master"><input id="layerQueue1Visible" type="checkbox" checked/><span>Видимость всей папки</span></label>
+            <div class="layer-queue-items">
+              <label><input id="layerQueue1_angles" type="checkbox" checked/><span>Углы склонов</span></label>
+              <label><input id="layerQueue1_difficulty" type="checkbox" checked/><span>Сложность склонов</span></label>
+              <label><input id="layerQueue1_names" type="checkbox" checked/><span>Названия склонов</span></label>
+            </div>
+          </details>
+          <details class="layer-queue-folder layer-queue-folder--reserved" data-layer-queue="queue2">
+            <summary>
+              <span class="layer-queue-folder-icon">▰</span>
+              <span class="layer-queue-folder-title"><strong>Очередь 2</strong><small>Зарезервировано для будущих кривых</small></span>
+              <span class="layer-queue-folder-state">ПУСТАЯ</span>
+            </summary>
+            <div class="layer-queue-empty">Здесь появятся кривые и слои второй очереди. Переключатель очередей в режиме «Обзор» добавим вместе с ними.</div>
+          </details>
+        </div>
+      </section>
       
 
       </div>
@@ -1936,7 +1971,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v181.js"></script>
+<script type="module" src="./app.v182.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -2590,7 +2625,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 .slope-layer-row input{width:16px;height:16px;margin:0;accent-color:#42bd87}
 .slope-layer-symbol{display:flex;align-items:center;justify-content:center;width:27px;height:27px;border:1px solid rgba(160,195,220,.16);border-radius:7px;background:rgba(118,160,190,.08);color:#9fd0ee;font-size:16px;font-weight:800}
 .slope-difficulty-symbol{gap:2px}
-.slope-difficulty-symbol i{width:5px;height:15px;border-radius:2px;background:#21d36b}
+.slope-difficulty-symbol i{width:5px;height:15px;border-radius:2px;background:#128342}
 .slope-difficulty-symbol i:nth-child(2){background:#3988ff}
 .slope-difficulty-symbol i:nth-child(3){background:#ff5353}
 .slope-name-symbol{font-size:13px}
@@ -2598,12 +2633,35 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 .slope-analysis-label{display:inline-flex;align-items:center;justify-content:center;max-width:220px;padding:3px 7px;border:1px solid color-mix(in srgb,var(--slope-analysis-color) 76%,transparent);border-radius:6px;background:rgba(13,20,27,.88);color:#fff;font:750 11px/1.2 Inter,system-ui,sans-serif;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.8);box-shadow:0 2px 8px rgba(0,0,0,.22);pointer-events:none;user-select:none}
 .slope-analysis-angle{font-variant-numeric:tabular-nums;border-color:var(--slope-analysis-color);color:#fff}
 .slope-analysis-name{padding:5px 9px;font-size:12px;letter-spacing:.2px;border-width:1.5px;white-space:pre-line}
-.slope-difficulty-green{--slope-analysis-color:#21d36b}
+.slope-difficulty-green{--slope-analysis-color:#128342}
 .slope-difficulty-blue{--slope-analysis-color:#3988ff}
 .slope-difficulty-red{--slope-analysis-color:#ff5353}
 .slope-difficulty-black{--slope-analysis-color:#d5dce3}
 #app.skier-mode #slopeLayersToggle,#app.drone-mode #slopeLayersToggle,#app.skier-mode #slopeLayersPanel,#app.drone-mode #slopeLayersPanel{display:none!important}
 @media(max-width:700px){#slopeLayersPanel{top:66px;left:12px;width:min(300px,calc(100vw - 24px))}}
+
+/* v182 — configurable angle-label distance and Scene Editor slope queues */
+#slopeLayersPanel .slope-layer-distance{padding-top:4px}
+#slopeLayersPanel .slope-layer-distance input[type=range]{accent-color:#8bc8e9}
+#sceneLookPanel-layers .layer-queue-intro{margin:0 0 12px;color:#91a8ba;font-size:10px;line-height:1.55}
+#sceneLookPanel-layers .layer-queue-folder{margin:9px 0;padding:10px;border:1px solid rgba(143,190,220,.17);border-radius:10px;background:linear-gradient(145deg,rgba(79,124,153,.11),rgba(255,255,255,.025))}
+#sceneLookPanel-layers .layer-queue-folder>summary{display:flex;align-items:center;gap:9px;cursor:pointer;list-style:none}
+#sceneLookPanel-layers .layer-queue-folder>summary::-webkit-details-marker{display:none}
+#sceneLookPanel-layers .layer-queue-folder>summary:after{content:'⌄';margin-left:auto;color:#8caabe;font-size:16px}
+#sceneLookPanel-layers .layer-queue-folder:not([open])>summary:after{content:'›'}
+#sceneLookPanel-layers .layer-queue-folder-icon{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid rgba(127,187,219,.22);border-radius:8px;background:rgba(85,140,174,.13);color:#a8d3ec;font-size:18px}
+#sceneLookPanel-layers .layer-queue-folder-title{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+#sceneLookPanel-layers .layer-queue-folder-title strong{color:#e6f1f8;font-size:11px;letter-spacing:.3px}
+#sceneLookPanel-layers .layer-queue-folder-title small{color:#829aab;font-size:8px}
+#sceneLookPanel-layers .layer-queue-folder-state{padding:4px 6px;border:1px solid rgba(98,190,145,.2);border-radius:5px;color:#8dc9aa;font-size:7px;font-weight:850;letter-spacing:.6px}
+#sceneLookPanel-layers .layer-queue-master{display:flex;align-items:center;gap:7px;margin:10px 0 7px;padding:8px;border-radius:7px;background:rgba(0,0,0,.16);color:#aec2d0;font-size:9px}
+#sceneLookPanel-layers .layer-queue-master input,#sceneLookPanel-layers .layer-queue-items input{accent-color:#55bd8c}
+#sceneLookPanel-layers .layer-queue-items{display:grid;gap:5px}
+#sceneLookPanel-layers .layer-queue-items label{display:flex;align-items:center;gap:8px;margin:0;padding:8px;border:1px solid rgba(255,255,255,.055);border-radius:7px;background:rgba(255,255,255,.025);color:#c6d7e2;font-size:9px}
+#sceneLookPanel-layers .layer-queue-folder--reserved{border-color:rgba(143,166,184,.13);background:rgba(255,255,255,.018)}
+#sceneLookPanel-layers .layer-queue-folder--reserved .layer-queue-folder-state{border-color:rgba(143,166,184,.18);color:#879cab}
+#sceneLookPanel-layers .layer-queue-empty{padding:10px 7px 3px;color:#879dac;font-size:9px;line-height:1.55}
+@media(max-width:620px){#sceneLookPanel-layers .layer-queue-folder{padding:8px}#sceneLookPanel-layers .layer-queue-folder-state{font-size:6px}}
 </style>
 
 </body></html>
