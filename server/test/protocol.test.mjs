@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeMeasurement,normalizeState,pruneSharedMarkers,renumberSharedMarkers,sanitizeClientId,sanitizeName,syncSharedMarkers} from '../src/protocol.v2.js';
+import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeMeasurement,normalizeState,pruneOrphanedSharedMarkers,pruneSharedMarkers,renumberSharedMarkers,sanitizeClientId,sanitizeName,syncSharedMarkers} from '../src/protocol.v2.js';
 
 test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
@@ -57,6 +57,24 @@ test('each participant keeps only their ten newest shared flags',()=>{
   }
   assert.equal(markers.filter(item=>item.ownerId===ownerA).length,10);
   assert.equal(markers.filter(item=>item.ownerId===ownerB).length,10);
+});
+
+test('flags owned by disconnected sessions are pruned on the next join',()=>{
+  const ownerA='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
+  const ownerB='54395181-3418-4593-af6c-1bd9f4a2173c';
+  const makeId=number=>'550e8400-e29b-41d4-a716-'+String(number).padStart(12,'0');
+  const stored=[
+    normalizeMarker({id:makeId(1),p:[1,0,0],createdAt:1},'Pavel',ownerA),
+    normalizeMarker({id:makeId(2),p:[2,0,0],createdAt:2},'Visitor B',ownerB),
+    {id:makeId(3),owner:'Pavel',ownerId:'legacy:Pavel',p:[3,0,0],createdAt:3},
+    {id:makeId(4),owner:'Old visitor',ownerId:'legacy:Old visitor',p:[4,0,0],createdAt:4}
+  ];
+  const update=pruneOrphanedSharedMarkers(stored,[{id:ownerA,name:'Pavel'}]);
+  assert.deepEqual(update.markers.map(marker=>marker.id),[makeId(1),makeId(3)]);
+  assert.ok(update.markers.every(marker=>marker.ownerId===ownerA));
+  assert.deepEqual(update.markers.map(marker=>marker.number),[1,2]);
+  assert.deepEqual(update.removedMarkers.map(marker=>marker.id),[makeId(2),makeId(4)]);
+  assert.deepEqual(pruneOrphanedSharedMarkers(update.markers,[]).markers,[]);
 });
 
 test('legacy flags are migrated and counted against the ten-flag limit',()=>{
