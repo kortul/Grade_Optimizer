@@ -2,7 +2,7 @@
 
 The Maya exporter detects the only `clients/<slug>/scene.json` in the local repository automatically. No Project ID is requested. If the repository contains more than one client scene, export stops rather than choosing a destination silently.
 
-Only the selected Maya hierarchy and its child meshes are exported. The selected root becomes a separate scene asset:
+Only the selected Maya hierarchy and its child meshes are exported. The exporter snapshots the DAG roots, normalizes component selections to their owning transforms, and reselects those roots immediately before FBXExport so temporary material nodes cannot replace the intended export selection. The selected root becomes a separate scene asset:
 
 - `clients/<slug>/models/<asset-id>.fbx`
 - `clients/<slug>/scene.json` (the asset is added to or updated in the `assets` array)
