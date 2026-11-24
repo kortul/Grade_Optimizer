@@ -119,7 +119,7 @@ function updateSkyLabels() {
   ui.cloudDensityValue.textContent = Math.round(Number(ui.cloudDensity.value) * 100) + '%';
   ui.cloudElevationValue.textContent = Math.round(Number(ui.cloudElevation.value) * 100) + '%';
   ui.sunIntensityValue.textContent = Math.round(Number(ui.sunIntensity.value)*100)+'%';
-  ui.dayCycleLengthValue.textContent = Math.round(Number(ui.dayLength.value))+' мин';
+  ui.dayLengthValue.textContent = Math.round(Number(ui.dayLength.value))+' мин';
 }
 function syncDayCycleButton(){
   ui.dayCycle.textContent=dayCyclePlaying?'Ⅱ Пауза':'▶ Запустить цикл';
@@ -140,9 +140,6 @@ function updateSky() {
   sky.rayleigh.value = Number(ui.rayleigh.value);
   sky.mieCoefficient.value = 0.0038;
   sky.mieDirectionalG.value = 0.78;
-  sky.mieColor.value.setRGB(1,0.99,0.96);
-  sky.mieAlbedo.value.setRGB(1,1,1);
-  sky.sunSize.value = 0.88;
   sky.cloudCoverage.value = Number(ui.cloudCoverage.value);
   sky.cloudDensity.value = Number(ui.cloudDensity.value);
   sky.cloudElevation.value = Number(ui.cloudElevation.value);
