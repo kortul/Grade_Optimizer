@@ -1,376 +1,18 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-24T11:44:57.339Z",
+  "updatedAt": "2026-11-24T15:28:37.473Z",
   "assets": [
     {
       "id": "slopes_stage1",
       "name": "Slopes_Stage1",
       "file": "models/slopes_stage1.fbx",
-      "sourceFile": "Slope_ToGaea_Land_341_CADScale.ma",
       "category": "slope",
       "phase": "stage_1",
       "visible": true,
       "collision": false,
       "forestBlocker": true,
       "activeTerrain": false,
-      "transform": {
-        "position": [
-          0,
-          0.1,
-          0
-        ],
-        "rotation": [
-          0,
-          0,
-          0
-        ],
-        "scale": [
-          0.01,
-          0.01,
-          0.01
-        ]
-      },
-      "nodeVisibility": [],
-      "nodeMetadata": [
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "A1FromRoad"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "G1Slope_Mesh_30m"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "H4Slope_Mesh_30m"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "Stage1_40M7"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "Stage2_40mNew_Slopes3"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "SlopesCut",
-            "polySurface848"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "SlopesCut",
-            "polySurface849"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "SlopesCut",
-            "sweep42_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep43_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep44_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep45_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep46_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep47_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep48_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep49_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "SlopesCut",
-            "sweep51_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "SlopesCut",
-            "sweep52_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "SlopesCut",
-            "sweep53_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep54_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep55_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage1_40m1",
-            "Slopes_Stage1",
-            "sweep56_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        },
-        {
-          "namePath": [
-            "MAYA_WORKING_SCENE_001",
-            "ToSketchfab",
-            "Stage2_40M",
-            "Slopes_Stage2",
-            "SlopesCut",
-            "sweep57_Topo_Intersection"
-          ],
-          "role": "object",
-          "tags": [
-            "object"
-          ],
-          "collision": false,
-          "forestBlocker": false
-        }
-      ],
       "mayaExport": {
         "pluginVersion": "0.8.8",
         "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
@@ -802,24 +444,43 @@
             "colorAttribute": "baseColor"
           }
         ]
-      }
+      },
+      "transform": {
+        "position": [
+          0,
+          0.1,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      "nodeVisibility": [],
+      "nodeMetadata": []
     }
   ],
   "editorSettings": {
     "schemaVersion": "1.0",
-    "savedAt": "2026-11-23T16:10:24.760Z",
+    "savedAt": "2026-11-24T15:28:37.473Z",
     "units": "meters",
     "assets": [
       {
-        "id": "scene:A1:0:terrainShape",
-        "name": "SCENE · terrainShape",
+        "id": "scene:A1:0:GO_EXPORT_Original_TopoGeo_001",
+        "name": "SCENE · GO_EXPORT_Original_TopoGeo_001",
         "sourceFile": "A1.gltf",
         "sourceType": "scene",
-        "category": "terrain",
+        "category": "infrastructure",
         "phase": "always",
         "visible": true,
-        "collision": true,
-        "forestBlocker": true,
+        "collision": false,
+        "forestBlocker": false,
         "transform": {
           "position": [
             0,
@@ -842,15 +503,17 @@
         "materials": [
           {
             "materialId": "scene-material-1",
-            "nodeName": "terrainShape",
+            "nodeName": "GO_EXPORT_Original_TopoGeo_001",
             "materialName": "",
-            "baseColor": "#689b55",
-            "roughness": 0.97,
+            "baseColor": "#ffffff",
+            "roughness": 1,
             "metalness": 0,
             "normalScale": 1,
             "aoMapIntensity": 1,
             "emissive": "#000000",
-            "emissiveIntensity": 1,
+            "emissiveIntensity": 0,
+            "emissiveEnabled": false,
+            "emissiveStrength": 1,
             "opacity": 1,
             "textureRepeat": 1,
             "transparent": false,
@@ -905,7 +568,9 @@
       "preset": "custom",
       "clouds": 0.18,
       "snowfall": 0,
-      "wind": 3
+      "wind": 3,
+      "groundFog": false,
+      "volumetrics": true
     }
   },
   "overviewCameras": {
@@ -920,6 +585,41 @@
         -43.224809917657005,
         -1201.4297412127626
       ]
+    }
+  },
+  "treeAreas": [],
+  "skierSpawns": {
+    "1": {
+      "position": [
+        878.654,
+        160.584,
+        -1374.295
+      ],
+      "headingYaw": 2.274184936605744
+    },
+    "2": {
+      "position": [
+        973.674,
+        161.761,
+        -1331.339
+      ],
+      "headingYaw": 2.964751759159416
+    },
+    "3": {
+      "position": [
+        1504.797,
+        162.115,
+        -858.278
+      ],
+      "headingYaw": 2.531790508522192
+    },
+    "4": {
+      "position": [
+        465.463,
+        152.661,
+        -1883.939
+      ],
+      "headingYaw": 2.6053037075419523
     }
   }
 }
