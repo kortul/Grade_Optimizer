@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.0"
+VERSION = "0.8.1"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1388,7 +1388,7 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
         mesh_fn.updateSurface()
 
     cmds.select(baked_root, replace=True)
-    dbg(
+    print(
         "Temporary CAD-normalized export copy: %s | meshes: %d | Bridge inverse: %s | Stage1 normalisation: %s"
         % (baked_root, len(mesh_components), bool(bridge_context), bool(stage_one))
     )
