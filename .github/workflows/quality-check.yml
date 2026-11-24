@@ -24,5 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check Maya exporter Python syntax
+        run: python -m py_compile maya/grade_optimizer_exporter.py
       - name: Validate project
         run: node scripts/validate-project.mjs
