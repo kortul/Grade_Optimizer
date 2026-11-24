@@ -3,6 +3,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
+import { calculateSolarCycle, advanceSolarClock } from './solar-cycle.v1.js';
 import {
   exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
   isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV, smoothstep,
@@ -19,6 +20,8 @@ const frameMsEl = document.getElementById('frameMs');
 const terrainInfoEl = document.getElementById('terrainInfo');
 const ui = {
   time: document.getElementById('timeOfDay'), timeValue: document.getElementById('timeValue'),
+  sunIntensity: document.getElementById('sunIntensity'), sunIntensityValue: document.getElementById('sunIntensityValue'),
+  dayCycle: document.getElementById('dayCycleToggle'), dayLength: document.getElementById('dayCycleLength'), dayLengthValue: document.getElementById('dayCycleLengthValue'),
   turbidity: document.getElementById('turbidity'), turbidityValue: document.getElementById('turbidityValue'),
   rayleigh: document.getElementById('rayleigh'), rayleighValue: document.getElementById('rayleighValue'),
   cloudCoverage: document.getElementById('cloudCoverage'), cloudCoverageValue: document.getElementById('cloudCoverageValue'),
@@ -37,9 +40,12 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 1000000);
 const hemisphere = new THREE.HemisphereLight(0xc8e2ff, 0x4c5149, 0.8);
 scene.add(hemisphere);
-const sunLight = new THREE.DirectionalLight(0xffe8c8, 2.2);
+const sunLight = new THREE.DirectionalLight(0xfff0df, 1.8);
 sunLight.castShadow = false;
 scene.add(sunLight, sunLight.target);
+const moonLight = new THREE.DirectionalLight(0x9eb6dc, 0.16);
+moonLight.castShadow = false;
+scene.add(moonLight, moonLight.target);
 const sky = new SkyMesh();
 sky.scale.setScalar(450000);
 sky.renderOrder = -1000;
@@ -52,8 +58,8 @@ scene.add(sky);
 const sunDirection = new THREE.Vector3();
 let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
-let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null;
-let fogPipeline;
+let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null;
+let fogPipeline,dayCyclePlaying=false;
 
 const noiseTexture = createNoiseTexture3D(64);
 const fogDensity = uniform(Number(ui.fogDensity.value));
@@ -108,33 +114,67 @@ function updateSkyLabels() {
   ui.cloudCoverageValue.textContent = Math.round(Number(ui.cloudCoverage.value) * 100) + '%';
   ui.cloudDensityValue.textContent = Math.round(Number(ui.cloudDensity.value) * 100) + '%';
   ui.cloudElevationValue.textContent = Math.round(Number(ui.cloudElevation.value) * 100) + '%';
+  ui.sunIntensityValue.textContent = Math.round(Number(ui.sunIntensity.value)*100)+'%';
+  ui.dayCycleLengthValue.textContent = Math.round(Number(ui.dayLength.value))+' мин';
+}
+function syncDayCycleButton(){
+  ui.dayCycle.textContent=dayCyclePlaying?'Ⅱ Пауза':'▶ Запустить цикл';
+  ui.dayCycle.setAttribute('aria-pressed',String(dayCyclePlaying));
+}
+function advanceDayCycleFrame(deltaSeconds){
+  if(!dayCyclePlaying)return;
+  ui.time.value=String(advanceSolarClock(Number(ui.time.value),deltaSeconds,ui.dayLength.value));
+  updateSky();
 }
 function updateSky() {
   const hours = Number(ui.time.value);
-  const elevation = Math.sin((hours - 6) / 12 * Math.PI) * 65;
-  const phi = THREE.MathUtils.degToRad(90 - elevation);
-  const theta = THREE.MathUtils.degToRad(-132);
-  sunDirection.setFromSphericalCoords(1, phi, theta).normalize();
+  const solar = calculateSolarCycle(THREE,hours);
+  sunDirection.copy(solar.sunDirection);
   sky.sunPosition.value.copy(sunDirection);
   sky.turbidity.value = Number(ui.turbidity.value);
   sky.rayleigh.value = Number(ui.rayleigh.value);
-  sky.mieCoefficient.value = 0.006;
-  sky.mieDirectionalG.value = 0.82;
+  sky.mieCoefficient.value = 0.0038;
+  sky.mieDirectionalG.value = 0.78;
+  sky.mieColor.value.setRGB(1,0.99,0.96);
+  sky.mieAlbedo.value.setRGB(1,1,1);
+  sky.sunSize.value = 0.88;
   sky.cloudCoverage.value = Number(ui.cloudCoverage.value);
   sky.cloudDensity.value = Number(ui.cloudDensity.value);
   sky.cloudElevation.value = Number(ui.cloudElevation.value);
   sky.showSunDisc.value = true;
-  const daylight = THREE.MathUtils.smoothstep(sunDirection.y, -0.10, 0.24);
-  const twilight = Math.exp(-Math.pow((hours - 6.8) / 1.6, 2)) + Math.exp(-Math.pow((hours - 18.2) / 1.65, 2));
-  hemisphere.intensity = 0.20 + daylight * 0.88;
-  sunLight.intensity = 0.10 + daylight * 3.0;
-  sunLight.color.setRGB(1, 0.82 + daylight * 0.12, 0.68 + daylight * 0.28);
-  fogColor.value.set(0x26394f).lerp(new THREE.Color(0xc7d9e5), daylight).lerp(new THREE.Color(0xe2b9a5), THREE.MathUtils.clamp(twilight * 0.65, 0, 0.72));
-  hemisphere.color.setRGB(0.20 + daylight * 0.62, 0.30 + daylight * 0.58, 0.48 + daylight * 0.50);
-  hemisphere.groundColor.setRGB(0.10 + daylight * 0.20, 0.14 + daylight * 0.22, 0.19 + daylight * 0.23);
-  sunLight.position.copy(controls.target).addScaledVector(sunDirection, 1800);
+
+  const directPower=THREE.MathUtils.clamp(Number(ui.sunIntensity.value),0,1.5);
+  hemisphere.intensity = 0.18 + solar.daylight * 0.62 + solar.nightStrength*0.025;
+  sunLight.intensity = solar.daylight * 3.0 * directPower;
+  sunLight.color.copy(solar.sunColor);
+  moonLight.intensity=solar.nightStrength*0.16;
+  sunLight.position.copy(controls.target).addScaledVector(sunDirection,1800);
   sunLight.target.position.copy(controls.target);
+  moonLight.position.copy(controls.target).addScaledVector(sunDirection,-1800);
+  moonLight.target.position.copy(controls.target);
+
+  const nightSky=new THREE.Color(0x28364b);
+  const daySky=new THREE.Color(0xc7d9e7);
+  const warmHorizon=new THREE.Color(0xd8b39a);
+  fogColor.value.copy(nightSky).lerp(daySky,solar.daylight)
+    .lerp(warmHorizon,solar.twilight*0.28);
+  hemisphere.color.setRGB(
+    0.34+solar.daylight*0.44,
+    0.43+solar.daylight*0.43,
+    0.58+solar.daylight*0.34
+  );
+  hemisphere.groundColor.setRGB(
+    0.13+solar.daylight*0.28,
+    0.16+solar.daylight*0.30,
+    0.20+solar.daylight*0.26
+  );
   ui.timeValue.textContent = formatTime(hours);
+}
+function setLoadingMessage(message){
+  if(loading)loading.textContent=message;
+}
+function nextAnimationFrame(){
+  return new Promise(resolve=>requestAnimationFrame(()=>resolve()));
 }
 function updateFogControls() {
   fogDensity.value = Number(ui.fogDensity.value);
@@ -148,7 +188,97 @@ function updateFogControls() {
   ui.fogStrengthValue.textContent = Math.round(fogStrength.value * 100) + '%';
   ui.fogRangeValue.textContent = (rangeFogNear.value / 1000).toFixed(1) + '–' + (rangeFogFar.value / 1000).toFixed(1) + ' км';
 }
+async function buildTerrainHeightLookup(root,bounds,cellSize=40){
+  const size=bounds.getSize(new THREE.Vector3());
+  const cols=Math.max(1,Math.ceil(size.x/cellSize));
+  const rows=Math.max(1,Math.ceil(size.z/cellSize));
+  const cells=new Map(),large=[];
+  const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+  const meshes=[];
+  let totalTriangles=0;
+  root.traverseVisible(mesh=>{
+    if(!mesh.isMesh||!mesh.geometry?.attributes?.position)return;
+    meshes.push(mesh);
+    const index=mesh.geometry.index,positions=mesh.geometry.attributes.position;
+    totalTriangles+=Math.floor((index?index.count:positions.count)/3);
+  });
+  let processed=0;
+  const insert=(ax,ay,az,bx,by,bz,cx,cy,cz)=>{
+    const denominator=(bz-cz)*(ax-cx)+(cx-bx)*(az-cz);
+    if(Math.abs(denominator)<1e-10)return;
+    const abx=bx-ax,aby=by-ay,abz=bz-az;
+    const acx=cx-ax,acy=cy-ay,acz=cz-az;
+    let nx=aby*acz-abz*acy;
+    let ny=abz*acx-abx*acz;
+    let nz=abx*acy-aby*acx;
+    if(ny<0){nx=-nx;ny=-ny;nz=-nz;}
+    const normalLength=Math.hypot(nx,ny,nz)||1;
+    const triangle={ax,ay,az,bx,by,bz,cx,cy,cz,denominator,normalY:ny/normalLength};
+    const ix0=Math.max(0,Math.floor((Math.min(ax,bx,cx)-bounds.min.x)/cellSize));
+    const ix1=Math.min(cols-1,Math.floor((Math.max(ax,bx,cx)-bounds.min.x)/cellSize));
+    const iz0=Math.max(0,Math.floor((Math.min(az,bz,cz)-bounds.min.z)/cellSize));
+    const iz1=Math.min(rows-1,Math.floor((Math.max(az,bz,cz)-bounds.min.z)/cellSize));
+    if(ix1<ix0||iz1<iz0)return;
+    const count=(ix1-ix0+1)*(iz1-iz0+1);
+    if(count>256){large.push(triangle);return;}
+    for(let iz=iz0;iz<=iz1;iz++)for(let ix=ix0;ix<=ix1;ix++){
+      const key=iz*cols+ix;
+      let bucket=cells.get(key);
+      if(!bucket){bucket=[];cells.set(key,bucket);}
+      bucket.push(triangle);
+    }
+  };
+  root.updateWorldMatrix(true,true);
+  setLoadingMessage('Строим spatial height lookup для рельефа…');
+  for(const mesh of meshes){
+    mesh.updateWorldMatrix(true,false);
+    const geometry=mesh.geometry,positions=geometry.attributes.position,index=geometry.index;
+    const count=index?index.count:positions.count;
+    for(let offset=0;offset+2<count;offset+=3){
+      const ia=index?index.getX(offset):offset;
+      const ib=index?index.getX(offset+1):offset+1;
+      const ic=index?index.getX(offset+2):offset+2;
+      a.fromBufferAttribute(positions,ia).applyMatrix4(mesh.matrixWorld);
+      b.fromBufferAttribute(positions,ib).applyMatrix4(mesh.matrixWorld);
+      c.fromBufferAttribute(positions,ic).applyMatrix4(mesh.matrixWorld);
+      insert(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);
+      processed++;
+      if(processed%60000===0){
+        setLoadingMessage('Spatial lookup рельефа · '+Math.round(processed/Math.max(1,totalTriangles)*100)+'%');
+        await nextAnimationFrame();
+      }
+    }
+  }
+  const lookup={originX:bounds.min.x,originZ:bounds.min.z,cellSize,cols,rows,cells,large,triangleCount:processed};
+  console.info('[Grade Optimizer WebGPU] Terrain height lookup:',{
+    triangles:processed,cells:cells.size,largeTriangles:large.length,cellSize
+  });
+  return lookup;
+}
+function sampleTerrainSurface(x,z,lookup){
+  if(!lookup)return null;
+  const ix=Math.floor((x-lookup.originX)/lookup.cellSize);
+  const iz=Math.floor((z-lookup.originZ)/lookup.cellSize);
+  if(ix<0||iz<0||ix>=lookup.cols||iz>=lookup.rows)return null;
+  const bucket=lookup.cells.get(iz*lookup.cols+ix)||[];
+  let best=null;
+  const test=triangle=>{
+    const t=triangle;
+    const wa=((t.bz-t.cz)*(x-t.cx)+(t.cx-t.bx)*(z-t.cz))/t.denominator;
+    const wb=((t.cz-t.az)*(x-t.cx)+(t.ax-t.cx)*(z-t.cz))/t.denominator;
+    const wc=1-wa-wb;
+    if(wa<-1e-5||wb<-1e-5||wc<-1e-5)return;
+    const y=wa*t.ay+wb*t.by+wc*t.cy;
+    if(!best||y>best.y)best={y,normalY:t.normalY};
+  };
+  for(const triangle of bucket)test(triangle);
+  for(const triangle of lookup.large)test(triangle);
+  return best;
+}
+
 async function loadRealTerrain() {
+  setLoadingMessage('Загружаем базовый рельеф…');
+  await nextAnimationFrame();
   const responses = await Promise.all([
     fetch('./assets/real-terrain.json', { cache: 'no-cache' }).then(response => {
       if (!response.ok) throw new Error('Не удалось загрузить real-terrain.json (' + response.status + ')');
@@ -177,6 +307,7 @@ async function loadRealTerrain() {
   scene.add(root);
   terrainRoot=root;
   terrainBounds=bounds.clone();
+  terrainHeightLookup=await buildTerrainHeightLookup(terrainRoot,terrainBounds,40);
   const center = bounds.getCenter(new THREE.Vector3());
   const terrainSize = bounds.getSize(new THREE.Vector3());
   groundLevel = bounds.min.y + 4;
@@ -466,10 +597,7 @@ function restoreStageOneCoordinates(root, item) {
 }
 
 function buildTreePlacements(footprint, density) {
-  if(!terrainRoot||!terrainBounds)return [];
-  const raycaster=new THREE.Raycaster();
-  const down=new THREE.Vector3(0,-1,0);
-  const normalMatrix=new THREE.Matrix3();
+  if(!terrainRoot||!terrainBounds||!terrainHeightLookup)return [];
   const occupied=new Map();
   const trees=[];
   const rows=[
@@ -488,15 +616,9 @@ function buildTreePlacements(footprint, density) {
     return value;
   };
   const findGround=(x,z)=>{
-    raycaster.set(new THREE.Vector3(x,terrainBounds.max.y+600,z),down);
-    raycaster.far=Math.max(1400,terrainBounds.max.y-terrainBounds.min.y+1200);
-    const hits=raycaster.intersectObject(terrainRoot,true);
-    if(!hits.length)return null;
-    const hit=hits[0];
-    if(!hit.face)return null;
-    const normal=hit.face.normal.clone().applyMatrix3(normalMatrix.getNormalMatrix(hit.object.matrixWorld)).normalize();
-    if(normal.y<0.48)return null;
-    return {y:hit.point.y,normal};
+    const surface=sampleTerrainSurface(x,z,terrainHeightLookup);
+    if(!surface||surface.normalY<0.48)return null;
+    return {y:surface.y,normalY:surface.normalY};
   };
   const canPlace=(x,z,spacing)=>{
     const cx=Math.floor(x/spacingCell),cz=Math.floor(z/spacingCell);
@@ -728,7 +850,8 @@ async function loadPineAtlas() {
     texture.generateMipmaps=true;
     texture.minFilter=THREE.LinearMipmapLinearFilter;
     texture.magFilter=THREE.LinearFilter;
-    texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    const maxAnisotropy=typeof renderer.getMaxAnisotropy==='function'?renderer.getMaxAnisotropy():1;
+    texture.anisotropy=Math.min(8,Math.max(1,maxAnisotropy));
     textures.push(texture);
   }
   atlas.dispose();
@@ -800,6 +923,8 @@ function rebuildForestLod(force=false) {
 }
 
 async function loadStageOneAndForest() {
+  setLoadingMessage('Загружаем FBX Slopes_Stage1…');
+  await nextAnimationFrame();
   const response=await fetch('./clients/alpine-resort/scene.json',{cache:'no-cache'});
   if(!response.ok)throw new Error('Не удалось загрузить scene.json ('+response.status+').');
   const manifest=await response.json();
@@ -819,8 +944,14 @@ async function loadStageOneAndForest() {
   root.name='GO_WebGPU_Slopes_Stage1';
   scene.add(root);
   stageOneRoot=root;
+  setLoadingMessage('Строим границы трассы и размещаем лес…');
+  await nextAnimationFrame();
   const footprint=buildSlopeFootprint(root);
+  setLoadingMessage('Загружаем atlas елей…');
+  await nextAnimationFrame();
   pineAtlasTextures=await loadPineAtlas();
+  setLoadingMessage('Распределяем деревья по рельефу…');
+  await nextAnimationFrame();
   const trees=buildTreePlacements(footprint,Number(ui.forestDensity.value));
   trees.forEach(tree=>{tree.atlasVariant=Math.floor(seededRandom(tree.x,tree.z,83)()*8);});
   const geometries={near:[],mid:[]};
@@ -879,10 +1010,20 @@ function applyQualityProfile(name) {
   fogPipeline.setRaySteps(profile.raySteps);
 }
 function bindUI() {
-  [ui.time, ui.turbidity, ui.rayleigh, ui.cloudCoverage, ui.cloudDensity, ui.cloudElevation].forEach(input => input.addEventListener('input', () => {
+  ui.time.addEventListener('input',()=>{
+    dayCyclePlaying=false;
+    syncDayCycleButton();
     updateSkyLabels();
     updateSky();
-  }));
+  });
+  [ui.sunIntensity,ui.turbidity,ui.rayleigh,ui.cloudCoverage,ui.cloudDensity,ui.cloudElevation].forEach(input=>{
+    input.addEventListener('input',()=>{updateSkyLabels();updateSky();});
+  });
+  ui.dayCycle.addEventListener('click',()=>{
+    dayCyclePlaying=!dayCyclePlaying;
+    syncDayCycleButton();
+  });
+  ui.dayLength.addEventListener('input',updateSkyLabels);
   [ui.fogStrength, ui.fogDensity, ui.fogHeight, ui.fogRange].forEach(input => input.addEventListener('input', updateFogControls));
   ui.godRays.addEventListener('input',()=>{
     ui.godRaysValue.textContent=Math.round(Number(ui.godRays.value)*100)+'%';
@@ -891,6 +1032,8 @@ function bindUI() {
   ui.forestDensity.addEventListener('input',()=>ui.forestDensityValue.textContent=Math.round(Number(ui.forestDensity.value)*100)+'%');
   ui.forestDensity.addEventListener('change',rebuildForestDensity);
   ui.quality.addEventListener('change', () => applyQualityProfile(ui.quality.value));
+  updateSkyLabels();
+  syncDayCycleButton();
 }
 async function start() {
   renderer = new THREE.WebGPURenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -936,6 +1079,7 @@ async function start() {
     previousTime = now;
     elapsed += dt;
     controls.update();
+    advanceDayCycleFrame(dt);
     camera.updateMatrixWorld();
     sky.position.copy(camera.position);
     fogPipeline.setTime(elapsed);
@@ -952,10 +1096,10 @@ async function start() {
   });
 }
 start().catch(error => {
-  statusText.textContent = 'Не удалось запустить WebGPU atmosphere lab';
+  statusText.textContent = 'Не удалось запустить WebGPU Forest Lab';
   statusDot.classList.add('bad');
   errorBox.style.display = 'block';
   errorBox.textContent = error && error.stack || String(error);
   loading.style.display = 'none';
-  console.error('[Grade Optimizer WebGPU Atmosphere Lab]', error);
+  console.error('[Grade Optimizer WebGPU Forest Lab]', error);
 });
