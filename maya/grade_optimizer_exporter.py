@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.3"
+VERSION = "0.8.4"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -974,11 +974,16 @@ def refresh_git_asset_list(*_):
 
 
 
-def prepare_client_asset_export(repo, components, node_metadata, replace_asset_id=None):
+def prepare_client_asset_export(repo, components, node_metadata, replace_asset_id=None,
+                                source_root_name_override=None):
     client_slug, scene_path, manifest, assets = _read_client_scene(repo)
     client_dir = os.path.dirname(scene_path)
     selected = _selected_transforms()
-    source_root_name = selected[0].rsplit("|", 1)[-1] if selected else str(components[0].get("name") or "Maya Asset")
+    source_root_name = (
+        str(source_root_name_override).rsplit("|", 1)[-1]
+        if source_root_name_override else
+        (selected[0].rsplit("|", 1)[-1] if selected else str(components[0].get("name") or "Maya Asset"))
+    )
 
     existing = None
     existing_size_bytes = 0
@@ -1773,6 +1778,74 @@ def replace_selected_scene_asset(*_):
     _export_scene(replace_asset_id=asset.get("id"))
 
 
+def _stage_one_branch_selection(repo, components):
+    """
+    Resolve a Stage 1 replacement to the actual Slopes_Stage1 DAG branch.
+
+    The Maya selection can contain a broad working-scene parent or several
+    individually selected meshes. The Git target is authoritative: Stage 1
+    must never serialize siblings from Stage2_40M / Slopes_Stage2.
+    """
+    branch_roots = []
+    for component in components:
+        dag_path = str(component.get("dagPath") or "")
+        parts = [part for part in dag_path.split("|") if part]
+        # Prefer the exact Stage 1 geometry group. The enclosing Stage1_40m*
+        # group is a fallback for older scenes without Slopes_Stage1.
+        candidates = [
+            index for index, part in enumerate(parts)
+            if part.lower() == "slopes_stage1"
+        ]
+        if not candidates:
+            candidates = [
+                index for index, part in enumerate(parts)
+                if re.match(r"^stage1[_ -]?40m", part, re.IGNORECASE)
+            ]
+        if not candidates:
+            continue
+        root = "|" + "|".join(parts[:candidates[-1] + 1])
+        if root not in branch_roots:
+            branch_roots.append(root)
+
+    if not branch_roots:
+        raise RuntimeError(
+            "Для замены Slopes_Stage1 не найдена отдельная ветка Slopes_Stage1 "
+            "или Stage1_40m* в DAG-путях выделенной геометрии. "
+            "Экспорт остановлен: нельзя угадывать Stage 1 по именам отдельных mesh."
+        )
+
+    # Prune nested roots; selecting Slopes_Stage1 already includes its children.
+    minimal_roots = []
+    for root in sorted(branch_roots, key=lambda value: (value.count("|"), value)):
+        if any(root == parent or root.startswith(parent.rstrip("|") + "|")
+               for parent in minimal_roots):
+            continue
+        minimal_roots.append(root)
+
+    stage_one_components = collect_meshes(
+        selection_only=True, selection_roots=minimal_roots
+    )
+    if not stage_one_components:
+        raise RuntimeError("В отдельной ветке Slopes_Stage1 не найдено polygon mesh.")
+
+    leaked = [
+        item for item in stage_one_components
+        if re.search(
+            r"(stage[_ -]?2|slopes[_ -]?stage[_ -]?2)",
+            " ".join((str(item.get("dagPath") or ""),
+                      str(item.get("name") or ""),
+                      str(item.get("shape") or ""))).lower()
+        )
+    ]
+    if leaked:
+        raise RuntimeError(
+            "Внутри найденной ветки Stage 1 обнаружены пути Stage 2 (%d mesh). "
+            "Экспорт остановлен; проверь DAG-иерархию Maya." % len(leaked)
+        )
+
+    return minimal_roots, stage_one_components
+
+
 def _export_scene(replace_asset_id=None):
     repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
     remember_export_settings()
@@ -1827,18 +1900,48 @@ def _export_scene(replace_asset_id=None):
         )
         return
 
+    target_phase = ""
+    if replace_asset_id:
+        _, _, _, existing_assets = _read_client_scene(repo)
+        target_matches = [item for item in existing_assets
+                          if isinstance(item, dict) and str(item.get("id") or "") == str(replace_asset_id)]
+        if len(target_matches) != 1:
+            cmds.confirmDialog(title="Grade Optimizer",
+                               message="Объект для замены не найден или ID не уникален: " + str(replace_asset_id),
+                               button=["OK"])
+            return
+        target_phase = str(target_matches[0].get("phase") or "")
+
+    # A Stage 1 Git target selects its own Maya branch by DAG ancestry. This
+    # prevents a broad/multi-object Maya selection from leaking Stage 2 meshes.
+    if target_phase == "stage_1":
+        try:
+            export_roots, components = _stage_one_branch_selection(repo, components)
+            node_metadata = collect_node_metadata(selection_only=True, selection_roots=export_roots)
+        except Exception as stage_error:
+            cmds.confirmDialog(title="Grade Optimizer · Stage 1 selection error",
+                               message=str(stage_error), button=["OK"])
+            return
+
     export_info = None
     temporary_paths = []
     material_overrides = []
     material_conversion_summary = []
     try:
-        export_info = prepare_client_asset_export(repo, components, node_metadata, replace_asset_id=replace_asset_id)
+        source_root_override = export_roots[0].rsplit("|", 1)[-1] if target_phase == "stage_1" else None
+        export_info = prepare_client_asset_export(
+            repo, components, node_metadata, replace_asset_id=replace_asset_id,
+            source_root_name_override=source_root_override
+        )
         target_entry = next(
             item for item in export_info["manifest"]["assets"]
             if isinstance(item, dict) and item.get("id") == export_info["asset_id"]
         )
         stage_one_export = str(target_entry.get("phase") or "") == "stage_1"
         if stage_one_export:
+            # Reassert the exact Stage 1-only component list in the manifest.
+            target_entry["mayaExport"]["components"] = list(components)
+            target_entry["mayaExport"]["exportedRootName"] = export_roots[0].rsplit("|", 1)[-1]
             stage_two_components = [
                 item for item in components
                 if re.search(
@@ -1885,11 +1988,16 @@ def _export_scene(replace_asset_id=None):
             ) = _prepare_export_roots(
                 export_roots,
                 components,
-                stage_one=stage_one_export,
+                # Preserve the Maya-authored hierarchy transforms. The old
+                # Stage 1 pass that zeroed ToSketchfab and reset every nested
+                # scale collapsed distinct slopes onto one another.
+                stage_one=False,
                 label="STAGE1" if stage_one_export else "ASSET"
             )
             target_entry["mayaExport"]["geometryBakedToMayaWorld"] = True
-            target_entry["mayaExport"]["stageOneHierarchyNormalizedAtExport"] = bool(stage_one_export)
+            target_entry["mayaExport"]["stageOneHierarchyNormalizedAtExport"] = False
+            if stage_one_export:
+                target_entry["mayaExport"]["stageOneTransformPolicy"] = "preserve Maya hierarchy transforms; bake world-space vertices"
             target_entry["mayaExport"]["cadBridge"] = {
                 "inverseApplied": bool(bridge_summaries),
                 "workingGroups": bridge_summaries
