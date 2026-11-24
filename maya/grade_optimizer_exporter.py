@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.2"
+VERSION = "0.8.3"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1838,6 +1838,29 @@ def _export_scene(replace_asset_id=None):
             if isinstance(item, dict) and item.get("id") == export_info["asset_id"]
         )
         stage_one_export = str(target_entry.get("phase") or "") == "stage_1"
+        if stage_one_export:
+            stage_two_components = [
+                item for item in components
+                if re.search(
+                    r"(stage[_ -]?2|slopes[_ -]?stage[_ -]?2)",
+                    " ".join((
+                        str(item.get("dagPath") or ""),
+                        str(item.get("name") or ""),
+                        str(item.get("shape") or "")
+                    )).lower()
+                )
+            ]
+            if stage_two_components:
+                examples = ", ".join(
+                    str(item.get("name") or item.get("shape") or "mesh")
+                    for item in stage_two_components[:6]
+                )
+                raise RuntimeError(
+                    "Экспорт Stage 1 остановлен: в выделении обнаружено %d mesh из Stage 2. "
+                    "Они не должны попадать в Slopes_Stage1. "
+                    "Сними выделение Stage 2 и повтори замену.\n\nПримеры: %s"
+                    % (len(stage_two_components), examples)
+                )
         base_terrain_components = [
             item for item in components
             if "terrain" in (str(item.get("name") or "") + " " + str(item.get("shape") or "")).lower()
