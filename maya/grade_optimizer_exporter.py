@@ -9,7 +9,6 @@ import re
 import json
 import datetime
 import hashlib
-import math
 import shutil
 import subprocess
 
@@ -1223,6 +1222,11 @@ def _slope_correct_bridge_points(points_cm, bridge_context, meters_per_unit):
         ]
         corrected.append([value * cm_per_scene_unit for value in original_scene_point])
     return corrected
+
+
+def _slope_points_cm_to_meters(points):
+    """Convert Maya API world-space centimetres to project metres."""
+    return [[round(float(value) / 100.0, 5) for value in point] for point in points]
 
 
 def _sample_slope_curve_points(curve, bridge_context, meters_per_unit):
