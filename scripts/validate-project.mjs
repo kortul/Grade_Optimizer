@@ -375,8 +375,11 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v98.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v97.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v99.js'), 'active app must use the stable terrain-contact skier controller');
+const skierSource = read('skier-controller.v99.js').toString('utf8');
+const skierContactUtils = read('skier-terrain-contact.v1.js').toString('utf8');
+const skierContactTests = read('scripts/test-skier-terrain-contact.mjs').toString('utf8');
+assert.ok(skierContactTests.includes('overlapping piste and terrain choose the surface continuous with the skier height')&&skierContactTests.includes('near-vertical wall normals are rejected'), 'skier terrain-contact regression tests must cover surface transitions and wall rejection');
 assert.ok(skierSource.includes('respawnAtCustomSpawn(spawn)')&&skierSource.includes('spawnHint.headingYaw'), 'skier controller must apply custom spawn position and heading');
 assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), "imported Slopes_Stage1 geometry must take priority as the skier surface");
 assert.ok(entrySource.includes('position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true')&&entrySource.includes('resolveSkierTerrainForDroneSpawn(dronePose.position)')&&entrySource.includes('skierTerrainName:skierController.terrain?.name')&&entrySource.includes('skierSpawn:skierController.lastSpawnInfo')&&!entrySource.includes('velocity:dronePose.velocity,fromDrone:true,startAtTop:true'), 'drone handoff must try the drone world position before the summit fallback');
@@ -404,12 +407,18 @@ assert.ok(skierSource.includes('const cols=192,rows=192')&&skierSource.includes(
 assert.ok(skierSource.includes('async start(terrain,spawnHint=null')&&skierSource.includes('await this._buildTerrainLookup('), 'skier startup must await incremental terrain indexing');
 assert.ok(skierSource.includes('this.terrainBuildToken++'), 'stopping skier mode must cancel pending terrain indexing');
 assert.ok(!skierSource.includes('const skiGround=this._groundAt('), 'ski model positioning must not run an extra ground query every frame');
-const lookupQueryIndex=skierSource.indexOf('const lookupHit=this._groundFromLookup(x,z);')
-const raycastIndex=skierSource.indexOf('this.raycaster.intersectObject(this.terrain, true)');
-assert.ok(lookupQueryIndex>=0&&raycastIndex>lookupQueryIndex, 'skier ground queries must use the spatial lookup before Raycaster fallback');
+const lookupQueryIndex=skierSource.indexOf('const lookupHit=this._groundFromLookup(x,z,referenceY,maxVerticalDelta);');
+const raycastIndex=skierSource.indexOf('this.raycaster.intersectObject(this.terrain,true)');
+assert.ok(lookupQueryIndex>=0&&raycastIndex>lookupQueryIndex, 'skier ground queries must use continuity-aware spatial lookup before Raycaster fallback');
+assert.ok(skierSource.includes('faceNormal.y<MIN_TERRAIN_NORMAL_Y')&&skierSource.includes('MIN_SMOOTH_NORMAL_ALIGNMENT'), 'terrain contact must reject vertical walls and unreliable interpolated normals');
+assert.ok(skierSource.includes('groundedReferenceY')&&skierSource.includes('expectedNextGroundY')&&skierSource.includes('maxVerticalDelta'), 'ground sampling must preserve height continuity when switching between slope and terrain meshes');
+assert.ok(skierSource.includes('_smoothGroundNormal(nextHit.normal,dt)')&&skierSource.includes('new THREE.Matrix4().makeBasis(right,normal,back)'), 'skier orientation must be smoothed and re-orthogonalized at terrain transitions');
+assert.ok(skierSource.includes('this._isTerrainCollisionMesh(object)')&&skierContactUtils.includes('selectGroundContactCandidate'), 'only visible valid collision meshes may become skier support surfaces');
+assert.ok(skierContactUtils.includes('MIN_TERRAIN_NORMAL_Y')&&skierContactUtils.includes('blendGroundNormal'), 'engine-independent terrain-contact stability helpers are present');
+assert.ok(entrySource.includes('function isVisibleSkierPhysicsObject(')&&entrySource.includes('An active imported Terrain replaces the hidden base terrain')&&entrySource.includes('remove.forEach(object=>object.parent?.remove(object))'), 'skier collision composite must exclude hidden mesh geometry and not collide with stale base terrain');
 assert.ok(skierSource.includes('stats.raycastFallbacks++')&&skierSource.includes('getTerrainPerformanceDiagnostics()'), 'terrain lookup performance counters and diagnostics API are missing');
 const thirdPersonGuardIndex=skierSource.indexOf('const needsThirdPerson=this.viewBlendTarget>0.001||this.viewBlend>0.001;');
-const cameraGroundIndex=skierSource.indexOf('const cameraGround=this._groundAt(this.thirdPersonDesiredPosition.x,this.thirdPersonDesiredPosition.z);');
+const cameraGroundIndex=skierSource.indexOf(':this._groundAt(cameraX,cameraZ);');
 assert.ok(thirdPersonGuardIndex>=0&&cameraGroundIndex>thirdPersonGuardIndex, 'third-person camera terrain query must be skipped in first-person view');
 assert.ok(skierSource.includes('outline.lineTo(-0.050,0.8475)')&&skierSource.includes('outline.quadraticCurveTo(-0.048,1.7475,0,1.9125)')&&skierSource.includes('new THREE.BoxGeometry(0.009,0.004,1.7875)'), 'front ski overhang must be 1.5x longer while bindings and tails stay fixed');
 assert.ok(skierSource.includes("const outsideLoad=Math.max(0,side*turnSide)*carve*(0.85+0.15*loadShift);")&&skierSource.includes("'skiFlex'+index"), 'ski flex must compute outside-ski load within each ski-slot iteration');
@@ -425,7 +434,7 @@ assert.ok(!entrySource.includes('modeTransition'), 'mode changes must not be blo
 assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.includes("skierController.update(dt);"), 'skier physics must update every frame once skier mode is active');
 assert.ok(entrySource.includes("if(resumePendingSkier)requestAnimationFrame(()=>setSceneMode('skier'))"), 'queued skier request must resume after initial splash removal');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate continuous downhill terrain');
-assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn)spawnFound=!!this._findSpawn()')&&skierSource.includes("this.lastStartError='NO_GROUND_UNDER_DRONE'"), 'drone handoff must not silently relocate to a distant piste when no ground exists beneath it');
+assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('this._findSpawn(slot)')&&skierSource.includes("this.lastStartError='NO_GROUND_UNDER_DRONE'"), 'drone handoff must never silently relocate to a distant piste when no ground exists beneath it');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone-to-skier handoff must begin with controlled downhill motion');
 
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
@@ -476,10 +485,10 @@ assert.ok(skierSource.includes('this.position.y+this.eyeHeight+this.airborneHeig
 
 assert.ok(skierSource.includes('this.massKg = 75;'), 'skier reference mass must be 75 kg');
 assert.ok(skierSource.includes('this.maxEdgeG = 1.25;'), 'turn edge-force ceiling missing');
-assert.ok(skierSource.includes('this.pushImpulseNs = 60;') && skierSource.includes('this.pushInterval = 0.42'), 'pole push must use a mass-scaled impulse');
+assert.ok(skierSource.includes('this.pushImpulseNs = 90;') && skierSource.includes('this.pushInterval = 0.42'), 'pole push must use a mass-scaled impulse');
 assert.ok(skierSource.includes("if (e.code === 'Space')"), 'Space jump key handler missing');
 assert.ok(skierSource.includes('if (!e.repeat && this.inputEnabled) this._tryManualJump();'), 'Space must trigger once per press and respect transition lock');
-assert.ok(skierSource.includes('this.manualJumpImpulseNs = 195;'), 'manual jump impulse missing');
+assert.ok(skierSource.includes('this.manualJumpImpulseNs = 255;'), 'manual jump impulse missing');
 assert.ok(skierSource.includes('this.airborneVelocityY=this.velocity.y+this.manualJumpImpulseNs/this.massKg;'), 'take-off speed must be impulse divided by mass');
 assert.ok(skierSource.includes('this.airborneWorldY=contact.point.y+0.055;'), 'jump must start at ski contact height');
 assert.ok(skierSource.includes('this.velocity.y=0;'), 'launch must transfer slope-tangent vertical speed into the flight state');
@@ -500,9 +509,9 @@ const maxLateralForceN=bodyWeightN*1.25;
 const combinedTurnLoadN=Math.hypot(bodyWeightN,maxLateralForceN);
 assert.ok(combinedTurnLoadN>1150&&combinedTurnLoadN<1200, 'maximum modeled ski reaction must remain physically bounded');
 assert.ok(Math.abs((combinedTurnLoadN*0.6)/(combinedTurnLoadN*0.4)-1.5)<1e-9, 'outside ski must carry 1.5 times the inside ski load at the modeled limit');
-const jumpTakeoffSpeed=195/referenceMassKg;
+const jumpTakeoffSpeed=255/referenceMassKg;
 const jumpApexM=jumpTakeoffSpeed*jumpTakeoffSpeed/(2*9.81);
-assert.ok(jumpApexM>0.32&&jumpApexM<0.37, 'manual jump should be a modest ~0.34 m hop');
+assert.ok(jumpApexM>0.57&&jumpApexM<0.61, 'manual jump should be a modest ~0.59 m hop');
 const skierHudSource = html.slice(html.indexOf('<div id="skierHud"'), html.indexOf('<div id="droneHud"'));
 assert.ok(skierHudSource.includes('<kbd>SHIFT</kbd> — толчок палками. <kbd>SPACE</kbd> — прыжок.'), 'skier tutorial must document separate push and jump keys');
 assert.ok(skierHudSource.includes('<kbd>SPACE</kbd></div><div><strong>Прыжок</strong>'), 'skier control grid must show Space jump');
@@ -511,7 +520,7 @@ assert.ok(skierSource.includes('const yaw=this.headingYaw;'), 'pole strokes must
 assert.ok(skierSource.includes('if(!locked)this.keys.clear();'), 'lost pointer lock must clear stuck movement keys');
 assert.ok(skierSource.includes('const grounded=!!nextHit&&!airborne;'), 'HUD grounded state must be false while airborne');
 assert.ok(skierSource.includes('grounded: this.active&&this.airborneWorldY===null'), 'friction control must preserve airborne HUD state');
-assert.ok(skierSource.includes('this.terrain.traverse(object=>{\n      if(object.isMesh&&object.geometry?.attributes?.position)meshes.push(object);'), 'skier spawn search must support grouped Terrain meshes');
+assert.ok(skierSource.includes('this.terrain.traverse(object=>{\n      if(!object.isMesh||!object.geometry?.attributes?.position)return;\n      if(this._isTerrainCollisionMesh(object))meshes.push(object);'), 'skier spawn search must support grouped visible Terrain meshes and skip hidden collision geometry');
 assert.ok(skierSource.includes('const sampleStride=Math.max(1,Math.ceil(totalVertices/3500));'), 'grouped terrain spawn sampling must have a bounded vertex workload');
 assert.ok(skierSource.includes('setSkiModel(source)') && skierSource.includes('Prepare and validate the next model completely before removing the'), 'custom ski replacement must validate before replacing the existing pair');
 pass('detailed skier equipment, articulated limbs, safe input release, pole physics, terrain-group spawn and transactional ski import are present');
@@ -628,7 +637,7 @@ assert.ok(entrySource.includes('new THREE.LineSegments') && entrySource.includes
 assert.ok(html.includes('.slope-analysis-angle{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--slope-analysis-color);') && html.includes('text-shadow:none'), 'slope angle labels must be bare difficulty-coloured degree text without background, border or shadow');
 assert.ok(entrySource.includes("Number(section.angleDegrees).toFixed(1)+'°',difficulty,'angle'"), 'each 20 m angle label must use its own section angle and difficulty colour');
 assert.ok(entrySource.includes("black: '#000000'") && html.includes('.slope-difficulty-black{--slope-analysis-color:#000000}'), 'black difficulty angle text must render black');
-assert.ok(entryPath==='app.v184.js' && entrySource.includes("if(kind==='angle')element.style.setProperty('color',labelColor,'important')"), 'angle labels must use the cache-busted module and force each difficulty colour inline');
+assert.ok(entryPath==='app.v185.js' && entrySource.includes("if(kind==='angle')element.style.setProperty('color',labelColor,'important')"), 'angle labels must use the cache-busted module and force each difficulty colour inline');
 assert.ok(entrySource.includes("distanceControl.max='1500'") && entrySource.includes("distanceSlider.max='1500'") && entrySource.includes("target.max='1500'"), 'angle distance slider must be initialized and reasserted at 1000 m during UI sync and input');
 assert.ok(html.includes('font-size:15px') && html.includes('id="slopeLayerAngleDistance" type="range" min="0" max="1500" step="10" value="900"') && html.includes('id="slopeLayerAngleDistanceValue">900 м</strong>'), 'slope angle font must be 25% larger and camera distance control must reach 1000 m');
 assert.ok(entrySource.includes('Math.min(1500,number)') && entrySource.includes('Math.min(1500,Number(state.slopeAnalysisAngleMaxDistanceMeters)') && entrySource.includes('fallback=900'), 'camera distance clamp and label visibility must both allow 1000 m');
@@ -781,10 +790,10 @@ assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.include
 assert.ok(entrySource.includes("if(state.mode==='drone')droneController.update(dt)"), 'drone controller must update continuously while active');
 assert.ok(!entrySource.includes('modeTransition'), 'stale transition lock must not block mode changes');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate downhill run-out');
-assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn)spawnFound=!!this._findSpawn()'), 'ordinary starts keep the piste fallback while drone starts remain at the drone location');
+assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('this._findSpawn(slot)'), 'ordinary starts keep the slot-aware piste fallback while drone starts remain at the drone location');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone handoff must initialize downhill movement');
 assert.ok(skierSource.includes('const fallbackDivisions=12'), 'skier spawn must have a bounded last-resort terrain scan');
-assert.ok(skierSource.includes('fallbackCandidates.slice(0,16)'), 'skier spawn fallback must select candidates and score downhill clearance');
+assert.ok(skierSource.includes('fallbackCandidates.sort((a,b)=>b.baseScore-a.baseScore)')&&skierSource.includes('evaluatedFallbacks=fallbackCandidates.map(candidate=>'), 'skier spawn fallback must rank candidates and score downhill clearance');
 assert.ok(skierSource.includes('this.lastPointerLockError=null'), 'pointer-lock denial must not abort skier startup');
 assert.ok(entrySource.includes('let pendingSceneMode = null;'), 'skier mode requests during terrain loading must be queued');
 assert.ok(entrySource.includes("if(pendingSceneMode==='skier')"), 'queued skier mode must resume after slope loading');
@@ -812,7 +821,7 @@ assert.ok(entrySource.includes("const terrain=resolveSkierTerrain();"), 'queued 
 assert.ok(entrySource.includes("START_EXCEPTION"), 'skier controller exceptions must be reported precisely');
 assert.ok(entrySource.includes("TERRAIN_NOT_RESOLVED"), 'mode API must report terrain resolution failures instead of NO_MODE_CHANGE');
 
-assert.ok(skierSource.includes('this._groundFromLookup(x,z)'), 'skier ground queries must have a direct triangle lookup fallback');
+assert.ok(skierSource.includes('this._groundFromLookup(x,z,referenceY,maxVerticalDelta)'), 'skier ground queries must have a direct triangle lookup fallback');
 assert.ok(skierSource.includes('await this._buildTerrainLookup('), 'skier start must await incremental spatial terrain lookup');
 assert.ok(skierSource.includes('occupiedCells:this.terrainLookup?.occupiedCells||0'), 'failed skier starts must report terrain lookup diagnostics');
 assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!state.root?'SCENE_ROOT_MISSING':'TERRAIN_NOT_RESOLVED')"), 'mode bridge must receive the precise terrain / startup failure code');
@@ -825,7 +834,7 @@ assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'dro
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
 assert.ok(entrySource.includes("showModeSwitchFeedback(message)"), 'mode startup failures must be visible on screen');
 assert.ok(entrySource.includes('function resolveSkierTerrain()')&&entrySource.includes('function resolveSkierTerrainForDroneSpawn(position)')&&entrySource.indexOf('const requestedTerrain=mode===\'skier\'')<entrySource.indexOf("if(mode==='skier'&&!requestedTerrain)"), 'skier mode must resolve the correct surface before its early return guard');
-assert.ok(entrySource.includes('function createSkierPhysicsSurface(roots)')&&entrySource.includes('GO_SkierPhysicsTerrainComposite')&&entrySource.includes('if(hasGeometry(state.baseTerrain))roots.push(state.baseTerrain)')&&entrySource.includes('if(hasGeometry(state.terrain))roots.push(state.terrain)'),'skier collision surface must combine Stage 1 piste and the base real terrain');
+assert.ok(entrySource.includes('function createSkierPhysicsSurface(roots)')&&entrySource.includes('GO_SkierPhysicsTerrainComposite')&&entrySource.includes('if(activeAsset&&hasGeometry(activeAsset.root))')&&entrySource.includes('if(state.baseTerrain&&state.baseTerrain!==state.terrain&&hasGeometry(state.baseTerrain))')&&entrySource.includes('const preferredSlope=state.importedAssets.find('),'skier collision surface must combine the Stage 1 piste with visible active Terrain while excluding hidden replaced terrain');
 assert.ok(entrySource.includes('function applySkierPerformanceProfile()')&&entrySource.includes('cameraOptics.setOptions({enabled:false})')&&entrySource.includes('renderer.shadowMap.enabled=false')&&entrySource.includes('performanceRatio')&&entrySource.includes('lastForestBillboardUpdateAt<100'),'skier mode must temporarily reduce render cost and throttle forest billboards');
 assert.ok(entrySource.includes("sceneLoadingEl.getClientRects().length>0"), 'loading-state detection must use rendered visibility');
 
