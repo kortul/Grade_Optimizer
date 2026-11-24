@@ -6,7 +6,7 @@ test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
   assert.equal(MAX_IDLE_MS,60000);
   assert.equal(MAX_MESSAGE_CHARS,4096);
-  assert.equal(MAX_MESSAGES_PER_SECOND,30);
+  assert.equal(MAX_MESSAGES_PER_SECOND,45);
 });
 test('multiplayer session IDs accept UUIDs only',()=>{
   assert.equal(sanitizeClientId('550e8400-e29b-41d4-a716-446655440000'),'550e8400-e29b-41d4-a716-446655440000');
