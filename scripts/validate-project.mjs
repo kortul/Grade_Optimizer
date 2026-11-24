@@ -12,7 +12,7 @@ const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)[
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
 const entryPath = entry.split('?')[0];
-assert.equal(entryPath, 'app.v163.js', 'index.html must activate the current app release');
+assert.equal(entryPath, 'app.v164.js', 'index.html must activate the current app release');
 const entrySource = read(entryPath).toString('utf8');
 assert.ok(entrySource.includes('TERRAIN_SNOW_TILE_METERS=120'), 'terrain snow texture must use a broad 120 m tile');
 assert.ok(entrySource.includes('gradeOptimizerTerrainTexture') && entrySource.includes('low-frequency-albedo-no-bump'), 'source terrain must avoid high-frequency bump mapping');
@@ -355,7 +355,7 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v97.js'), 'active app must use the current skier controller');
+assert.ok(entrySource.includes('skier-controller.v98.js'), 'active app must use the current skier controller');
 const skierSource = read('skier-controller.v97.js').toString('utf8');
 assert.ok(skierSource.includes('respawnAtCustomSpawn(spawn)')&&skierSource.includes('spawnHint.headingYaw'), 'skier controller must apply custom spawn position and heading');
 assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), "imported Slopes_Stage1 geometry must take priority as the skier surface");
@@ -780,7 +780,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('src="./app.v163.js"'), 'HTML must load the current application module');
+assert.ok(html.includes('src="./app.v164.js"'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
@@ -918,5 +918,22 @@ assert.ok(alpineForestSource.includes('const rangeFog = rangeT.mul(rangeT)') && 
 assert.ok(alpineForestHtml.includes('value="17.5"'), 'forest preview must open with its sun in the initial camera view');
 assert.ok(alpineForestHtml.includes('id="godRays"')&&alpineForestHtml.includes('id="forestDensity"'),'Alpine Forest lab controls for god rays and forest density are missing');
 pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
+
+// Public resort multiplayer regression checks.
+const multiplayerClientSource=read('multiplayer.v1.js').toString('utf8');
+const multiplayerConfigSource=read('multiplayer-config.v1.js').toString('utf8');
+const multiplayerWorkerSource=read('server/src/worker.js').toString('utf8');
+const multiplayerProtocolSource=read('server/src/protocol.js').toString('utf8');
+const multiplayerSkierSource=read('skier-controller.v98.js').toString('utf8');
+assert.ok(html.includes('id="multiplayerStatus"')&&html.includes('id="multiplayerStatusText"'), 'multiplayer status UI is missing');
+assert.ok(entrySource.includes("import { ResortMultiplayer } from './multiplayer.v1.js'")&&entrySource.includes('new ResortMultiplayer(')&&entrySource.includes('multiplayerClient.publish(buildMultiplayerState())')&&entrySource.includes('multiplayerClient.update(dt)'), 'app frame loop must publish and render remote multiplayer states');
+assert.ok(entrySource.includes("mode='skier'")&&entrySource.includes("mode='drone'")&&entrySource.includes('REMOTE_SKIER_POSE_NODES'), 'app must send independent skier and drone state');
+assert.ok(multiplayerSkierSource.includes('updatePoseWhenHidden=false')&&multiplayerSkierSource.includes('},true);'), 'skier joint pose must update while hidden in first-person');
+assert.ok(multiplayerClientSource.includes('SEND_INTERVAL_MS = 125')&&multiplayerClientSource.includes('cloneModel')&&multiplayerClientSource.includes('makeDrone')&&multiplayerClientSource.includes('peer.group.quaternion.slerp'), 'multiplayer client must interpolate remote skier / drone models at 8 Hz');
+assert.ok(multiplayerConfigSource.includes('MULTIPLAYER_SERVER_URL'), 'one-time WebSocket endpoint config is missing');
+assert.ok(multiplayerWorkerSource.includes("PUBLIC_RESORT='grade-optimizer-public-resort'")&&multiplayerWorkerSource.includes('idFromName(PUBLIC_RESORT)')&&multiplayerWorkerSource.includes('acceptWebSocket'), 'all visitors must connect to the same hibernatable Durable Object');
+assert.ok(multiplayerWorkerSource.includes("ALLOWED_ORIGIN='https://kortul.github.io'")&&multiplayerWorkerSource.includes('MAX_PLAYERS')&&multiplayerWorkerSource.includes('MAX_MESSAGE_RATE'), 'multiplayer relay must enforce origin, player and packet limits');
+assert.ok(multiplayerProtocolSource.includes('normalizeState')&&multiplayerProtocolSource.includes('Number.isFinite')&&multiplayerProtocolSource.includes('JOINT_FLOATS = 72'), 'server must validate transforms and skier joint data');
+pass('public shared multiplayer: one two-person resort, independent modes, validated player states');
 
 console.log('\nAll project checks passed.');
