@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName} from '../src/protocol.js';
+import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeMeasurement,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName} from '../src/protocol.js';
 
 test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
@@ -81,6 +81,25 @@ test('legacy flags are pruned to three on connection, before placing another fla
   assert.deepEqual(result.removedMarkers.map(item=>item.id),[makeId(1),makeId(2)]);
   assert.deepEqual(result.markers.map(item=>item.id),[makeId(3),makeId(4),makeId(5)]);
   assert.ok(result.markers.every(item=>item.ownerId==='legacy:Old visitor'));
+});
+
+test('shared ruler measurements validate one or two world-space points',()=>{
+  const ownerId='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
+  const measurement=normalizeMeasurement({
+    id:'550e8400-e29b-41d4-a716-446655440000',
+    points:[[125.5,42,-810],[140,51,-822]]
+  },'  Pavel  ',ownerId);
+  assert.ok(measurement);
+  assert.equal(measurement.id,'550e8400-e29b-41d4-a716-446655440000');
+  assert.equal(measurement.owner,'Pavel');
+  assert.equal(measurement.ownerId,ownerId);
+  assert.deepEqual(measurement.points,[[125.5,42,-810],[140,51,-822]]);
+  assert.equal(normalizeMeasurement({id:'bad-id',points:[[0,0,0]]},'Pavel',ownerId),null);
+  assert.equal(normalizeMeasurement({id:'550e8400-e29b-41d4-a716-446655440000',points:[]},'Pavel',ownerId),null);
+  assert.equal(normalizeMeasurement({id:'550e8400-e29b-41d4-a716-446655440000',points:[[0,0,0],[1,1,1],[2,2,2]]},'Pavel',ownerId),null);
+  assert.equal(normalizeMeasurement({id:'550e8400-e29b-41d4-a716-446655440000',points:[[Infinity,0,0]]},'Pavel',ownerId),null);
+  assert.equal(normalizeMeasurement({id:'550e8400-e29b-41d4-a716-446655440000',points:[[50001,0,0]]},'Pavel',ownerId),null);
+  assert.equal(normalizeMeasurement({id:'550e8400-e29b-41d4-a716-446655440000',points:[[0,0,0]]},'Pavel','invalid-owner'),null);
 });
 
 test('display names are bounded and sanitized',()=>{
