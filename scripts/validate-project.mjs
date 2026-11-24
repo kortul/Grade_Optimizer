@@ -112,6 +112,10 @@ assert.ok(mayaExporterSource.includes('def _git_changes_for_paths(repo, paths):'
 assert.ok(mayaExporterSource.includes('remote.origin.url')&&mayaExporterSource.includes('def check_git_repository(')&&mayaExporterSource.includes('"--short", "--branch"'), 'Maya exporter must expose Git origin diagnostics in its UI');
 assert.ok(mayaExporterSource.includes('ПРОВЕРКА GIT:')&&mayaExporterSource.includes('ПРОВЕРИТЬ ПАПКУ'), 'Maya exporter must show post-export Git diagnostics and a folder check button');
 pass('Maya exporter verifies local Git root and reports exact post-export file status');
+assert.ok(entrySource.includes("const FORCE_REMOTE_PROJECT=WORKSPACE_QUERY.get('remote')==='1'"), 'project URL must support loading the published GitHub manifest without a stale browser draft');
+assert.ok(entrySource.includes('if(!FORCE_REMOTE_PROJECT)') && entrySource.includes('Локальный черновик браузера оставлен без изменений.'), 'forced GitHub load must preserve unsynced browser backup');
+assert.ok(entrySource.includes('const geometryBounds=new THREE.Box3().setFromObject(root)') && entrySource.includes('if(!visibleMeshCount)'), 'FBX loader must validate actual nonempty and visible geometry');
+pass('published project bypass and imported FBX geometry diagnostics are present');
 const weatherSource = read('weather-system.v7.js').toString('utf8');
 assert.ok(weatherSource.includes("this.cameraWeatherRig = new THREE.Group()"), 'weather camera-follow scene root missing');
 assert.ok(weatherSource.includes('this.scene.add(this.cameraWeatherRig)'), 'camera-follow weather layer must belong to the renderable scene graph');
@@ -520,7 +524,7 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.7.4"'), 'Maya scene-asset exporter version must be 0.7.4');
+assert.ok(mayaExporter.includes('VERSION = "0.7.5"'), 'Maya scene-asset exporter version must be 0.7.5');
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
 assert.ok(mayaExporter.includes('restore_fbx_compatible_materials(material_overrides)') && mayaExporter.includes('"fbxMaterialConversions"'), 'Maya exporter must always restore source shader connections and record compatibility conversions');
@@ -531,6 +535,7 @@ assert.ok(mayaExporter.includes('def replace_selected_scene_asset(*_):') && maya
 assert.ok(mayaExporter.includes('existing_size_bytes = os.path.getsize(model_path)'), 'replacement exporter must capture the original FBX size');
 assert.ok(mayaExporter.includes('minimum_safe_size = max(16 * 1024, int(previous_size * 0.01))'), 'replacement exporter must reject suspiciously small FBX files before swapping');
 assert.ok(mayaExporter.includes('Замена остановлена: новый FBX подозрительно мал.'), 'replacement failure must explain that original geometry remains safe');
+assert.ok(mayaExporter.includes('Замена Slopes_Stage1 остановлена: в выделение попала геометрия Stage 2.'), 'Stage 1 replacement must reject a mixed Stage 2 selection');
 
 assert.ok(mayaExporter.includes('label="2. ЗАМЕНА СУЩЕСТВУЮЩЕГО ОБЪЕКТА"') && mayaExporter.includes('label="1. НОВЫЙ ОБЪЕКТ"') && mayaExporter.includes('ЗАМЕНИТЬ ВЫБРАННЫЙ ОБЪЕКТ') && mayaExporter.includes('ДОБАВИТЬ КАК НОВЫЙ ОБЪЕКТ'), 'Maya UI must keep new and replace operations in separate sections');
 assert.ok(mayaExporter.includes('re.match(r"^models/') && mayaExporter.includes('_safe_existing_fbx_path'), 'Maya replacement must be restricted to safe models/ FBX paths');
