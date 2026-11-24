@@ -47,20 +47,23 @@ node scripts/validate-project.mjs
 
 Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor, or open it from the Grade Optimizer Maya plug-in.
 
-1. In Maya, select the root transform/group of the terrain, or select the terrain mesh objects directly. Only the selection and its descendant meshes are exported; the rest of the Maya scene is never included.
-2. In the exporter, choose the local `Grade_Optimizer` repository root (the folder containing `index.html` and `assets/`).
-3. The exporter writes the canonical project files:
-   - `assets/real-terrain.fbx`
-   - `assets/real-terrain.json`
-4. Open GitHub Desktop, review the two changed files, then commit and push. The Maya exporter does not create commits or push by itself.
+1. In GitHub Desktop, pull the latest repository before opening the exporter. The Maya tree reads the local clone.
+2. The replacement tree contains both client-scene FBXs and a separate **Основной рельеф** entry for the canonical global asset.
+3. To replace the main terrain, select only the `terrainShape` mesh / its dedicated group inside the CAD-synchronized Maya working scene. Do not select the whole `MAYA_WORKING_SCENE` if it also contains Stage 1 or other geometry. In the Maya tree choose **Основной рельеф** (`real-terrain`) and click **ЗАМЕНИТЬ ВЫБРАННЫЙ ОБЪЕКТ**.
+4. To replace Stage 1, select only its intended hierarchy in Maya. In the tree choose `Slopes_Stage1` and use the same replacement button.
+5. Review the changed files in GitHub Desktop, then commit and push. Replacing the main terrain changes `assets/real-terrain.fbx` and `assets/real-terrain.json`; replacing Stage 1 changes the FBX and `clients/alpine-resort/scene.json`.
 
-The runtime converts Maya centimetres to metres without changing the source world origin or physical proportions. Camera zoom, fog and directional shadow bounds adapt to the imported terrain dimensions; the geometry is not normalized to the old A1 test slope.
+For geometry selected inside a `MAYA_WORKING_SCENE` created by CAD Bridge, the dedicated base-terrain operation reads `bridgeOriginalOffset` and `bridgeOriginalScale`, duplicates the selected objects, bakes their world transforms, and reverses the CAD working transform on the temporary copies. The original Maya objects are not modified. Multiple mesh objects and shapes remain separate; they are not merged. The operation refuses a selection that includes Stage / slope meshes or lacks the stored CAD Bridge transform.
 
-The FBX preserves hierarchy, transforms, mesh names, smoothing, tangents, material assignments and embedded textures. The JSON sidecar records the source scene, Maya version, linear unit, world bounds, component names, material names and Role / Tags metadata. Collision and Forest blocker remain Web Editor settings.
+The base-terrain export is written to the canonical pair:
 
-The exporter removes the old Project ID / `clients/<id>` requirement. There is one fixed destination for the main terrain. Keep the FBX below 90 MiB for the current regular-Git workflow.
+- `assets/real-terrain.fbx`
+- `assets/real-terrain.json`
 
-**Runtime:** for the primary A1 slot, the app now prefers `assets/real-terrain.fbx` + `assets/real-terrain.json`, resolves the mesh by its manifest name (`terrainShape`), converts Maya source units to metres and applies snow materials. If either canonical file is missing or invalid, it falls back to the original `assets/A1.gltf`. The A1 optimizer profiles remain loaded from `A1.curves.json`.
+The FBX preserves mesh separation, material assignments, smoothing and tangents. The JSON sidecar records the source scene, Maya version, units, bounds, components, materials and the CAD Bridge inverse that was used. Keep the FBX below 90 MiB for the current regular-Git workflow.
+
+**Runtime:** for the primary A1 slot, the app prefers `assets/real-terrain.fbx` + `assets/real-terrain.json`, resolves the terrain mesh by its manifest name, converts Maya source units to metres and applies snow materials. If either canonical file is missing or invalid, it falls back to the original `assets/A1.gltf`. The A1 optimizer profiles remain loaded from `A1.curves.json`.
+
 ## Scene Editor: browser autosave and direct local repository sync
 
 You are the only Scene Editor administrator. Viewers only need the generated viewer link; no client accounts or editing workflow are required.
