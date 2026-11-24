@@ -520,7 +520,7 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.7.3"'), 'Maya scene-asset exporter version must be 0.7.2');
+assert.ok(mayaExporter.includes('VERSION = "0.7.4"'), 'Maya scene-asset exporter version must be 0.7.4');
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
 assert.ok(mayaExporter.includes('restore_fbx_compatible_materials(material_overrides)') && mayaExporter.includes('"fbxMaterialConversions"'), 'Maya exporter must always restore source shader connections and record compatibility conversions');
@@ -537,7 +537,8 @@ assert.ok(mayaExporter.includes('re.match(r"^models/') && mayaExporter.includes(
 assert.ok(mayaExporter.includes('"activeTerrain": False') && mayaExporter.includes('"category": category'), 'new Maya scene assets must default to non-active geometry');
 assert.ok(mayaExporter.includes('MAYA_LINEAR_UNIT_TO_METERS') && mayaExporter.includes('"scale": [meters_per_unit, meters_per_unit, meters_per_unit]'), 'Maya asset units must be converted to metres in the client manifest');
 assert.ok(mayaExporter.includes('def write_client_asset_manifest('), 'Maya client scene manifest writer missing');
-assert.ok(mayaExporter.includes('collect_meshes(selection_only=True)') && mayaExporter.includes('collect_node_metadata(selection_only=True)'), 'Maya exporter must collect only selected objects and descendants');
+assert.ok(mayaExporter.includes('collect_meshes(selection_only=True, selection_roots=export_roots)') && mayaExporter.includes('collect_node_metadata(selection_only=True, selection_roots=export_roots)'), 'Maya exporter must collect only selected objects and descendants using normalized DAG roots');
+assert.ok(mayaExporter.includes('cmds.select(export_roots, replace=True)') && mayaExporter.includes('def collect_meshes(selection_only=False, selection_roots=None):'), 'Maya FBX export must restore whole transform roots before selection-only export');
 assert.ok(mayaExporter.includes('FBXExport -f "') && mayaExporter.includes('" -s;'), 'Maya scene asset export must always use FBX selection-only mode');
 assert.ok(mayaExporter.includes('os.replace(temporary_model_path, export_info["model_path"])') && mayaExporter.includes('os.replace(temporary_manifest_path, export_info["manifest_path"])'), 'Maya exporter must publish the separate model and manifest only after export succeeds');
 assert.ok(!mayaExporter.includes('FBX_NAME = "real-terrain.fbx"') && !mayaExporter.includes('FBX_RELATIVE_PATH') && !mayaExporter.includes('def write_terrain_manifest('), 'Maya exporter must never write selected geometry to the canonical base terrain path');
