@@ -939,17 +939,17 @@ def prepare_client_asset_export(repo, components, node_metadata, replace_asset_i
             ]
             stage_one_count = sum(
                 1 for path in component_paths
-                if re.search(r"\\|Slopes_Stage1(?:\\||$)", path, re.IGNORECASE)
+                if re.search(r"\|Slopes_Stage1(?:\||$)", path, re.IGNORECASE)
             )
             stage_two_count = sum(
                 1 for path in component_paths
-                if re.search(r"\\|Slopes_Stage2(?:\\||$)", path, re.IGNORECASE)
+                if re.search(r"\|Slopes_Stage2(?:\||$)", path, re.IGNORECASE)
             )
             if stage_two_count:
                 raise RuntimeError(
-                    "Замена Slopes_Stage1 остановлена: в выделение попала геометрия Stage 2.\\n\\n"
-                    "Объектов из Slopes_Stage1: %d\\n"
-                    "Объектов из Slopes_Stage2: %d\\n\\n"
+                    "Замена Slopes_Stage1 остановлена: в выделение попала геометрия Stage 2.\n\n"
+                    "Объектов из Slopes_Stage1: %d\n"
+                    "Объектов из Slopes_Stage2: %d\n\n"
                     "Выдели только корневую группу Slopes_Stage1 в Maya Outliner "
                     "и повтори замену. Существующий FBX и scene.json не изменены."
                     % (stage_one_count, stage_two_count)
