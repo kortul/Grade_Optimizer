@@ -584,7 +584,7 @@ export class ResortMultiplayer {
     const existing=this.markers.get(id);
     if(existing){existing.group.position.fromArray(p);existing.owner=owner;existing.ownerId=ownerId;existing.number=number;existing.createdAt=createdAt;existing.setNumber?.(number);return true;}
     const visual=makeFlagMarker(number);visual.root.position.fromArray(p);visual.root.userData.gradeOptimizerSharedMarkerId=id;this.scene.add(visual.root);
-    this.markers.set(id,{group:visual.root,dispose:visual.dispose,setLabel:visual.setLabel,owner,ownerId,number,createdAt});
+    this.markers.set(id,{group:visual.root,dispose:visual.dispose,setNumber:visual.setNumber,owner,ownerId,number,createdAt});
     while(this.markers.size>MAX_VISIBLE_MARKERS)this.removeMarker(this.markers.keys().next().value);
     return true;
   }
