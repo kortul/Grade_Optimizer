@@ -790,10 +790,10 @@ assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.include
 assert.ok(entrySource.includes("if(state.mode==='drone')droneController.update(dt)"), 'drone controller must update continuously while active');
 assert.ok(!entrySource.includes('modeTransition'), 'stale transition lock must not block mode changes');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate downhill run-out');
-assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn)spawnFound=!!this._findSpawn()'), 'ordinary starts keep the piste fallback while drone starts remain at the drone location');
+assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('this._findSpawn(slot)'), 'ordinary starts keep the slot-aware piste fallback while drone starts remain at the drone location');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone handoff must initialize downhill movement');
 assert.ok(skierSource.includes('const fallbackDivisions=12'), 'skier spawn must have a bounded last-resort terrain scan');
-assert.ok(skierSource.includes('fallbackCandidates.slice(0,16)'), 'skier spawn fallback must select candidates and score downhill clearance');
+assert.ok(skierSource.includes('fallbackCandidates.sort((a,b)=>b.baseScore-a.baseScore)')&&skierSource.includes('evaluatedFallbacks=fallbackCandidates.map(candidate=>'), 'skier spawn fallback must rank candidates and score downhill clearance');
 assert.ok(skierSource.includes('this.lastPointerLockError=null'), 'pointer-lock denial must not abort skier startup');
 assert.ok(entrySource.includes('let pendingSceneMode = null;'), 'skier mode requests during terrain loading must be queued');
 assert.ok(entrySource.includes("if(pendingSceneMode==='skier')"), 'queued skier mode must resume after slope loading');
