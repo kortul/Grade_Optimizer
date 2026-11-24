@@ -1,10 +1,23 @@
 import * as THREE from 'three';
 
-const SEND_INTERVAL_MS = 125;
-const STALE_PEER_MS = 90000;
-const HEARTBEAT_INTERVAL_MS = 10000;
+const SEND_INTERVAL_MS = 50;
+const STALE_PEER_MS = 45000;
+const HEARTBEAT_INTERVAL_MS = 5000;
 const JOINT_FLOATS = 72;
 const JOINTS_PER_NODE = 6;
+
+function getSessionClientId() {
+  const key='gradeOptimizerMultiplayerSessionId';
+  try {
+    const stored=String(sessionStorage.getItem(key)||'').toLowerCase();
+    if(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(stored))return stored;
+    const created=crypto.randomUUID().toLowerCase();
+    sessionStorage.setItem(key,created);
+    return created;
+  } catch {
+    return crypto.randomUUID().toLowerCase();
+  }
+}
 
 function normalizeEndpoint(value) {
   let url=String(value||'').trim();
@@ -98,11 +111,14 @@ function makeNameLabel(name) {
 
 export class ResortMultiplayer {
   constructor({scene,endpoint,name,statusElement,statusTextElement,templateProvider,poseNodeNames=[]}) {
-    this.scene=scene;this.endpoint=normalizeEndpoint(endpoint);this.name=String(name||'Лыжник').slice(0,20);
+    this.scene=scene;this.endpoint=normalizeEndpoint(endpoint);this.clientId=getSessionClientId();
+    const nameBase=String(name||'Лыжник').slice(0,14);
+    this.name=(nameBase+'-'+this.clientId.replace(/-/g,'').slice(-4).toUpperCase()).slice(0,20);
     this.statusElement=statusElement||null;this.statusTextElement=statusTextElement||null;
     this.templateProvider=templateProvider||(()=>({}));this.poseNodeNames=poseNodeNames.slice();
     this.socket=null;this.id='';this.slot=null;this.connected=false;this.disposed=false;this.full=false;
     this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';this.lastClose=null;
+    this.slotWaiters=new Set();this.sentStates=0;this.receivedStates=0;this.lastStateAt=0;this.lastPong=0;
     this.heartbeatTimer=this.endpoint?setInterval(()=>this.sendHeartbeat(),HEARTBEAT_INTERVAL_MS):null;
     this.players=new Map();this.names=new Map();this.lastSeen=new Map();
     this.setStatus(this.endpoint?'connecting':'disabled');
@@ -113,10 +129,14 @@ export class ResortMultiplayer {
     if(!this.endpoint){this.setStatus('disabled');return;}
     this.setStatus(this.retries?'reconnecting':'connecting');
     let socket;
-    try{socket=new WebSocket(this.endpoint);}catch(error){this.scheduleReconnect();return;}
+    try{
+      const target=new URL(this.endpoint,window.location.href);
+      target.searchParams.set('clientId',this.clientId);
+      socket=new WebSocket(target.toString());
+    }catch(error){this.scheduleReconnect();return;}
     this.socket=socket;
     socket.onopen=()=>{
-      if(this.socket===socket&&!this.disposed)socket.send(JSON.stringify({t:'hello',name:this.name}));
+      if(this.socket===socket&&!this.disposed)socket.send(JSON.stringify({t:'hello',name:this.name,clientId:this.clientId}));
     };
     socket.onmessage=event=>{
       if(this.socket===socket&&!this.disposed&&typeof event.data==='string')this.onMessage(event.data);
@@ -126,7 +146,7 @@ export class ResortMultiplayer {
       if(this.socket!==socket)return;
       this.lastClose={code:event.code,reason:event.reason||'',wasClean:event.wasClean};
       console.warn('[Grade Optimizer multiplayer] WebSocket closed',this.lastClose);
-      this.socket=null;this.connected=false;this.id='';this.slot=null;this.clearPlayers();
+      this.socket=null;this.connected=false;this.id='';this.slot=null;this.clearPlayers();this.resolveSlotWaiters(null);
       if(this.disposed)return;
       if(this.full){this.setStatus('full');return;}
       this.setStatus('reconnecting');this.scheduleReconnect();
@@ -138,6 +158,41 @@ export class ResortMultiplayer {
     if(this.disposed||!this.connected||socket?.readyState!==WebSocket.OPEN)return;
     try{socket.send(JSON.stringify({t:'ping'}));}
     catch(error){try{socket.close();}catch{}}
+  }
+
+  resolveSlotWaiters(slot) {
+    for(const resolve of [...this.slotWaiters]){
+      this.slotWaiters.delete(resolve);
+      resolve(Number.isInteger(slot)?slot:null);
+    }
+  }
+
+  waitForSlot(timeoutMs=1600) {
+    if(Number.isInteger(this.slot))return Promise.resolve(this.slot);
+    if(!this.endpoint||this.disposed)return Promise.resolve(null);
+    return new Promise(resolve=>{
+      let settled=false;
+      const finish=value=>{
+        if(settled)return;
+        settled=true;
+        clearTimeout(timer);
+        this.slotWaiters.delete(finish);
+        resolve(Number.isInteger(value)?value:null);
+      };
+      const timer=setTimeout(()=>finish(null),Math.max(0,timeoutMs));
+      this.slotWaiters.add(finish);
+      if(Number.isInteger(this.slot))finish(this.slot);
+    });
+  }
+
+  getSpawnSlot() {
+    if(Number.isInteger(this.slot))return this.slot;
+    let hash=2166136261;
+    for(let i=0;i<this.clientId.length;i++){
+      hash^=this.clientId.charCodeAt(i);
+      hash=Math.imul(hash,16777619);
+    }
+    return (hash>>>0)%4;
   }
 
   scheduleReconnect() {
@@ -156,8 +211,10 @@ export class ResortMultiplayer {
     }
     if(msg.t==='slot'){
       this.slot=Number.isInteger(msg.slot)?msg.slot:null;
+      this.resolveSlotWaiters(this.slot);
     }else if(msg.t==='welcome'){
       this.id=String(msg.id||'');this.slot=Number.isInteger(msg.slot)?msg.slot:null;this.connected=!!this.id;this.retries=0;this.lastPong=performance.now();
+      this.resolveSlotWaiters(this.slot);
       for(const peer of Array.isArray(msg.players)?msg.players:[])this.upsert(peer);
       this.setStatus(this.connected?'connected':'error');
     }else if(msg.t==='join'){
@@ -167,6 +224,7 @@ export class ResortMultiplayer {
       }
       this.setStatus('connected');
     }else if(msg.t==='state'){
+      this.receivedStates++;this.lastStateAt=performance.now();
       this.upsert(msg.player);this.setStatus('connected');
     }else if(msg.t==='pong'){
       this.lastPong=performance.now();
@@ -263,7 +321,7 @@ export class ResortMultiplayer {
     if(!this.connected||this.socket?.readyState!==WebSocket.OPEN||!state)return;
     const now=performance.now();if(now-this.lastSent<SEND_INTERVAL_MS)return;
     this.lastSent=now;
-    try{this.socket.send(JSON.stringify({t:'state',state}));}catch(error){try{this.socket.close();}catch{}}
+    try{this.socket.send(JSON.stringify({t:'state',state}));this.sentStates++;}catch(error){try{this.socket.close();}catch{}}
   }
 
   update(dt) {
@@ -275,8 +333,8 @@ export class ResortMultiplayer {
       peer.group.visible=active;peer.skier.visible=peer.mode==='skier';peer.drone.visible=peer.mode==='drone';
       peer.label.sprite.position.y=peer.mode==='drone'?1.35:2.25;
       if(!active)continue;
-      const blend=1-Math.exp(-Math.max(0,dt)*15);
-      const prediction=peer.targetPosition.clone().addScaledVector(peer.velocity,0.075);
+      const blend=1-Math.exp(-Math.max(0,dt)*20);
+      const prediction=peer.targetPosition.clone().addScaledVector(peer.velocity,SEND_INTERVAL_MS/1000);
       if(peer.group.position.distanceToSquared(prediction)>1600)peer.group.position.copy(prediction);
       else peer.group.position.lerp(prediction,blend);
       peer.group.quaternion.slerp(peer.targetQuaternion,blend);
@@ -299,12 +357,13 @@ export class ResortMultiplayer {
     this.setStatus(this.connected?'connected':(this.endpoint?'reconnecting':'disabled'));
   }
 
-  diagnostics(){return{configured:!!this.endpoint,connected:this.connected,players:this.names.size,endpoint:this.endpoint,lastClose:this.lastClose};}
+  diagnostics(){return{configured:!!this.endpoint,connected:this.connected,id:this.id,clientId:this.clientId,slot:this.slot,players:this.names.size,sentStates:this.sentStates,receivedStates:this.receivedStates,lastStateAt:this.lastStateAt,lastPong:this.lastPong,endpoint:this.endpoint,lastClose:this.lastClose};}
 
   dispose() {
     if(this.disposed)return;this.disposed=true;
     if(this.reconnectTimer)clearTimeout(this.reconnectTimer);
     if(this.heartbeatTimer)clearInterval(this.heartbeatTimer);
+    this.resolveSlotWaiters(null);
     this.reconnectTimer=null;this.heartbeatTimer=null;
     const socket=this.socket;this.socket=null;this.connected=false;this.slot=null;
     if(socket){socket.onclose=null;socket.onmessage=null;try{socket.close(1000,'page leaving');}catch{}}
