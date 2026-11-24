@@ -1,9 +1,14 @@
 export const MAX_PLAYERS = 4;
-export const MAX_IDLE_MS = 180000;
+export const MAX_IDLE_MS = 60000;
 export const MAX_MESSAGE_CHARS = 4096;
-export const MAX_MESSAGES_PER_SECOND = 12;
+export const MAX_MESSAGES_PER_SECOND = 30;
 export const MAX_MESSAGE_RATE = MAX_MESSAGES_PER_SECOND;
 export const JOINT_FLOATS = 72;
+
+export function sanitizeClientId(value) {
+  const id=String(value??'').trim().toLowerCase();
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)?id:'';
+}
 
 export function sanitizeName(value) {
   const clean=Array.from(String(value??'').replace(/[\u0000-\u001f\u007f<>&"']/g,'').trim()).slice(0,20).join('');
