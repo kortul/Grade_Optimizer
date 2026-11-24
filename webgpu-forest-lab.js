@@ -358,7 +358,7 @@ async function loadRealTerrain() {
   const bounds = new THREE.Box3().setFromObject(root);
   const size = bounds.getSize(new THREE.Vector3());
   if (bounds.isEmpty() || size.x < 10 || size.z < 10) { if (!usingFallback) throw new Error('FBX рельеф не содержит корректную геометрию.'); }
-  const material = new THREE.MeshStandardMaterial({ color: 0xe7eff4, roughness: 0.96, metalness: 0 });
+  const material = new THREE.MeshStandardMaterial({ color: 0xe7eff4, vertexColors: usingFallback, roughness: 0.96, metalness: 0 });
   root.traverse(object => {
     if (!object.isMesh || !object.geometry || !object.geometry.attributes.position) return;
     terrainMeshCount++;
@@ -612,7 +612,7 @@ function buildSlopeFootprint(root) {
 }
 
 function restoreStageOneCoordinates(root, item) {
-  // Mirror the production FBX import order: normalize the Maya ToSketchfab
+  // Normalize the imported Maya ToSketchfab
   // wrapper / child scales before restoring the CAD Bridge world coordinates.
   const sketchfabGroup=root.getObjectByName?.('ToSketchfab');
   if(sketchfabGroup){
