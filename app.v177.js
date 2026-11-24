@@ -1566,8 +1566,10 @@ const forestPosition=new THREE.Vector3();
 const forestScale=new THREE.Vector3();
 const forestQuaternion=new THREE.Quaternion();
 const forestMatrix=new THREE.Matrix4();
-let lastBillboardCameraX=NaN,lastBillboardCameraZ=NaN;
+let lastBillboardCameraX=NaN,lastBillboardCameraZ=NaN,lastForestBillboardUpdateAt=0;
 function updateForestBillboards() {
+  const now=performance.now();
+  if(state.mode==='skier'&&now-lastForestBillboardUpdateAt<100)return;
   const cameraX=camera.position.x,cameraZ=camera.position.z;
   if(Number.isFinite(lastBillboardCameraX)&&
      (cameraX-lastBillboardCameraX)**2+(cameraZ-lastBillboardCameraZ)**2<0.0001)return;
@@ -1586,7 +1588,7 @@ function updateForestBillboards() {
       });
       set.mesh.instanceMatrix.needsUpdate=true;
     });
-    lastBillboardCameraX=cameraX;lastBillboardCameraZ=cameraZ;
+    lastBillboardCameraX=cameraX;lastBillboardCameraZ=cameraZ;lastForestBillboardUpdateAt=now;
     return;
   }
   if(!state.billboardMesh||!state.billboardTrees.length)return;
@@ -1599,7 +1601,7 @@ function updateForestBillboards() {
     state.billboardMesh.setMatrixAt(i,forestMatrix);
   });
   state.billboardMesh.instanceMatrix.needsUpdate=true;
-  lastBillboardCameraX=cameraX;lastBillboardCameraZ=cameraZ;
+  lastBillboardCameraX=cameraX;lastBillboardCameraZ=cameraZ;lastForestBillboardUpdateAt=now;
 }
 
 
@@ -6127,6 +6129,8 @@ const totalSkiLoadValueEl=document.getElementById('totalSkiLoadValue');
 const skierLockHintEl = document.getElementById('skierLockHint');
 const droneLockHintEl=document.getElementById('droneLockHint'),droneSpeedValueEl=document.getElementById('droneSpeedValue');
 let overviewSnapshot = null;
+let skierPhysicsSurfaceCache={key:'',root:null};
+let skierPerformanceRestore=null;
 let pendingSceneMode = null;
 let skierModePreparing = false;
 let modeCameraTransition = null;
@@ -6621,7 +6625,31 @@ function captureOverviewSnapshot(){
     groups:[state.designGroup,state.labelsGroup,state.terrainLabelsGroup,measureGroup].filter(Boolean).map(g=>[g,g.visible])
   };
 }
+function applySkierPerformanceProfile(){
+  if(skierPerformanceRestore)return;
+  skierPerformanceRestore={
+    cameraOpticsEnabled:cameraOptics.enabled,
+    shadowMapEnabled:renderer.shadowMap.enabled,
+    pixelRatio:renderer.getPixelRatio()
+  };
+  cameraOptics.setOptions({enabled:false});
+  renderer.shadowMap.enabled=false;
+  const performanceRatio=Math.min(skierPerformanceRestore.pixelRatio,Math.min(window.devicePixelRatio||1,0.9));
+  if(Math.abs(performanceRatio-skierPerformanceRestore.pixelRatio)>0.001){
+    renderer.setPixelRatio(performanceRatio);
+    renderer.setSize(view.clientWidth,view.clientHeight,false);
+  }
+}
+function restoreSkierPerformanceProfile(){
+  if(!skierPerformanceRestore)return;
+  cameraOptics.setOptions({enabled:skierPerformanceRestore.cameraOpticsEnabled});
+  renderer.shadowMap.enabled=skierPerformanceRestore.shadowMapEnabled;
+  renderer.setPixelRatio(skierPerformanceRestore.pixelRatio);
+  renderer.setSize(view.clientWidth,view.clientHeight,false);
+  skierPerformanceRestore=null;
+}
 function restoreOverviewPresentation(){
+  restoreSkierPerformanceProfile();
   if(!overviewSnapshot)return;
   if(state.terrain)state.terrain.visible=overviewSnapshot.terrainVisible;
   (overviewSnapshot.materials||[]).forEach(([m,opacity,transparent])=>{m.opacity=opacity;m.transparent=transparent;});
@@ -6632,6 +6660,7 @@ function applySkierPresentation(){
   (overviewSnapshot.groups||[]).forEach(([group])=>{group.visible=false;});
   if(state.terrain)state.terrain.visible=true;
   (overviewSnapshot.materials||[]).forEach(([m])=>{m.opacity=1;m.transparent=false;});
+  applySkierPerformanceProfile();
 }
 function updateModeSwitcher(){
   const isDrone=state.mode==='drone';
@@ -6661,6 +6690,27 @@ function isPreferredStageOneSkierSlopeAsset(asset){
     return normalized.includes('slopes_stage1')||normalized.includes('slopes_stage_1');
   });
 }
+function createSkierPhysicsSurface(roots){
+  const unique=[...new Set(roots.filter(Boolean))];
+  if(!unique.length)return null;
+  unique.forEach(root=>root.updateWorldMatrix(true,true));
+  if(unique.length===1)return unique[0];
+  const key=unique.map(root=>root.uuid+'|'+root.matrixWorld.elements.map(value=>Number(value.toFixed(5))).join(',')).join(';');
+  if(skierPhysicsSurfaceCache.key===key&&skierPhysicsSurfaceCache.root)return skierPhysicsSurfaceCache.root;
+  const composite=new THREE.Group();
+  composite.name='GO_SkierPhysicsTerrainComposite';
+  composite.userData.isSkierPhysicsComposite=true;
+  for(const source of unique){
+    const copy=source.clone(true);
+    copy.matrixAutoUpdate=false;
+    copy.matrix.copy(source.matrixWorld);
+    copy.matrixWorldNeedsUpdate=true;
+    composite.add(copy);
+  }
+  composite.updateMatrixWorld(true);
+  skierPhysicsSurfaceCache={key,root:composite};
+  return composite;
+}
 function resolveSkierTerrain(){
   const hasGeometry=root=>{
     if(!root||typeof root.traverse!=='function')return false;
@@ -6673,17 +6723,15 @@ function resolveSkierTerrain(){
     return !new THREE.Box3().setFromObject(root).isEmpty();
   };
 
-  // Stage 1 piste geometry is an imported slope asset, not necessarily the
-  // project's active base terrain. Prefer it explicitly for skier physics.
+  const roots=[];
   const preferredSlope=state.importedAssets.find(asset=>
     isPreferredStageOneSkierSlopeAsset(asset)&&hasGeometry(asset.root)
   );
-  if(preferredSlope)return preferredSlope.root;
+  if(preferredSlope)roots.push(preferredSlope.root);
+  if(hasGeometry(state.terrain))roots.push(state.terrain);
+  if(hasGeometry(state.baseTerrain))roots.push(state.baseTerrain);
 
-  let terrain=state.terrain||state.baseTerrain;
-  if(hasGeometry(terrain))return terrain;
-
-  if(state.root){
+  if(!roots.length&&state.root){
     state.root.updateWorldMatrix(true,true);
     const named=[],meshes=[];
     state.root.traverse(object=>{
@@ -6692,24 +6740,22 @@ function resolveSkierTerrain(){
       if(name.includes('terrain'))named.push(object);
       else meshes.push(object);
     });
-    const candidates=[...named,...meshes];
-    terrain=candidates.find(hasGeometry)||null;
+    const terrain=[...named,...meshes].find(hasGeometry)||null;
     if(terrain){
       state.terrain=terrain;
       if(!state.baseTerrain)state.baseTerrain=terrain;
       droneController.setTerrain(terrain);
-      return terrain;
+      roots.push(terrain);
     }
   }
 
-  // Also recover an active imported terrain if its scene reference was lost.
   const activeAsset=state.importedAssets.find(asset=>asset.id===state.activeTerrainAssetId);
-  if(activeAsset&&hasGeometry(activeAsset.root)){
+  if(!roots.length&&activeAsset&&hasGeometry(activeAsset.root)){
     state.terrain=activeAsset.root;
     droneController.setTerrain(activeAsset.root);
-    return activeAsset.root;
+    roots.push(activeAsset.root);
   }
-  return null;
+  return createSkierPhysicsSurface(roots);
 }
 
 const droneSpawnSurfaceRaycaster=new THREE.Raycaster();
@@ -6781,6 +6827,7 @@ async function setSceneMode(mode){
 
   if(previousMode==='skier'){
     if(mode==='drone')skierController.showForDrone();
+    restoreSkierPerformanceProfile();
     skierController.stop({keepSceneModel:mode==='drone'});
   }
   if(previousMode==='drone'){
@@ -6809,7 +6856,7 @@ async function setSceneMode(mode){
       appRoot.classList.remove('skier-mode','drone-mode');updateModeSwitcher();resizeSceneAfterModeChange();return;
     }
 
-    if(!state.terrain)state.terrain=terrain;
+    if(!state.terrain&&!terrain.userData?.isSkierPhysicsComposite)state.terrain=terrain;
     applySkierPresentation();
     skierModePreparing=true;
     let skierStarted=false;
