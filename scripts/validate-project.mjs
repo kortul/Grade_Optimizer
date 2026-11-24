@@ -524,7 +524,7 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.7.5"'), 'Maya scene-asset exporter version must be 0.7.5');
+assert.ok(mayaExporter.includes('VERSION = "0.7.6"'), 'Maya scene-asset exporter version must be 0.7.6');
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
 assert.ok(mayaExporter.includes('restore_fbx_compatible_materials(material_overrides)') && mayaExporter.includes('"fbxMaterialConversions"'), 'Maya exporter must always restore source shader connections and record compatibility conversions');
@@ -535,7 +535,7 @@ assert.ok(mayaExporter.includes('def replace_selected_scene_asset(*_):') && maya
 assert.ok(mayaExporter.includes('existing_size_bytes = os.path.getsize(model_path)'), 'replacement exporter must capture the original FBX size');
 assert.ok(mayaExporter.includes('minimum_safe_size = max(16 * 1024, int(previous_size * 0.01))'), 'replacement exporter must reject suspiciously small FBX files before swapping');
 assert.ok(mayaExporter.includes('Замена остановлена: новый FBX подозрительно мал.'), 'replacement failure must explain that original geometry remains safe');
-assert.ok(mayaExporter.includes('Замена Slopes_Stage1 остановлена: в выделение попала геометрия Stage 2.'), 'Stage 1 replacement must reject a mixed Stage 2 selection');
+assert.ok(!mayaExporter.includes('Замена Slopes_Stage1 остановлена: в выделение попала геометрия Stage 2.'), 'Maya exporter must allow intentional mixed multi-mesh hierarchy exports');
 
 assert.ok(mayaExporter.includes('label="2. ЗАМЕНА СУЩЕСТВУЮЩЕГО ОБЪЕКТА"') && mayaExporter.includes('label="1. НОВЫЙ ОБЪЕКТ"') && mayaExporter.includes('ЗАМЕНИТЬ ВЫБРАННЫЙ ОБЪЕКТ') && mayaExporter.includes('ДОБАВИТЬ КАК НОВЫЙ ОБЪЕКТ'), 'Maya UI must keep new and replace operations in separate sections');
 assert.ok(mayaExporter.includes('re.match(r"^models/') && mayaExporter.includes('_safe_existing_fbx_path'), 'Maya replacement must be restricted to safe models/ FBX paths');
