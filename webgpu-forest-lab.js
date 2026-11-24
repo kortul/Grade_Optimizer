@@ -49,7 +49,7 @@ if (sky.material) {
   sky.material.depthTest = false;
 }
 scene.add(sky);
-const sun = new THREE.Vector3();
+const sunDirection = new THREE.Vector3();
 let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
 let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null;
@@ -114,8 +114,8 @@ function updateSky() {
   const elevation = Math.sin((hours - 6) / 12 * Math.PI) * 65;
   const phi = THREE.MathUtils.degToRad(90 - elevation);
   const theta = THREE.MathUtils.degToRad(-132);
-  const sun = new THREE.Vector3().setFromSphericalCoords(1, phi, theta).normalize();
-  sky.sunPosition.value.copy(sun);
+  sunDirection.setFromSphericalCoords(1, phi, theta).normalize();
+  sky.sunPosition.value.copy(sunDirection);
   sky.turbidity.value = Number(ui.turbidity.value);
   sky.rayleigh.value = Number(ui.rayleigh.value);
   sky.mieCoefficient.value = 0.006;
@@ -124,7 +124,7 @@ function updateSky() {
   sky.cloudDensity.value = Number(ui.cloudDensity.value);
   sky.cloudElevation.value = Number(ui.cloudElevation.value);
   sky.showSunDisc.value = true;
-  const daylight = THREE.MathUtils.smoothstep(sun.y, -0.10, 0.24);
+  const daylight = THREE.MathUtils.smoothstep(sunDirection.y, -0.10, 0.24);
   const twilight = Math.exp(-Math.pow((hours - 6.8) / 1.6, 2)) + Math.exp(-Math.pow((hours - 18.2) / 1.65, 2));
   hemisphere.intensity = 0.20 + daylight * 0.88;
   sunLight.intensity = 0.10 + daylight * 3.0;
@@ -132,7 +132,7 @@ function updateSky() {
   fogColor.value.set(0x26394f).lerp(new THREE.Color(0xc7d9e5), daylight).lerp(new THREE.Color(0xe2b9a5), THREE.MathUtils.clamp(twilight * 0.65, 0, 0.72));
   hemisphere.color.setRGB(0.20 + daylight * 0.62, 0.30 + daylight * 0.58, 0.48 + daylight * 0.50);
   hemisphere.groundColor.setRGB(0.10 + daylight * 0.20, 0.14 + daylight * 0.22, 0.19 + daylight * 0.23);
-  sunLight.position.copy(controls.target).addScaledVector(sun, 1800);
+  sunLight.position.copy(controls.target).addScaledVector(sunDirection, 1800);
   sunLight.target.position.copy(controls.target);
   ui.timeValue.textContent = formatTime(hours);
 }
@@ -183,7 +183,7 @@ async function loadRealTerrain() {
   controls.target.set(center.x, Math.max(bounds.min.y + 28, bounds.max.y * 0.30), center.z);
   camera.position.set(
     center.x + Math.max(2200, terrainSize.x * 0.52),
-    center.y + Math.max(1800, terrainSize.y * 7 + 700),
+    center.y + Math.max(1050, terrainSize.y * 2.5 + 400),
     center.z + Math.max(2600, terrainSize.z * 0.68)
   );
   controls.update();
@@ -233,7 +233,7 @@ function buildFogPipeline() {
     });
     const volumeFog = float(1).sub(opticalDepth.negate().exp());
     const rangeT = surfaceDistance.sub(rangeFogNear).div(rangeFogFar.sub(rangeFogNear).max(0.001)).clamp(0, 1);
-    const rangeFog = float(1).sub(exp(rangeT.mul(-2.4))).div(1 - Math.exp(-2.4));
+    const rangeFog = rangeT.mul(rangeT); // Ease into distance haze instead of fogging the whole frame at mid-range.
     const amount = volumeFog.max(rangeFog).mul(fogStrength).clamp(0, 1);
     return isBackgroundDepth(depth).select(float(0), amount);
   });
@@ -308,7 +308,7 @@ function buildFogPipeline() {
     return total.div(weightTotal.max(0.0001));
   });
   const raysResult=upsampleRays(lowResRays,sceneDepth);
-  const foggedScene=fogResult.mix(sceneColor.rgb,fogColor);
+  const foggedScene=sceneColor.rgb.mix(fogColor,fogResult);
   const shaftColour=vec3(1.0,0.86,0.67);
   renderPipeline.outputNode=foggedScene.add(shaftColour.mul(raysResult.mul(float(0.22).add(fogResult.mul(0.78)))));
   renderPipeline.needsUpdate = true;
@@ -324,7 +324,8 @@ function buildFogPipeline() {
       projectionInverse.value.copy(camera.projectionMatrixInverse);
       cameraPosition.value.copy(camera.position);
       if(sunPosition){
-        const projected=sunPosition.clone().project(camera);
+        const projectedPoint=camera.position.clone().addScaledVector(sunPosition,100000);
+        const projected=projectedPoint.project(camera);
         const visible=projected.z>-1&&projected.z<1&&Math.abs(projected.x)<1.35&&Math.abs(projected.y)<1.35;
         sunScreenUV.value.set(projected.x*0.5+0.5,0.5-projected.y*0.5);
         rayStrength.value=visible?Number(ui.godRays.value):0;
@@ -938,7 +939,7 @@ async function start() {
     camera.updateMatrixWorld();
     sky.position.copy(camera.position);
     fogPipeline.setTime(elapsed);
-    fogPipeline.updateCamera(sunLight.position);
+    fogPipeline.updateCamera(sunDirection);
     rebuildForestLod(false);
     renderPipeline.render();
     fpsFrames++;

@@ -895,6 +895,8 @@ assert.ok(webgpuAtmosphereSource.includes('depthAware') || webgpuAtmosphereSourc
 assert.ok(webgpuAtmosphereSource.includes('cameraWorld.value.copy(camera.matrixWorld)') && webgpuAtmosphereSource.includes('fogPipeline.updateCamera()'), 'volumetric reconstruction must track camera matrices each frame');
 assert.ok(webgpuAtmosphereSource.includes('lowResFog.setResolutionScale(value)') && webgpuAtmosphereSource.includes('performance: { pixelRatio: 1.0'), 'atmosphere quality profiles must control fog resolution and pixel ratio');
 assert.ok(webgpuAtmosphereSource.indexOf('camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);') < webgpuAtmosphereSource.indexOf('fogPipeline = buildFogPipeline()'), 'atmosphere camera aspect must be initialized before the first pipeline render');
+assert.ok(webgpuAtmosphereSource.includes('sceneColor.rgb.mix(fogColor, fogResult)') && !webgpuAtmosphereSource.includes('fogResult.mix(sceneColor.rgb, fogColor)'), 'atmosphere fog composite must use fog opacity as the mix factor');
+assert.ok(webgpuAtmosphereSource.includes('const rangeFog = rangeT.mul(rangeT)'), 'distance haze must ease in gradually instead of becoming dense at mid-range');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
 // WebGPU Alpine Forest Lab regression checks.
@@ -911,6 +913,9 @@ assert.ok(alpineForestSource.includes('smoothstep,'),'TSL smoothstep must be imp
 assert.ok(alpineForestSource.includes('snowy_conifer_atlas.webp')&&alpineForestSource.includes("lod==='far" ),'far forest must use the existing atlas billboard LOD');
 assert.ok(alpineForestSource.includes('new THREE.RenderPipeline(renderer)')&&alpineForestSource.includes('GO_LowResolutionGodRays')&&alpineForestSource.includes('upsampleRays'),'god rays must use a separate low-resolution TSL pass and depth-aware upsampling');
 assert.ok(alpineForestSource.includes('sunScreenUV.value.set(')&&alpineForestSource.includes('rayStrength.value=visible?'),'god rays must track the projected sun and disable when it is off-screen');
+assert.ok(alpineForestSource.includes('sceneColor.rgb.mix(fogColor,fogResult)') && !alpineForestSource.includes('fogResult.mix(sceneColor.rgb,fogColor)'), 'forest fog composite must use fog opacity as the mix factor');
+assert.ok(alpineForestSource.includes('const rangeFog = rangeT.mul(rangeT)') && alpineForestSource.includes('addScaledVector(sunPosition,100000)'), 'forest distance haze and sun projection must remain correctly framed');
+assert.ok(alpineForestHtml.includes('value="17.5"'), 'forest preview must open with its sun in the initial camera view');
 assert.ok(alpineForestHtml.includes('id="godRays"')&&alpineForestHtml.includes('id="forestDensity"'),'Alpine Forest lab controls for god rays and forest density are missing');
 pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
 
