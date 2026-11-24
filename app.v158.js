@@ -5046,7 +5046,8 @@ async function writeProjectSnapshotToFolder(slug,manifest){
 function shareClientWorkspace(){
   const slug=normalizeClientId(currentClientSlug||document.getElementById('clientWorkspaceId').value);
   if(!slug){setClientWorkspaceStatus('Сначала укажи Project ID.',true);return;}
-  const url=window.location.origin+window.location.pathname+'?project='+encodeURIComponent(slug);
+  // Public viewer links must load the published GitHub snapshot, not an unsynced local editor draft.
+  const url=window.location.origin+window.location.pathname+'?project='+encodeURIComponent(slug)+'&remote=1';
   const output=document.getElementById('clientShareLink');
   output.value=url;output.select();
   if(navigator.clipboard?.writeText)navigator.clipboard.writeText(url).then(
