@@ -1395,11 +1395,12 @@ def _build_slope_analysis_record(curve, digest, bridge_context, meters_per_unit)
         section_start = section_end
         section_index += 1
 
-    shares = {
-        key: round((value / total_length_cm) * 100.0, 3)
+    shares_raw = {
+        key: (value / total_length_cm) * 100.0
         for key, value in difficulty_lengths.items()
     }
-    route_class, harder_share = _slope_route_class_from_shares(shares)
+    route_class, harder_share = _slope_route_class_from_shares(shares_raw)
+    shares = {key: round(value, 3) for key, value in shares_raw.items()}
     dominant_class = max(
         SLOPE_DIFFICULTY_ORDER,
         key=lambda category: (shares.get(category, 0.0), SLOPE_DIFFICULTY_ORDER.index(category))
