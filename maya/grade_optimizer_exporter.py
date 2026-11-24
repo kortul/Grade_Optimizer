@@ -15,7 +15,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.7.4"
+VERSION = "0.7.5"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -930,6 +930,30 @@ def prepare_client_asset_export(repo, components, node_metadata, replace_asset_i
         relative_file = str(existing.get("file") or "").replace("\\", "/")
         model_path = _safe_existing_fbx_path(client_dir, relative_file, require_exists=True)
         existing_size_bytes = os.path.getsize(model_path)
+
+        # Never publish Stage 2 geometry under the existing Stage 1 scene asset.
+        if asset_id == "slopes_stage1":
+            component_paths = [
+                str(component.get("dagPath") or "").replace("/", "|")
+                for component in components
+            ]
+            stage_one_count = sum(
+                1 for path in component_paths
+                if re.search(r"\\|Slopes_Stage1(?:\\||$)", path, re.IGNORECASE)
+            )
+            stage_two_count = sum(
+                1 for path in component_paths
+                if re.search(r"\\|Slopes_Stage2(?:\\||$)", path, re.IGNORECASE)
+            )
+            if stage_two_count:
+                raise RuntimeError(
+                    "Замена Slopes_Stage1 остановлена: в выделение попала геометрия Stage 2.\\n\\n"
+                    "Объектов из Slopes_Stage1: %d\\n"
+                    "Объектов из Slopes_Stage2: %d\\n\\n"
+                    "Выдели только корневую группу Slopes_Stage1 в Maya Outliner "
+                    "и повтори замену. Существующий FBX и scene.json не изменены."
+                    % (stage_one_count, stage_two_count)
+                )
     else:
         asset_name = source_root_name
         base_id = _safe_asset_id(asset_name)
