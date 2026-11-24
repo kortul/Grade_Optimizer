@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
-const SEND_INTERVAL_MS = 20;
+const SEND_INTERVAL_MS = 50;
+const FULL_RETRY_BASE_MS = 2500;
+const FULL_RETRY_MAX_MS = 10000;
 const STALE_PEER_MS = 45000;
 const LEAVE_GRACE_MS = 3500;
 const HEARTBEAT_INTERVAL_MS = 2000;
@@ -120,7 +122,7 @@ export class ResortMultiplayer {
   }
 
   connect() {
-    if(this.disposed||this.socket||this.full||this.superseded)return;
+    if(this.disposed||this.socket||this.superseded)return;
     if(!this.endpoint){this.setStatus('disabled');return;}
     this.setStatus(this.retries?'reconnecting':'connecting');
     let socket;
@@ -151,7 +153,11 @@ export class ResortMultiplayer {
         this.setStatus('replaced');
         return;
       }
-      if(this.full){this.setStatus('full');return;}
+      if(this.full){
+        this.setStatus('full');
+        this.scheduleReconnect();
+        return;
+      }
       this.setStatus('reconnecting');this.scheduleReconnect();
     };
   }
@@ -199,9 +205,11 @@ export class ResortMultiplayer {
   }
 
   scheduleReconnect() {
-    if(this.disposed||this.full||this.reconnectTimer)return;
-    this.retries=Math.min(this.retries+1,6);
-    const delay=Math.min(30000,1200*2**(this.retries-1));
+    if(this.disposed||this.superseded||this.reconnectTimer)return;
+    this.retries=Math.min(this.retries+1,8);
+    const delay=this.full
+      ?Math.min(FULL_RETRY_MAX_MS,FULL_RETRY_BASE_MS*2**Math.min(this.retries-1,2))
+      :Math.min(30000,1200*2**(this.retries-1));
     this.reconnectTimer=setTimeout(()=>{this.reconnectTimer=null;this.connect();},delay);
   }
 
@@ -210,12 +218,14 @@ export class ResortMultiplayer {
     let msg;try{msg=JSON.parse(raw);}catch{return;}
     if(msg.t==='full'){
       this.full=true;this.connected=false;this.setStatus('full');
-      try{this.socket?.close();}catch{}return;
+      try{this.socket?.close(1013,'Shared resort is full');}catch{}
+      return;
     }
     if(msg.t==='slot'){
       this.slot=Number.isInteger(msg.slot)?msg.slot:null;
       this.resolveSlotWaiters(this.slot);
     }else if(msg.t==='welcome'){
+      this.full=false;
       this.id=String(msg.id||'');this.slot=Number.isInteger(msg.slot)?msg.slot:null;this.connected=!!this.id;this.retries=0;this.lastPong=performance.now();
       this.resolveSlotWaiters(this.slot);
       const peers=Array.isArray(msg.players)?msg.players:[];
@@ -404,7 +414,8 @@ export class ResortMultiplayer {
   diagnostics(){
     const now=performance.now();
     return{
-      configured:!!this.endpoint,connected:this.connected,id:this.id,clientId:this.clientId,slot:this.slot,players:this.names.size,
+      configured:!!this.endpoint,connected:this.connected,full:this.full,retries:this.retries,reconnectScheduled:!!this.reconnectTimer,
+      id:this.id,clientId:this.clientId,slot:this.slot,players:this.names.size,
       sentStates:this.sentStates,receivedStates:this.receivedStates,lastStateAt:this.lastStateAt,
       lastStateAgeMs:this.lastStateAt?Math.round(now-this.lastStateAt):null,
       lastPong:this.lastPong,lastPongAgeMs:this.lastPong?Math.round(now-this.lastPong):null,
