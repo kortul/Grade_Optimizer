@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-24T10:14:30Z",
+  "updatedAt": "2026-11-24T11:44:57.339Z",
   "assets": [
     {
       "id": "slopes_stage1",
@@ -17,7 +17,7 @@
       "transform": {
         "position": [
           0,
-          0,
+          0.1,
           0
         ],
         "rotation": [
@@ -597,199 +597,199 @@
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0.0,
+                0,
                 -50152.88024902344
               ],
-              "originalScale": 1000.0
+              "originalScale": 1000
             }
           ]
         },
