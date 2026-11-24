@@ -17,7 +17,7 @@ export function selectGroundContactCandidate(
   candidates,
   {referenceY = null, maxVerticalDelta = Infinity, referenceNormal = null} = {}
 ) {
-  const hasReference = Number.isFinite(Number(referenceY));
+  const hasReference = referenceY !== null && referenceY !== undefined && Number.isFinite(Number(referenceY));
   const preferred = hasReference ? normalizeUpwardNormal(referenceNormal, 0.01) : null;
   const maximumDelta = Number.isFinite(Number(maxVerticalDelta))
     ? Math.max(0, Number(maxVerticalDelta))
