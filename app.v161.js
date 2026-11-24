@@ -6660,15 +6660,15 @@ document.addEventListener('keydown',e=>{
     if(!e.repeat)setTutorialVisible(state.mode,tutorialPanels[state.mode].content.hidden);
     return;
   }
-  if(state.mode==='overview')return;
-  if(state.mode==='loading')return;
-  const eventTarget=e.target;
-  const editingText=!!(eventTarget?.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(eventTarget?.tagName||''));
   if(skierSpawnPlacementStep&&e.code==='Escape'){
     e.preventDefault();e.stopPropagation();
     cancelSkierSpawnPlacement();
     return;
   }
+  if(state.mode==='overview')return;
+  if(state.mode==='loading')return;
+  const eventTarget=e.target;
+  const editingText=!!(eventTarget?.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(eventTarget?.tagName||''));
   if(!editingText&&state.mode==='skier'){
     const spawnKey=/^Digit[0-9]$/.test(e.code)?e.code.slice(-1):
       (/^Numpad[0-9]$/.test(e.code)?e.code.slice(-1):'');
