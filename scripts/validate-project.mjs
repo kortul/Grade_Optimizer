@@ -88,9 +88,10 @@ pass('per-material emissive toggle, strength preservation and project serializat
 assert.ok(entrySource.includes('function disableMaterialEmissionByDefault(')&&entrySource.includes('material.emissiveIntensity=enabled?savedStrength:0'), 'current and newly loaded model materials must default to emission OFF');
 assert.ok(entrySource.includes("gradeOptimizerEmissiveEnabled:false")&&entrySource.includes("if('emissiveIntensity' in material)material.emissiveIntensity=0"), 'legacy material configurations must migrate to emission OFF');
 pass('all current legacy and newly imported model materials default to emissive OFF');
-assert.ok(entrySource.includes("const isStageOneSlopes=/slopes[_ -]?stage[_ -]?1/i.test(String(fileName||''))"), 'Slopes_Stage1 parser must identify the named stage-one asset');
+assert.ok(entrySource.includes('function isMayaStageOneFbx(root,fileName=')&&entrySource.includes('const isStageOneSlopes=isMayaStageOneFbx(root,fileName)'), 'Stage 1 detection must use the FBX filename or its Maya hierarchy / material names, not one exact filename pattern');
+assert.ok(entrySource.includes('const canonicalBySourceName=new Map()')&&entrySource.includes('canonicalBySourceName.has(sourceName)')&&entrySource.includes('gradeOptimizerFbxSourceMaterialName'), 'FBX materials with duplicated Maya IDs but the same shader name must share one material object across meshes');
 assert.ok(entrySource.includes('prepareFbxMaterials(root,{preserveSlopeAlbedo:isStageOneSlopes})')&&entrySource.includes('applyStageOneSurfaceMaterials(root)'), 'Slopes_Stage1 must run its dedicated surface-material pass after FBX conversion');
-assert.ok(entrySource.includes("material.color.set(kind==='slopes'?0xffffff:0x383838)")&&entrySource.includes("if(/(^|_)angled?(_|$)/.test(value))return 'angled'")&&entrySource.includes("if(/(^|_)slopes?(_|$)/.test(value))return 'slopes'"), 'Stage 1 Slopes must be white and Angled surfaces dark grey based on imported material/object names');
+assert.ok(entrySource.includes("material.color.set(kind==='slopes'?0xffffff:0x383838)")&&entrySource.includes("if(/(^|_)angled?(_|$)/.test(value))return 'angled'")&&entrySource.includes("if(/(^|_)slopes?(_|$)/.test(value))return 'slopes'")&&entrySource.includes("(/openpbr/i.test(materialName)?'slopes':'')"), 'Stage 1 Slopes must be white, Angled dark grey, and the technical OpenPBR slot must inherit the Maya surface class');
 assert.ok(entrySource.includes('material.map=null')&&entrySource.includes('material.emissiveMap=null')&&entrySource.includes('material.vertexColors=false'), 'Stage 1 surface colors must not be tinted by imported albedo maps, emission maps or vertex colors');
 assert.ok(entrySource.includes('gradeOptimizerAlbedoRecovery')&&entrySource.includes('emissive-map-recovered-as-base-color-map')&&entrySource.includes('emissive-color-recovered-as-base-color'), 'black diffuse materials must recover usable albedo from FBX emission data');
 pass('Slopes_Stage1 applies explicit white Slopes and dark-grey Angled materials');
@@ -107,9 +108,12 @@ assert.ok(parseModelSource.includes('mergeEquivalentEditorMaterials(root)')&&par
 assert.ok(entrySource.includes('const byMaterial=new Map()')&&entrySource.includes('byMaterial.get(id)')&&entrySource.includes('target.bindings.push({owner:asset,mesh:object,material,index})'), 'Materials tab must group each shared material into one entry while retaining all mesh-slot bindings');
 assert.ok(entrySource.includes('editorMaterialTargets=collectEditorMaterials(editorSelectedAsset,editorSelectedAsset?.root)'), 'Materials inspector must enumerate material bindings across the full selected FBX asset, not only the selected mesh');
 assert.ok(entrySource.includes('const canonicalMaterials=new Map()')&&entrySource.includes("material.name=kind==='slopes'?'Slopes':'Angled'")&&entrySource.includes('gradeOptimizerStageOneSurfaceKind'), 'Stage 1 FBX assignments must consolidate into two shared Slopes / Angled material instances');
+assert.ok(entrySource.includes('const kind=classify(materialName)||objectKind||(/openpbr/i.test(materialName)?\'slopes\':\'\')'), 'Stage 1 OpenPBR fallback must not become an unintended third editor material');
+assert.ok(entrySource.includes('editorMaterialTargets=collectEditorMaterials(editorSelectedAsset,editorSelectedAsset?.root)')&&entrySource.includes('target.label=materialName+(meshCount>1?'), 'Materials tab must display one entry per shared material and report how many meshes use it');
 assert.ok(entrySource.includes("materialCount.textContent=editorMaterialTargets.length+' MATERIALS'")&&html.includes('Unique Material · Whole Asset'), 'Materials tab must report unique asset-wide material count');
+assert.ok(entrySource.includes('material.color.set(document.getElementById(\'editorBaseColor\').value)')&&entrySource.includes('markEditorMaterialOwnersDirty(material)'), 'editing a shared material instance must update and persist every mesh slot that references it');
 assert.ok(entrySource.includes('const bindings=target.bindings?.length?target.bindings:[target]')&&entrySource.includes('bindings.forEach(binding=>'), 'assign and Make Unique operations must update every grouped material slot');
-pass('FBX-wide unique material list, shared slot bindings and multi-mesh material edits are present');
+pass('FBX-wide shared materials: one Slopes / Angled material instance across all matching groups and meshes');
 
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
 assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
@@ -136,6 +140,11 @@ assert.deepEqual(stageOneAsset.transform.position, [0, 0.1, 0], 'the complete im
 
 const stageOneComponents = stageOneAsset.mayaExport?.components || [];
 assert.ok(stageOneComponents.length > 0, 'Slopes_Stage1 manifest must list its exported mesh components');
+const stageOneSourceMaterialNames=[...new Set(stageOneComponents.flatMap(component=>component.materials||[]))].sort();
+assert.deepEqual(stageOneSourceMaterialNames,[
+  'openPBR_shader1','pasted__pasted__zzMainlandscape_Slopes','zzMainlandscape_Slopes','zzShapka_Angled'
+], 'Maya Stage 1 source aliases / technical shader inventory changed');
+assert.ok(entrySource.includes('meshCount,materialSlots')&&entrySource.includes('materialCount:canonicalMaterials.size'), 'Stage 1 material normalization must report total meshes, source slots and canonical unique materials');
 assert.equal(
   stageOneComponents.length,
   Number(stageOneAsset.mayaExport?.meshComponentCount),
