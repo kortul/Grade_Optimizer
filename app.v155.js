@@ -53,6 +53,7 @@ const CLIENT_REPO_OWNER='kortul',CLIENT_REPO_NAME='Grade_Optimizer';
 // ?client= remains supported for previously shared viewer links.
 const WORKSPACE_QUERY=new URLSearchParams(window.location.search);
 const REQUESTED_PROJECT_ID=WORKSPACE_QUERY.get('project')||WORKSPACE_QUERY.get('client')||'';
+const FORCE_REMOTE_PROJECT=WORKSPACE_QUERY.get('remote')==='1';
 const RESTORE_LOCAL_PROJECT_DRAFT=!REQUESTED_PROJECT_ID;
 const CLIENT_ID_FROM_URL=REQUESTED_PROJECT_ID||'alpine-resort';
 let currentClientSlug=CLIENT_ID_FROM_URL;
@@ -4503,8 +4504,10 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
   try{
     await restoreProjectFolderHandle();
     let localBackup=null;
-    try{localBackup=await readProjectBrowserBackup(slug);}
-    catch(storageError){console.warn('Local browser backup could not be read:',storageError);}
+    if(!FORCE_REMOTE_PROJECT){
+      try{localBackup=await readProjectBrowserBackup(slug);}
+      catch(storageError){console.warn('Local browser backup could not be read:',storageError);}
+    }
     const response=await fetch('./clients/'+slug+'/scene.json?t='+Date.now(),{cache:'no-store'});
     let remoteManifest=null;
     if(response.ok){
@@ -4587,6 +4590,40 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
         activeTerrain:!!item.activeTerrain,modelDirty:false,sourceFile:item.sourceFile||item.file
       };
       root.visible=meta.visible;
+
+      // Validate the parsed FBX itself, not merely the manifest entry / HTTP response.
+      // This catches empty files and meshes whose Maya visibility flags hide every surface.
+      let meshCount=0,vertexCount=0,visibleMeshCount=0;
+      root.traverse(object=>{
+        if(!object.isMesh||!object.geometry?.attributes?.position)return;
+        const positions=object.geometry.attributes.position;
+        if(positions.count<3)return;
+        meshCount++;
+        vertexCount+=positions.count;
+        let node=object,visible=true;
+        while(node){
+          if(node.visible===false)visible=false;
+          if(node===root)break;
+          node=node.parent;
+        }
+        if(visible)visibleMeshCount++;
+      });
+      root.updateWorldMatrix(true,true);
+      const geometryBounds=new THREE.Box3().setFromObject(root);
+      if(!meshCount||!vertexCount||geometryBounds.isEmpty()){
+        throw new Error('FBX '+item.name+' загружен, но не содержит пригодной 3D-геометрии.');
+      }
+      if(!visibleMeshCount){
+        throw new Error('FBX '+item.name+' содержит '+meshCount+' mesh, но все они скрыты флагами visibility из Maya / scene.json.');
+      }
+      const geometrySize=geometryBounds.getSize(new THREE.Vector3());
+      const geometryCenter=geometryBounds.getCenter(new THREE.Vector3());
+      console.info('[Grade Optimizer] Imported asset geometry:',{
+        id:item.id,file:item.file,meshCount,vertexCount,visibleMeshCount,
+        bounds:{min:geometryBounds.min.toArray(),max:geometryBounds.max.toArray()},
+        size:geometrySize.toArray(),center:geometryCenter.toArray()
+      });
+
       root.userData.resortAssetId=item.id;
       root.userData.resortAsset={...meta};
       root.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;}});
@@ -4625,9 +4662,13 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
     projectBackupBaseUpdatedAt=String(useBrowserBackup?localBackup.baseUpdatedAt||'':remoteManifest.updatedAt||'');
     projectDeployedManifestUpdatedAt=String(remoteManifest?.updatedAt||'');
     clientProjectDirty=useBrowserBackup?!!localBackup.unsynced:false;
-    try{await autosaveProjectToBrowser({force:true,silent:true});}
-    catch(storageError){setClientWorkspaceStatus('Проект открыт, но браузерный бэкап не удался: '+(storageError?.message||String(storageError)),true);}
-    if(useBrowserBackup&&clientProjectDirty){
+    if(!FORCE_REMOTE_PROJECT){
+      try{await autosaveProjectToBrowser({force:true,silent:true});}
+      catch(storageError){setClientWorkspaceStatus('Проект открыт, но браузерный бэкап не удался: '+(storageError?.message||String(storageError)),true);}
+    }
+    if(FORCE_REMOTE_PROJECT){
+      setClientWorkspaceStatus('Загружена опубликованная версия GitHub ('+loaded+' моделей). Локальный черновик браузера оставлен без изменений.');
+    }else if(useBrowserBackup&&clientProjectDirty){
       setClientWorkspaceStatus('Восстановлен более свежий черновик из браузера ('+loaded+' моделей). Автосохранение включено.');
     }else{
       const folderNote=projectFolderHandle
