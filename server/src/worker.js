@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
   MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,
-  appendSharedMarker,normalizeMarker,normalizeMeasurement,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName,syncSharedMarkers
+  appendSharedMarker,normalizeMarker,normalizeMeasurement,normalizeState,pruneOrphanedSharedMarkers,sanitizeClientId,sanitizeName,syncSharedMarkers
 } from './protocol.v2.js';
 
 const ALLOWED_ORIGIN='https://kortul.github.io';
@@ -161,9 +161,12 @@ export class PublicResort extends DurableObject {
       }
       if(!player.clientId&&messageClientId)player.clientId=messageClientId;
       player.name=sanitizeName(msg.name);player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
+      const activeMarkerOwners=this.activeSockets()
+        .filter(entry=>entry.player.name)
+        .map(entry=>({id:entry.player.id,name:entry.player.name}));
       const markerState=await this.ctx.storage.transaction(async transaction=>{
         const stored=await transaction.get('sharedMarkers');
-        const update=pruneSharedMarkers(stored);
+        const update=pruneOrphanedSharedMarkers(stored,activeMarkerOwners);
         await transaction.put('sharedMarkers',update.markers);
         const revisions=await transaction.get('sharedMarkerRevisions')||{};
         return {markers:update.markers,revision:Number(revisions[player.id])||0,removed:update.removedMarkers};
