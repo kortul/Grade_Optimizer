@@ -12,7 +12,7 @@ const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)[
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
 const entryPath = entry.split('?')[0];
-assert.equal(entryPath, 'app.v160.js', 'index.html must activate the current app release');
+assert.equal(entryPath, 'app.v161.js', 'index.html must activate the current app release');
 const entrySource = read(entryPath).toString('utf8');
 assert.ok(entrySource.includes('TERRAIN_SNOW_TILE_METERS=120'), 'terrain snow texture must use a broad 120 m tile');
 assert.ok(entrySource.includes('gradeOptimizerTerrainTexture') && entrySource.includes('low-frequency-albedo-no-bump'), 'source terrain must avoid high-frequency bump mapping');
