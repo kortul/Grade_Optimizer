@@ -7,6 +7,9 @@ workers_dev = true
 name = "PUBLIC_RESORT"
 class_name = "PublicResort"
 
+[durable_objects.code_update_strategy]
+mode = "immediate"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["PublicResort"]
