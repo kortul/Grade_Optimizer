@@ -30,3 +30,52 @@ export function advanceSolarClock(hours,deltaSeconds,dayLengthMinutes){
   const deltaHours=Math.max(0,Number(deltaSeconds)||0)*24/durationSeconds;
   return (((Number(hours)||0)+deltaHours)%24+24)%24;
 }
+
+export function createSolarDisc(THREE){
+  const canvas=document.createElement('canvas');
+  canvas.width=128;
+  canvas.height=128;
+  const context=canvas.getContext('2d');
+  if(!context)throw new Error('Cannot create the solar disc texture.');
+  const gradient=context.createRadialGradient(64,64,0,64,64,62);
+  gradient.addColorStop(0,'rgba(255,255,250,1)');
+  gradient.addColorStop(0.66,'rgba(255,247,225,1)');
+  gradient.addColorStop(0.86,'rgba(255,226,190,0.96)');
+  gradient.addColorStop(1,'rgba(255,206,160,0)');
+  context.fillStyle=gradient;
+  context.fillRect(0,0,128,128);
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.minFilter=THREE.LinearMipmapLinearFilter;
+  texture.magFilter=THREE.LinearFilter;
+  texture.generateMipmaps=true;
+  const material=new THREE.SpriteMaterial({
+    map:texture,
+    color:0xffffff,
+    transparent:true,
+    opacity:0,
+    depthTest:false,
+    depthWrite:false,
+    blending:THREE.NormalBlending,
+    toneMapped:true
+  });
+  const sprite=new THREE.Sprite(material);
+  sprite.name='GO_TunableSolarDisc';
+  sprite.scale.setScalar(240);
+  sprite.renderOrder=-950;
+  sprite.frustumCulled=false;
+  sprite.visible=false;
+  return sprite;
+}
+
+export function updateSolarDisc(THREE,sprite,camera,cycle,intensity){
+  if(!sprite||!cycle||!camera)return;
+  const visibility=THREE.MathUtils.smoothstep(cycle.sunDirection.y,-0.055,0.035);
+  const power=THREE.MathUtils.clamp(Number(intensity)||0,0,1.5);
+  const opacity=THREE.MathUtils.clamp(power/1.15,0,0.88)*visibility;
+  sprite.visible=opacity>0.002;
+  sprite.material.opacity=opacity;
+  sprite.material.color.copy(cycle.sunColor);
+  sprite.position.copy(camera.position).addScaledVector(cycle.sunDirection,30000);
+  sprite.scale.setScalar(240+cycle.twilight*24);
+}
