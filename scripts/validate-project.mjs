@@ -12,7 +12,7 @@ const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)[
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
 const entryPath = entry.split('?')[0];
-assert.equal(entryPath, 'app.v161.js', 'index.html must activate the current app release');
+assert.equal(entryPath, 'app.v162.js', 'index.html must activate the current app release');
 const entrySource = read(entryPath).toString('utf8');
 assert.ok(entrySource.includes('TERRAIN_SNOW_TILE_METERS=120'), 'terrain snow texture must use a broad 120 m tile');
 assert.ok(entrySource.includes('gradeOptimizerTerrainTexture') && entrySource.includes('low-frequency-albedo-no-bump'), 'source terrain must avoid high-frequency bump mapping');
@@ -353,14 +353,15 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v96.js'), 'active app must use the current skier controller');
-const skierSource = read('skier-controller.v96.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v97.js'), 'active app must use the current skier controller');
+const skierSource = read('skier-controller.v97.js').toString('utf8');
 assert.ok(skierSource.includes('respawnAtCustomSpawn(spawn)')&&skierSource.includes('spawnHint.headingYaw'), 'skier controller must apply custom spawn position and heading');
 assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), "imported Slopes_Stage1 geometry must take priority as the skier surface");
-assert.ok(entrySource.includes('position:dronePose.position')&&entrySource.includes('velocity:dronePose.velocity,fromDrone:true')&&entrySource.includes('skierTerrainName:skierController.terrain?.name')&&entrySource.includes('skierSpawn:skierController.lastSpawnInfo')&&!entrySource.includes('velocity:dronePose.velocity,fromDrone:true,startAtTop:true'), 'drone handoff must try the drone world position before the summit fallback');
+assert.ok(entrySource.includes('position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true')&&entrySource.includes('resolveSkierTerrainForDroneSpawn(dronePose.position)')&&entrySource.includes('skierTerrainName:skierController.terrain?.name')&&entrySource.includes('skierSpawn:skierController.lastSpawnInfo')&&!entrySource.includes('velocity:dronePose.velocity,fromDrone:true,startAtTop:true'), 'drone handoff must try the drone world position before the summit fallback');
 assert.ok(!entrySource.includes('droneController.setTerrain(terrain);\\n    applySkierPresentation();'), 'using a dedicated skier piste must not replace the drone collision surface');
 assert.ok(skierSource.includes('if(spawnHint?.position&&!spawnHint.startAtTop)'), 'explicit summit respawn must ignore the drone camera position');
-assert.ok(skierSource.includes('const insideBounds=x>=this.bounds.min.x')&&skierSource.includes('const px=x+Math.cos(angle)*radius;')&&!skierSource.includes('const clampedX=THREE.MathUtils.clamp(x,this.bounds.min.x'), 'drone-local spawn search must keep its true world origin and avoid snapping off-piste drones to the mesh edge');
+assert.ok(entrySource.includes('function hasTerrainSurfaceAtWorldXZ(')&&entrySource.includes('hasTerrainSurfaceAtWorldXZ(originalTerrain,position)')&&entrySource.includes('return droneSpawnSurfaceRaycaster.intersectObject(terrain,true).some(hit=>hit.object?.isMesh)'), 'drone handoff must resolve the actual surface under exact drone X/Z on Stage 1 or original Terrain');
+assert.ok(skierSource.includes('const hit=Number.isFinite(droneX)&&Number.isFinite(droneZ)')&&skierSource.includes('this._groundAt(droneX,droneZ)')&&!skierSource.includes('_findGroundNear('), 'drone handoff must project vertically at the exact drone X/Z without a nearby piste search');
 assert.ok(skierSource.includes('respawnAtTop(){')&&skierSource.includes("this.lastSpawnInfo={...this.lastSpawnInfo,spawnType:'stage1-summit'}"), 'key 1 summit respawn must reuse the cached terrain lookup');
 assert.ok(entrySource.includes("const spawnKey=/^Digit[0-9]$/.test(e.code)")&&entrySource.includes("spawnKey==='1'")&&entrySource.includes('respawnSkierAtStageOneSummit()'), 'key 1 must keep the Stage 1 summit fallback when slot 1 is empty');
 assert.ok(html.includes('Спавн на вершине Stage 1'), 'skier HUD must explain the key 1 summit spawn');
@@ -369,10 +370,11 @@ assert.ok(skierSource.includes('const clearance=this._downhillClearance(hit.poin
 pass('Slopes_Stage1 is prioritized for skier physics and spawn selection starts at its highest skiable point');
 
 assert.ok(skierSource.includes('const idleYaw=this.headingYaw;')&&!skierSource.includes('const idleYaw=this.headingYaw+this.lookYaw;'), 'third-person camera orbit must not rotate the skier or ski rig at low speed');
-const droneSpawnStart=skierSource.indexOf('if(spawnHint?.fromDrone){');
-const droneSpawnEnd=skierSource.indexOf('\n    this.active=true',droneSpawnStart);
+const droneSpawnStart=skierSource.indexOf('if(isDroneSpawn){');
+const droneSpawnEnd=skierSource.indexOf('}else if(spawnHint?.position',droneSpawnStart);
 const droneSpawnBlock=droneSpawnStart>=0&&droneSpawnEnd>droneSpawnStart?skierSource.slice(droneSpawnStart,droneSpawnEnd):'';
-assert.ok(droneSpawnBlock.includes('this.lookYaw=0;')&&droneSpawnBlock.includes('this.lookPitch=-0.035;')&&!droneSpawnBlock.includes('spawnHint.yaw')&&!droneSpawnBlock.includes('spawnHint.pitch'), 'drone-to-skier handoff must align first-person gaze with the ski heading, not drone camera yaw / pitch');
+assert.ok(droneSpawnBlock.includes('this._groundAt(droneX,droneZ)')&&!droneSpawnBlock.includes('_isUsableSkiStart')&&!droneSpawnBlock.includes('_findSpawn()'), 'drone spawn must accept any ground surface at exact X/Z without piste-angle or runout tests');
+assert.ok(droneSpawnBlock.includes('this.lookYaw=0;')&&droneSpawnBlock.includes('this.lookPitch=-0.035;')&&droneSpawnBlock.includes('this.headingYaw=Number.isFinite(yaw)'), 'drone-to-skier handoff must use the fall-line on slopes and drone yaw on flat ground');
 pass('skier camera orbit is decoupled from ski heading; drone handoff starts looking along the skis');
 
 assert.ok(skierSource.includes('async _buildTerrainLookup(')&&skierSource.includes('requestAnimationFrame(resolve)'), 'terrain index must build asynchronously in responsive chunks');
@@ -401,7 +403,7 @@ assert.ok(!entrySource.includes('modeTransition'), 'mode changes must not be blo
 assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.includes("skierController.update(dt);"), 'skier physics must update every frame once skier mode is active');
 assert.ok(entrySource.includes("if(resumePendingSkier)requestAnimationFrame(()=>setSceneMode('skier'))"), 'queued skier request must resume after initial splash removal');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate continuous downhill terrain');
-assert.ok(skierSource.includes('if(!spawnFound)spawnFound=!!this._findSpawn()'), 'failed drone-local spawn must fall back to the main slope');
+assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn)spawnFound=!!this._findSpawn()')&&skierSource.includes("this.lastStartError='NO_GROUND_UNDER_DRONE'"), 'drone handoff must not silently relocate to a distant piste when no ground exists beneath it');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone-to-skier handoff must begin with controlled downhill motion');
 
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
@@ -738,7 +740,7 @@ assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.include
 assert.ok(entrySource.includes("if(state.mode==='drone')droneController.update(dt)"), 'drone controller must update continuously while active');
 assert.ok(!entrySource.includes('modeTransition'), 'stale transition lock must not block mode changes');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate downhill run-out');
-assert.ok(skierSource.includes('if(!spawnFound)spawnFound=!!this._findSpawn()'), 'drone-local spawn failure must fall back to piste spawn');
+assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn)spawnFound=!!this._findSpawn()'), 'ordinary starts keep the piste fallback while drone starts remain at the drone location');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone handoff must initialize downhill movement');
 assert.ok(skierSource.includes('const fallbackDivisions=12'), 'skier spawn must have a bounded last-resort terrain scan');
 assert.ok(skierSource.includes('fallbackCandidates.slice(0,16)'), 'skier spawn fallback must select candidates and score downhill clearance');
@@ -763,7 +765,7 @@ assert.ok(entrySource.includes('forestPlacementCache={')&&entrySource.includes('
 assert.ok(!entrySource.includes('const y=terrainY(x,z)'), 'forest generation must not Raycast thousands of times against the large terrain');
 assert.ok(entrySource.includes('requestIdleCallback(upgradeForest'), 'late forest atlas upgrade must wait for browser idle time');
 assert.ok(entrySource.includes('function resolveSkierTerrain()'), 'skier mode must resolve a terrain mesh before its early guard');
-assert.ok(entrySource.indexOf('const requestedTerrain=mode===\'skier\'?resolveSkierTerrain():null;')<entrySource.indexOf("if(mode==='skier'&&!requestedTerrain)"), 'terrain resolution must run before the early skier guard');
+assert.ok(entrySource.indexOf('const requestedTerrain=mode===\'skier\'')<entrySource.indexOf("if(mode==='skier'&&!requestedTerrain)")&&entrySource.includes('dronePose?resolveSkierTerrainForDroneSpawn(dronePose.position):resolveSkierTerrain()'), 'drone-aware terrain resolution must run before the early skier guard');
 assert.ok(entrySource.includes('const terrain=requestedTerrain;'), 'skier start must use the resolved terrain instance');
 assert.ok(entrySource.includes("const terrain=resolveSkierTerrain();"), 'queued skier mode must resolve its terrain when loading completes');
 assert.ok(entrySource.includes("START_EXCEPTION"), 'skier controller exceptions must be reported precisely');
