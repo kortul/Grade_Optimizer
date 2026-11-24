@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 const SEND_INTERVAL_MS = 125;
-const STALE_PEER_MS = 30000;
+const STALE_PEER_MS = 90000;
 const HEARTBEAT_INTERVAL_MS = 10000;
 const JOINT_FLOATS = 72;
 const JOINTS_PER_NODE = 6;
@@ -101,7 +101,7 @@ export class ResortMultiplayer {
     this.scene=scene;this.endpoint=normalizeEndpoint(endpoint);this.name=String(name||'Лыжник').slice(0,20);
     this.statusElement=statusElement||null;this.statusTextElement=statusTextElement||null;
     this.templateProvider=templateProvider||(()=>({}));this.poseNodeNames=poseNodeNames.slice();
-    this.socket=null;this.id='';this.connected=false;this.disposed=false;this.full=false;
+    this.socket=null;this.id='';this.slot=null;this.connected=false;this.disposed=false;this.full=false;
     this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';this.lastClose=null;
     this.heartbeatTimer=this.endpoint?setInterval(()=>this.sendHeartbeat(),HEARTBEAT_INTERVAL_MS):null;
     this.players=new Map();this.names=new Map();this.lastSeen=new Map();
@@ -126,7 +126,7 @@ export class ResortMultiplayer {
       if(this.socket!==socket)return;
       this.lastClose={code:event.code,reason:event.reason||'',wasClean:event.wasClean};
       console.warn('[Grade Optimizer multiplayer] WebSocket closed',this.lastClose);
-      this.socket=null;this.connected=false;this.id='';this.clearPlayers();
+      this.socket=null;this.connected=false;this.id='';this.slot=null;this.clearPlayers();
       if(this.disposed)return;
       if(this.full){this.setStatus('full');return;}
       this.setStatus('reconnecting');this.scheduleReconnect();
@@ -155,7 +155,7 @@ export class ResortMultiplayer {
       try{this.socket?.close();}catch{}return;
     }
     if(msg.t==='welcome'){
-      this.id=String(msg.id||'');this.connected=!!this.id;this.retries=0;
+      this.id=String(msg.id||'');this.slot=Number.isInteger(msg.slot)?msg.slot:null;this.connected=!!this.id;this.retries=0;this.lastPong=performance.now();
       for(const peer of Array.isArray(msg.players)?msg.players:[])this.upsert(peer);
       this.setStatus(this.connected?'connected':'error');
     }else if(msg.t==='join'){
@@ -166,6 +166,8 @@ export class ResortMultiplayer {
       this.setStatus('connected');
     }else if(msg.t==='state'){
       this.upsert(msg.player);this.setStatus('connected');
+    }else if(msg.t==='pong'){
+      this.lastPong=performance.now();
     }else if(msg.t==='presence'){
       const id=String(msg.id||'');
       if(id&&id!==this.id){
@@ -302,7 +304,7 @@ export class ResortMultiplayer {
     if(this.reconnectTimer)clearTimeout(this.reconnectTimer);
     if(this.heartbeatTimer)clearInterval(this.heartbeatTimer);
     this.reconnectTimer=null;this.heartbeatTimer=null;
-    const socket=this.socket;this.socket=null;this.connected=false;
+    const socket=this.socket;this.socket=null;this.connected=false;this.slot=null;
     if(socket){socket.onclose=null;socket.onmessage=null;try{socket.close(1000,'page leaving');}catch{}}
     this.clearPlayers();
   }
