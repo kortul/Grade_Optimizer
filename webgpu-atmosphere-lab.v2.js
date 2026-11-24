@@ -215,10 +215,10 @@ async function loadFBXTerrain(path) {
   const buffer = await response.arrayBuffer();
   const headerBytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 32));
   const header = new TextDecoder().decode(headerBytes);
-  const isBinaryFBX = header.startsWith('Kaydara FBX Binary  \\0\\x1a\\0');
-  const isAsciiFBX = /^\\s*;\\s*FBX\\s+\\d+\\.\\d+/i.test(header.replace(/^\\uFEFF/, ''));
+  const isBinaryFBX = header.startsWith('Kaydara FBX Binary  \0\x1a\0');
+  const isAsciiFBX = /^\s*;\s*FBX\s+\d+\.\d+/i.test(header.replace(/^\uFEFF/, ''));
   if (!isBinaryFBX && !isAsciiFBX) {
-    const preview = header.replace(/[^\\x20-\\x7E]/g, '.').slice(0, 32).trim() || 'пустой ответ';
+    const preview = header.replace(/[^\x20-\x7E]/g, '.').slice(0, 32).trim() || 'пустой ответ';
     throw new Error('Сервер вернул не FBX (первые байты: ' + preview + ').');
   }
   return new FBXLoader().parse(buffer, './assets/');
