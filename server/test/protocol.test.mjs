@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeState,sanitizeClientId,sanitizeName} from '../src/protocol.js';
+import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName} from '../src/protocol.js';
 
 test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
@@ -70,6 +70,17 @@ test('legacy flags are migrated and counted against the three-flag limit',()=>{
   assert.deepEqual(result.removedMarkers.map(item=>item.id),[makeId(1)]);
   assert.equal(result.markers.length,3);
   assert.ok(result.markers.every(item=>item.ownerId===ownerId));
+});
+
+test('legacy flags are pruned to three on connection, before placing another flag',()=>{
+  const makeId=number=>'550e8400-e29b-41d4-a716-'+String(number).padStart(12,'0');
+  const legacy=[1,2,3,4,5].map(number=>({
+    id:makeId(number),owner:'Old visitor',p:[number,0,0],createdAt:number
+  }));
+  const result=pruneSharedMarkers(legacy);
+  assert.deepEqual(result.removedMarkers.map(item=>item.id),[makeId(1),makeId(2)]);
+  assert.deepEqual(result.markers.map(item=>item.id),[makeId(3),makeId(4),makeId(5)]);
+  assert.ok(result.markers.every(item=>item.ownerId==='legacy:Old visitor'));
 });
 
 test('display names are bounded and sanitized',()=>{
