@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.1"
+VERSION = "0.8.2"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1481,20 +1481,20 @@ def replace_canonical_terrain(*_):
         if not source_components:
             raise RuntimeError("В выделении не найдены polygon mesh объекты.")
 
-        terrain_components = []
-        for component in source_components:
-            identity = " ".join((
-                str(component.get("dagPath") or ""),
-                str(component.get("name") or ""),
-                str(component.get("shape") or "")
-            )).lower()
-            if "terrain" in identity or "ground" in identity:
-                terrain_components.append(component)
-        if not terrain_components:
+        # The source mesh may have any scene-specific name. The user explicitly
+        # chooses the canonical terrain geometry; its Maya node name is not an
+        # identifier for the published asset.
+        selected_root_names = [
+            str(root).rsplit("|", 1)[-1].split(":", 1)[-1].lower()
+            for root in export_roots
+        ]
+        if any(name == "maya_working_scene" for name in selected_root_names):
             raise RuntimeError(
-                "В выделении не найден mesh с именем terrain / ground. "
-                "Выдели именно основной terrainShape, а не всю MAYA_WORKING_SCENE."
+                "Выбрана вся MAYA_WORKING_SCENE. Выдели только основной mesh "
+                "рельефа или отдельную группу, содержащую только его геометрию. "
+                "Имя объекта в Maya может быть любым."
             )
+        terrain_components = list(source_components)
         stage_components = [
             item for item in source_components
             if re.search(r"(stage[_ -]?[12]|slope|piste)", " ".join((
