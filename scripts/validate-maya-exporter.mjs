@@ -6,17 +6,25 @@ const app = readFileSync('app.v157.js', 'utf8');
 const terrain = JSON.parse(readFileSync('assets/real-terrain.json', 'utf8'));
 const clientScene = JSON.parse(readFileSync('clients/alpine-resort/scene.json', 'utf8'));
 
-assert.ok(maya.includes('VERSION = "0.7.7"'), 'Maya exporter must be 0.7.7');
+assert.ok(maya.includes('VERSION = "0.7.8"'), 'Maya exporter must be 0.7.7');
 assert.ok(maya.includes('"_canonical_terrain": True'), 'canonical base terrain must appear in the replacement tree');
 assert.ok(maya.includes('"_relative_file": "assets/real-terrain.fbx"'), 'canonical terrain must use the global FBX path');
 assert.ok(maya.includes('if asset.get("_canonical_terrain"):'), 'tree selection must route canonical terrain to its dedicated replacement handler');
 assert.ok(maya.includes('def replace_canonical_terrain(*_):'), 'dedicated canonical terrain replacement handler is missing');
-assert.ok(maya.includes('def _create_canonical_terrain_export_copy('), 'temporary terrain copy routine is missing');
-assert.ok(maya.includes('point.x / bridge_scale + offset[0]') &&
-          maya.includes('point.y / bridge_scale + offset[1]') &&
-          maya.includes('point.z / bridge_scale + offset[2]'),
-          'CAD Bridge inverse must be applied to all three vertex coordinates');
-assert.ok(maya.includes('if working_group and not bridge_data:'), 'working-scene export must refuse missing CAD Bridge metadata');
+assert.ok(maya.includes('def _bake_export_root_to_world_meshes('), 'temporary world-space FBX copy routine is missing');
+assert.ok(maya.includes('def _apply_inverse_bridge_to_root_matrix('), 'CAD Bridge inverse matrix routine is missing');
+assert.ok(maya.includes('float(matrix[12]) / scale + offset[0]') &&
+          maya.includes('float(matrix[13]) / scale + offset[1]') &&
+          maya.includes('float(matrix[14]) / scale + offset[2]'),
+          'CAD Bridge inverse must restore all three world-coordinate axes');
+assert.ok(maya.includes('mesh_fn.getPoints(om2.MSpace.kWorld)') &&
+          maya.includes('mesh_fn.setPoints(points_world, om2.MSpace.kObject)'),
+          'temporary FBX copies must bake world-space points into identity transforms');
+assert.ok(maya.includes('stage_one=True') && maya.includes('node.rsplit("|", 1)[-1].lower() == "tosketchfab"'),
+          'Stage1 export must normalize CAD/ToSketchfab scale hierarchy before baking');
+assert.ok(maya.includes('target_entry["mayaExport"]["geometryBakedToMayaWorld"] = True') &&
+          maya.includes('target_entry["mayaExport"]["stageOneHierarchyNormalizedAtExport"] = bool(stage_one_export)'),
+          'Stage1 replacement must record that CAD and hierarchy transforms were baked');
 assert.ok(maya.includes('os.replace(temporary_model_path, model_path)') &&
           maya.includes('os.replace(temporary_manifest_path, manifest_path)'),
           'terrain FBX and manifest must be replaced together');
@@ -28,5 +36,5 @@ assert.equal(terrain.file, 'assets/real-terrain.fbx');
 assert.ok(clientScene.assets.some(asset => asset.id === 'slopes_stage1'), 'Stage1 client asset must remain registered');
 assert.ok(app.includes('function loadCanonicalTerrainFbx('), 'runtime canonical terrain loader is missing');
 
-console.log('✓ Maya 0.7.7 base-terrain replacement and CAD Bridge inverse are wired correctly');
+console.log('✓ Maya 0.7.8 base-terrain and Stage1 CAD Bridge baking are wired correctly');
 console.log('✓ Stage1 remains an independent client-scene asset; no mesh-merge requirement was introduced');
