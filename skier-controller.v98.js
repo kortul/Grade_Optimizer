@@ -38,6 +38,8 @@ export class SkierController {
     this.velocity = new THREE.Vector3();
     this.bounds = new THREE.Box3();
     this.terrainLookup = null;
+    this.nextGroundSample = null;
+    this.cameraGroundSample = null;
     this.terrainBuildToken = 0;
     this.terrainPerformance = {
       queryCount:0,lookupHits:0,lookupMisses:0,
@@ -1260,6 +1262,8 @@ export class SkierController {
   }
 
   _setSpawn(hit, center) {
+    this.nextGroundSample=null;
+    this.cameraGroundSample=null;
     this.viewBlend=0;
     this.viewBlendTarget=0;
     this.viewMode='first-person';
@@ -1348,7 +1352,17 @@ export class SkierController {
     );
     const needsThirdPerson=this.viewBlendTarget>0.001||this.viewBlend>0.001;
     if(needsThirdPerson){
-      const cameraGround=this._groundAt(this.thirdPersonDesiredPosition.x,this.thirdPersonDesiredPosition.z);
+      const cameraX=this.thirdPersonDesiredPosition.x,cameraZ=this.thirdPersonDesiredPosition.z;
+      const cachedCameraGround=this.cameraGroundSample;
+      const now=performance.now();
+      const cacheClose=cachedCameraGround&&
+        (cameraX-cachedCameraGround.x)**2+(cameraZ-cachedCameraGround.z)**2<4;
+      const cameraGround=cacheClose&&now-cachedCameraGround.at<100
+        ?cachedCameraGround.hit
+        :this._groundAt(cameraX,cameraZ);
+      if(!cacheClose||now-cachedCameraGround.at>=100){
+        this.cameraGroundSample={x:cameraX,z:cameraZ,hit:cameraGround,at:now};
+      }
       if(cameraGround){
         this.thirdPersonDesiredPosition.y=Math.max(
           this.thirdPersonDesiredPosition.y,
@@ -1414,6 +1428,8 @@ export class SkierController {
       return false;
     }
     this.terrain=terrain;
+    this.nextGroundSample=null;
+    this.cameraGroundSample=null;
     this.lastStartError=null;
     this.lastStartDiagnostics=null;
     this.lastSpawnInfo=null;
@@ -1697,6 +1713,8 @@ export class SkierController {
     this.domElement.style.cursor='';
     if(document.pointerLockElement===this.domElement) document.exitPointerLock?.();
     this.terrain=null;
+    this.nextGroundSample=null;
+    this.cameraGroundSample=null;
   }
 
   _tryManualJump() {
@@ -1747,22 +1765,25 @@ export class SkierController {
     dt=THREE.MathUtils.clamp(dt,0,0.04);
 
     this.lastUpdateAt=performance.now();
-    const currentHit=this._groundAt(this.position.x,this.position.z);
-    this.lastGroundContact=!!currentHit;
-    if(!currentHit&&this.airborneWorldY===null) {
-      this.velocity.set(0,0,0);
-      this.normalForceN=0;this.lateralForceN=0;this.totalSkiLoadN=0;
-      this.outsideSkiLoadN=0;this.insideSkiLoadN=0;
-      this.onHud({speed:0,slope:this.slopeDeg,grounded:false,acceleration:0,snowMu:this.snowMu,tuck:false,massKg:this.massKg});
-      return;
+    const cachedGround=this.nextGroundSample;
+    let currentHit=null;
+    if(cachedGround&&Math.abs(cachedGround.x-this.position.x)<0.002&&Math.abs(cachedGround.z-this.position.z)<0.002){
+      currentHit=cachedGround.hit;
+    }else{
+      currentHit=this._groundAt(this.position.x,this.position.z);
     }
-
+    this.nextGroundSample=null;
+    this.lastGroundContact=!!currentHit;
     if(currentHit){
       this.position.copy(currentHit.point);
       this.lastGroundNormal.copy(currentHit.normal);
+    }else if(this.airborneWorldY===null){
+      // Leaving a piste mesh is not a stop condition. Keep horizontal momentum
+      // and begin a short, gravity-driven drop until the combined terrain finds ground.
+      this.airborneWorldY=this.position.y+this.airborneHeight+0.055;
+      this.airborneVelocityY=Math.min(this.velocity.y,-0.35);
+      this.airborneHeight=0;
     }
-    // When a jump carries the skier beyond a mesh edge or a small terrain seam,
-    // keep integrating ballistic motion instead of freezing the skier in place.
     const normal=this.lastGroundNormal;
     const airborneAtStart=this.airborneWorldY!==null;
     if(!airborneAtStart)this.velocity.addScaledVector(normal,-this.velocity.dot(normal));
@@ -1887,6 +1908,7 @@ export class SkierController {
     const nextX=this.position.x+this.velocity.x*dt;
     const nextZ=this.position.z+this.velocity.z*dt;
     const nextHit=this._groundAt(nextX,nextZ);
+    this.nextGroundSample=nextHit?{x:nextX,z:nextZ,hit:nextHit}:null;
     if(nextHit) {
       this.position.copy(nextHit.point);
       this.lastGroundNormal.copy(nextHit.normal);
@@ -1906,14 +1928,16 @@ export class SkierController {
         this.velocity.addScaledVector(nextNormal,-this.velocity.dot(nextNormal));
       }
       this.slopeDeg=THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(nextNormal.y,-1,1)));
-    } else if(inFlight) {
+    } else {
       this.position.x=nextX;
       this.position.z=nextZ;
-      this.airborneHeight=Math.max(0,this.airborneWorldY-this.position.y-0.055);
-      this.normalForceN=0;this.lateralForceN=0;this.totalSkiLoadN=0;
-      this.outsideSkiLoadN=0;this.insideSkiLoadN=0;
-    } else {
-      this.velocity.multiplyScalar(0.015);
+      if(!inFlight){
+        this.airborneWorldY=this.position.y+this.airborneHeight+0.055;
+        this.airborneVelocityY=Math.min(this.velocity.y,-0.5);
+        this.airborneHeight=0;
+      }else{
+        this.airborneHeight=Math.max(0,this.airborneWorldY-this.position.y-0.055);
+      }
       this.normalForceN=0;this.lateralForceN=0;this.totalSkiLoadN=0;
       this.outsideSkiLoadN=0;this.insideSkiLoadN=0;
     }
