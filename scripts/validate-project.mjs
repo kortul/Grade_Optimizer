@@ -821,7 +821,7 @@ assert.ok(entrySource.includes("const terrain=resolveSkierTerrain();"), 'queued 
 assert.ok(entrySource.includes("START_EXCEPTION"), 'skier controller exceptions must be reported precisely');
 assert.ok(entrySource.includes("TERRAIN_NOT_RESOLVED"), 'mode API must report terrain resolution failures instead of NO_MODE_CHANGE');
 
-assert.ok(skierSource.includes('this._groundFromLookup(x,z)'), 'skier ground queries must have a direct triangle lookup fallback');
+assert.ok(skierSource.includes('this._groundFromLookup(x,z,referenceY,maxVerticalDelta)'), 'skier ground queries must have a direct triangle lookup fallback');
 assert.ok(skierSource.includes('await this._buildTerrainLookup('), 'skier start must await incremental spatial terrain lookup');
 assert.ok(skierSource.includes('occupiedCells:this.terrainLookup?.occupiedCells||0'), 'failed skier starts must report terrain lookup diagnostics');
 assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!state.root?'SCENE_ROOT_MISSING':'TERRAIN_NOT_RESOLVED')"), 'mode bridge must receive the precise terrain / startup failure code');
