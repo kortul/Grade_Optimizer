@@ -1097,7 +1097,7 @@ export class SkierController {
         surfaceName:hit.object.name||hit.object.uuid,
         source:'raycast'
       });
-      if(!Number.isFinite(Number(referenceY)))break;
+      if(referenceY===null||referenceY===undefined||!Number.isFinite(Number(referenceY)))break;
     }
     const hit=selectGroundContactCandidate(candidates,{
       referenceY,maxVerticalDelta,referenceNormal:this.lastGroundNormal
