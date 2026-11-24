@@ -5,7 +5,7 @@ import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
 import {
   exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
-  isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV,
+  isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV, smoothstep,
   texture3D, uniform, vec2, vec3, vec4, positionLocal, sin, cos, time
 } from 'three/tsl';
 
@@ -422,6 +422,17 @@ function buildSlopeFootprint(root) {
 }
 
 function restoreStageOneCoordinates(root, item) {
+  // Mirror the production FBX import order: normalize the Maya ToSketchfab
+  // wrapper / child scales before restoring the CAD Bridge world coordinates.
+  const sketchfabGroup=root.getObjectByName?.('ToSketchfab');
+  if(sketchfabGroup){
+    root.traverse(node=>{
+      if(node===root)return;
+      if(node.scale.toArray().some(value=>Math.abs(value-1)>1e-4))node.scale.set(1,1,1);
+    });
+    sketchfabGroup.position.set(0,0,0);
+    root.updateMatrixWorld(true);
+  }
   const groups=item?.mayaExport?.cadBridge?.workingGroups||[];
   const record=groups.find(entry=>Array.isArray(entry.originalOffset)&&Number.isFinite(Number(entry.originalScale)));
   if(item?.mayaExport?.cadBridge?.inverseApplied) {
@@ -560,6 +571,30 @@ function createSplinePineGeometry(lod, variant) {
   const greenB=new THREE.Color(0x315a3b);
   const snow=new THREE.Color(0xe4edf2);
   const trunkColor=new THREE.Color(0x493f35);
+  const addBlade=(base,direction,length,width,shade=0)=>{
+    const dir=direction.clone().normalize();
+    const side=new THREE.Vector3(-dir.z,0,dir.x).normalize();
+    const root=base.clone();
+    const left=root.clone().addScaledVector(side,-width*0.5);
+    const right=root.clone().addScaledVector(side,width*0.5);
+    const tip=root.clone().addScaledVector(dir,length);
+    tip.y+=length*0.11;
+    const centre=root.clone().addScaledVector(dir,length*0.35).add(new THREE.Vector3(0,width*0.10,0));
+    const first=positions.length/3;
+    const points=[left,centre,tip,right];
+    const normal=side.clone().cross(dir).normalize();
+    const baseColour=greenA.clone().lerp(greenB,0.34+shade*0.16);
+    const snowFactor=THREE.MathUtils.clamp(0.08+dir.y*0.34+shade*0.28,0,0.56);
+    const colour=baseColour.lerp(snow,snowFactor);
+    for(let i=0;i<points.length;i++){
+      const p=points[i];
+      positions.push(p.x,p.y,p.z);
+      normals.push(normal.x,normal.y,normal.z);
+      const variation=i===2?1.10:i===1?1.04:0.92;
+      colors.push(colour.r*variation,colour.g*variation,colour.b*variation);
+    }
+    indices.push(first,first+1,first+2,first+1,first+3,first+2);
+  };
   const addTube=(curve,radius,segments,ringSides,isTrunk=false)=>{
     const startIndex=positions.length/3;
     const curvePoints=curve.getPoints(segments);
@@ -621,6 +656,22 @@ function createSplinePineGeometry(lod, variant) {
       const end=start.clone().addScaledVector(radial,length);end.y-=length*0.22;
       const curve=new THREE.CatmullRomCurve3([start,controlA,controlB,end]);
       addTube(curve,0.060*(1-t*0.42),branchSegments,sides,false);
+      // Dense, tapered needle sprays sit on each curved branch. Near LOD gets
+      // four clusters per branch; mid LOD keeps two broader silhouette clusters.
+      const sprayPositions=high?[0.28,0.48,0.68,0.86]:[0.38,0.72];
+      for(let spray=0;spray<sprayPositions.length;spray++){
+        const u=sprayPositions[spray];
+        const origin=curve.getPoint(u);
+        const tangent=curve.getTangent(u).normalize();
+        const fan=radial.clone().multiplyScalar(0.56).addScaledVector(tangent,0.34).add(new THREE.Vector3(0,0.34,0)).normalize();
+        const fanSide=new THREE.Vector3(-fan.z,0,fan.x).normalize();
+        const baseLength=length*(high?0.19:0.16)*(1-u*0.22);
+        const baseWidth=high?0.16:0.19;
+        for(const spread of [-1,0,1]){
+          const direction=fan.clone().addScaledVector(fanSide,spread*0.52).add(new THREE.Vector3(0,spread===0?0.08:0.02,0)).normalize();
+          addBlade(origin,direction,baseLength*(spread===0?1.08:0.88),baseWidth*(spread===0?1.0:0.82),0.2+0.6*u);
+        }
+      }
       for(let twig=0;twig<twigLayers;twig++){
         const tt=0.34+twig*(high?0.24:0.31);
         const p=curve.getPoint(tt);
@@ -647,7 +698,7 @@ function createSplinePineGeometry(lod, variant) {
 }
 
 function createSplinePineMaterial() {
-  const material=new THREE.MeshStandardNodeMaterial({roughness:0.97,metalness:0,vertexColors:true});
+  const material=new THREE.MeshStandardNodeMaterial({roughness:0.97,metalness:0,vertexColors:true,side:THREE.DoubleSide});
   const swayX=sin(time.mul(0.72).add(positionLocal.y.mul(0.52)).add(positionLocal.x.mul(0.14)))
     .mul(positionLocal.y.mul(0.0028));
   const swayZ=cos(time.mul(0.61).add(positionLocal.y.mul(0.46)).add(positionLocal.z.mul(0.17)))
@@ -722,8 +773,12 @@ function createTreeInstanceBatch(trees, lod, variant, parent) {
 
 function rebuildForestLod(force=false) {
   if(!forestSystem)return;
-  if(!force&&forestSystem.lastCamera.distanceToSquared(camera.position)<6400)return;
+  camera.getWorldDirection(forestSystem.cameraForward);
+  const cameraMoved=forestSystem.lastCamera.distanceToSquared(camera.position)>=6400;
+  const cameraTurned=forestSystem.lastForward.dot(forestSystem.cameraForward)<0.94;
+  if(!force&&!cameraMoved&&!cameraTurned)return;
   forestSystem.lastCamera.copy(camera.position);
+  forestSystem.lastForward.copy(forestSystem.cameraForward);
   forestSystem.group.clear();
   const near=[],mid=[],far=[];
   for(const tree of forestSystem.trees){
@@ -781,6 +836,8 @@ async function loadStageOneAndForest() {
     splineMaterial:createSplinePineMaterial(),
     group:new THREE.Group(),
     lastCamera:new THREE.Vector3(Infinity,Infinity,Infinity),
+    lastForward:new THREE.Vector3(0,0,-1),
+    cameraForward:new THREE.Vector3(),
     lastLod:{near:0,mid:0,far:0}
   };
   forestSystem.group.name='GO_Procedural_SkiForest';
