@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -67,8 +67,18 @@ pass('viewport and material-list selection highlight all matching material group
 
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
 assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
-assert.equal(originalTerrainManifest.mayaExport.components[0].name, 'terrainShape', 'base terrain component was replaced by a piste asset');
-assert.ok(existsSync(resolve(root, 'assets/real-terrain.fbx')), 'original base terrain FBX is missing');
+assert.equal(originalTerrainManifest.category, 'terrain', 'base terrain category changed');
+const terrainComponents = originalTerrainManifest.mayaExport?.components;
+assert.ok(Array.isArray(terrainComponents) && terrainComponents.length > 0, 'base terrain manifest must identify at least one exported mesh');
+const terrainComponent = terrainComponents.find(component => component && (component.name || component.shape));
+assert.ok(terrainComponent, 'base terrain exported mesh name / shape is missing');
+const terrainFbxPath = resolve(root, 'assets/real-terrain.fbx');
+assert.ok(existsSync(terrainFbxPath), 'original base terrain FBX is missing');
+assert.equal(
+  statSync(terrainFbxPath).size,
+  Number(originalTerrainManifest.mayaExport.modelSizeBytes),
+  'base terrain FBX byte size does not match its export manifest'
+);
 const clientSceneManifest = JSON.parse(read('clients/alpine-resort/scene.json').toString('utf8'));
 const stageOneAsset = clientSceneManifest.assets.find(asset => asset.id === 'slopes_stage1');
 assert.ok(stageOneAsset, 'Slopes_Stage1 must be registered as a separate client asset');
