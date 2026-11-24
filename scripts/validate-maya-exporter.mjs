@@ -2,18 +2,18 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 
 const read = path => readFileSync(path, 'utf8');
+const maya = read('maya/grade_optimizer_exporter.py');
 const html = read('index.html');
 const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/i);
 assert.ok(entryMatch, 'index.html must declare its active app module');
 const entryPath = entryMatch[1].replace(/^\.\//, '').split('?')[0];
 assert.match(entryPath, /^app\.v\d+\.js$/, 'index.html must activate a versioned app module');
 const app = read(entryPath);
-const html = read('index.html');
 const terrain = JSON.parse(read('assets/real-terrain.json'));
-assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
+const clientScene = JSON.parse(read('clients/alpine-resort/scene.json'));
 
 assert.ok(maya.includes('VERSION = "0.8.8"'), 'Maya exporter must be 0.8.8');
-assert.ok(html.includes('src="./app.v164.js"'), 'index.html must activate app.v164.js');
+assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
 assert.ok(app.includes('gradeOptimizerTerrainTexture') && app.includes('low-frequency-albedo-no-bump'), 'terrain snow must not use the old high-frequency bump detail');
 
