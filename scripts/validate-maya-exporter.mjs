@@ -12,7 +12,7 @@ const app = read(entryPath);
 const terrain = JSON.parse(read('assets/real-terrain.json'));
 const clientScene = JSON.parse(read('clients/alpine-resort/scene.json'));
 
-assert.ok(maya.includes('VERSION = "0.9.1"'), 'Maya exporter must be 0.9.1');
+assert.ok(maya.includes('VERSION = "0.9.2"'), 'Maya exporter must be 0.9.2');
 assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
 assert.ok(maya.includes('def _sample_slope_curve_points(') && maya.includes('"points": _sample_slope_curve_points('), 'Maya must export raw sampled NURBS points');
@@ -21,7 +21,11 @@ assert.ok(maya.includes('def export_slope_centerlines(*_):'), 'Maya centerline g
 assert.ok(maya.includes('def _slope_curve_digest(') && maya.includes('sourceDigest'), 'Maya curve export must cache raw geometry by curve fingerprint');
 
 assert.ok(maya.includes('ЭКСПОРТ ЦЕНТРАЛЬНЫХ ЛИНИЙ СКЛОНОВ') && maya.includes('ЭКСПОРТИРОВАТЬ КРИВЫЕ СКЛОНОВ'), 'Maya exporter UI must expose raw centerline geometry export');
-assert.ok(maya.includes('manifest["slopeCurves"]') && maya.includes('"coordinateSystem": "project-world"') && maya.includes('"units": "meters"'), 'Maya must store raw curve geometry in project-world metres');
+assert.ok(maya.includes('manifest["slopeCurves"]') && maya.includes('"coordinateSystem": "project-world"') && maya.includes('"worldFrame": "maya-working-world"') && maya.includes('"units": "meters"'), 'Maya must store raw curve geometry in Maya working-world metres');
+assert.ok(maya.includes('"coordinateFrame": "maya-working-world-v2"') && maya.includes('"coordinateFrameVersion": 2'), 'Maya curve digest and manifest must version the corrected working-world coordinate frame');
+assert.ok(maya.includes('curve_fn.getPointAtParam(parameter, om2.MSpace.kWorld)') && maya.includes('return _slope_points_cm_to_meters(sampled)'), 'Slope centerlines must retain the full Maya world transform and only convert API centimetres to metres');
+assert.ok(!maya.includes('def _slope_correct_bridge_points(') && !maya.includes('original_scene_point'), 'Slope centerlines must not have the CAD Bridge inverse applied a second time');
+assert.ok(maya.includes('record["workingGroup"] = bridge_context["group"]'), 'Each exported centerline must retain its enclosing MAYA_WORKING_SCENE provenance');
 assert.ok(!maya.includes('def _slope_route_class_from_shares(') && !maya.includes('def _build_slope_analysis_record('), 'Maya exporter must not calculate slope grades or difficulty');
 assert.ok(app.includes('function renderSlopeAnalysisOverlays(') && app.includes('new THREE.LineSegments'), 'browser must render slope difficulty as lightweight line segments');
 assert.ok(app.includes('new CSS2DObject') && app.includes('SlopeAnalysis_Angles') && app.includes('SlopeAnalysis_Names'), 'browser must use independent CSS2D angle and name label layers');
