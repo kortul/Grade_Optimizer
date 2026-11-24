@@ -99,3 +99,8 @@ Open the page through HTTPS (for example, the GitHub Pages preview for the featu
 - Night stars have subtle warm / cool color variation and twinkle in one point draw call.
 - Snowfall motion is computed from static instance attributes in the vertex shader, removing the per-flake CPU matrix-update loop. Hidden volumetric clouds no longer receive per-frame camera / time uniform updates; scene matrices are left to the renderer's normal update pass.
 - The previous `app.v154.js` and `weather-system.v6.js` remain in the repository for rollback.
+
+
+## Public multiplayer ruler and flags
+
+Overview double-click places a shared flag on the same visible geometry used by camera focus; the camera focus keeps its current distance. Each participant may keep three flags, with the new flag broadcast before older flags are removed. The Overview ruler broadcasts its selected point and completed measurement line / distance / angle to everyone in the shared session. Active measurements are included for new joiners and are cleared when the owner turns the ruler off or disconnects. These are relayed by the existing Cloudflare Worker; no separate service is required.
