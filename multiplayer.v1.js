@@ -154,7 +154,9 @@ export class ResortMultiplayer {
       this.full=true;this.connected=false;this.setStatus('full');
       try{this.socket?.close();}catch{}return;
     }
-    if(msg.t==='welcome'){
+    if(msg.t==='slot'){
+      this.slot=Number.isInteger(msg.slot)?msg.slot:null;
+    }else if(msg.t==='welcome'){
       this.id=String(msg.id||'');this.slot=Number.isInteger(msg.slot)?msg.slot:null;this.connected=!!this.id;this.retries=0;this.lastPong=performance.now();
       for(const peer of Array.isArray(msg.players)?msg.players:[])this.upsert(peer);
       this.setStatus(this.connected?'connected':'error');
