@@ -13,6 +13,49 @@ const bytes = readFileSync(file);
 const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 const root = new FBXLoader().parse(arrayBuffer, '');
 
+function restoreCadBridgeWorkingCoordinates(rootObject, mayaExport) {
+  const bridge = mayaExport?.cadBridge;
+  if (bridge?.inverseApplied !== true) return null;
+  const record = (bridge.workingGroups || []).find(item =>
+    Array.isArray(item?.originalOffset) && item.originalOffset.length === 3 &&
+    Number.isFinite(Number(item?.originalScale)) && Number(item.originalScale) > 0
+  );
+  if (!record) throw new Error('Stage1 inverseApplied=true but CAD Bridge offset / scale are missing');
+  const offset = record.originalOffset.map(Number);
+  const scale = Number(record.originalScale);
+  const geometries = new Set();
+  let meshCount = 0, vertexCount = 0;
+  rootObject.traverse(object => {
+    if (!object.isMesh || !object.geometry || geometries.has(object.geometry)) return;
+    const geometry = object.geometry;
+    const position = geometry.attributes?.position;
+    if (!position || position.count < 3) return;
+    geometries.add(geometry);
+    const transform = (attribute, relative = false) => {
+      for (let i = 0; i < attribute.count; i++) {
+        const x = attribute.getX(i), y = attribute.getY(i), z = attribute.getZ(i);
+        attribute.setXYZ(i,
+          relative ? x * scale : (x - offset[0]) * scale,
+          relative ? y * scale : (y - offset[1]) * scale,
+          relative ? z * scale : (z - offset[2]) * scale
+        );
+      }
+      attribute.needsUpdate = true;
+      vertexCount += attribute.count;
+    };
+    transform(position);
+    for (const morphPosition of geometry.morphAttributes?.position || []) {
+      transform(morphPosition, geometry.morphTargetsRelative === true);
+    }
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    meshCount++;
+  });
+  if (!meshCount) throw new Error('CAD Bridge restoration found no Stage1 polygon meshes');
+  rootObject.updateMatrixWorld(true, true);
+  return { offset, scale, meshCount, vertexCount };
+}
+
 const previousBytes = execFileSync('git', [
   'show',
   '6851eb9ba3566b9f283dd961d7519ed3623bf9d9:clients/alpine-resort/models/slopes_stage1.fbx'
@@ -42,6 +85,8 @@ previousRoot.traverse(object => {
 });
 if (!root) throw new Error('FBXLoader returned no root object');
 
+const exportedBounds = new Box3().setFromObject(root);
+const cadBridgeRestoration = restoreCadBridgeWorkingCoordinates(root, asset.mayaExport);
 const scale = asset.transform?.scale;
 if (Array.isArray(scale) && scale.length === 3) root.scale.fromArray(scale);
 root.updateWorldMatrix(true, true);
@@ -85,6 +130,11 @@ terrainRoot.scale.multiplyScalar(terrainScale);
 terrainRoot.updateMatrixWorld(true);
 const terrainBounds = new Box3().setFromObject(terrainRoot);
 const terrainSize = terrainBounds.getSize(new Vector3());
+const horizontalOverlap = terrainBounds.isEmpty() || bounds.isEmpty() ? [0, 0] : [
+  Math.max(0, Math.min(bounds.max.x, terrainBounds.max.x) - Math.max(bounds.min.x, terrainBounds.min.x)),
+  Math.max(0, Math.min(bounds.max.z, terrainBounds.max.z) - Math.max(bounds.min.z, terrainBounds.min.z))
+];
+const restoredStageOneSharesTerrainFrame = horizontalOverlap[0] > 0 && horizontalOverlap[1] > 0;
 
 function measure(rootObject) {
   rootObject.updateWorldMatrix(true, true);
@@ -180,6 +230,10 @@ console.log(JSON.stringify({
     }
   },
   fbxUnitScaleFactor: root.userData?.unitScaleFactor ?? null,
+  cadBridgeRestoration,
+  exportedBoundsBeforeCadRestoration: exportedBounds.isEmpty() ? null : {
+    min: exportedBounds.min.toArray(), max: exportedBounds.max.toArray()
+  },
   manifestScale: scale ?? null,
   meshCount: meshes.length,
   visibleMeshCount,
@@ -194,7 +248,9 @@ console.log(JSON.stringify({
       min: terrainBounds.min.toArray(),
       max: terrainBounds.max.toArray(),
       size: terrainSize.toArray()
-    }
+    },
+    stageOneTerrainHorizontalOverlapMeters: horizontalOverlap,
+    restoredStageOneSharesTerrainFrame
   },
   rootTransform,
   rebaseTest: { before: rebaseBefore, sceneRootTransform, afterRemovingSceneRootTranslation: boundsAfterRootOffsetRemoved },
@@ -214,4 +270,7 @@ if (!meshes.length || !vertexCount || bounds.isEmpty()) {
 }
 if (!visibleMeshCount) {
   throw new Error('Three.js FBXLoader found meshes, but all are hidden in the FBX hierarchy.');
+}
+if (asset.mayaExport?.cadBridge?.inverseApplied === true && !restoredStageOneSharesTerrainFrame) {
+  throw new Error('Stage1 geometry does not overlap canonical Terrain after CAD Bridge restoration.');
 }
