@@ -12,8 +12,12 @@ const entryMatch = html.match(/<script\s+type=["']module["']\s+src=["']([^"']+)[
 assert.ok(entryMatch, 'index.html must declare a module entrypoint');
 const entry = entryMatch[1].replace(/^\.\//, '');
 const entryPath = entry.split('?')[0];
-assert.equal(entryPath, 'app.v158.js', 'index.html must activate the current app release');
+assert.equal(entryPath, 'app.v159.js', 'index.html must activate the current app release');
 const entrySource = read(entryPath).toString('utf8');
+assert.ok(
+  entrySource.includes('logarithmicDepthBuffer:true') && entrySource.includes('camera.near=0.5;'),
+  'kilometre-scale terrain must use logarithmic depth buffering and a safe near plane'
+);
 assert.ok(existsSync(resolve(root, entryPath)), 'active module does not exist: ' + entryPath);
 pass('active entrypoint exists: ' + entryPath);
 const weatherV4Source=read('weather-system.v7.js').toString('utf8');
@@ -754,7 +758,7 @@ assert.ok(entrySource.includes("const reason=skierController.lastStartError||(!s
 assert.ok(html.includes("actual.startsWith('failed:')"), 'HTML bridge must display the precise failed mode result');
 assert.ok(entrySource.includes('window.__GRADE_OPTIMIZER_MODE_API=Object.freeze('), 'mode API must be exported for standalone HTML input bridge');
 assert.ok(html.includes('id="grade-optimizer-mode-bridge"'), 'classic mode input bridge is missing');
-assert.ok(html.includes('src="./app.v158.js"'), 'HTML must load the current application module');
+assert.ok(html.includes('src="./app.v159.js"'), 'HTML must load the current application module');
 assert.ok(html.includes("event.target?.closest?.('#skierMode, #droneModeButton')"), 'mode buttons must use the standalone HTML input bridge');
 assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'drone':'skier'"), 'V must enter skier from overview and toggle between skier / drone');
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
