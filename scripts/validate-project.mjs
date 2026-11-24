@@ -166,7 +166,7 @@ assert.ok(weatherSource.includes("this.cameraWeatherRig = new THREE.Group()"), '
 assert.ok(weatherSource.includes('this.scene.add(this.cameraWeatherRig)'), 'camera-follow weather layer must belong to the renderable scene graph');
 assert.ok(weatherSource.includes('this.cameraWeatherRig.add(this.snow)')&&weatherSource.includes('this.cameraWeatherRig.add(this.streaks)'), 'snow and wind streaks must be children of the renderable camera-follow root');
 assert.ok(weatherSource.includes('this.camera.getWorldQuaternion(this.cameraWeatherRig.quaternion)')&&weatherSource.includes('this.cameraWeatherRig.position.copy(this.cameraPosition)'), 'weather layer must follow the current camera transform every frame');
-assert.ok(weatherSource.includes('this.snowCount = 2200')&&weatherSource.includes('this.snowMaterial.opacity=0.84+this.params.snowfall*0.12'), 'snowfall density and contrast must remain visible');
+assert.ok(weatherSource.includes('this.snowCount = 2200')&&weatherSource.includes('uOpacity:{value:0.92}')&&weatherSource.includes('this.snowMaterial.uniforms.uOpacity.value=0.84+this.params.snowfall*0.12'), 'snowfall density and shader opacity must remain visible');
 for (const preset of ['clear','light','partly','cloudy','overcast','snow','blizzard']) {
   assert.ok(weatherSource.includes(preset + ':'), 'weather preset missing from runtime: ' + preset);
   assert.ok(html.includes('data-weather-preset="' + preset + '"'), 'weather preset button missing from UI: ' + preset);
