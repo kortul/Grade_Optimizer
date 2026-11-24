@@ -46,6 +46,27 @@ root.traverse(object => {
 
 const bounds = new Box3().setFromObject(root);
 const size = bounds.getSize(new Vector3());
+
+const realTerrainManifest = JSON.parse(readFileSync('assets/real-terrain.json', 'utf8'));
+const terrainBytes = readFileSync('assets/real-terrain.fbx');
+const terrainBuffer = terrainBytes.buffer.slice(terrainBytes.byteOffset, terrainBytes.byteOffset + terrainBytes.byteLength);
+const terrainRoot = new FBXLoader().parse(terrainBuffer, '');
+const terrainScale = Number(realTerrainManifest.mayaExport?.metersPerUnit) || 0.01;
+terrainRoot.scale.multiplyScalar(terrainScale);
+terrainRoot.updateMatrixWorld(true);
+const terrainBounds = new Box3().setFromObject(terrainRoot);
+const terrainSize = terrainBounds.getSize(new Vector3());
+
+const hierarchy = [];
+for (let node = meshes.length ? root.getObjectByName(meshes.find(item => item.name === 'G1Slope_Mesh_30m')?.name) : null; node; node = node.parent) {
+  hierarchy.push({
+    name: node.name || '(unnamed)',
+    position: node.position.toArray(),
+    rotation: [node.rotation.x, node.rotation.y, node.rotation.z],
+    scale: node.scale.toArray()
+  });
+}
+
 console.log(JSON.stringify({
   file,
   bytes: bytes.byteLength,
@@ -56,6 +77,17 @@ console.log(JSON.stringify({
   vertexCount,
   boundsEmpty: bounds.isEmpty(),
   bounds: bounds.isEmpty() ? null : { min: bounds.min.toArray(), max: bounds.max.toArray(), size: size.toArray() },
+  terrainComparison: {
+    sourceScene: realTerrainManifest.mayaExport?.sourceScene,
+    realTerrainManifestBoundsCm: realTerrainManifest.mayaExport?.worldBounds ?? null,
+    realTerrainScale: terrainScale,
+    realTerrainBoundsMeters: terrainBounds.isEmpty() ? null : {
+      min: terrainBounds.min.toArray(),
+      max: terrainBounds.max.toArray(),
+      size: terrainSize.toArray()
+    }
+  },
+  targetMeshHierarchy: hierarchy,
   meshes
 }, null, 2));
 
