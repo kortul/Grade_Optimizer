@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,
-  normalizeMarker,normalizeState,sanitizeClientId,sanitizeName
+  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,MAX_SHARED_MARKERS,
+  appendSharedMarker,normalizeMarker,normalizeState,sanitizeClientId,sanitizeName
 } from './protocol.js';
 
 const ALLOWED_ORIGIN='https://kortul.github.io';
@@ -140,26 +140,9 @@ export class PublicResort extends DurableObject {
       }
       const markerUpdate=await this.ctx.storage.transaction(async transaction=>{
         const storedMarkers=await transaction.get('sharedMarkers');
-        const markers=Array.isArray(storedMarkers)?storedMarkers.slice(-MAX_SHARED_MARKERS):[];
-        // Upgrade flags created before per-player ownership IDs were introduced.
-        for(const existing of markers){
-          if(existing&&!existing.ownerId&&existing.owner===player.name)existing.ownerId=player.id;
-        }
-        let acceptedMarker=markers.find(existing=>existing?.id===marker.id);
-        const removedMarkers=[];
-        if(!acceptedMarker){
-          markers.push(marker);
-          const ownedMarkers=markers.filter(existing=>existing?.ownerId===player.id);
-          while(ownedMarkers.length>MAX_MARKERS_PER_PLAYER){
-            const oldest=ownedMarkers.shift();
-            const index=markers.findIndex(existing=>existing?.id===oldest?.id);
-            if(index>=0)removedMarkers.push(markers.splice(index,1)[0]);
-          }
-          while(markers.length>MAX_SHARED_MARKERS)removedMarkers.push(markers.shift());
-          acceptedMarker=marker;
-        }
-        await transaction.put('sharedMarkers',markers);
-        return {acceptedMarker,removedMarkers};
+        const update=appendSharedMarker(storedMarkers,marker);
+        await transaction.put('sharedMarkers',update.markers);
+        return update;
       });
       player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
       const recipients=this.activeSockets().filter(entry=>entry.player.name);
