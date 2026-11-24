@@ -50,7 +50,7 @@ Use `maya/grade_optimizer_exporter.py` from Maya's Python Script Editor, or open
 1. In GitHub Desktop, pull the latest repository before opening the exporter. The Maya tree reads the local clone.
 2. The replacement tree contains both client-scene FBXs and a separate **Основной рельеф** entry for the canonical global asset.
 3. To replace the main terrain, select only the `terrainShape` mesh / its dedicated group inside the CAD-synchronized Maya working scene. Do not select the whole `MAYA_WORKING_SCENE` if it also contains Stage 1 or other geometry. In the Maya tree choose **Основной рельеф** (`real-terrain`) and click **ЗАМЕНИТЬ ВЫБРАННЫЙ ОБЪЕКТ**.
-4. To replace Stage 1, select only the `Slopes_Stage1` branch inside `MAYA_WORKING_SCENE`. Its intentional multi-mesh / mixed component hierarchy is exported as separate mesh objects; do not combine it. In the Maya tree choose `Slopes_Stage1` and use the same replacement button.
+4. To replace Stage 1, select the `Slopes_Stage1` branch (or an object inside it) in Maya. In the Maya tree choose `Slopes_Stage1` and use the replacement button. The exporter resolves the `Slopes_Stage1` DAG branch from the selected geometry and excludes sibling `Stage2_40M` / `Slopes_Stage2` branches, even if the initial Maya selection is broader. Every mesh inside the Stage 1 branch remains a separate FBX object; do not combine them.
 5. Review the changed files in GitHub Desktop, then commit and push. Replacing the main terrain changes `assets/real-terrain.fbx` and `assets/real-terrain.json`; replacing Stage 1 changes the FBX and `clients/alpine-resort/scene.json`.
 
 For selections inside a `MAYA_WORKING_SCENE` created by CAD Bridge v14, the exporter keeps the working group world transform (including its offset and scale) because this is the coordinate frame shared with `A1.gltf` and the browser scene. It bakes the resulting world-space vertices into identity transforms, then the browser converts the Maya linear unit to metres. Do not reverse `bridgeOriginalScale`: that shrinks the roughly 4.5 km terrain to roughly 4.5 m and moves it away from the A1 scene. Stage 1 preserves its Maya hierarchy transforms; it does not reset nested scales or zero `ToSketchfab`. **The original Maya objects are never moved, rescaled, frozen or deleted.** Hierarchy and individual mesh shapes remain separate, and material assignments are retained.
@@ -62,7 +62,7 @@ The base-terrain export is written to the canonical pair:
 - `assets/real-terrain.fbx`
 - `assets/real-terrain.json`
 
-The JSON sidecar records the source scene, Maya version, units, bounds, components, materials and the CAD Bridge inverse used. Keep the FBX below 90 MiB for the current regular-Git workflow.
+The JSON sidecar records the source scene, Maya version, units, bounds, components, materials and the preserved CAD Bridge working-world transform. Keep the FBX below 90 MiB for the current regular-Git workflow.
 
 **Runtime:** for the primary A1 slot, the app prefers `assets/real-terrain.fbx` + `assets/real-terrain.json`, resolves the terrain mesh by its manifest name, converts Maya source units to metres and applies snow materials. If either canonical file is missing or invalid, it falls back to the original `assets/A1.gltf`. The A1 optimizer profiles remain loaded from `A1.curves.json`.
 
