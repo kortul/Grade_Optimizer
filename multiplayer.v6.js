@@ -191,8 +191,8 @@ function makeFlagMarker(owner) {
 function makeDroneObserverBeacon() {
   const root=new THREE.Group();
   root.name='GO_RemoteDroneObserverBeacon';
-  const material=new THREE.LineBasicMaterial({color:0x70e6ff,transparent:true,opacity:0.88,depthWrite:false});
-  const glow=new THREE.MeshBasicMaterial({color:0x70e6ff,transparent:true,opacity:0.78,depthWrite:false});
+  const material=new THREE.LineBasicMaterial({color:0x70e6ff,transparent:true,opacity:0.88,depthTest:false,depthWrite:false});
+  const glow=new THREE.MeshBasicMaterial({color:0x70e6ff,transparent:true,opacity:0.78,depthTest:false,depthWrite:false});
   const stemGeometry=new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(0,0.2,0),new THREE.Vector3(0,6.2,0)
   ]);
@@ -574,6 +574,7 @@ export class ResortMultiplayer {
       peer.view.visible=peer.mode==='overview';
       // In drone view, add an elevated locator while retaining each peer's actual avatar.
       peer.beacon.visible=droneObserver;
+      if(droneObserver)peer.beacon.quaternion.copy(peer.group.quaternion).invert();
       peer.label.sprite.position.y=peer.mode==='drone'?1.35:(peer.mode==='overview'?1.85:2.25);
       const blend=1-Math.exp(-Math.max(0,dt)*20);
       const predictionAge=Math.min(0.12,Math.max(0,(now-(peer.lastStateAt||now))/1000));
