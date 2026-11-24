@@ -7,16 +7,9 @@ const JOINT_FLOATS = 72;
 const JOINTS_PER_NODE = 6;
 
 function getSessionClientId() {
-  const key='gradeOptimizerMultiplayerSessionId';
-  try {
-    const stored=String(sessionStorage.getItem(key)||'').toLowerCase();
-    if(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(stored))return stored;
-    const created=crypto.randomUUID().toLowerCase();
-    sessionStorage.setItem(key,created);
-    return created;
-  } catch {
-    return crypto.randomUUID().toLowerCase();
-  }
+  // Generate once per live page instance, not from sessionStorage: duplicated
+  // browser tabs may inherit a copied sessionStorage and must remain distinct.
+  return crypto.randomUUID().toLowerCase();
 }
 
 function normalizeEndpoint(value) {
@@ -117,7 +110,7 @@ export class ResortMultiplayer {
     this.statusElement=statusElement||null;this.statusTextElement=statusTextElement||null;
     this.templateProvider=templateProvider||(()=>({}));this.poseNodeNames=poseNodeNames.slice();
     this.socket=null;this.id='';this.slot=null;this.connected=false;this.disposed=false;this.full=false;
-    this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';this.lastClose=null;
+    this.retries=0;this.reconnectTimer=null;this.lastSent=0;this.lastStatus='';this.lastClose=null;this.superseded=false;
     this.slotWaiters=new Set();this.sentStates=0;this.receivedStates=0;this.lastStateAt=0;this.lastPong=0;
     this.heartbeatTimer=this.endpoint?setInterval(()=>this.sendHeartbeat(),HEARTBEAT_INTERVAL_MS):null;
     this.players=new Map();this.names=new Map();this.lastSeen=new Map();
@@ -125,7 +118,7 @@ export class ResortMultiplayer {
   }
 
   connect() {
-    if(this.disposed||this.socket||this.full)return;
+    if(this.disposed||this.socket||this.full||this.superseded)return;
     if(!this.endpoint){this.setStatus('disabled');return;}
     this.setStatus(this.retries?'reconnecting':'connecting');
     let socket;
@@ -148,6 +141,11 @@ export class ResortMultiplayer {
       console.warn('[Grade Optimizer multiplayer] WebSocket closed',this.lastClose);
       this.socket=null;this.connected=false;this.id='';this.slot=null;this.clearPlayers();this.resolveSlotWaiters(null);
       if(this.disposed)return;
+      if(event.code===4001){
+        this.superseded=true;
+        this.setStatus('replaced');
+        return;
+      }
       if(this.full){this.setStatus('full');return;}
       this.setStatus('reconnecting');this.scheduleReconnect();
     };
@@ -311,6 +309,7 @@ export class ResortMultiplayer {
     else if(state==='reconnecting')label='Восстанавливаем связь…';
     else if(state==='connected')label=count>1?'Онлайн · '+count+' участника':'Онлайн · ожидаем клиента';
     else if(state==='full')label='Сервер занят';
+    else if(state==='replaced')label='Подключение заменено другой вкладкой';
     else if(state==='error')label='Ошибка подключения';
     if(label!==this.lastStatus&&this.statusTextElement){
       this.statusTextElement.textContent=label;this.lastStatus=label;
