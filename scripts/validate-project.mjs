@@ -894,6 +894,7 @@ pass('GPU-animated snowfall regression checks');
 // Isolated WebGPU atmosphere lab: keep the production renderer entrypoint untouched.
 const webgpuAtmosphereHtml = read('webgpu-atmosphere-lab.html').toString('utf8');
 const webgpuAtmosphereSource = read('webgpu-atmosphere-lab.js').toString('utf8');
+const solarCycleSource = read('solar-cycle.v1.js').toString('utf8');
 assert.ok(webgpuAtmosphereHtml.includes('three@0.187.0') && webgpuAtmosphereHtml.includes('three/tsl'), 'atmosphere lab must use the pinned modern Three.js / TSL import map');
 assert.ok(webgpuAtmosphereHtml.includes('src="./webgpu-atmosphere-lab.js"'), 'atmosphere lab entry module is missing');
 assert.ok(webgpuAtmosphereSource.includes("new THREE.WebGPURenderer") && webgpuAtmosphereSource.includes('await renderer.init()'), 'atmosphere lab must initialize WebGPURenderer asynchronously');
@@ -908,6 +909,10 @@ assert.ok(webgpuAtmosphereSource.includes('lowResFog.setResolutionScale(value)')
 assert.ok(webgpuAtmosphereSource.indexOf('camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);') < webgpuAtmosphereSource.indexOf('fogPipeline = buildFogPipeline()'), 'atmosphere camera aspect must be initialized before the first pipeline render');
 assert.ok(webgpuAtmosphereSource.includes('sceneColor.rgb.mix(fogColor, fogResult)') && !webgpuAtmosphereSource.includes('fogResult.mix(sceneColor.rgb, fogColor)'), 'atmosphere fog composite must use fog opacity as the mix factor');
 assert.ok(webgpuAtmosphereSource.includes('const rangeFog = rangeT.mul(rangeT)'), 'distance haze must ease in gradually instead of becoming dense at mid-range');
+assert.ok(webgpuAtmosphereHtml.includes('id="dayCycleToggle"')&&webgpuAtmosphereHtml.includes('id="dayCycleLength"')&&webgpuAtmosphereHtml.includes('id="sunIntensity"'), 'Atmosphere Lab must expose a time-of-day play/pause, day length and direct-sun power controls');
+assert.ok(webgpuAtmosphereSource.includes("from './solar-cycle.v1.js'")&&webgpuAtmosphereSource.includes('calculateSolarCycle(THREE,hours)')&&webgpuAtmosphereSource.includes('advanceSolarClock('), 'Atmosphere Lab must use the shared rotating solar path and animated day cycle');
+assert.ok(webgpuAtmosphereSource.includes('sky.showSunDisc.value = false')&&webgpuAtmosphereSource.includes('createSolarDisc(THREE)')&&webgpuAtmosphereSource.includes('updateSolarDisc(THREE,sunDisc'), 'Atmosphere Lab sun disc must be independently controlled by the sun power slider');
+assert.ok(webgpuAtmosphereSource.includes('sky.mieCoefficient.value = 0.0038')&&webgpuAtmosphereSource.includes('sky.mieColor.value.setRGB(1,0.99,0.96)')&&webgpuAtmosphereSource.includes('sky.rayleigh.value = Number(ui.rayleigh.value)'), 'Atmosphere Lab must use restrained, neutral Earth-like Mie scattering');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
 // WebGPU Alpine Forest Lab regression checks.
@@ -928,6 +933,14 @@ assert.ok(alpineForestSource.includes('sceneColor.rgb.mix(fogColor,fogResult)') 
 assert.ok(alpineForestSource.includes('const rangeFog = rangeT.mul(rangeT)') && alpineForestSource.includes('addScaledVector(sunPosition,100000)'), 'forest distance haze and sun projection must remain correctly framed');
 assert.ok(alpineForestHtml.includes('value="17.5"'), 'forest preview must open with its sun in the initial camera view');
 assert.ok(alpineForestHtml.includes('id="godRays"')&&alpineForestHtml.includes('id="forestDensity"'),'Alpine Forest lab controls for god rays and forest density are missing');
+assert.ok(alpineForestHtml.includes('id="dayCycleToggle"')&&alpineForestHtml.includes('id="dayCycleLength"')&&alpineForestHtml.includes('id="sunIntensity"'), 'Forest Lab must expose the shared time-of-day and sun-power controls');
+assert.ok(alpineForestSource.includes("from './solar-cycle.v1.js'")&&alpineForestSource.includes('calculateSolarCycle(THREE,hours)')&&alpineForestSource.includes('advanceSolarClock('), 'Forest Lab must use the shared solar path and animated day cycle');
+assert.ok(alpineForestSource.includes('sky.showSunDisc.value = false')&&alpineForestSource.includes('createSolarDisc(THREE)')&&alpineForestSource.includes('updateSolarDisc(THREE,sunDisc'), 'Forest Lab sun disc must respond to the direct-sun power slider');
+assert.ok(alpineForestSource.includes('renderer.getMaxAnisotropy()')&&!alpineForestSource.includes('renderer.capabilities.getMaxAnisotropy'), 'Forest atlas loading must use the WebGPURenderer anisotropy API rather than WebGL capabilities');
+assert.ok(alpineForestSource.includes('async function buildTerrainHeightLookup(')&&alpineForestSource.includes('function sampleTerrainSurface(')&&alpineForestSource.includes('terrainHeightLookup=await buildTerrainHeightLookup('), 'Forest Lab must precompute a spatial terrain height lookup before placing trees');
+const forestPlacementSource=alpineForestSource.slice(alpineForestSource.indexOf('function buildTreePlacements('),alpineForestSource.indexOf('function createSplinePineGeometry('));
+assert.ok(forestPlacementSource.includes('sampleTerrainSurface(x,z,terrainHeightLookup)')&&!forestPlacementSource.includes('intersectObject(terrainRoot,true)'), 'tree placement must query cached terrain triangles instead of raycasting the entire terrain for each tree');
+assert.ok(alpineForestSource.includes("setLoadingMessage('Строим spatial height lookup для рельефа…')")&&alpineForestSource.includes("setLoadingMessage('Загружаем atlas елей…')")&&alpineForestSource.includes('Не удалось запустить WebGPU Forest Lab'), 'Forest Lab must expose loading stages and its own diagnostic error label');
 pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
 
 // Public resort multiplayer regression checks.
