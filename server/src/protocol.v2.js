@@ -67,6 +67,48 @@ export function pruneSharedMarkers(inputMarkers) {
   return {markers,removedMarkers};
 }
 
+export function pruneOrphanedSharedMarkers(inputMarkers, activePlayers) {
+  const owners = Array.isArray(activePlayers) ? activePlayers : [];
+  const activeIds = new Set();
+  const idsByName = new Map();
+  for (const player of owners) {
+    const id = sanitizeClientId(player?.id);
+    const name = sanitizeName(player?.name);
+    if (!id) continue;
+    activeIds.add(id);
+    const matches = idsByName.get(name) || [];
+    matches.push(id);
+    idsByName.set(name, matches);
+  }
+
+  const retained = [];
+  const removedMarkers = [];
+  for (const source of Array.isArray(inputMarkers) ? inputMarkers : []) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) {
+      removedMarkers.push(source);
+      continue;
+    }
+    const marker = { ...source };
+    let ownerId = String(marker.ownerId || '');
+    if (!ownerId || ownerId.startsWith('legacy:')) {
+      const matches = idsByName.get(sanitizeName(marker.owner)) || [];
+      ownerId = matches.length === 1 ? matches[0] : '';
+    }
+    if (!ownerId || !activeIds.has(ownerId)) {
+      removedMarkers.push(source);
+      continue;
+    }
+    marker.ownerId = ownerId;
+    retained.push(marker);
+  }
+
+  const normalized = pruneSharedMarkers(retained);
+  return {
+    markers: normalized.markers,
+    removedMarkers: [...removedMarkers, ...normalized.removedMarkers]
+  };
+}
+
 export function appendSharedMarker(inputMarkers, marker) {
   const markers=Array.isArray(inputMarkers)?inputMarkers.slice():[];
   for(const existing of markers){
