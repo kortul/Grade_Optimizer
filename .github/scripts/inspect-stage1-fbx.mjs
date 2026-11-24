@@ -98,12 +98,16 @@ function measure(rootObject) {
 }
 const rebaseTest = root.clone(true);
 const allDescendantScalesReset = root.clone(true);
+allDescendantScalesReset.position.fromArray(asset.transform?.position || [0, 0, 0]);
+allDescendantScalesReset.rotation.fromArray(asset.transform?.rotation || [0, 0, 0]);
 allDescendantScalesReset.scale.fromArray(scale || [1, 1, 1]);
 allDescendantScalesReset.traverse(node => {
   if (node !== allDescendantScalesReset) node.scale.set(1, 1, 1);
 });
 const allScalesResetBounds = measure(allDescendantScalesReset);
 const allDescendantGroupsReset = root.clone(true);
+allDescendantGroupsReset.position.fromArray(asset.transform?.position || [0, 0, 0]);
+allDescendantGroupsReset.rotation.fromArray(asset.transform?.rotation || [0, 0, 0]);
 allDescendantGroupsReset.scale.fromArray(scale || [1, 1, 1]);
 const scaledNodes = [];
 allDescendantGroupsReset.traverse(node => {
