@@ -133,9 +133,6 @@ function updateSky() {
   sky.rayleigh.value = Number(ui.rayleigh.value);
   sky.mieCoefficient.value = 0.0038;
   sky.mieDirectionalG.value = 0.78;
-  sky.mieColor.value.setRGB(1,0.99,0.96);
-  sky.mieAlbedo.value.setRGB(1,1,1);
-  sky.sunSize.value = 0.88;
   sky.cloudCoverage.value = Number(ui.cloudCoverage.value);
   sky.cloudDensity.value = Number(ui.cloudDensity.value);
   sky.cloudElevation.value = Number(ui.cloudElevation.value);
@@ -212,6 +209,20 @@ function createFallbackTerrain() {
   group.add(mesh);
   return group;
 }
+async function loadFBXTerrain(path) {
+  const response = await fetch(path, { cache: 'no-cache' });
+  if (!response.ok) throw new Error('FBX HTTP ' + response.status + ' при загрузке ' + path);
+  const buffer = await response.arrayBuffer();
+  const headerBytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 32));
+  const header = new TextDecoder().decode(headerBytes);
+  const isBinaryFBX = header.startsWith('Kaydara FBX Binary  \\0\\x1a\\0');
+  const isAsciiFBX = /^\\s*;\\s*FBX\\s+\\d+\\.\\d+/i.test(header.replace(/^\\uFEFF/, ''));
+  if (!isBinaryFBX && !isAsciiFBX) {
+    const preview = header.replace(/[^\\x20-\\x7E]/g, '.').slice(0, 32).trim() || 'пустой ответ';
+    throw new Error('Сервер вернул не FBX (первые байты: ' + preview + ').');
+  }
+  return new FBXLoader().parse(buffer, './assets/');
+}
 async function loadRealTerrain() {
   const manifest = await fetch('./assets/real-terrain.json', { cache: 'no-cache' }).then(response => {
     if (!response.ok) throw new Error('Не удалось загрузить real-terrain.json (' + response.status + ')');
@@ -219,13 +230,15 @@ async function loadRealTerrain() {
   });
   let root, sourceError=null;
   try {
-    root=await new FBXLoader().loadAsync('./assets/real-terrain.fbx');
+    root=await loadFBXTerrain('./assets/real-terrain.fbx');
   } catch(error) {
     sourceError=error;
     root=createFallbackTerrain();
+    const reason=error && error.message ? error.message : String(error);
     statusText.textContent='Резервный процедурный рельеф · FBX недоступен';
+    statusText.title=reason;
     statusDot.classList.add('bad');
-    console.warn('[Atmosphere Lab] FBX terrain unavailable; using procedural fallback.',error);
+    console.warn('[Atmosphere Lab] '+reason+' Используется процедурный рельеф.');
   }
   const metersPerUnit = Number(manifest && manifest.mayaExport && manifest.mayaExport.metersPerUnit || 0.01);
   if (!Number.isFinite(metersPerUnit) || metersPerUnit <= 0 || metersPerUnit > 1) throw new Error('Некорректный metersPerUnit в real-terrain.json');
