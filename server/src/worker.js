@@ -21,6 +21,7 @@ export class PublicResort extends DurableObject {
     const localDev=/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin||'');
     if(origin!==ALLOWED_ORIGIN&&!localDev)return new Response('Origin not allowed',{status:403});
     const existing=this.activeSockets();
+    this.assignMissingSlots(existing);
     const pair=new WebSocketPair(),client=pair[0],server=pair[1];
     if(existing.length>=MAX_PLAYERS){
       try{server.accept();server.send(JSON.stringify({t:'full'}));}catch{}
@@ -35,6 +36,17 @@ export class PublicResort extends DurableObject {
       rateStart:Date.now(),rateCount:0,left:false
     });
     return new Response(null,{status:101,webSocket:client});
+  }
+
+  assignMissingSlots(entries){
+    const used=new Set(entries.map(entry=>entry.player.slot).filter(slot=>Number.isInteger(slot)&&slot>=0&&slot<MAX_PLAYERS));
+    for(const entry of entries){
+      if(Number.isInteger(entry.player.slot)&&entry.player.slot>=0&&entry.player.slot<MAX_PLAYERS)continue;
+      let slot=0;while(used.has(slot)&&slot<MAX_PLAYERS)slot++;
+      if(slot>=MAX_PLAYERS)continue;
+      entry.player.slot=slot;used.add(slot);
+      try{entry.socket.serializeAttachment(entry.player);this.send(entry.socket,{t:'slot',slot});}catch{}
+    }
   }
 
   activeSockets(){
