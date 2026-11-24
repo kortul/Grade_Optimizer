@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
   MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,
-  appendSharedMarker,normalizeMarker,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName
+  appendSharedMarker,normalizeMarker,normalizeMeasurement,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName
 } from './protocol.js';
 
 const ALLOWED_ORIGIN='https://kortul.github.io';
@@ -132,8 +132,10 @@ export class PublicResort extends DurableObject {
       for(const entry of recipients){
         for(const removed of markerUpdate.removedMarkers)this.send(entry.socket,{t:'marker-remove',id:removed.id});
       }
+      const storedMeasurements=await this.ctx.storage.get('sharedMeasurements');
+      const measurements=Array.isArray(storedMeasurements)?storedMeasurements.slice(-MAX_PLAYERS):[];
       const peers=recipients.filter(entry=>entry.socket!==socket).map(entry=>this.publicPlayer(entry.player));
-      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers,markers:markerUpdate.markers});
+      this.send(socket,{t:'welcome',id:player.id,slot:player.slot,players:peers,markers:markerUpdate.markers,measurements});
       const joined={t:'join',player:{id:player.id,slot:player.slot,name:player.name}};
       for(const entry of this.activeSockets())if(entry.socket!==socket&&entry.player.name)this.send(entry.socket,joined);
       return;
@@ -155,8 +157,49 @@ export class PublicResort extends DurableObject {
       player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
       const recipients=this.activeSockets().filter(entry=>entry.player.name);
       for(const entry of recipients){
-        for(const removed of markerUpdate.removedMarkers)this.send(entry.socket,{t:'marker-remove',id:removed.id});
+        // Confirm the new flag first; stale flags are removed only after its creation is broadcast.
         this.send(entry.socket,{t:'marker',marker:markerUpdate.acceptedMarker});
+        for(const removed of markerUpdate.removedMarkers)this.send(entry.socket,{t:'marker-remove',id:removed.id});
+      }
+      return;
+    }
+    if(msg.t==='measure'){
+      if(!player.name)return;
+      const measurement=normalizeMeasurement(msg.measurement,player.name,player.id);
+      if(!measurement){
+        player.lastStateRejectReason='invalid-measurement';
+        player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
+        return;
+      }
+      const stored=await this.ctx.storage.transaction(async transaction=>{
+        const current=await transaction.get('sharedMeasurements');
+        const measurements=Array.isArray(current)?current.filter(item=>item?.ownerId!==player.id):[];
+        measurements.push(measurement);
+        while(measurements.length>MAX_PLAYERS)measurements.shift();
+        await transaction.put('sharedMeasurements',measurements);
+        return measurement;
+      });
+      player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
+      const packet={t:'measure',measurement:stored};
+      for(const entry of this.activeSockets())if(entry.player.name)this.send(entry.socket,packet);
+      return;
+    }
+    if(msg.t==='measure-clear'){
+      if(!player.name)return;
+      const requestedId=msg.id?sanitizeClientId(msg.id):'';
+      if(msg.id&&!requestedId)return;
+      const removed=await this.ctx.storage.transaction(async transaction=>{
+        const current=await transaction.get('sharedMeasurements');
+        const measurements=Array.isArray(current)?current:[];
+        const existing=measurements.find(item=>item?.ownerId===player.id&&(!requestedId||item.id===requestedId));
+        if(!existing)return null;
+        await transaction.put('sharedMeasurements',measurements.filter(item=>item?.ownerId!==player.id));
+        return existing;
+      });
+      player.lastSeen=now;player.lastMessageAt=now;socket.serializeAttachment(player);
+      if(removed){
+        const packet={t:'measure-remove',ownerId:player.id,id:removed.id};
+        for(const entry of this.activeSockets())if(entry.player.name)this.send(entry.socket,packet);
       }
       return;
     }
@@ -184,8 +227,31 @@ export class PublicResort extends DurableObject {
     for(const entry of recipients)this.send(entry.socket,packet);
   }
 
-  webSocketClose(socket){this.announceLeave(socket);}
-  webSocketError(socket){this.announceLeave(socket);}
+  async clearMeasurementForPlayer(playerId){
+    if(!playerId)return;
+    const removed=await this.ctx.storage.transaction(async transaction=>{
+      const current=await transaction.get('sharedMeasurements');
+      const measurements=Array.isArray(current)?current:[];
+      const existing=measurements.find(item=>item?.ownerId===playerId);
+      if(!existing)return null;
+      await transaction.put('sharedMeasurements',measurements.filter(item=>item?.ownerId!==playerId));
+      return existing;
+    });
+    if(!removed)return;
+    const packet={t:'measure-remove',ownerId:playerId,id:removed.id};
+    for(const entry of this.activeSockets())if(entry.player.name)this.send(entry.socket,packet);
+  }
+
+  async webSocketClose(socket){
+    let player;try{player=socket.deserializeAttachment();}catch{player=null;}
+    this.announceLeave(socket);
+    await this.clearMeasurementForPlayer(player?.id);
+  }
+  async webSocketError(socket){
+    let player;try{player=socket.deserializeAttachment();}catch{player=null;}
+    this.announceLeave(socket);
+    await this.clearMeasurementForPlayer(player?.id);
+  }
   announceLeave(socket,{broadcast=true}={}){
     let player;try{player=socket.deserializeAttachment();}catch{player=null;}
     if(!player||player.left||!player.id)return;
