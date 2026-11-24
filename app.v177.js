@@ -6318,6 +6318,13 @@ function placeSharedFlagFromOverviewClick(event){
 // Flag placement is handled by the existing overview double-click / double-tap focus handlers.
 // Keep network state publication independent from the render loop: heavy scene
 // rendering must not throttle the other players' position updates.
+const clearMyFlagsButton=document.getElementById('clearMyFlags');
+if(clearMyFlagsButton){
+  const updateClearMyFlagsButton=()=>{clearMyFlagsButton.disabled=multiplayerClient.ownedMarkers.size===0;};
+  clearMyFlagsButton.addEventListener('click',()=>multiplayerClient.clearOwnedMarkers());
+  multiplayerClient.onMarkersChanged=updateClearMyFlagsButton;
+  updateClearMyFlagsButton();
+}
 const multiplayerPublishTimer=window.setInterval(()=>multiplayerClient.publish(buildMultiplayerState()),33);
 window.addEventListener('pagehide',()=>{
   window.clearInterval(multiplayerPublishTimer);
