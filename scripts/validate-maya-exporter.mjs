@@ -64,7 +64,7 @@ assert.equal(stageOne.mayaExport?.pluginVersion, '0.8.8');
 assert.equal(stageOne.mayaExport?.meshComponentCount, 22);
 assert.equal(stageOne.mayaExport?.components?.length, stageOne.mayaExport?.meshComponentCount);
 assert.equal(stageOne.mayaExport?.cadBridge?.inverseApplied, true);
-const stageOneFbx = 'clients/alpine-resort/' + stageOne.file.replace(/\\.(?:glb|fbx)$/i,'.fbx');
+const stageOneFbx = 'clients/alpine-resort/' + stageOne.file.replace(/\.(?:glb|fbx)$/i,'.fbx');
 assert.ok(existsSync(stageOneFbx), 'Original Stage1 FBX source is missing');
 assert.equal(statSync(stageOneFbx).size, stageOne.mayaExport.modelSizeBytes, 'Original Stage1 FBX byte size does not match its export manifest');
 
