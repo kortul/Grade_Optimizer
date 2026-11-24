@@ -1136,12 +1136,41 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
          <path d="m19.4 15 .05.05a1.8 1.8 0 0 1-2.55 2.55l-.05-.05a1.8 1.8 0 0 0-3.07 1.27v.14a1.8 1.8 0 0 1-3.6 0v-.08a1.8 1.8 0 0 0-3.07-1.27l-.05.05a1.8 1.8 0 0 1-2.55-2.55l.05-.05a1.8 1.8 0 0 0-1.27-3.07H3.2a1.8 1.8 0 0 1 0-3.6h.08a1.8 1.8 0 0 0 1.27-3.07L4.5 5.2a1.8 1.8 0 0 1 2.55-2.55l.05.05a1.8 1.8 0 0 0 3.07-1.27V1.2a1.8 1.8 0 0 1 3.6 0v.08a1.8 1.8 0 0 0 3.07 1.27l.05-.05A1.8 1.8 0 0 1 19.5 5.05l-.05.05a1.8 1.8 0 0 0 1.27 3.07h.14a1.8 1.8 0 0 1 0 3.6h-.08A1.8 1.8 0 0 0 19.4 15Z" transform="translate(1 1) scale(.92)"/>
        </svg>
      </button>
+      <button id="slopeLayersToggle" class="slope-layers-icon-button" type="button" aria-label="Слои" title="Слои анализа склонов" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/>
+        </svg>
+      </button>
+    
 
       </div>
   <div class="dayCycle" id="dayCycle">
     <button id="timeToggle" type="button" aria-expanded="false" aria-label="Показать управление временем" title="Время суток"><span aria-hidden="true">◷</span><strong id="timeCompactValue">13:30</strong></button>
     <div class="timeControls"><span>ВРЕМЯ</span><span class="timeValue" id="timeValue">13:30</span><input id="timeOfDay" type="range" min="0" max="24" step="0.25" value="13.5" aria-label="Время суток"/><button id="autoDay" type="button" title="Автоматическая смена времени">▶</button></div>
   </div>
+</div>
+
+<div id="slopeLayersPanel" role="region" aria-label="Слои анализа склонов" hidden>
+  <div class="slope-layers-head">
+    <div><strong>СЛОИ СКЛОНОВ</strong><small>Только режим «Обзор»</small></div>
+    <button id="slopeLayersClose" type="button" aria-label="Закрыть слои">×</button>
+  </div>
+  <label class="slope-layer-row" for="slopeLayer_angles">
+    <span class="slope-layer-symbol slope-angle-symbol">°</span>
+    <span><strong>Углы склонов</strong><small>Значения через каждые 20 м</small></span>
+    <input id="slopeLayer_angles" type="checkbox" checked/>
+  </label>
+  <label class="slope-layer-row" for="slopeLayer_difficulty">
+    <span class="slope-layer-symbol slope-difficulty-symbol"><i></i><i></i><i></i></span>
+    <span><strong>Сложность склонов</strong><small>Цвет линии по участкам</small></span>
+    <input id="slopeLayer_difficulty" type="checkbox" checked/>
+  </label>
+  <label class="slope-layer-row" for="slopeLayer_names">
+    <span class="slope-layer-symbol slope-name-symbol">A</span>
+    <span><strong>Названия склонов</strong><small>Подписи центральных линий</small></span>
+    <input id="slopeLayer_names" type="checkbox" checked/>
+  </label>
+  <div id="slopeLayersStatus" role="status">Анализ ещё не экспортирован из Maya.</div>
 </div>
 
 <div id="weatherPanel" role="region" aria-label="Настройки погоды">
@@ -1889,7 +1918,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v177.js"></script>
+<script type="module" src="./app.v178.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -1951,7 +1980,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v177.js"]');
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v178.js"]');
   moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить приложение или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
@@ -2519,4 +2548,39 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 @media(max-width:620px){#sceneBar .sceneMode .multiplayer-status{grid-column:1/-1;justify-self:start;max-width:100%}}
 
 </style>
+
+<style id="slope-analysis-style">
+#sceneBar #slopeLayersToggle{display:inline-flex;align-items:center;justify-content:center;flex:0 0 36px;width:36px!important;height:36px;min-width:36px;padding:7px!important;border:1px solid rgba(140,190,224,.2);border-radius:9px;background:rgba(40,59,75,.94);color:#d9eaf6}
+#sceneBar #slopeLayersToggle svg{display:block;width:20px;height:20px}
+#sceneBar #slopeLayersToggle.active{background:linear-gradient(135deg,#278b67,#36ac7e);color:#fff}
+#sceneBar #slopeLayersToggle[hidden]{display:none!important}
+#slopeLayersPanel{position:absolute;z-index:20;top:62px;left:60px;width:min(300px,calc(100vw - 24px));padding:12px;border:1px solid rgba(174,205,230,.2);border-radius:12px;background:rgba(17,26,36,.97);box-shadow:0 16px 42px rgba(0,0,0,.42);backdrop-filter:blur(16px);color:#eaf2f8;pointer-events:auto}
+#slopeLayersPanel[hidden]{display:none!important}
+.slope-layers-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:5px;border-bottom:1px solid rgba(255,255,255,.1)}
+.slope-layers-head strong{display:block;color:#c6d9eb;font-size:11px;letter-spacing:1px}
+.slope-layers-head small{display:block;margin-top:3px;color:#8196a8;font-size:9px}
+#slopeLayersPanel #slopeLayersClose{width:28px;height:28px;min-width:28px;margin:0;padding:0;border-radius:7px;background:#2b3947;color:#dce8f1;font-size:19px}
+.slope-layer-row{display:grid!important;grid-template-columns:28px minmax(0,1fr) 18px;align-items:center;gap:9px;padding:10px 2px;margin:0!important;border-bottom:1px solid rgba(255,255,255,.055);cursor:pointer}
+.slope-layer-row>span:nth-child(2){min-width:0}
+.slope-layer-row strong{display:block;color:#e8f0f6;font-size:11px;font-weight:700}
+.slope-layer-row small{display:block;margin-top:3px;color:#879bac;font-size:9px}
+.slope-layer-row input{width:16px;height:16px;margin:0;accent-color:#42bd87}
+.slope-layer-symbol{display:flex;align-items:center;justify-content:center;width:27px;height:27px;border:1px solid rgba(160,195,220,.16);border-radius:7px;background:rgba(118,160,190,.08);color:#9fd0ee;font-size:16px;font-weight:800}
+.slope-difficulty-symbol{gap:2px}
+.slope-difficulty-symbol i{width:5px;height:15px;border-radius:2px;background:#21d36b}
+.slope-difficulty-symbol i:nth-child(2){background:#3988ff}
+.slope-difficulty-symbol i:nth-child(3){background:#ff5353}
+.slope-name-symbol{font-size:13px}
+#slopeLayersStatus{margin-top:10px;padding:7px 8px;border-radius:6px;background:rgba(105,150,185,.08);color:#8faec4;font-size:9px;line-height:1.45}
+.slope-analysis-label{display:inline-flex;align-items:center;justify-content:center;max-width:220px;padding:3px 7px;border:1px solid color-mix(in srgb,var(--slope-analysis-color) 76%,transparent);border-radius:6px;background:rgba(13,20,27,.88);color:#fff;font:750 11px/1.2 Inter,system-ui,sans-serif;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.8);box-shadow:0 2px 8px rgba(0,0,0,.22);pointer-events:none;user-select:none}
+.slope-analysis-angle{font-variant-numeric:tabular-nums;border-color:var(--slope-analysis-color);color:#fff}
+.slope-analysis-name{padding:5px 9px;font-size:12px;letter-spacing:.2px;border-width:1.5px}
+.slope-difficulty-green{--slope-analysis-color:#21d36b}
+.slope-difficulty-blue{--slope-analysis-color:#3988ff}
+.slope-difficulty-red{--slope-analysis-color:#ff5353}
+.slope-difficulty-black{--slope-analysis-color:#d5dce3}
+#app.skier-mode #slopeLayersToggle,#app.drone-mode #slopeLayersToggle,#app.skier-mode #slopeLayersPanel,#app.drone-mode #slopeLayersPanel{display:none!important}
+@media(max-width:700px){#slopeLayersPanel{top:66px;left:12px;width:min(300px,calc(100vw - 24px))}}
+</style>
+
 </body></html>
