@@ -71,9 +71,9 @@ assert.ok(app.includes("restoreCadBridgeWorkingCoordinates(root,manifest?.mayaEx
           'canonical terrain loader must honor its export metadata');
 assert.ok(app.includes(String.raw`if(/\.fbx$/i.test(item.file))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id);`),
           'client loader must restore only source FBX files');
-assert.ok(app.includes('(attribute.getX(index)-offset[0])*scale') &&
-          app.includes('(attribute.getY(index)-offset[1])*scale') &&
-          app.includes('(attribute.getZ(index)-offset[2])*scale'),
+assert.ok(app.includes('relative?x*scale:(x-offset[0])*scale') &&
+          app.includes('relative?y*scale:(y-offset[1])*scale') &&
+          app.includes('relative?z*scale:(z-offset[2])*scale'),
           'browser must reverse the CAD Bridge inverse across all three vertex axes');
 assert.ok(app.includes('root.scale.multiplyScalar(metersPerUnit)'),
           'canonical terrain must convert Maya linear units into metres');
