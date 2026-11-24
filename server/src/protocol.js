@@ -71,6 +71,30 @@ export function appendSharedMarker(inputMarkers, marker) {
   return {...update,acceptedMarker:marker};
 }
 
+export function syncSharedMarkers(inputMarkers, inputDesiredMarkers, owner, ownerId) {
+  const cleanOwnerId=sanitizeClientId(ownerId);
+  const current=Array.isArray(inputMarkers)?inputMarkers.slice():[];
+  if(!cleanOwnerId)return {markers:current,addedMarkers:[],removedMarkers:[]};
+  for(const existing of current){
+    if(existing&&!existing.ownerId)existing.ownerId='legacy:'+sanitizeName(existing.owner);
+  }
+  const desired=[],seen=new Set();
+  const candidates=Array.isArray(inputDesiredMarkers)?inputDesiredMarkers:[];
+  for(const input of candidates){
+    const marker=normalizeMarker(input,owner,cleanOwnerId);
+    if(!marker||seen.has(marker.id))continue;
+    seen.add(marker.id);
+    desired.push(marker);
+  }
+  const limitedDesired=desired.slice(-MAX_MARKERS_PER_PLAYER);
+  const otherOwners=current.filter(marker=>marker?.ownerId!==cleanOwnerId);
+  const update=pruneSharedMarkers([...otherOwners,...limitedDesired]);
+  const retainedIds=new Set(update.markers.map(marker=>marker?.id).filter(Boolean));
+  const removedMarkers=current.filter(marker=>marker?.id&&!retainedIds.has(marker.id));
+  const addedMarkers=update.markers.filter(marker=>marker?.ownerId===cleanOwnerId);
+  return {markers:update.markers,addedMarkers,removedMarkers};
+}
+
 export function normalizeMeasurement(input, owner, ownerId) {
   if(!input||typeof input!=='object'||Array.isArray(input))return null;
   const id=sanitizeClientId(input.id);
