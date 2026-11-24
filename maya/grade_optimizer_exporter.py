@@ -1099,6 +1099,72 @@ def _is_component_under_root(component, root):
     return bool(transform and root and (transform == root or transform.startswith(root + "|")))
 
 
+
+def find_working_group(node):
+    """
+    Find the enclosing MAYA_WORKING_SCENE ancestor for any mesh/transform path.
+
+    The selected slopes may be distributed across arbitrary nested groups.
+    Walk the actual Maya DAG parents instead of assuming a fixed hierarchy.
+    """
+    if not node:
+        return None
+
+    matches = cmds.ls(str(node), long=True) or []
+    current = matches[0] if matches else str(node)
+    if not cmds.objExists(current):
+        return None
+
+    # A mesh shape is below its transform; start at the transform so the
+    # returned path always identifies the actual working-scene group.
+    try:
+        if cmds.nodeType(current) == "mesh":
+            parents = cmds.listRelatives(current, parent=True, fullPath=True) or []
+            if parents:
+                current = parents[0]
+    except Exception:
+        pass
+
+    while current and cmds.objExists(current):
+        leaf = current.rsplit("|", 1)[-1]
+        if leaf.startswith("MAYA_WORKING_SCENE"):
+            return current
+        parents = cmds.listRelatives(current, parent=True, fullPath=True) or []
+        current = parents[0] if parents else None
+
+    return None
+
+
+def get_bridge_data(working_group):
+    """
+    Read the CAD Bridge v14 offset and uniform scale stored on a working group.
+    Returns (offset_xyz, scale), or None when the Bridge metadata is absent.
+    """
+    if not working_group or not cmds.objExists(working_group):
+        return None
+
+    attribute_names = (
+        "bridgeOriginalOffsetX",
+        "bridgeOriginalOffsetY",
+        "bridgeOriginalOffsetZ",
+        "bridgeOriginalScale"
+    )
+    if not all(cmds.attributeQuery(name, node=working_group, exists=True)
+               for name in attribute_names):
+        return None
+
+    try:
+        offset = tuple(
+            float(cmds.getAttr(working_group + "." + name))
+            for name in attribute_names[:3]
+        )
+        scale = float(cmds.getAttr(working_group + ".bridgeOriginalScale"))
+    except Exception:
+        return None
+
+    return offset, scale
+
+
 def _bridge_context_for_export_root(source_root, components):
     """
     Read the CAD Bridge inverse for one selected DAG root.
