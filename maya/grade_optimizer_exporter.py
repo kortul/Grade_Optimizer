@@ -1282,9 +1282,9 @@ def _all_transform_nodes(root):
 def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
                                       stage_one=False):
     """
-    Duplicate one selected branch, remove the CAD Bridge transform and bake
-    world-space mesh points into identity transforms. Original Maya nodes are
-    never changed. Each mesh shape remains a separate FBX object.
+    Duplicate one selected branch, preserve the CAD Bridge working-world
+    transform, and bake world-space mesh points into identity transforms.
+    Original Maya nodes are never changed. Each mesh shape remains separate.
 
     Every selected branch keeps its authored hierarchy transforms. Their
     combined world-space positions are baked into identity transforms.
@@ -1329,8 +1329,8 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
     # captures their combined positions without flattening nested scales or
     # zeroing ToSketchfab translation.
 
-    # Capture world-space points after Bridge inversion and (for Stage 1)
-    # after the compatibility normalisation above.
+    # Capture world-space points after preserving the full Maya hierarchy
+    # and CAD Bridge working-world transforms.
     mesh_components = collect_meshes(
         selection_only=True, selection_roots=[baked_root]
     )
@@ -1383,8 +1383,8 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
 
     cmds.select(baked_root, replace=True)
     print(
-        "Temporary CAD-normalized export copy: %s | meshes: %d | Bridge inverse: %s | Stage1 normalisation: %s"
-        % (baked_root, len(mesh_components), bool(bridge_context), bool(stage_one))
+        "Temporary world-space export copy: %s | meshes: %d | CAD Bridge context: %s"
+        % (baked_root, len(mesh_components), bool(bridge_context))
     )
     return baked_root
 
