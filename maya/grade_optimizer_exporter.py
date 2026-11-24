@@ -17,7 +17,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.9.1"
+VERSION = "0.9.2"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1148,25 +1148,16 @@ def _selected_nurbs_curve_transforms():
 
 
 def _slope_bridge_context(curve):
+    """
+    Identify the enclosing Maya working group for provenance and cache invalidation.
+
+    Important: this is metadata only. NURBS points are sampled in MSpace.kWorld,
+    which already includes the entire MAYA_WORKING_SCENE transform. Do not apply
+    the CAD Bridge inverse here: the canonical site terrain is also in this
+    working-world frame.
+    """
     working_group = find_working_group(curve)
-    if not working_group:
-        return None
-    bridge_data = get_bridge_data(working_group)
-    if not bridge_data:
-        raise RuntimeError(
-            "У центральной линии найден %s, но отсутствуют "
-            "bridgeOriginalOffset / bridgeOriginalScale. "
-            "Нельзя безопасно экспортировать координаты."
-            % working_group.rsplit("|", 1)[-1]
-        )
-    offset, scale = bridge_data
-    if abs(float(scale)) < 1e-9:
-        raise RuntimeError("CAD Bridge scale равен нулю: " + working_group)
-    return {
-        "group": working_group,
-        "offset": [float(value) for value in offset],
-        "scale": float(scale)
-    }
+    return {"group": working_group} if working_group else None
 
 
 def _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit):
@@ -1200,37 +1191,28 @@ def _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit):
         "worldMatrix": [round(float(value), 6) for value in matrix],
         "linearUnit": str(linear_unit),
         "metersPerUnit": float(meters_per_unit),
-        "bridge": bridge_context
+        # Bump the source digest whenever the exported coordinate frame changes.
+        # This invalidates curves previously cached after the incorrect Bridge inverse.
+        "coordinateFrame": "maya-working-world-v2",
+        "workingGroup": (bridge_context or {}).get("group")
     }
     encoded = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _slope_correct_bridge_points(points_cm, bridge_context, meters_per_unit):
-    """Convert API world cm back from CAD Bridge working coordinates."""
-    if not bridge_context:
-        return [list(point) for point in points_cm]
-    cm_per_scene_unit = float(meters_per_unit) * 100.0
-    offset = bridge_context["offset"]
-    scale = float(bridge_context["scale"])
-    corrected = []
-    for point in points_cm:
-        scene_point = [float(value) / cm_per_scene_unit for value in point]
-        original_scene_point = [
-            scene_point[axis] / scale + float(offset[axis])
-            for axis in range(3)
-        ]
-        corrected.append([value * cm_per_scene_unit for value in original_scene_point])
-    return corrected
-
-
 def _slope_points_cm_to_meters(points):
-    """Convert Maya API world-space centimetres to project metres."""
+    """Convert Maya API world-space centimetres to project metres without changing the world frame."""
     return [[round(float(value) / 100.0, 5) for value in point] for point in points]
 
 
-def _sample_slope_curve_points(curve, bridge_context, meters_per_unit):
-    """Export only dense world-space curve geometry in corrected project metres."""
+def _sample_slope_curve_points(curve):
+    """
+    Export the fully transformed Maya world-space NURBS curve in project metres.
+
+    MSpace.kWorld already includes the transform of every ancestor, including
+    MAYA_WORKING_SCENE. The website terrain uses that same working-world frame,
+    so these points must not be converted back through bridgeOriginalOffset/Scale.
+    """
     shape = _slope_curve_shape(curve)
     selection = om2.MSelectionList()
     selection.add(shape)
@@ -1243,8 +1225,7 @@ def _sample_slope_curve_points(curve, bridge_context, meters_per_unit):
         parameter = minimum + (maximum - minimum) * fraction
         point = curve_fn.getPointAtParam(parameter, om2.MSpace.kWorld)
         sampled.append((float(point.x), float(point.y), float(point.z)))
-    corrected = _slope_correct_bridge_points(sampled, bridge_context, meters_per_unit)
-    return _slope_points_cm_to_meters(corrected)
+    return _slope_points_cm_to_meters(sampled)
 
 
 def export_slope_centerlines(*_):
@@ -1292,7 +1273,7 @@ def export_slope_centerlines(*_):
                 reused += 1
             else:
                 record = {
-                    "points": _sample_slope_curve_points(curve, bridge_context, meters_per_unit),
+                    "points": _sample_slope_curve_points(curve),
                 }
                 exported += 1
 
@@ -1303,6 +1284,10 @@ def export_slope_centerlines(*_):
                 "sourceUuid": source_uuid,
                 "sourceDigest": digest
             })
+            if bridge_context:
+                record["workingGroup"] = bridge_context["group"]
+            else:
+                record.pop("workingGroup", None)
             if cached and cached.get("sourcePath") != str(curve):
                 updated_by_path.pop(str(cached.get("sourcePath")), None)
             updated_by_path[str(curve)] = record
@@ -1315,6 +1300,8 @@ def export_slope_centerlines(*_):
             "schemaVersion": "1.0",
             "source": "maya-nurbs-centerlines",
             "coordinateSystem": "project-world",
+            "worldFrame": "maya-working-world",
+            "coordinateFrameVersion": 2,
             "units": "meters",
             "curves": ordered_curves
         }
@@ -1341,7 +1328,9 @@ def export_slope_centerlines(*_):
         message = (
             "Геометрия центральных линий экспортирована в clients/%s/scene.json.\n\n"
             "Кривых в наборе: %d\nНовых / изменённых кривых: %d\nВзято из кэша: %d\n"
-            "Maya экспортирует только точки NURBS-кривых в мировых координатах (метры). "
+            "Maya экспортирует точки NURBS-кривых в MSpace.kWorld с учётом всей "
+            "иерархии MAYA_WORKING_SCENE. Обратная CAD Bridge трансформация для этих "
+            "кривых НЕ применяется: сайт использует ту же working-world систему, что и рельеф. "
             "Углы, интервалы и сложность рассчитывает сайт.\n\n%s"
         ) % (client_slug, len(ordered_curves), exported, reused, git_report)
         cmds.confirmDialog(
