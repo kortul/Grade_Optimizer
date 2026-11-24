@@ -6272,18 +6272,7 @@ const multiplayerClient=new ResortMultiplayer({
   poseNodeNames:REMOTE_SKIER_POSE_NODES
 });
 multiplayerClient.connect();
-const clearMyFlagsButton=document.getElementById('clearMyFlags');
-if(clearMyFlagsButton){
-  const refreshOwnFlagsButton=()=>{
-    const count=multiplayerClient.ownedMarkers.size;
-    clearMyFlagsButton.disabled=count===0;
-    clearMyFlagsButton.textContent=count?'ФЛАЖКИ · '+count+'/10':'ФЛАЖКОВ НЕТ';
-  };
-  clearMyFlagsButton.addEventListener('click',()=>multiplayerClient.clearOwnedMarkers());
-  multiplayerClient.onMarkersChanged=refreshOwnFlagsButton;
-  refreshOwnFlagsButton();
-}
-multiplayerStatusElement.title='В обзоре: двойной клик по земле ставит флажок; двойной клик по своему флажку удаляет его. Кнопка ФЛАЖКИ очищает все твои флажки. Линейка синхронизируется со всеми участниками.';
+multiplayerStatusElement.title='В обзоре: двойной клик по земле ставит пронумерованный флажок; двойной клик по своему флажку удаляет его. Номер отображается над флажком. Линейка синхронизируется со всеми участниками.';
 const sharedFlagRaycaster=new THREE.Raycaster();
 const sharedFlagPointer=new THREE.Vector2();
 const sharedFlagNormalMatrix=new THREE.Matrix3();
