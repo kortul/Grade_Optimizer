@@ -5,34 +5,71 @@
   "file": "assets/real-terrain.fbx",
   "category": "terrain",
   "activeTerrain": true,
-  "updatedAt": "2026-11-23T15:13:59Z",
+  "updatedAt": "2026-11-24T07:41:57Z",
   "mayaExport": {
-    "pluginVersion": "0.3.0",
+    "pluginVersion": "0.8.2",
     "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
     "mayaVersion": "2026",
     "linearUnit": "cm",
-    "modelSizeBytes": 4058272,
+    "modelSizeBytes": 4764752,
     "meshComponentCount": 1,
     "materialNames": [
       "openPBR_shader1"
     ],
     "worldBounds": [
-      -265699.25,
-      1478.509033203125,
-      -374683.03125,
-      186625.75,
-      13422.923828125,
-      65470.09375
+      218438.4375,
+      1.52850341796875,
+      -50527.5625,
+      218890.765625,
+      13.472900390625,
+      -50087.41015625
     ],
     "nodeMetadata": [],
     "components": [
       {
-        "dagPath": "|terrainShape",
-        "name": "terrainShape",
-        "shape": "terrainShapeShape",
+        "dagPath": "|GO_EXPORT_Original_TopoGeo_001",
+        "name": "GO_EXPORT_Original_TopoGeo_001",
+        "shape": "GO_EXPORT_Original_TopoGeo_001Shape",
         "materials": [
           "openPBR_shader1"
         ]
+      }
+    ],
+    "metersPerUnit": 0.01,
+    "exportedRootNames": [
+      "Original_TopoGeo"
+    ],
+    "sourceComponents": [
+      {
+        "dagPath": "|MAYA_WORKING_SCENE_001|ORIGINAL_TOPO|Original_TopoGeo",
+        "name": "Original_TopoGeo",
+        "shape": "Original_TopoGeoShape",
+        "materials": [
+          "openPBR_shader1"
+        ]
+      }
+    ],
+    "cadBridge": {
+      "inverseApplied": true,
+      "workingGroups": [
+        {
+          "workingGroup": "|MAYA_WORKING_SCENE_001",
+          "originalOffset": [
+            218704.14299926758,
+            0.0,
+            -50152.88024902344
+          ],
+          "originalScale": 1000.0
+        }
+      ],
+      "geometryBakedToMayaWorld": true
+    },
+    "fbxMaterialConversions": [
+      {
+        "sourceMaterial": "openPBR_shader1",
+        "sourceType": "openPBRSurface",
+        "exportMaterial": "GO_FBX_openPBR_shader1_MAT",
+        "colorAttribute": "baseColor"
       }
     ]
   }
