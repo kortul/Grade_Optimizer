@@ -6607,9 +6607,10 @@ async function setSceneMode(mode){
 
     if(!state.terrain)state.terrain=terrain;
     applySkierPresentation();
+    const multiplayerSlot=Number.isInteger(multiplayerClient.slot)?multiplayerClient.slot:0;
     const spawnHint=dronePose?{
-      position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true
-    }:null;
+      position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true,multiplayerSlot
+    }:{multiplayerSlot};
     skierModePreparing=true;
     let skierStarted=false;
     try{
