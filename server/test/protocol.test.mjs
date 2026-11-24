@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeMeasurement,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName} from '../src/protocol.js';
+import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeMeasurement,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName,syncSharedMarkers} from '../src/protocol.js';
 
 test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
@@ -83,6 +83,30 @@ test('legacy flags are pruned to three on connection, before placing another fla
   assert.ok(result.markers.every(item=>item.ownerId==='legacy:Old visitor'));
 });
 
+test('marker sync replaces only the sender set and broadcasts server-authoritative additions/removals',()=>{
+  const ownerA='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
+  const ownerB='54395181-3418-4593-af6c-1bd9f4a2173c';
+  const makeId=number=>'550e8400-e29b-41d4-a716-'+String(number).padStart(12,'0');
+  const make=(number,owner,name)=>normalizeMarker({id:makeId(number),p:[number,0,0]},name,owner);
+  const initial=[make(1,ownerA,'Pavel'),make(2,ownerA,'Pavel'),make(3,ownerB,'Skier B')];
+  const replacement=syncSharedMarkers(initial,[{id:makeId(4),p:[4,0,0]},{id:makeId(5),p:[5,0,0]}],'Pavel',ownerA);
+  assert.deepEqual(replacement.markers.map(item=>item.id),[makeId(3),makeId(4),makeId(5)]);
+  assert.deepEqual(replacement.removedMarkers.map(item=>item.id),[makeId(1),makeId(2)]);
+  assert.deepEqual(replacement.addedMarkers.map(item=>item.id),[makeId(4),makeId(5)]);
+  const cleared=syncSharedMarkers(replacement.markers,[],'Pavel',ownerA);
+  assert.deepEqual(cleared.markers.map(item=>item.id),[makeId(3)]);
+  assert.deepEqual(cleared.removedMarkers.map(item=>item.id),[makeId(4),makeId(5)]);
+});
+test('marker sync keeps newest three flags and enforces global cap',()=>{
+  const owner='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
+  const makeId=number=>'550e8400-e29b-41d4-a716-'+String(number).padStart(12,'0');
+  const others=Array.from({length:MAX_SHARED_MARKERS},(_,index)=>normalizeMarker({id:makeId(index+1),p:[index,0,0]},'Other '+index,'54395181-3418-4593-af6c-1bd9f4a2173c'));
+  const update=syncSharedMarkers(others,[1,2,3,4].map(number=>({id:makeId(50+number),p:[number,0,0]})),'Pavel',owner);
+  assert.equal(update.addedMarkers.length,3);
+  assert.equal(update.markers.length,MAX_SHARED_MARKERS);
+  assert.deepEqual(update.addedMarkers.map(item=>item.id),[makeId(52),makeId(53),makeId(54)]);
+  assert.equal(update.removedMarkers.length,3);
+});
 test('shared ruler measurements validate one or two world-space points',()=>{
   const ownerId='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
   const measurement=normalizeMeasurement({
