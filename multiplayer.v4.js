@@ -224,7 +224,7 @@ export class ResortMultiplayer {
     socket.onerror=()=>{try{socket.close();}catch{}};
     socket.onclose=event=>{
       if(this.socket!==socket)return;
-      this.lastClose={code:event.code,reason:event.reason||'',wasClean:event.wasClean};
+      this.lastClose={code:event.code,reason:event.reason||'',wasClean:event.wasClean,at:Date.now()};
       console.warn('[Grade Optimizer multiplayer] WebSocket closed',this.lastClose);
       this.socket=null;this.connected=false;this.id='';this.slot=null;
       // A local transport reconnect does not mean every remote skier has left.
@@ -566,6 +566,7 @@ export class ResortMultiplayer {
     return{
       configured:!!this.endpoint,connected:this.connected,full:this.full,retries:this.retries,reconnectScheduled:!!this.reconnectTimer,
       id:this.id,clientId:this.clientId,slot:this.slot,players:this.names.size,visibleOverviewCameras:[...this.players.values()].filter(peer=>peer.mode==='overview').length,sharedFlags:this.markers.size,
+      remotePlayers:[...this.players.values()].map(peer=>({id:peer.id,name:peer.name,mode:peer.mode,lastStateAgeMs:Math.round(now-peer.lastStateAt)})),
       sentStates:this.sentStates,receivedStates:this.receivedStates,
       sessionAgeMs:this.sessionStartedAt?Math.round(now-this.sessionStartedAt):null,
       sessionSentStates:this.sentStates-this.sessionSentBaseline,sessionReceivedStates:this.receivedStates-this.sessionReceivedBaseline,
