@@ -1054,6 +1054,24 @@ export class SkierController {
     this.bounds.setFromObject(this.terrain);
     const center=this.bounds.getCenter(new THREE.Vector3());
     const requestedSlot=((Math.floor(Number(spawnIndex)||0)%4)+4)%4;
+    const selectSpawnPool=candidates=>{
+      if(!candidates.length)return [];
+      let bestPool=[];
+      for(const minimumSpacing of [10,7,5,3,1.8]){
+        const pool=[];
+        for(const candidate of candidates){
+          const point=candidate.hit.point;
+          if(pool.every(other=>{
+            const otherPoint=other.hit.point;
+            return Math.hypot(point.x-otherPoint.x,point.z-otherPoint.z)>=minimumSpacing;
+          }))pool.push(candidate);
+          if(pool.length===4)break;
+        }
+        if(pool.length>bestPool.length)bestPool=pool;
+        if(bestPool.length===4)break;
+      }
+      return bestPool.length?bestPool:candidates.slice(0,1);
+    };
     const meshes=[];
     this.terrain.traverse(object=>{
       if(object.isMesh&&object.geometry?.attributes?.position)meshes.push(object);
@@ -1171,20 +1189,8 @@ export class SkierController {
           }
         }
       }
-      // Relax the spacing only when the imported piste cannot provide four
-      // ten-metre-separated summit points. Never clamp slots 3/4 onto one point.
-      let pool=[];
-      for(const spacing of [10,7,5,3,1.8]){
-        const spaced=[];
-        for(const candidate of starts){
-          const point=candidate.hit.point;
-          if(spaced.every(other=>Math.hypot(point.x-other.hit.point.x,point.z-other.hit.point.z)>=spacing))spaced.push(candidate);
-          if(spaced.length>=4)break;
-        }
-        if(spaced.length>pool.length)pool=spaced;
-        if(spaced.length>=4)break;
-      }
-      if(!pool.length)pool=starts;
+      // Pick as many genuinely separate starts as this piste supports.
+      const pool=selectSpawnPool(starts);
       const index=requestedSlot%pool.length;
       const hit=this._setSpawn(pool[index].hit,center);
       this.lastSpawnInfo={...this.lastSpawnInfo,multiplayerSlot:requestedSlot,spawnPoolSize:pool.length,selectedSpawnIndex:index};
@@ -1192,7 +1198,7 @@ export class SkierController {
     }
 
     // Bounded fallback grid for irregular / heavily triangulated piste meshes.
-    let best=null,bestScore=-Infinity;
+    const gridStarts=[];
     for(let ix=1;ix<12;ix++)for(let iz=1;iz<12;iz++){
       const x=THREE.MathUtils.lerp(this.bounds.min.x,this.bounds.max.x,ix/12);
       const z=THREE.MathUtils.lerp(this.bounds.min.z,this.bounds.max.z,iz/12);
@@ -1201,11 +1207,16 @@ export class SkierController {
       const slope=THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(hit.normal.y,-1,1)));
       const clearance=this._downhillClearance(hit.point.x,hit.point.z,hit.normal,[6,12,18,26]);
       const score=hit.point.y+clearance*0.10-Math.abs(slope-16)*0.04;
-      if(score>bestScore){bestScore=score;best=hit;}
+      if(gridStarts.every(other=>Math.hypot(hit.point.x-other.hit.point.x,hit.point.z-other.hit.point.z)>=1.8)){
+        gridStarts.push({hit,slope,clearance,score});
+      }
     }
-    if(best){
-      const hit=this._setSpawn(best,center);
-      this.lastSpawnInfo={...this.lastSpawnInfo,multiplayerSlot:0};
+    gridStarts.sort((a,b)=>b.score-a.score);
+    if(gridStarts.length){
+      const pool=selectSpawnPool(gridStarts);
+      const index=requestedSlot%pool.length;
+      const hit=this._setSpawn(pool[index].hit,center);
+      this.lastSpawnInfo={...this.lastSpawnInfo,multiplayerSlot:requestedSlot,spawnPoolSize:pool.length,selectedSpawnIndex:index,spawnSearch:'grid-fallback'};
       return hit;
     }
 
@@ -1227,18 +1238,24 @@ export class SkierController {
       }
     }
     fallbackCandidates.sort((a,b)=>b.baseScore-a.baseScore);
-    let fallback=null,fallbackScore=-Infinity;
-    for(const candidate of fallbackCandidates.slice(0,16)){
+    const evaluatedFallbacks=fallbackCandidates.map(candidate=>{
       const clearance=this._downhillClearance(
         candidate.hit.point.x,candidate.hit.point.z,candidate.hit.normal,[6,12,18,24]
       );
-      const score=candidate.baseScore+clearance*0.9;
-      if(score>fallbackScore){fallbackScore=score;fallback=candidate;}
-    }
-    if(!fallback&&fallbackCandidates.length)fallback=fallbackCandidates[0];
-    if(!fallback)return null;
-    const hit=this._setSpawn(fallback.hit,center);
-    this.lastSpawnInfo={...this.lastSpawnInfo,multiplayerSlot:0};
+      return {...candidate,clearance,score:candidate.baseScore+clearance*0.9};
+    }).sort((a,b)=>b.score-a.score);
+    if(!evaluatedFallbacks.length)return null;
+    const pool=selectSpawnPool(evaluatedFallbacks);
+    const index=requestedSlot%pool.length;
+    const chosen=pool[index];
+    const hit=this._setSpawn(chosen.hit,center);
+    this.lastSpawnInfo={
+      ...this.lastSpawnInfo,
+      multiplayerSlot:requestedSlot,
+      spawnPoolSize:pool.length,
+      selectedSpawnIndex:index,
+      spawnSearch:'last-resort'
+    };
     return hit;
   }
 
