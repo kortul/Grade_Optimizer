@@ -3,6 +3,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
+import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
 import {
   exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
   isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV,
@@ -19,6 +20,8 @@ const frameMsEl = document.getElementById('frameMs');
 const terrainInfoEl = document.getElementById('terrainInfo');
 const ui = {
   time: document.getElementById('timeOfDay'), timeValue: document.getElementById('timeValue'),
+  sunIntensity: document.getElementById('sunIntensity'), sunIntensityValue: document.getElementById('sunIntensityValue'),
+  dayCycle: document.getElementById('dayCycleToggle'), dayLength: document.getElementById('dayCycleLength'), dayLengthValue: document.getElementById('dayCycleLengthValue'),
   turbidity: document.getElementById('turbidity'), turbidityValue: document.getElementById('turbidityValue'),
   rayleigh: document.getElementById('rayleigh'), rayleighValue: document.getElementById('rayleighValue'),
   cloudCoverage: document.getElementById('cloudCoverage'), cloudCoverageValue: document.getElementById('cloudCoverageValue'),
@@ -35,9 +38,12 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 1000000);
 const hemisphere = new THREE.HemisphereLight(0xc8e2ff, 0x4c5149, 0.8);
 scene.add(hemisphere);
-const sunLight = new THREE.DirectionalLight(0xffe8c8, 2.2);
+const sunLight = new THREE.DirectionalLight(0xfff0df, 1.8);
 sunLight.castShadow = false;
 scene.add(sunLight, sunLight.target);
+const moonLight = new THREE.DirectionalLight(0x9eb6dc, 0.16);
+moonLight.castShadow = false;
+scene.add(moonLight, moonLight.target);
 const sky = new SkyMesh();
 sky.scale.setScalar(450000);
 sky.renderOrder = -1000;
@@ -47,9 +53,13 @@ if (sky.material) {
   sky.material.depthTest = false;
 }
 scene.add(sky);
+const sunDisc=createSolarDisc(THREE);
+scene.add(sunDisc);
 const sunDirection = new THREE.Vector3();
 let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
+let dayCyclePlaying=false;
+let solarState=null;
 let fogPipeline;
 
 const noiseTexture = createNoiseTexture3D(64);
@@ -101,32 +111,62 @@ function updateSkyLabels() {
   ui.cloudCoverageValue.textContent = Math.round(Number(ui.cloudCoverage.value) * 100) + '%';
   ui.cloudDensityValue.textContent = Math.round(Number(ui.cloudDensity.value) * 100) + '%';
   ui.cloudElevationValue.textContent = Math.round(Number(ui.cloudElevation.value) * 100) + '%';
+  ui.sunIntensityValue.textContent = Math.round(Number(ui.sunIntensity.value)*100)+'%';
+  ui.dayCycleLengthValue.textContent = Math.round(Number(ui.dayLength.value))+' мин';
+}
+function syncDayCycleButton(){
+  ui.dayCycle.textContent=dayCyclePlaying?'Ⅱ Пауза':'▶ Запустить цикл';
+  ui.dayCycle.setAttribute('aria-pressed',String(dayCyclePlaying));
+}
+function advanceDayCycleFrame(deltaSeconds){
+  if(!dayCyclePlaying)return;
+  ui.time.value=String(advanceSolarClock(Number(ui.time.value),deltaSeconds,ui.dayLength.value));
+  updateSky();
 }
 function updateSky() {
   const hours = Number(ui.time.value);
-  const elevation = Math.sin((hours - 6) / 12 * Math.PI) * 65;
-  const phi = THREE.MathUtils.degToRad(90 - elevation);
-  const theta = THREE.MathUtils.degToRad(-132);
-  sunDirection.setFromSphericalCoords(1, phi, theta).normalize();
+  const solar = calculateSolarCycle(THREE,hours);
+  solarState=solar;
+  sunDirection.copy(solar.sunDirection);
   sky.sunPosition.value.copy(sunDirection);
   sky.turbidity.value = Number(ui.turbidity.value);
   sky.rayleigh.value = Number(ui.rayleigh.value);
-  sky.mieCoefficient.value = 0.006;
-  sky.mieDirectionalG.value = 0.82;
+  sky.mieCoefficient.value = 0.0038;
+  sky.mieDirectionalG.value = 0.78;
+  sky.mieColor.value.setRGB(1,0.99,0.96);
+  sky.mieAlbedo.value.setRGB(1,1,1);
+  sky.sunSize.value = 0.88;
   sky.cloudCoverage.value = Number(ui.cloudCoverage.value);
   sky.cloudDensity.value = Number(ui.cloudDensity.value);
   sky.cloudElevation.value = Number(ui.cloudElevation.value);
-  sky.showSunDisc.value = true;
-  const daylight = THREE.MathUtils.smoothstep(sunDirection.y, -0.10, 0.24);
-  const twilight = Math.exp(-Math.pow((hours - 6.8) / 1.6, 2)) + Math.exp(-Math.pow((hours - 18.2) / 1.65, 2));
-  hemisphere.intensity = 0.20 + daylight * 0.88;
-  sunLight.intensity = 0.10 + daylight * 3.0;
-  sunLight.color.setRGB(1, 0.82 + daylight * 0.12, 0.68 + daylight * 0.28);
-  fogColor.value.set(0x26394f).lerp(new THREE.Color(0xc7d9e5), daylight).lerp(new THREE.Color(0xe2b9a5), THREE.MathUtils.clamp(twilight * 0.65, 0, 0.72));
-  hemisphere.color.setRGB(0.20 + daylight * 0.62, 0.30 + daylight * 0.58, 0.48 + daylight * 0.50);
-  hemisphere.groundColor.setRGB(0.10 + daylight * 0.20, 0.14 + daylight * 0.22, 0.19 + daylight * 0.23);
-  sunLight.position.copy(controls.target).addScaledVector(sunDirection, 1800);
+  sky.showSunDisc.value = false;
+
+  const directPower=THREE.MathUtils.clamp(Number(ui.sunIntensity.value),0,1.5);
+  updateSolarDisc(THREE,sunDisc,camera,solar,directPower);
+  hemisphere.intensity = 0.18 + solar.daylight * 0.62 + solar.nightStrength*0.025;
+  sunLight.intensity = solar.daylight * 3.0 * directPower;
+  sunLight.color.copy(solar.sunColor);
+  moonLight.intensity=solar.nightStrength*0.16;
+  sunLight.position.copy(controls.target).addScaledVector(sunDirection,1800);
   sunLight.target.position.copy(controls.target);
+  moonLight.position.copy(controls.target).addScaledVector(sunDirection,-1800);
+  moonLight.target.position.copy(controls.target);
+
+  const nightSky=new THREE.Color(0x28364b);
+  const daySky=new THREE.Color(0xc7d9e7);
+  const warmHorizon=new THREE.Color(0xd8b39a);
+  fogColor.value.copy(nightSky).lerp(daySky,solar.daylight)
+    .lerp(warmHorizon,solar.twilight*0.28);
+  hemisphere.color.setRGB(
+    0.34+solar.daylight*0.44,
+    0.43+solar.daylight*0.43,
+    0.58+solar.daylight*0.34
+  );
+  hemisphere.groundColor.setRGB(
+    0.13+solar.daylight*0.28,
+    0.16+solar.daylight*0.30,
+    0.20+solar.daylight*0.26
+  );
   ui.timeValue.textContent = formatTime(hours);
 }
 function updateFogControls() {
@@ -281,12 +321,24 @@ function applyQualityProfile(name) {
   fogPipeline.setSteps(profile.steps);
 }
 function bindUI() {
-  [ui.time, ui.turbidity, ui.rayleigh, ui.cloudCoverage, ui.cloudDensity, ui.cloudElevation].forEach(input => input.addEventListener('input', () => {
+  ui.time.addEventListener('input',()=>{
+    dayCyclePlaying=false;
+    syncDayCycleButton();
     updateSkyLabels();
     updateSky();
-  }));
+  });
+  [ui.sunIntensity,ui.turbidity,ui.rayleigh,ui.cloudCoverage,ui.cloudDensity,ui.cloudElevation].forEach(input=>{
+    input.addEventListener('input',()=>{updateSkyLabels();updateSky();});
+  });
+  ui.dayCycle.addEventListener('click',()=>{
+    dayCyclePlaying=!dayCyclePlaying;
+    syncDayCycleButton();
+  });
+  ui.dayLength.addEventListener('input',updateSkyLabels);
   [ui.fogStrength, ui.fogDensity, ui.fogHeight, ui.fogRange].forEach(input => input.addEventListener('input', updateFogControls));
   ui.quality.addEventListener('change', () => applyQualityProfile(ui.quality.value));
+  updateSkyLabels();
+  syncDayCycleButton();
 }
 async function start() {
   renderer = new THREE.WebGPURenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -329,7 +381,9 @@ async function start() {
     previousTime = now;
     elapsed += dt;
     controls.update();
+    advanceDayCycleFrame(dt);
     camera.updateMatrixWorld();
+    if(solarState)updateSolarDisc(THREE,sunDisc,camera,solarState,Number(ui.sunIntensity.value));
     sky.position.copy(camera.position);
     fogPipeline.setTime(elapsed);
     fogPipeline.updateCamera();

@@ -17,6 +17,11 @@
     .section{border-top:1px solid #ffffff16;padding-top:10px;margin-top:10px}.section h2{font-size:10px;color:#8eb8d4;text-transform:uppercase;letter-spacing:.12em;margin:0 0 4px}
     label{display:flex;justify-content:space-between;gap:12px;color:#c9d7e4;font-size:11px;margin:9px 0 4px}label strong{font-variant-numeric:tabular-nums;color:#eaf5ff;font-size:10px;white-space:nowrap}
     input[type=range]{width:100%;accent-color:#73c8ee;margin:0;height:17px}
+    .cycle-controls{display:grid;grid-template-columns:1fr 1.15fr;gap:9px;align-items:end;margin:7px 0 5px}
+    .cycle-controls button{min-height:34px;border:1px solid #8bc8e64a;border-radius:8px;background:#26445a;color:#eaf6ff;font:700 10px system-ui;cursor:pointer;padding:6px 9px}
+    .cycle-controls button[aria-pressed="true"]{background:#315d49;border-color:#76d3a0}
+    .cycle-speed label{margin:0 0 4px}
+    .cycle-speed input{margin:0}
     select{width:100%;padding:7px 9px;border-radius:7px;border:1px solid #ffffff25;background:#1a2a38;color:#eef6fc;font:inherit;font-size:11px}
     .note{font-size:10px;color:#91a5b8;margin-top:12px;line-height:1.5}.note a{color:#a9dfff}
     #error{display:none;white-space:pre-wrap;color:#ffb0a8;font-size:10px;margin-top:10px}
@@ -37,7 +42,7 @@
 </head>
 <body>
   <div id="stage"></div>
-  <div id="loading">Загружаем реальный рельеф и собираем атмосферу…</div>
+  <div id="loading">Загружаем рельеф, трассы и готовим spatial lookup для леса…</div>
   <section class="panel">
     <h1>WEBGPU · ALPINE FOREST</h1>
     <div class="sub">Real Terrain + Slopes_Stage1 · procedural spruce LOD · god rays</div>
@@ -49,13 +54,21 @@
     </div>
     <div class="section">
       <h2>Солнце и атмосфера</h2>
-      <label for="timeOfDay"><span>Время суток</span><strong id="timeValue">17:30</strong></label>
-      <input id="timeOfDay" type="range" min="0" max="24" step="0.1" value="17.5">
-      <label for="turbidity"><span>Мутность атмосферы</span><strong id="turbidityValue">4.0</strong></label>
-      <input id="turbidity" type="range" min="1" max="16" step="0.1" value="4">
-      <label for="rayleigh"><span>Рассеяние неба</span><strong id="rayleighValue">2.4</strong></label>
-      <input id="rayleigh" type="range" min="0.5" max="4" step="0.05" value="2.4">
-    </div>
+      <label for="timeOfDay"><span>Время суток</span><strong id="timeValue">16:00</strong></label>
+      <input id="timeOfDay" type="range" min="0" max="24" step="0.05" value="16">
+      <div class="cycle-controls">
+        <button id="dayCycleToggle" type="button" aria-pressed="false">▶ Запустить цикл</button>
+        <div class="cycle-speed">
+          <label for="dayCycleLength"><span>Полный день</span><strong id="dayCycleLengthValue">10 мин</strong></label>
+          <input id="dayCycleLength" type="range" min="2" max="45" step="1" value="10">
+        </div>
+      </div>
+      <label for="sunIntensity"><span>Сила прямого солнечного света</span><strong id="sunIntensityValue">60%</strong></label>
+      <input id="sunIntensity" type="range" min="0" max="1.5" step="0.01" value="0.6">
+      <label for="turbidity"><span>Мутность атмосферы</span><strong id="turbidityValue">2.6</strong></label>
+      <input id="turbidity" type="range" min="1" max="8" step="0.1" value="2.6">
+      <label for="rayleigh"><span>Рассеяние неба</span><strong id="rayleighValue">1.20</strong></label>
+      <input id="rayleigh" type="range" min="0.5" max="2.5" step="0.05" value="1.2">    </div>
     <div class="section">
       <h2>Облака</h2>
       <label for="cloudCoverage"><span>Покрытие</span><strong id="cloudCoverageValue">42%</strong></label>

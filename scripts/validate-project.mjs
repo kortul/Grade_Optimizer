@@ -55,6 +55,7 @@ assert.ok(entrySource.includes('state.skierSpawns=normalizeSkierSpawnMap(manifes
 assert.ok(entrySource.includes('function onSkierSpawnPlacementPointerDown(')&&entrySource.includes('function onSkierSpawnPlacementPointerMove(')&&entrySource.includes('pickSkierSpawnSurface(event)'), 'spawn placement must capture both surface position and facing direction');
 assert.ok(entrySource.includes('lastSkierSpawnPlacementPointerAt=performance.now();')&&entrySource.includes('if(performance.now()-lastSkierSpawnPlacementPointerAt<700)'), 'spawn placement clicks must bypass Inspector geometry selection / yellow pulse');
 assert.ok(entrySource.includes('function respawnSkierAtSpawnSlot(')&&entrySource.includes('respawnAtCustomSpawn('), 'numeric spawn slots must teleport the active skier to saved custom locations');
+assert.ok(entrySource.includes('function getSkierSpawnKeyFromEvent(event)')&&entrySource.includes('const spawnKey=getSkierSpawnKeyFromEvent(e)')&&entrySource.includes("const editingText=!!(eventTarget?.isContentEditable||/^(INPUT|TEXTAREA)$/.test(eventTarget?.tagName||''));"), 'number-row and numpad spawn shortcuts must work even when a Scene Editor select retains focus');
 pass('Scene Editor ten-slot skier spawn placement, direction, manifest persistence and numeric respawn controls are present');
 
 assert.ok(entrySource.includes('async function loadCanonicalTerrainFbx('), 'canonical Maya terrain FBX loader is missing');
@@ -87,9 +88,10 @@ pass('per-material emissive toggle, strength preservation and project serializat
 assert.ok(entrySource.includes('function disableMaterialEmissionByDefault(')&&entrySource.includes('material.emissiveIntensity=enabled?savedStrength:0'), 'current and newly loaded model materials must default to emission OFF');
 assert.ok(entrySource.includes("gradeOptimizerEmissiveEnabled:false")&&entrySource.includes("if('emissiveIntensity' in material)material.emissiveIntensity=0"), 'legacy material configurations must migrate to emission OFF');
 pass('all current legacy and newly imported model materials default to emissive OFF');
-assert.ok(entrySource.includes("const isStageOneSlopes=/slopes[_ -]?stage[_ -]?1/i.test(String(fileName||''))"), 'Slopes_Stage1 parser must identify the named stage-one asset');
+assert.ok(entrySource.includes('function isMayaStageOneFbx(root,fileName=')&&entrySource.includes('const isStageOneSlopes=isMayaStageOneFbx(root,fileName)'), 'Stage 1 detection must use the FBX filename or its Maya hierarchy / material names, not one exact filename pattern');
+assert.ok(entrySource.includes('const canonicalBySourceName=new Map()')&&entrySource.includes('canonicalBySourceName.has(sourceName)')&&entrySource.includes('gradeOptimizerFbxSourceMaterialName'), 'FBX materials with duplicated Maya IDs but the same shader name must share one material object across meshes');
 assert.ok(entrySource.includes('prepareFbxMaterials(root,{preserveSlopeAlbedo:isStageOneSlopes})')&&entrySource.includes('applyStageOneSurfaceMaterials(root)'), 'Slopes_Stage1 must run its dedicated surface-material pass after FBX conversion');
-assert.ok(entrySource.includes("material.color.set(kind==='slopes'?0xffffff:0x383838)")&&entrySource.includes("if(/(^|_)angled?(_|$)/.test(value))return 'angled'")&&entrySource.includes("if(/(^|_)slopes?(_|$)/.test(value))return 'slopes'"), 'Stage 1 Slopes must be white and Angled surfaces dark grey based on imported material/object names');
+assert.ok(entrySource.includes("material.color.set(kind==='slopes'?0xffffff:0x383838)")&&entrySource.includes("if(/(^|_)angled?(_|$)/.test(value))return 'angled'")&&entrySource.includes("if(/(^|_)slopes?(_|$)/.test(value))return 'slopes'")&&entrySource.includes("(/openpbr/i.test(materialName)?'slopes':'')"), 'Stage 1 Slopes must be white, Angled dark grey, and the technical OpenPBR slot must inherit the Maya surface class');
 assert.ok(entrySource.includes('material.map=null')&&entrySource.includes('material.emissiveMap=null')&&entrySource.includes('material.vertexColors=false'), 'Stage 1 surface colors must not be tinted by imported albedo maps, emission maps or vertex colors');
 assert.ok(entrySource.includes('gradeOptimizerAlbedoRecovery')&&entrySource.includes('emissive-map-recovered-as-base-color-map')&&entrySource.includes('emissive-color-recovered-as-base-color'), 'black diffuse materials must recover usable albedo from FBX emission data');
 pass('Slopes_Stage1 applies explicit white Slopes and dark-grey Angled materials');
@@ -97,16 +99,21 @@ pass('Slopes_Stage1 applies explicit white Slopes and dark-grey Angled materials
 assert.ok(entrySource.includes('function editorMaterialsEquivalent(a,b)')&&entrySource.includes('function editorGeometryForMaterial(object,materialFilter,ownedGeometries)'), 'material identity matching and group-filtered geometry selection are missing');
 assert.ok(entrySource.includes('filtered.clearGroups()')&&entrySource.includes('filtered.addGroup(group.start,group.count,0)'), 'material highlight must isolate matching FBX geometry groups');
 assert.ok(entrySource.includes('hit.face?.materialIndex')&&entrySource.includes('selectEditorNode(picked,picked.root,-1,hitMaterial)')&&entrySource.includes('pulseEditorSelection(picked.root,hitMaterial)'), 'viewport click must select and highlight all faces assigned to the clicked material');
-assert.ok(entrySource.includes('persistent:!!materialFilter')&&entrySource.includes('if(effect.persistent){'), 'the selected material faces must remain highlighted after the click');
+assert.ok(entrySource.includes('duration:1000')&&!entrySource.includes('persistent:!!materialFilter')&&!entrySource.includes('if(effect.persistent){'), 'all Scene Editor selection highlights must fade and be removed after one second');
 pass('viewport and material-list selection highlight all matching material groups across the selected asset');
 
 assert.ok(entrySource.includes('function editorTexturesEquivalent(a,b)')&&entrySource.includes('function mergeEquivalentEditorMaterials(root)'), 'conservative duplicate-material matching and FBX-wide material consolidation are missing');
 const parseModelSource=entrySource.slice(entrySource.indexOf('function parseSceneModel('),entrySource.indexOf('const loadGLTF'));
 assert.ok(parseModelSource.includes('mergeEquivalentEditorMaterials(root)')&&parseModelSource.includes('mergeEquivalentEditorMaterials(sceneRoot)'), 'FBX and GLB imports must consolidate equivalent material instances after material normalization');
 assert.ok(entrySource.includes('const byMaterial=new Map()')&&entrySource.includes('byMaterial.get(id)')&&entrySource.includes('target.bindings.push({owner:asset,mesh:object,material,index})'), 'Materials tab must group each shared material into one entry while retaining all mesh-slot bindings');
+assert.ok(entrySource.includes('editorMaterialTargets=collectEditorMaterials(editorSelectedAsset,editorSelectedAsset?.root)'), 'Materials inspector must enumerate material bindings across the full selected FBX asset, not only the selected mesh');
+assert.ok(entrySource.includes('const canonicalMaterials=new Map()')&&entrySource.includes("material.name=kind==='slopes'?'Slopes':'Angled'")&&entrySource.includes('gradeOptimizerStageOneSurfaceKind'), 'Stage 1 FBX assignments must consolidate into two shared Slopes / Angled material instances');
+assert.ok(entrySource.includes('const kind=classify(materialName)||objectKind||(/openpbr/i.test(materialName)?\'slopes\':\'\')'), 'Stage 1 OpenPBR fallback must not become an unintended third editor material');
+assert.ok(entrySource.includes('editorMaterialTargets=collectEditorMaterials(editorSelectedAsset,editorSelectedAsset?.root)')&&entrySource.includes('target.label=materialName+(meshCount>1?'), 'Materials tab must display one entry per shared material and report how many meshes use it');
 assert.ok(entrySource.includes("materialCount.textContent=editorMaterialTargets.length+' MATERIALS'")&&html.includes('Unique Material · Whole Asset'), 'Materials tab must report unique asset-wide material count');
+assert.ok(entrySource.includes('material.color.set(document.getElementById(\'editorBaseColor\').value)')&&entrySource.includes('markEditorMaterialOwnersDirty(material)'), 'editing a shared material instance must update and persist every mesh slot that references it');
 assert.ok(entrySource.includes('const bindings=target.bindings?.length?target.bindings:[target]')&&entrySource.includes('bindings.forEach(binding=>'), 'assign and Make Unique operations must update every grouped material slot');
-pass('FBX-wide unique material list, shared slot bindings and multi-mesh material edits are present');
+pass('FBX-wide shared materials: one Slopes / Angled material instance across all matching groups and meshes');
 
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
 assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
@@ -133,6 +140,11 @@ assert.deepEqual(stageOneAsset.transform.position, [0, 0.1, 0], 'the complete im
 
 const stageOneComponents = stageOneAsset.mayaExport?.components || [];
 assert.ok(stageOneComponents.length > 0, 'Slopes_Stage1 manifest must list its exported mesh components');
+const stageOneSourceMaterialNames=[...new Set(stageOneComponents.flatMap(component=>component.materials||[]))].sort();
+assert.deepEqual(stageOneSourceMaterialNames,[
+  'openPBR_shader1','pasted__pasted__zzMainlandscape_Slopes','zzMainlandscape_Slopes','zzShapka_Angled'
+], 'Maya Stage 1 source aliases / technical shader inventory changed');
+assert.ok(entrySource.includes('meshCount,materialSlots')&&entrySource.includes('materialCount:canonicalMaterials.size'), 'Stage 1 material normalization must report total meshes, source slots and canonical unique materials');
 assert.equal(
   stageOneComponents.length,
   Number(stageOneAsset.mayaExport?.meshComponentCount),
@@ -291,7 +303,7 @@ assert.ok(entrySource.includes('controls.enableZoom=enabled'), 'mobile overview 
 assert.ok(entrySource.includes('function bindMobileStick(')&&entrySource.includes('updateMobileMoveKeys(dx,dy)'), 'virtual movement and look sticks must be wired');
 assert.ok(entrySource.includes('mobileTouch.lookX*1.05*dt')&&entrySource.includes('mobileTouch.lookX*1.65*dt'), 'right mobile stick must drive drone and skier camera direction');
 assert.ok(read('skier-controller.v94.js').toString('utf8').includes('this.touchMode = false')&&read('skier-controller.v94.js').toString('utf8').includes('if(requestPointerLock&&!this.touchMode){'), 'skier Pointer Lock must be disabled on mobile and deferable during async preparation');
-assert.ok(read('drone-controller.v75.js').toString('utf8').includes('this.touchMode=false')&&read('drone-controller.v75.js').toString('utf8').includes('if(!this.touchMode){'), 'drone Pointer Lock must be disabled on mobile');
+assert.ok(read('drone-controller.v76.js').toString('utf8').includes('this.touchMode=false')&&read('drone-controller.v76.js').toString('utf8').includes('if(!this.touchMode){'), 'drone Pointer Lock must be disabled on mobile');
 pass('mobile-only 3-mode navigation, touch sticks, action buttons and Pointer Lock-free controls are present');
 
 
@@ -353,8 +365,8 @@ assert.ok(entrySource.includes('emissiveMap:map, emissiveIntensity:forestEmissiv
 assert.ok(entrySource.includes('emissive:0x4d875c, emissiveIntensity:forestEmissiveIntensity'), 'procedural 3D tree foliage must receive daylight-matched fill');
 assert.match(entrySource, /loadSequence=\+\+slopeLoadSequence/, 'stale slope-load guard missing');
 assert.match(entrySource, /if\(document\.hidden\)/, 'background render pause missing');
-assert.ok(entrySource.includes('drone-controller.v75.js'), 'active app must use the current drone controller');
-const droneSource = read('drone-controller.v75.js').toString('utf8');
+assert.ok(entrySource.includes('drone-controller.v76.js'), 'active app must use the current drone controller');
+const droneSource = read('drone-controller.v76.js').toString('utf8');
 assert.ok(droneSource.includes('intersectObject(this.terrain,true)'), 'drone terrain raycast missing');
 assert.ok(droneSource.includes('minimumTerrainClearance=2.5'), 'drone terrain clearance missing');
 assert.ok(droneSource.includes('enforceTerrainClearance(nextPosition)'), 'drone movement collision guard missing');
@@ -373,7 +385,7 @@ assert.ok(skierSource.includes('if(spawnHint?.position&&!spawnHint.startAtTop)')
 assert.ok(entrySource.includes('function hasTerrainSurfaceAtWorldXZ(')&&entrySource.includes('hasTerrainSurfaceAtWorldXZ(originalTerrain,position)')&&entrySource.includes('return droneSpawnSurfaceRaycaster.intersectObject(terrain,true).some(hit=>hit.object?.isMesh)'), 'drone handoff must resolve the actual surface under exact drone X/Z on Stage 1 or original Terrain');
 assert.ok(skierSource.includes('const hit=Number.isFinite(droneX)&&Number.isFinite(droneZ)')&&skierSource.includes('this._groundAt(droneX,droneZ)')&&!skierSource.includes('_findGroundNear('), 'drone handoff must project vertically at the exact drone X/Z without a nearby piste search');
 assert.ok(skierSource.includes('respawnAtTop(){')&&skierSource.includes("this.lastSpawnInfo={...this.lastSpawnInfo,spawnType:'stage1-summit'}"), 'key 1 summit respawn must reuse the cached terrain lookup');
-assert.ok(entrySource.includes("const spawnKey=/^Digit[0-9]$/.test(e.code)")&&entrySource.includes("spawnKey==='1'")&&entrySource.includes('respawnSkierAtStageOneSummit()'), 'key 1 must keep the Stage 1 summit fallback when slot 1 is empty');
+assert.ok(entrySource.includes('const spawnKey=getSkierSpawnKeyFromEvent(e)')&&entrySource.includes("if(spawnKey==='1')")&&entrySource.includes('respawnSkierAtStageOneSummit()')&&entrySource.indexOf('if(spawnKey&&state.skierSpawns?.[spawnKey])')<entrySource.indexOf("if(spawnKey==='1')"), 'key 1 must use its configured spawn when present and keep the Stage 1 summit fallback when slot 1 is empty');
 assert.ok(html.includes('Спавн на вершине Stage 1'), 'skier HUD must explain the key 1 summit spawn');
 assert.ok(skierSource.includes('const topSamples=candidates.slice(0,Math.min(180,candidates.length));')&&!skierSource.includes('0.334')&&!skierSource.includes('0.187'), 'piste spawn search must prefer the highest mesh vertices instead of the old fixed A1 seed');
 assert.ok(skierSource.includes('const clearance=this._downhillClearance(hit.point.x,hit.point.z,hit.normal,[6,12,18,26]);')&&skierSource.includes('lastSpawnInfo={'), 'summit spawn must validate a downhill run and expose its world position');
@@ -418,7 +430,7 @@ assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(init
 
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
 assert.ok(skierSource.includes('pushing:push&&!airborne,airborne,tuck'), 'skier push, airborne and stance state missing from movement HUD payload');
-assert.ok(droneSource.includes('boostSpeed=120/3.6'), 'drone boost must cap at 120 km/h');
+assert.ok(droneSource.includes('boostSpeed=200/3.6'), 'drone boost must cap at 200 km/h');
 assert.ok(droneSource.includes("this.keys.has('shift')?this.boostSpeed:this.speed"), 'Shift must activate drone boost');
 assert.ok(droneSource.includes("(this.keys.has('control')?1:0)"), 'Ctrl must control drone descent');
 assert.ok(entrySource.includes("tuck?'Скоростная стойка':'Обычная езда'"), 'ordinary skiing / speed tuck status labels missing from HUD');
@@ -721,7 +733,7 @@ assert.match(html, /max-height:calc\(100dvh - 84px\)/, 'viewport-aware HUD sizin
 assert.match(html, /КАК НАЧАТЬ/, 'beginner skier tutorial missing');
 assert.match(html, /КАК УПРАВЛЯТЬ/, 'beginner drone tutorial missing');
 assert.ok(!html.includes('V / TAB') && !html.includes('<kbd>TAB</kbd>'), 'Tab shortcut must be removed from the mode switch UI');
-assert.ok(html.includes('SHIFT</kbd> — ускорение до 120 км/ч'), 'drone tutorial must document Shift boost to 120 km/h');
+assert.ok(html.includes('SHIFT</kbd> — ускорение до 200 км/ч'), 'drone tutorial must document Shift boost to 200 km/h');
 assert.ok(html.includes('<kbd>SPACE</kbd><span>/</span><kbd>CTRL</kbd>'), 'drone vertical controls must use Space and Ctrl');
 assert.ok(html.includes('id="groundState">Обычная езда</span>'), 'skier HUD must show normal skiing state');
 assert.ok(html.includes('.mode-hud .tutorial-step strong{font-size:11px!important'), 'tutorial headings must be slightly larger');
@@ -891,6 +903,7 @@ pass('GPU-animated snowfall regression checks');
 // Isolated WebGPU atmosphere lab: keep the production renderer entrypoint untouched.
 const webgpuAtmosphereHtml = read('webgpu-atmosphere-lab.html').toString('utf8');
 const webgpuAtmosphereSource = read('webgpu-atmosphere-lab.js').toString('utf8');
+const solarCycleSource = read('solar-cycle.v1.js').toString('utf8');
 assert.ok(webgpuAtmosphereHtml.includes('three@0.187.0') && webgpuAtmosphereHtml.includes('three/tsl'), 'atmosphere lab must use the pinned modern Three.js / TSL import map');
 assert.ok(webgpuAtmosphereHtml.includes('src="./webgpu-atmosphere-lab.js"'), 'atmosphere lab entry module is missing');
 assert.ok(webgpuAtmosphereSource.includes("new THREE.WebGPURenderer") && webgpuAtmosphereSource.includes('await renderer.init()'), 'atmosphere lab must initialize WebGPURenderer asynchronously');
@@ -905,6 +918,12 @@ assert.ok(webgpuAtmosphereSource.includes('lowResFog.setResolutionScale(value)')
 assert.ok(webgpuAtmosphereSource.indexOf('camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);') < webgpuAtmosphereSource.indexOf('fogPipeline = buildFogPipeline()'), 'atmosphere camera aspect must be initialized before the first pipeline render');
 assert.ok(webgpuAtmosphereSource.includes('sceneColor.rgb.mix(fogColor, fogResult)') && !webgpuAtmosphereSource.includes('fogResult.mix(sceneColor.rgb, fogColor)'), 'atmosphere fog composite must use fog opacity as the mix factor');
 assert.ok(webgpuAtmosphereSource.includes('const rangeFog = rangeT.mul(rangeT)'), 'distance haze must ease in gradually instead of becoming dense at mid-range');
+assert.ok(solarCycleSource.includes('phase=(hour-6)/12*Math.PI')&&solarCycleSource.includes('azimuth=phase-Math.PI/2')&&solarCycleSource.includes('advanceSolarClock('), 'shared day cycle must rotate the sun across azimuth and support a configurable full-day duration');
+assert.ok(solarCycleSource.includes('export function createSolarDisc(THREE)')&&solarCycleSource.includes('export function updateSolarDisc(THREE,sprite,camera,cycle,intensity)'), 'shared day cycle must expose a separate intensity-controlled solar disc');
+assert.ok(webgpuAtmosphereHtml.includes('id="dayCycleToggle"')&&webgpuAtmosphereHtml.includes('id="dayCycleLength"')&&webgpuAtmosphereHtml.includes('id="sunIntensity"'), 'Atmosphere Lab must expose a time-of-day play/pause, day length and direct-sun power controls');
+assert.ok(webgpuAtmosphereSource.includes("from './solar-cycle.v1.js'")&&webgpuAtmosphereSource.includes('calculateSolarCycle(THREE,hours)')&&webgpuAtmosphereSource.includes('advanceSolarClock('), 'Atmosphere Lab must use the shared rotating solar path and animated day cycle');
+assert.ok(webgpuAtmosphereSource.includes('sky.showSunDisc.value = false')&&webgpuAtmosphereSource.includes('createSolarDisc(THREE)')&&webgpuAtmosphereSource.includes('updateSolarDisc(THREE,sunDisc'), 'Atmosphere Lab sun disc must be independently controlled by the sun power slider');
+assert.ok(webgpuAtmosphereSource.includes('sky.mieCoefficient.value = 0.0038')&&webgpuAtmosphereSource.includes('sky.mieColor.value.setRGB(1,0.99,0.96)')&&webgpuAtmosphereSource.includes('sky.rayleigh.value = Number(ui.rayleigh.value)'), 'Atmosphere Lab must use restrained, neutral Earth-like Mie scattering');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
 // WebGPU Alpine Forest Lab regression checks.
@@ -923,8 +942,16 @@ assert.ok(alpineForestSource.includes('new THREE.RenderPipeline(renderer)')&&alp
 assert.ok(alpineForestSource.includes('sunScreenUV.value.set(')&&alpineForestSource.includes('rayStrength.value=visible?'),'god rays must track the projected sun and disable when it is off-screen');
 assert.ok(alpineForestSource.includes('sceneColor.rgb.mix(fogColor,fogResult)') && !alpineForestSource.includes('fogResult.mix(sceneColor.rgb,fogColor)'), 'forest fog composite must use fog opacity as the mix factor');
 assert.ok(alpineForestSource.includes('const rangeFog = rangeT.mul(rangeT)') && alpineForestSource.includes('addScaledVector(sunPosition,100000)'), 'forest distance haze and sun projection must remain correctly framed');
-assert.ok(alpineForestHtml.includes('value="17.5"'), 'forest preview must open with its sun in the initial camera view');
+assert.ok(alpineForestHtml.includes('value="16"'), 'forest preview must open at the shared neutral daytime default');
 assert.ok(alpineForestHtml.includes('id="godRays"')&&alpineForestHtml.includes('id="forestDensity"'),'Alpine Forest lab controls for god rays and forest density are missing');
+assert.ok(alpineForestHtml.includes('id="dayCycleToggle"')&&alpineForestHtml.includes('id="dayCycleLength"')&&alpineForestHtml.includes('id="sunIntensity"'), 'Forest Lab must expose the shared time-of-day and sun-power controls');
+assert.ok(alpineForestSource.includes("from './solar-cycle.v1.js'")&&alpineForestSource.includes('calculateSolarCycle(THREE,hours)')&&alpineForestSource.includes('advanceSolarClock('), 'Forest Lab must use the shared solar path and animated day cycle');
+assert.ok(alpineForestSource.includes('sky.showSunDisc.value = false')&&alpineForestSource.includes('createSolarDisc(THREE)')&&alpineForestSource.includes('updateSolarDisc(THREE,sunDisc'), 'Forest Lab sun disc must respond to the direct-sun power slider');
+assert.ok(alpineForestSource.includes('renderer.getMaxAnisotropy()')&&!alpineForestSource.includes('renderer.capabilities.getMaxAnisotropy'), 'Forest atlas loading must use the WebGPURenderer anisotropy API rather than WebGL capabilities');
+assert.ok(alpineForestSource.includes('async function buildTerrainHeightLookup(')&&alpineForestSource.includes('function sampleTerrainSurface(')&&alpineForestSource.includes('terrainHeightLookup=await buildTerrainHeightLookup('), 'Forest Lab must precompute a spatial terrain height lookup before placing trees');
+const forestPlacementSource=alpineForestSource.slice(alpineForestSource.indexOf('function buildTreePlacements('),alpineForestSource.indexOf('function createSplinePineGeometry('));
+assert.ok(forestPlacementSource.includes('sampleTerrainSurface(x,z,terrainHeightLookup)')&&!forestPlacementSource.includes('intersectObject(terrainRoot,true)'), 'tree placement must query cached terrain triangles instead of raycasting the entire terrain for each tree');
+assert.ok(alpineForestSource.includes("setLoadingMessage('Строим spatial height lookup для рельефа…')")&&alpineForestSource.includes("setLoadingMessage('Загружаем atlas елей…')")&&alpineForestSource.includes('Не удалось запустить WebGPU Forest Lab'), 'Forest Lab must expose loading stages and its own diagnostic error label');
 pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
 
 // Public resort multiplayer regression checks.
