@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,MAX_SHARED_MARKERS,
+  MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_PLAYERS,
   appendSharedMarker,normalizeMarker,normalizeState,pruneSharedMarkers,sanitizeClientId,sanitizeName
 } from './protocol.js';
 
