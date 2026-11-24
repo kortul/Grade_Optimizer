@@ -6127,7 +6127,7 @@ const multiplayerClient=new ResortMultiplayer({
   poseNodeNames:REMOTE_SKIER_POSE_NODES
 });
 multiplayerClient.connect();
-multiplayerStatusElement.title='В обзоре: двойной клик по модели или рельефу ставит общий флажок и фокусирует камеру. В режиме дрона над участниками видны маяки.';
+multiplayerStatusElement.title='В обзоре: двойной клик ставит общий флажок и фокусирует камеру. Линейка синхронизируется со всеми участниками. В режиме дрона над участниками видны маяки.';
 const sharedFlagRaycaster=new THREE.Raycaster();
 const sharedFlagPointer=new THREE.Vector2();
 const sharedFlagNormalMatrix=new THREE.Matrix3();
