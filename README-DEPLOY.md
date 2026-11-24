@@ -4,7 +4,7 @@ The project is hosted as a static GitHub Pages site. A push to `main` triggers t
 
 ## Current release
 
-- Active browser entrypoint: `index.html` → `app.v137.js`.
+- Active browser entrypoint: `index.html` → `app.v158.js`.
 - Skier controller: `skier-controller.v89.js`; drone controller: `drone-controller.v75.js`.
 - Camera optics module: `camera-optics.v2.js`.
 - Previous app releases remain in the repository for rollback.
