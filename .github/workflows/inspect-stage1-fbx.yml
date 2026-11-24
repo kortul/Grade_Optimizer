@@ -1,4 +1,4 @@
-name: Inspect Stage1 FBX geometry
+name: Inspect Terrain and Stage1 FBX geometry
 
 on:
   push:
