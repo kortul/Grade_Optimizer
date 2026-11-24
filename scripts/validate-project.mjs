@@ -100,6 +100,14 @@ assert.ok(entrySource.includes('hit.face?.materialIndex')&&entrySource.includes(
 assert.ok(entrySource.includes('persistent:!!materialFilter')&&entrySource.includes('if(effect.persistent){'), 'the selected material faces must remain highlighted after the click');
 pass('viewport and material-list selection highlight all matching material groups across the selected asset');
 
+assert.ok(entrySource.includes('function editorTexturesEquivalent(a,b)')&&entrySource.includes('function mergeEquivalentEditorMaterials(root)'), 'conservative duplicate-material matching and FBX-wide material consolidation are missing');
+const parseModelSource=entrySource.slice(entrySource.indexOf('function parseSceneModel('),entrySource.indexOf('const loadGLTF'));
+assert.ok(parseModelSource.includes('mergeEquivalentEditorMaterials(root)')&&parseModelSource.includes('mergeEquivalentEditorMaterials(sceneRoot)'), 'FBX and GLB imports must consolidate equivalent material instances after material normalization');
+assert.ok(entrySource.includes('const byMaterial=new Map()')&&entrySource.includes('byMaterial.get(id)')&&entrySource.includes('target.bindings.push({owner:asset,mesh:object,material,index})'), 'Materials tab must group each shared material into one entry while retaining all mesh-slot bindings');
+assert.ok(entrySource.includes("materialCount.textContent=editorMaterialTargets.length+' MATERIALS'")&&html.includes('Unique Material · Whole Asset'), 'Materials tab must report unique asset-wide material count');
+assert.ok(entrySource.includes('const bindings=target.bindings?.length?target.bindings:[target]')&&entrySource.includes('bindings.forEach(binding=>'), 'assign and Make Unique operations must update every grouped material slot');
+pass('FBX-wide unique material list, shared slot bindings and multi-mesh material edits are present');
+
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
 assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
 assert.equal(originalTerrainManifest.category, 'terrain', 'base terrain category changed');
