@@ -25,7 +25,11 @@ assert.ok(maya.includes('manifest["slopeCurves"]') && maya.includes('"coordinate
 assert.ok(!maya.includes('def _slope_route_class_from_shares(') && !maya.includes('def _build_slope_analysis_record('), 'Maya exporter must not calculate slope grades or difficulty');
 assert.ok(app.includes('function renderSlopeAnalysisOverlays(') && app.includes('new THREE.LineSegments'), 'browser must render slope difficulty as lightweight line segments');
 assert.ok(app.includes('new CSS2DObject') && app.includes('SlopeAnalysis_Angles') && app.includes('SlopeAnalysis_Names'), 'browser must use independent CSS2D angle and name label layers');
-assert.ok(app.includes('renderSlopeAnalysisOverlays(manifest.slopeAnalysis||null)') && app.includes('slopeAnalysis:state.slopeAnalysisData||undefined'), 'slope analysis data must load and persist with the client scene');
+assert.ok(app.includes('await buildSlopeAnalysisFromManifest(manifest)') && app.includes('manifest?.slopeCurves'), 'browser must calculate slope analysis from raw Maya centerline geometry on project load');
+assert.ok(app.includes('function analyzeSlopeCenterline(') && app.includes('SLOPE_ANALYSIS_INTERVAL_METERS = 20.0'), 'browser must calculate average grade every 20 m');
+assert.ok(app.includes('Math.atan2(vertical,horizontal)') && app.includes('function classifySlopeAnalysisRoute('), 'browser analysis must mirror Maya section angles and route difficulty classification');
+assert.ok(app.includes('indexedDB.open(\'grade-optimizer-slope-analysis\',1)') && app.includes('curve.sourceDigest'), 'browser must persist per-curve analysis cache by Maya source digest');
+assert.ok(app.includes('slopeAnalysis:state.slopeAnalysisData||undefined') && app.includes('slopeCurves:state.slopeCurvesData||undefined'), 'raw curves and derived analysis must both survive client scene autosave');
 assert.ok(html.includes('id="slopeLayersToggle"') && html.includes('id="slopeLayer_angles"') && html.includes('id="slopeLayer_difficulty"') && html.includes('id="slopeLayer_names"'), 'overview layers panel must expose all three independent toggles');
 
 assert.ok(app.includes('gradeOptimizerTerrainTexture') && app.includes('low-frequency-albedo-no-bump'), 'terrain snow must not use the old high-frequency bump detail');
