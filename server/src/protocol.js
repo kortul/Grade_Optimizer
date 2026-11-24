@@ -33,11 +33,27 @@ export function normalizeMarker(input, owner, ownerId) {
   return {id,owner:sanitizeName(owner),ownerId:cleanOwnerId,p,createdAt:Date.now()};
 }
 
-export function appendSharedMarker(inputMarkers, marker) {
-  const markers=Array.isArray(inputMarkers)?inputMarkers.slice(-MAX_SHARED_MARKERS):[];
+export function pruneSharedMarkers(inputMarkers) {
+  const markers=Array.isArray(inputMarkers)?inputMarkers.slice():[];
+  for(const existing of markers){
+    if(existing&&!existing.ownerId)existing.ownerId='legacy:'+sanitizeName(existing.owner);
+  }
   const removedMarkers=[];
-  // Older flags only stored the displayed owner name. Keep those grouped,
-  // then attach the active participant's legacy flags to their current ID.
+  const ownerIds=new Set(markers.map(existing=>existing?.ownerId).filter(Boolean));
+  for(const ownerId of ownerIds){
+    const ownedMarkers=markers.filter(existing=>existing?.ownerId===ownerId);
+    while(ownedMarkers.length>MAX_MARKERS_PER_PLAYER){
+      const oldest=ownedMarkers.shift();
+      const index=markers.findIndex(existing=>existing?.id===oldest?.id);
+      if(index>=0)removedMarkers.push(markers.splice(index,1)[0]);
+    }
+  }
+  while(markers.length>MAX_SHARED_MARKERS)removedMarkers.push(markers.shift());
+  return {markers,removedMarkers};
+}
+
+export function appendSharedMarker(inputMarkers, marker) {
+  const markers=Array.isArray(inputMarkers)?inputMarkers.slice():[];
   for(const existing of markers){
     if(existing&&!existing.ownerId)existing.ownerId='legacy:'+sanitizeName(existing.owner);
   }
@@ -45,22 +61,14 @@ export function appendSharedMarker(inputMarkers, marker) {
   for(const existing of markers){
     if(existing?.ownerId===legacyOwnerId)existing.ownerId=marker.ownerId;
   }
-  let acceptedMarker=markers.find(existing=>existing?.id===marker.id);
-  if(!acceptedMarker){
-    markers.push(marker);
-    const ownerIds=new Set(markers.map(existing=>existing?.ownerId).filter(Boolean));
-    for(const ownerId of ownerIds){
-      const ownedMarkers=markers.filter(existing=>existing?.ownerId===ownerId);
-      while(ownedMarkers.length>MAX_MARKERS_PER_PLAYER){
-        const oldest=ownedMarkers.shift();
-        const index=markers.findIndex(existing=>existing?.id===oldest?.id);
-        if(index>=0)removedMarkers.push(markers.splice(index,1)[0]);
-      }
-    }
-    while(markers.length>MAX_SHARED_MARKERS)removedMarkers.push(markers.shift());
-    acceptedMarker=marker;
+  const acceptedExisting=markers.find(existing=>existing?.id===marker.id);
+  if(acceptedExisting){
+    const update=pruneSharedMarkers(markers);
+    return {...update,acceptedMarker:acceptedExisting};
   }
-  return {markers,acceptedMarker,removedMarkers};
+  markers.push(marker);
+  const update=pruneSharedMarkers(markers);
+  return {...update,acceptedMarker:marker};
 }
 
 export function normalizeState(input) {
