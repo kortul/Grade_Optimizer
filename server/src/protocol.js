@@ -1,5 +1,5 @@
 export const MAX_PLAYERS = 2;
-export const MAX_IDLE_MS = 30000;
+export const MAX_IDLE_MS = 120000;
 export const MAX_MESSAGE_CHARS = 4096;
 export const MAX_MESSAGES_PER_SECOND = 12;
 export const MAX_MESSAGE_RATE = MAX_MESSAGES_PER_SECOND;
