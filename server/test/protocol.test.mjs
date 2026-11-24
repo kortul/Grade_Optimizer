@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,normalizeMarker,normalizeState,sanitizeClientId,sanitizeName} from '../src/protocol.js';
+import {MAX_PLAYERS,MAX_IDLE_MS,MAX_MESSAGE_CHARS,MAX_MESSAGES_PER_SECOND,MAX_MARKERS_PER_PLAYER,MAX_SHARED_MARKERS,appendSharedMarker,normalizeMarker,normalizeState,sanitizeClientId,sanitizeName} from '../src/protocol.js';
 
 test('the shared resort is a single four-person session',()=>{
   assert.equal(MAX_PLAYERS,4);
@@ -31,6 +31,45 @@ test('shared overview flags validate UUIDs, positions, owner identity and per-pl
   assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[Infinity,0,0]},'Pavel',ownerId),null);
   assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[50001,0,0]},'Pavel',ownerId),null);
   assert.equal(normalizeMarker({id:'550e8400-e29b-41d4-a716-446655440000',p:[0,0,0]},'Pavel','invalid-owner'),null);
+});
+
+test('each participant keeps only their three newest shared flags',()=>{
+  const ownerA='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
+  const ownerB='54395181-3418-4593-af6c-1bd9f4a2173c';
+  const make=(suffix,owner,name)=>normalizeMarker({
+    id:'550e8400-e29b-41d4-a716-'+suffix,
+    p:[Number(suffix.slice(-1)),0,0]
+  },name,owner);
+  let markers=[];
+  for(const suffix of ['000001','000002','000003','000004']){
+    const result=appendSharedMarker(markers,make(suffix,ownerA,'Pavel'));
+    markers=result.markers;
+    if(suffix==='000004')assert.deepEqual(result.removedMarkers.map(item=>item.id),['550e8400-e29b-41d4-a716-000001']);
+  }
+  assert.deepEqual(markers.filter(item=>item.ownerId===ownerA).map(item=>item.id),[
+    '550e8400-e29b-41d4-a716-000002',
+    '550e8400-e29b-41d4-a716-000003',
+    '550e8400-e29b-41d4-a716-000004'
+  ]);
+  for(const suffix of ['000005','000006','000007','000008']){
+    const result=appendSharedMarker(markers,make(suffix,ownerB,'Skier B'));
+    markers=result.markers;
+    if(suffix==='000008')assert.deepEqual(result.removedMarkers.map(item=>item.id),['550e8400-e29b-41d4-a716-000005']);
+  }
+  assert.equal(markers.filter(item=>item.ownerId===ownerA).length,3);
+  assert.equal(markers.filter(item=>item.ownerId===ownerB).length,3);
+});
+
+test('legacy flags are migrated and counted against the three-flag limit',()=>{
+  const ownerId='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
+  const legacy=['000001','000002','000003'].map((suffix,index)=>({
+    id:'550e8400-e29b-41d4-a716-'+suffix,owner:'Pavel',p:[index,0,0],createdAt:index+1
+  }));
+  const next=normalizeMarker({id:'550e8400-e29b-41d4-a716-000004',p:[4,0,0]},'Pavel',ownerId);
+  const result=appendSharedMarker(legacy,next);
+  assert.deepEqual(result.removedMarkers.map(item=>item.id),['550e8400-e29b-41d4-a716-000001']);
+  assert.equal(result.markers.length,3);
+  assert.ok(result.markers.every(item=>item.ownerId===ownerId));
 });
 
 test('display names are bounded and sanitized',()=>{
