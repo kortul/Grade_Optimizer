@@ -1196,7 +1196,6 @@ def _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit):
     source_uuid = str(uuids[0]) if uuids else ""
     matrix = cmds.xform(curve, query=True, worldSpace=True, matrix=True) or []
     payload = {
-        "curve": str(curve),
         "sourceUuid": source_uuid,
         "degree": int(curve_fn.degree),
         "spans": int(curve_fn.numSpans),
@@ -1467,6 +1466,8 @@ def export_slope_centerlines(*_):
                 refreshed = dict(cached)
                 refreshed["sourcePath"] = str(curve)
                 refreshed["sourceUuid"] = source_uuid
+                refreshed["id"] = _safe_asset_id(curve.rsplit("|", 1)[-1])
+                refreshed["name"] = curve.rsplit("|", 1)[-1]
                 if cached.get("sourcePath") != str(curve):
                     updated_by_path.pop(str(cached.get("sourcePath")), None)
                 updated_by_path[str(curve)] = refreshed
