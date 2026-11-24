@@ -7,7 +7,7 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v177.js` (asset-wide shared FBX materials; Maya Stage 1 exposes only the shared Slopes / Angled material pair).
+- Current app: `app.v178.js` (asset-wide shared FBX materials; Maya Stage 1 exposes only the shared Slopes / Angled material pair).
 - Weather: `weather-system.v7.js`; layered procedural clouds, directional horizon scattering, a color-varied star field, snowfall and wind streaks render through the scene weather layers.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
@@ -16,6 +16,10 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 - Three.js 0.160.0 is loaded through the import map. The site is static; there is no bundler or server runtime for the viewer. The optional public multiplayer relay lives in `server/` and uses one shared Cloudflare Durable Object. Imported client models support binary GLB and FBX files. FBX materials are consolidated by their source Maya shader name; the Stage 1 Maya export maps copied Slopes aliases and its technical OpenPBR fallback into two scene-wide material instances shared by all 22 mesh components. The Scene Editor Materials tab lists unique asset-wide materials, so editing Slopes or Angled changes every corresponding material group across the FBX.
 
 For a new release, create new versioned app / controller files, update `index.html`, and keep the previous files for rollback.
+
+## Slope analysis overlays
+
+Maya exports only dense samples of central NURBS curve geometry in project-world metres to `slopeCurves` in the client `scene.json`; it does not calculate grades, difficulty, labels or colors. These raw points are the browser-side source for deriving 20 m section angles, the green / blue / red / black difficulty line and slope names. The browser-side calculation is separate from the Maya exporter. The three overlays have independent switches in the **Layers** panel and are hidden in skier and drone modes. The viewer uses Three.js line segments and CSS2D labels rather than mesh geometry. Maya reuses unchanged raw curve samples by geometry / transform fingerprint.
 
 ## Multiplayer
 

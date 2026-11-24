@@ -616,7 +616,13 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.8.8"'), 'Maya scene-asset exporter version must be 0.8.6');
+assert.ok(mayaExporter.includes('VERSION = "0.9.1"'), 'Maya scene-asset exporter version must be 0.9.1');
+assert.ok(mayaExporter.includes('def export_slope_centerlines(*_):') && mayaExporter.includes('def _sample_slope_curve_points(') && mayaExporter.includes('manifest["slopeCurves"]'), 'Maya raw centerline geometry export is missing');
+assert.ok(entrySource.includes('function renderSlopeAnalysisOverlays(') && entrySource.includes('function applySlopeAnalysisLayerVisibility('), 'overview slope-analysis overlay renderer / layer visibility is missing');
+assert.ok(entrySource.includes('new THREE.LineSegments') && entrySource.includes('new CSS2DObject'), 'slope overlays must use line segments and CSS2D labels rather than meshes');
+assert.ok(entrySource.includes('slopeAnalysis:state.slopeAnalysisData||undefined'), 'slope-analysis data must survive client manifest autosave');
+assert.ok(html.includes('id="slopeLayersToggle"') && html.includes('id="slopeLayer_angles"') && html.includes('id="slopeLayer_difficulty"') && html.includes('id="slopeLayer_names"'), 'three slope-analysis layer controls are missing');
+
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
 assert.ok(mayaExporter.includes('restore_fbx_compatible_materials(material_overrides)') && mayaExporter.includes('"fbxMaterialConversions"'), 'Maya exporter must always restore source shader connections and record compatibility conversions');

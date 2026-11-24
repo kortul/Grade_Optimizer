@@ -8,6 +8,7 @@ import os
 import re
 import json
 import datetime
+import hashlib
 import shutil
 import subprocess
 
@@ -16,7 +17,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.8"
+VERSION = "0.9.1"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1100,6 +1101,264 @@ def write_client_asset_manifest(export_info, model_size, material_conversions=No
         stream.write("\n")
     return path
 
+
+
+# ============================================================================
+# SLOPE CENTERLINE ANALYSIS — data-only export (no Maya meshes or text meshes)
+# ============================================================================
+
+def _slope_curve_shape(curve):
+    shapes = cmds.listRelatives(
+        curve, shapes=True, noIntermediate=True, fullPath=True, type="nurbsCurve"
+    ) or []
+    if not shapes:
+        raise RuntimeError("Не найдена NURBS shape у центральной линии: " + str(curve))
+    return shapes[0]
+
+
+def _selected_nurbs_curve_transforms():
+    """Collect selected NURBS curves, including curves under selected groups."""
+    selected = cmds.ls(selection=True, long=True) or []
+    curves = []
+    seen = set()
+    for node in selected:
+        if not cmds.objExists(node):
+            continue
+        node_type = cmds.nodeType(node)
+        transform_nodes = []
+        if node_type == "nurbsCurve":
+            parents = cmds.listRelatives(node, parent=True, fullPath=True) or []
+            transform_nodes = parents[:1]
+        elif node_type == "transform":
+            transform_nodes = [node]
+            transform_nodes.extend(
+                cmds.listRelatives(node, allDescendents=True, fullPath=True, type="transform") or []
+            )
+        for transform in transform_nodes:
+            for shape in (cmds.listRelatives(
+                    transform, shapes=True, noIntermediate=True,
+                    fullPath=True, type="nurbsCurve"
+            ) or []):
+                parents = cmds.listRelatives(shape, parent=True, fullPath=True) or []
+                curve_transform = parents[0] if parents else transform
+                if curve_transform not in seen:
+                    seen.add(curve_transform)
+                    curves.append(curve_transform)
+    return sorted(curves)
+
+
+def _slope_bridge_context(curve):
+    working_group = find_working_group(curve)
+    if not working_group:
+        return None
+    bridge_data = get_bridge_data(working_group)
+    if not bridge_data:
+        raise RuntimeError(
+            "У центральной линии найден %s, но отсутствуют "
+            "bridgeOriginalOffset / bridgeOriginalScale. "
+            "Нельзя безопасно экспортировать координаты."
+            % working_group.rsplit("|", 1)[-1]
+        )
+    offset, scale = bridge_data
+    if abs(float(scale)) < 1e-9:
+        raise RuntimeError("CAD Bridge scale равен нулю: " + working_group)
+    return {
+        "group": working_group,
+        "offset": [float(value) for value in offset],
+        "scale": float(scale)
+    }
+
+
+def _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit):
+    """Cheap geometry fingerprint: CV positions + world transform + Bridge context."""
+    shape = _slope_curve_shape(curve)
+    selection = om2.MSelectionList()
+    selection.add(shape)
+    curve_fn = om2.MFnNurbsCurve(selection.getDagPath(0))
+    try:
+        cvs = curve_fn.cvPositions(om2.MSpace.kObject)
+        cv_values = [
+            [round(float(p.x), 5), round(float(p.y), 5), round(float(p.z), 5), round(float(p.w), 6)]
+            for p in cvs
+        ]
+    except Exception:
+        cv_values = []
+    try:
+        knot_values = [round(float(value), 8) for value in curve_fn.knots()]
+    except Exception:
+        knot_values = []
+    uuids = cmds.ls(curve, uuid=True) or []
+    source_uuid = str(uuids[0]) if uuids else ""
+    matrix = cmds.xform(curve, query=True, worldSpace=True, matrix=True) or []
+    payload = {
+        "sourceUuid": source_uuid,
+        "degree": int(curve_fn.degree),
+        "spans": int(curve_fn.numSpans),
+        "form": int(curve_fn.form),
+        "knots": knot_values,
+        "cvs": cv_values,
+        "worldMatrix": [round(float(value), 6) for value in matrix],
+        "linearUnit": str(linear_unit),
+        "metersPerUnit": float(meters_per_unit),
+        "bridge": bridge_context
+    }
+    encoded = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _slope_correct_bridge_points(points_cm, bridge_context, meters_per_unit):
+    """Convert API world cm back from CAD Bridge working coordinates."""
+    if not bridge_context:
+        return [list(point) for point in points_cm]
+    cm_per_scene_unit = float(meters_per_unit) * 100.0
+    offset = bridge_context["offset"]
+    scale = float(bridge_context["scale"])
+    corrected = []
+    for point in points_cm:
+        scene_point = [float(value) / cm_per_scene_unit for value in point]
+        original_scene_point = [
+            scene_point[axis] / scale + float(offset[axis])
+            for axis in range(3)
+        ]
+        corrected.append([value * cm_per_scene_unit for value in original_scene_point])
+    return corrected
+
+
+def _slope_points_cm_to_meters(points):
+    """Convert Maya API world-space centimetres to project metres."""
+    return [[round(float(value) / 100.0, 5) for value in point] for point in points]
+
+
+def _sample_slope_curve_points(curve, bridge_context, meters_per_unit):
+    """Export only dense world-space curve geometry in corrected project metres."""
+    shape = _slope_curve_shape(curve)
+    selection = om2.MSelectionList()
+    selection.add(shape)
+    curve_fn = om2.MFnNurbsCurve(selection.getDagPath(0))
+    minimum, maximum = curve_fn.knotDomain
+    sample_count = max(4096, min(32768, int(curve_fn.numSpans) * 256))
+    sampled = []
+    for index in range(sample_count + 1):
+        fraction = float(index) / float(sample_count)
+        parameter = minimum + (maximum - minimum) * fraction
+        point = curve_fn.getPointAtParam(parameter, om2.MSpace.kWorld)
+        sampled.append((float(point.x), float(point.y), float(point.z)))
+    corrected = _slope_correct_bridge_points(sampled, bridge_context, meters_per_unit)
+    return _slope_points_cm_to_meters(corrected)
+
+
+def export_slope_centerlines(*_):
+    """Export selected NURBS centerlines as raw geometry; all analysis belongs to the browser."""
+    try:
+        repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
+        git_info = _inspect_git_worktree(repo)
+        curves = _selected_nurbs_curve_transforms()
+        if not curves:
+            raise RuntimeError(
+                "Выдели одну или несколько центральных NURBS-кривых склонов. "
+                "Mesh-объекты для этого экспорта не подходят."
+            )
+
+        client_slug, scene_path, manifest, _assets = _read_client_scene(repo)
+        existing_payload = manifest.get("slopeCurves") or {}
+        existing_curves = [
+            dict(item) for item in (existing_payload.get("curves") or [])
+            if isinstance(item, dict) and item.get("sourcePath")
+        ]
+        cached_by_path = {str(item.get("sourcePath")): item for item in existing_curves}
+        cached_by_uuid = {
+            str(item.get("sourceUuid")): item
+            for item in existing_curves if item.get("sourceUuid")
+        }
+        updated_by_path = dict(cached_by_path)
+        linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
+        meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
+        if meters_per_unit is None:
+            raise RuntimeError("Неизвестная линейная единица Maya: " + (linear_unit or "не указана"))
+
+        exported = 0
+        reused = 0
+        for curve in curves:
+            bridge_context = _slope_bridge_context(curve)
+            digest = _slope_curve_digest(curve, bridge_context, linear_unit, meters_per_unit)
+            source_uuids = cmds.ls(curve, uuid=True) or []
+            source_uuid = str(source_uuids[0]) if source_uuids else ""
+            cached = cached_by_uuid.get(source_uuid) if source_uuid else None
+            if cached is None:
+                cached = cached_by_path.get(str(curve))
+
+            if cached and cached.get("sourceDigest") == digest and isinstance(cached.get("points"), list):
+                record = dict(cached)
+                reused += 1
+            else:
+                record = {
+                    "points": _sample_slope_curve_points(curve, bridge_context, meters_per_unit),
+                }
+                exported += 1
+
+            record.update({
+                "id": _safe_asset_id(curve.rsplit("|", 1)[-1]),
+                "name": curve.rsplit("|", 1)[-1],
+                "sourcePath": str(curve),
+                "sourceUuid": source_uuid,
+                "sourceDigest": digest
+            })
+            if cached and cached.get("sourcePath") != str(curve):
+                updated_by_path.pop(str(cached.get("sourcePath")), None)
+            updated_by_path[str(curve)] = record
+
+        ordered_curves = sorted(
+            updated_by_path.values(),
+            key=lambda item: (str(item.get("name") or "").lower(), str(item.get("sourcePath") or ""))
+        )
+        manifest["slopeCurves"] = {
+            "schemaVersion": "1.0",
+            "source": "maya-nurbs-centerlines",
+            "coordinateSystem": "project-world",
+            "units": "meters",
+            "curves": ordered_curves
+        }
+        # Remove the old Maya-generated analysis payload. The browser must derive
+        # angles, difficulty classes, labels and line colors from raw curve points.
+        manifest.pop("slopeAnalysis", None)
+        manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+        temporary_path = scene_path + ".slope-curves.tmp"
+        try:
+            with open(temporary_path, "w", encoding="utf-8") as stream:
+                json.dump(manifest, stream, ensure_ascii=False, indent=2)
+                stream.write("\n")
+            os.replace(temporary_path, scene_path)
+        finally:
+            if os.path.isfile(temporary_path):
+                try:
+                    os.remove(temporary_path)
+                except Exception:
+                    pass
+
+        git_result = _git_changes_for_paths(repo, [scene_path])
+        git_report = _format_git_export_report(git_info, git_result)
+        message = (
+            "Геометрия центральных линий экспортирована в clients/%s/scene.json.\n\n"
+            "Кривых в наборе: %d\nНовых / изменённых кривых: %d\nВзято из кэша: %d\n"
+            "Maya экспортирует только точки NURBS-кривых в мировых координатах (метры). "
+            "Углы, интервалы и сложность рассчитывает сайт.\n\n%s"
+        ) % (client_slug, len(ordered_curves), exported, reused, git_report)
+        cmds.confirmDialog(
+            title="Grade Optimizer · Экспорт кривых",
+            message=message,
+            button=["OK"]
+        )
+        print("[Grade Optimizer] " + message.replace("\n", " | "))
+    except Exception as exc:
+        cmds.warning("[Grade Optimizer] Slope centerline export failed: " + str(exc))
+        cmds.confirmDialog(
+            title="Grade Optimizer · Ошибка экспорта кривых",
+            message=str(exc),
+            button=["OK"]
+        )
+
+
 def browse_repo(*_):
     result = cmds.fileDialog2(fileMode=3, caption="Выбери корень локального репозитория Grade Optimizer")
     if result:
@@ -2130,6 +2389,29 @@ def show():
     cmds.rowLayout(numberOfColumns=2, adjustableColumn=1, columnWidth2=(390, 145))
     cmds.text(WINDOW + "_repo_status", label="Git-папка ещё не проверена.", align="left", height=24, wordWrap=True)
     cmds.button(label="ПРОВЕРИТЬ ПАПКУ", height=26, command=check_git_repository)
+    cmds.setParent("..")
+
+    # Slope-analysis data is exported independently from FBX geometry.
+    cmds.frameLayout(
+        label="ЭКСПОРТ ЦЕНТРАЛЬНЫХ ЛИНИЙ СКЛОНОВ",
+        collapsable=False, marginWidth=9, marginHeight=8,
+        borderStyle="etchedIn"
+    )
+    cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
+    cmds.text(
+        label="Выдели центральные NURBS-кривые склонов. Maya экспортирует только исходную геометрию кривых в мировых координатах. Углы, шаги 20 м и сложность рассчитывает сайт.",
+        align="left", height=48, wordWrap=True
+    )
+    cmds.button(
+        label="ЭКСПОРТИРОВАТЬ КРИВЫЕ СКЛОНОВ",
+        height=42, backgroundColor=(0.22, 0.42, 0.63),
+        command=export_slope_centerlines
+    )
+    cmds.text(
+        label="Неизменённые кривые берутся из кэша. Экспортируются только изменённые или новые линии.",
+        align="left", height=30, wordWrap=True
+    )
+    cmds.setParent("..")
     cmds.setParent("..")
 
     # 1. NEW ASSET — always creates a fresh ID and a separate FBX.

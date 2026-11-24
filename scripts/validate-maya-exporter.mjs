@@ -12,9 +12,22 @@ const app = read(entryPath);
 const terrain = JSON.parse(read('assets/real-terrain.json'));
 const clientScene = JSON.parse(read('clients/alpine-resort/scene.json'));
 
-assert.ok(maya.includes('VERSION = "0.8.8"'), 'Maya exporter must be 0.8.8');
+assert.ok(maya.includes('VERSION = "0.9.1"'), 'Maya exporter must be 0.9.1');
 assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
+assert.ok(maya.includes('def _sample_slope_curve_points(') && maya.includes('"points": _sample_slope_curve_points('), 'Maya must export raw sampled NURBS points');
+assert.ok(maya.includes('def _slope_points_cm_to_meters('), 'Maya raw curve export must convert API world centimetres to metres');
+assert.ok(maya.includes('def export_slope_centerlines(*_):'), 'Maya centerline geometry export handler is missing');
+assert.ok(maya.includes('def _slope_curve_digest(') && maya.includes('sourceDigest'), 'Maya curve export must cache raw geometry by curve fingerprint');
+
+assert.ok(maya.includes('ЭКСПОРТ ЦЕНТРАЛЬНЫХ ЛИНИЙ СКЛОНОВ') && maya.includes('ЭКСПОРТИРОВАТЬ КРИВЫЕ СКЛОНОВ'), 'Maya exporter UI must expose raw centerline geometry export');
+assert.ok(maya.includes('manifest["slopeCurves"]') && maya.includes('"coordinateSystem": "project-world"') && maya.includes('"units": "meters"'), 'Maya must store raw curve geometry in project-world metres');
+assert.ok(!maya.includes('def _slope_route_class_from_shares(') && !maya.includes('def _build_slope_analysis_record('), 'Maya exporter must not calculate slope grades or difficulty');
+assert.ok(app.includes('function renderSlopeAnalysisOverlays(') && app.includes('new THREE.LineSegments'), 'browser must render slope difficulty as lightweight line segments');
+assert.ok(app.includes('new CSS2DObject') && app.includes('SlopeAnalysis_Angles') && app.includes('SlopeAnalysis_Names'), 'browser must use independent CSS2D angle and name label layers');
+assert.ok(app.includes('renderSlopeAnalysisOverlays(manifest.slopeAnalysis||null)') && app.includes('slopeAnalysis:state.slopeAnalysisData||undefined'), 'slope analysis data must load and persist with the client scene');
+assert.ok(html.includes('id="slopeLayersToggle"') && html.includes('id="slopeLayer_angles"') && html.includes('id="slopeLayer_difficulty"') && html.includes('id="slopeLayer_names"'), 'overview layers panel must expose all three independent toggles');
+
 assert.ok(app.includes('gradeOptimizerTerrainTexture') && app.includes('low-frequency-albedo-no-bump'), 'terrain snow must not use the old high-frequency bump detail');
 
 assert.ok(app.includes('logarithmicDepthBuffer:true'), 'large-scale terrain renderer must enable logarithmic depth buffering');
@@ -88,7 +101,7 @@ assert.ok(app.includes('mayaExport:item.mayaExport||null') &&
           app.includes('mayaExport:asset.meta.mayaExport||undefined'),
           'CAD Bridge metadata must survive client load and browser backup serialization');
 
-console.log('✓ Maya exporter 0.8.8: nested CAD Bridge context, exact selection and separate mesh baking');
+console.log('✓ Maya exporter 0.9.1: raw slope centerline geometry only, nested CAD Bridge context and separate mesh baking');
 console.log('✓ Stage1: 22 selected meshes, valid FBX / manifest pair, inverse Bridge metadata');
 console.log('✓ Canonical Terrain: existing working-world FBX retained unchanged');
 console.log('✓ Browser: restores Stage1 FBX into the Terrain working-world frame and preserves metadata');
