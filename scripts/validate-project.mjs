@@ -524,7 +524,7 @@ pass('browser backup and direct local repository auto-sync are present');
 
 const mayaExporter = read('maya/grade_optimizer_exporter.py').toString('utf8');
 const mayaPlugin = read('maya/plug-ins/grade_optimizer.py').toString('utf8');
-assert.ok(mayaExporter.includes('VERSION = "0.7.6"'), 'Maya scene-asset exporter version must be 0.7.6');
+assert.ok(mayaExporter.includes('VERSION = "0.7.7"'), 'Maya scene-asset exporter version must be 0.7.6');
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
 assert.ok(mayaExporter.includes('restore_fbx_compatible_materials(material_overrides)') && mayaExporter.includes('"fbxMaterialConversions"'), 'Maya exporter must always restore source shader connections and record compatibility conversions');
@@ -546,7 +546,12 @@ assert.ok(mayaExporter.includes('collect_meshes(selection_only=True, selection_r
 assert.ok(mayaExporter.includes('cmds.select(export_roots, replace=True)') && mayaExporter.includes('def collect_meshes(selection_only=False, selection_roots=None):'), 'Maya FBX export must restore whole transform roots before selection-only export');
 assert.ok(mayaExporter.includes('FBXExport -f "') && mayaExporter.includes('" -s;'), 'Maya scene asset export must always use FBX selection-only mode');
 assert.ok(mayaExporter.includes('os.replace(temporary_model_path, export_info["model_path"])') && mayaExporter.includes('os.replace(temporary_manifest_path, export_info["manifest_path"])'), 'Maya exporter must publish the separate model and manifest only after export succeeds');
-assert.ok(!mayaExporter.includes('FBX_NAME = "real-terrain.fbx"') && !mayaExporter.includes('FBX_RELATIVE_PATH') && !mayaExporter.includes('def write_terrain_manifest('), 'Maya exporter must never write selected geometry to the canonical base terrain path');
+assert.ok(mayaExporter.includes('"_canonical_terrain": True') && mayaExporter.includes('"_relative_file": "assets/real-terrain.fbx"'), 'Maya replacement tree must list the canonical base terrain as a separate asset');
+assert.ok(mayaExporter.includes('def replace_canonical_terrain(*_):') && mayaExporter.includes('replace_canonical_terrain()'), 'Maya exporter must expose a dedicated canonical terrain replacement path');
+assert.ok(mayaExporter.includes('def _create_canonical_terrain_export_copy(') && mayaExporter.includes('point.x / bridge_scale + offset[0]'), 'canonical terrain export must reverse the CAD Bridge working offset / scale on temporary copies');
+assert.ok(mayaExporter.includes('"cadBridge": {') && mayaExporter.includes('"inverseApplied": bool(bridge_data)'), 'canonical terrain sidecar must record the CAD Bridge inverse transform');
+assert.ok(mayaExporter.includes('os.replace(temporary_model_path, model_path)') && mayaExporter.includes('os.replace(temporary_manifest_path, manifest_path)'), 'canonical terrain FBX and JSON sidecar must be replaced as a recoverable pair');
+assert.ok(mayaExporter.includes('if shape in seen:'), 'Maya exporter must retain multiple mesh shapes under one transform as separate mesh components');
 assert.ok(mayaExporter.includes('METADATA_PRESETS = {'), 'Maya exporter metadata presets missing');
 const mayaPresetSource = mayaExporter.slice(mayaExporter.indexOf('METADATA_PRESETS = {'), mayaExporter.indexOf('def safe_path'));
 assert.ok(!mayaPresetSource.includes('"collision"') && !mayaPresetSource.includes('"forestBlocker"'), 'Maya metadata presets must not assign editor-owned Collision / Forest blocker flags');
