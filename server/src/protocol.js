@@ -71,6 +71,16 @@ export function appendSharedMarker(inputMarkers, marker) {
   return {...update,acceptedMarker:marker};
 }
 
+export function normalizeMeasurement(input, owner, ownerId) {
+  if(!input||typeof input!=='object'||Array.isArray(input))return null;
+  const id=sanitizeClientId(input.id);
+  const cleanOwnerId=sanitizeClientId(ownerId);
+  if(!id||!cleanOwnerId||!Array.isArray(input.points)||![1,2].includes(input.points.length))return null;
+  const points=input.points.map(point=>finiteArray(point,3,50000));
+  if(points.some(point=>!point))return null;
+  return {id,owner:sanitizeName(owner),ownerId:cleanOwnerId,points,updatedAt:Date.now()};
+}
+
 export function normalizeState(input) {
   if(!input||typeof input!=='object'||Array.isArray(input)||!['overview','skier','drone'].includes(input.mode))return null;
   const p=finiteArray(input.p,3,50000),q=finiteArray(input.q,4,2),v=finiteArray(input.v,3,180);
