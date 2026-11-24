@@ -30,7 +30,7 @@ jobs:
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
         run: |
-          node --input-type=module --check < app.v177.js
+          node --input-type=module --check < app.v178.js
           node --input-type=module --check < multiplayer.v10.js
           node --input-type=module --check < drone-controller.v76.js
       - name: Check standalone WebGPU lab modules
