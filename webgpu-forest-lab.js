@@ -3,7 +3,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
-import { calculateSolarCycle, advanceSolarClock } from './solar-cycle.v1.js';
+import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
 import {
   exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
   isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV, smoothstep,
@@ -55,11 +55,14 @@ if (sky.material) {
   sky.material.depthTest = false;
 }
 scene.add(sky);
+const sunDisc=createSolarDisc(THREE);
+scene.add(sunDisc);
 const sunDirection = new THREE.Vector3();
 let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
 let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null;
 let fogPipeline,dayCyclePlaying=false;
+let solarState=null;
 
 const noiseTexture = createNoiseTexture3D(64);
 const fogDensity = uniform(Number(ui.fogDensity.value));
@@ -129,6 +132,7 @@ function advanceDayCycleFrame(deltaSeconds){
 function updateSky() {
   const hours = Number(ui.time.value);
   const solar = calculateSolarCycle(THREE,hours);
+  solarState=solar;
   sunDirection.copy(solar.sunDirection);
   sky.sunPosition.value.copy(sunDirection);
   sky.turbidity.value = Number(ui.turbidity.value);
@@ -141,9 +145,10 @@ function updateSky() {
   sky.cloudCoverage.value = Number(ui.cloudCoverage.value);
   sky.cloudDensity.value = Number(ui.cloudDensity.value);
   sky.cloudElevation.value = Number(ui.cloudElevation.value);
-  sky.showSunDisc.value = true;
+  sky.showSunDisc.value = false;
 
   const directPower=THREE.MathUtils.clamp(Number(ui.sunIntensity.value),0,1.5);
+  updateSolarDisc(THREE,sunDisc,camera,solar,directPower);
   hemisphere.intensity = 0.18 + solar.daylight * 0.62 + solar.nightStrength*0.025;
   sunLight.intensity = solar.daylight * 3.0 * directPower;
   sunLight.color.copy(solar.sunColor);
@@ -1081,6 +1086,7 @@ async function start() {
     controls.update();
     advanceDayCycleFrame(dt);
     camera.updateMatrixWorld();
+    if(solarState)updateSolarDisc(THREE,sunDisc,camera,solarState,Number(ui.sunIntensity.value));
     sky.position.copy(camera.position);
     fogPipeline.setTime(elapsed);
     fogPipeline.updateCamera(sunDirection);
