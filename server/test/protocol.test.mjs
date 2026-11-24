@@ -100,7 +100,10 @@ test('marker sync replaces only the sender set and broadcasts server-authoritati
 test('marker sync keeps newest three flags and enforces global cap',()=>{
   const owner='4dd69fea-b96d-42c4-9c4b-2ca5e8a50d90';
   const makeId=number=>'550e8400-e29b-41d4-a716-'+String(number).padStart(12,'0');
-  const others=Array.from({length:MAX_SHARED_MARKERS},(_,index)=>normalizeMarker({id:makeId(index+1),p:[index,0,0]},'Other '+index,'54395181-3418-4593-af6c-1bd9f4a2173c'));
+  const makeOwnerId=number=>'40000000-0000-4000-8000-'+String(number).padStart(12,'0');
+  const others=Array.from({length:MAX_SHARED_MARKERS},(_,index)=>normalizeMarker(
+    {id:makeId(index+1),p:[index,0,0]},'Other '+index,makeOwnerId(index+1)
+  ));
   const update=syncSharedMarkers(others,[1,2,3,4].map(number=>({id:makeId(50+number),p:[number,0,0]})),'Pavel',owner);
   assert.equal(update.addedMarkers.length,3);
   assert.equal(update.markers.length,MAX_SHARED_MARKERS);
