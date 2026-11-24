@@ -1067,6 +1067,24 @@ export class SkierController {
     return new THREE.Vector3(smoothNormal.x,smoothNormal.y,smoothNormal.z);
   }
 
+  _finishTerrainQuery(queryStarted) {
+    const elapsed=performance.now()-queryStarted;
+    const stats=this.terrainPerformance;
+    stats.totalQueryMs+=elapsed;
+    if(elapsed>stats.maxQueryMs)stats.maxQueryMs=elapsed;
+  }
+
+  getTerrainPerformanceDiagnostics() {
+    const stats=this.terrainPerformance;
+    const queryCount=stats.queryCount||0;
+    return {
+      ...stats,
+      averageQueryMs:queryCount?stats.totalQueryMs/queryCount:0,
+      lookupHitRate:queryCount?stats.lookupHits/queryCount:0,
+      raycastFallbackRate:queryCount?stats.raycastFallbacks/queryCount:0
+    };
+  }
+
   _groundAt(x,z,referenceY=null,maxVerticalDelta=Infinity){
     if(!this.terrain)return null;
     const queryStarted=performance.now();
