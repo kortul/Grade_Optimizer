@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.7.9"
+VERSION = "0.8.0"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -249,13 +249,41 @@ def check_git_repository(*_):
             cmds.text(WINDOW + "_repo_status", edit=True, label="Git не подтверждён · " + str(exc).split("\n")[0])
         cmds.confirmDialog(title="Grade Optimizer · Git check failed", message=str(exc), button=["OK"])
 
+def _normalize_dag_roots(roots):
+    """Resolve supplied Maya node names to unambiguous full DAG paths."""
+    normalized = []
+    for root in roots or []:
+        matches = cmds.ls(str(root), long=True) or []
+        matches = [
+            item for item in matches
+            if cmds.objExists(item) and cmds.nodeType(item) in ("transform", "joint")
+        ]
+        if not matches and cmds.objExists(str(root)):
+            node = str(root)
+            if cmds.nodeType(node) in ("transform", "joint"):
+                matches = [node]
+        if len(matches) > 1:
+            raise RuntimeError(
+                "Неоднозначный DAG root %s: Maya вернула несколько путей: %s"
+                % (root, ", ".join(matches))
+            )
+        if matches and matches[0] not in normalized:
+            normalized.append(matches[0])
+    return normalized
+
+
 def collect_meshes(selection_only=False, selection_roots=None):
-    # Normalize object / face / vertex selections to their owning DAG transforms.
-    # FBXExport -s must receive transform roots, never a stale component selection.
-    selection = (
-        list(selection_roots) if selection_only and selection_roots is not None
-        else (_selected_transforms() if selection_only else [])
-    )
+    # Resolve roots to full DAG paths. A selected branch includes only its
+    # descendants; selecting a child must never pull in meshes from its parent.
+    if selection_only:
+        requested_roots = (
+            selection_roots if selection_roots is not None
+            else _selected_transforms()
+        )
+        selection = _normalize_dag_roots(requested_roots)
+    else:
+        selection = []
+
     result = []
     seen = set()
     for shape in cmds.ls(type="mesh", long=True) or []:
@@ -269,10 +297,8 @@ def collect_meshes(selection_only=False, selection_roots=None):
             continue
         transform = parents[0]
         if selection_only and not any(
-            transform == item
-            or transform.startswith(item.rstrip("|") + "|")
-            or item.startswith(transform.rstrip("|") + "|")
-            for item in selection
+            transform == root or transform.startswith(root.rstrip("|") + "|")
+            for root in selection
         ):
             continue
         # Track shape paths rather than transforms: one transform may
@@ -1268,9 +1294,28 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
         source_root, name=duplicate_name, returnRootsOnly=True
     )[0]
 
+    # Maya may return a short name from duplicate/parent. Resolve the copied
+    # root again after every DAG reparent so descendant filtering uses a full path.
+    copied_roots = cmds.ls(baked_root, long=True) or []
+    if len(copied_roots) != 1:
+        raise RuntimeError(
+            "Не удалось однозначно определить корень временной копии %s: %s"
+            % (short_name, ", ".join(copied_roots) or "узел не найден")
+        )
+    baked_root = copied_roots[0]
+
     parents = cmds.listRelatives(baked_root, parent=True, fullPath=True) or []
     if parents:
-        baked_root = cmds.parent(baked_root, world=True, absolute=True)[0]
+        parent_result = cmds.parent(baked_root, world=True, absolute=True) or []
+        if not parent_result:
+            raise RuntimeError("Maya не смогла перенести временную копию %s в World." % short_name)
+        copied_roots = cmds.ls(parent_result[0], long=True) or []
+        if len(copied_roots) != 1:
+            raise RuntimeError(
+                "После переноса %s в World корень копии неоднозначен: %s"
+                % (short_name, ", ".join(copied_roots) or "узел не найден")
+            )
+        baked_root = copied_roots[0]
 
     _apply_inverse_bridge_to_root_matrix(baked_root, bridge_context)
 
@@ -1296,7 +1341,15 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
         selection_only=True, selection_roots=[baked_root]
     )
     if not mesh_components:
-        raise RuntimeError("В копии %s не осталось polygon mesh." % short_name)
+        descendant_shapes = cmds.listRelatives(
+            baked_root, allDescendents=True, fullPath=True, type="mesh"
+        ) or []
+        raise RuntimeError(
+            "В копии %s не удалось найти экспортируемый polygon mesh. "
+            "Корень: %s. Mesh shapes в DAG: %d. "
+            "Возможно, в копии остались только intermediate shapes или пустая ветка."
+            % (short_name, baked_root, len(descendant_shapes))
+        )
 
     point_records = []
     for component in mesh_components:
