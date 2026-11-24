@@ -108,6 +108,8 @@ assert.equal(stageOneAsset.name, 'Slopes_Stage1', 'stage-one piste asset name ch
 assert.equal(stageOneAsset.category, 'slope', 'Slopes_Stage1 must remain an additional slope asset');
 assert.equal(stageOneAsset.activeTerrain, false, 'Slopes_Stage1 must not replace the base terrain');
 assert.deepEqual(stageOneAsset.transform.scale, [0.01, 0.01, 0.01], 'Maya centimetres must be converted to metres for the imported piste');
+assert.deepEqual(stageOneAsset.transform.position, [0, 0.1, 0], 'the complete imported piste asset must retain a non-destructive 10 cm world-Y clearance above the source terrain');
+
 const stageOneComponents = stageOneAsset.mayaExport?.components || [];
 assert.ok(stageOneComponents.length > 0, 'Slopes_Stage1 manifest must list its exported mesh components');
 assert.equal(
