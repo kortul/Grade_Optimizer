@@ -16,7 +16,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.8.5"
+VERSION = "0.8.6"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -336,10 +336,10 @@ def _node_name_path(dag_path):
 
 
 def _selected_node_matches(node, selection):
+    # Metadata belongs to the selected node or its descendants only.
+    # An ancestor match would pull unrelated sibling branches into the manifest.
     return any(
-        node == item
-        or node.startswith(item.rstrip("|") + "|")
-        or item.startswith(node.rstrip("|") + "|")
+        node == item or node.startswith(item.rstrip("|") + "|")
         for item in selection
     )
 
@@ -1286,9 +1286,8 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
     world-space mesh points into identity transforms. Original Maya nodes are
     never changed. Each mesh shape remains a separate FBX object.
 
-    Stage 1 applies the same legacy compatibility normalisation previously
-    performed by the web loader: descendant scales -> 1 and ToSketchfab
-    translation -> 0. That result is baked before export.
+    Every selected branch keeps its authored hierarchy transforms. Their
+    combined world-space positions are baked into identity transforms.
     """
     short_name = str(source_root).rsplit("|", 1)[-1]
     duplicate_name = "GO_EXPORT_%s_%03d" % (
@@ -1326,20 +1325,9 @@ def _bake_export_root_to_world_meshes(source_root, suffix, bridge_context=None,
     # It is the common coordinate frame shared by A1.gltf and the browser scene.
     # Inverting bridgeOriginalScale shrinks the ~4.5 km terrain to ~4.5 m.
     transform_nodes = _all_transform_nodes(baked_root)
-    if stage_one:
-        for node in transform_nodes:
-            try:
-                cmds.setAttr(node + ".scaleX", 1.0)
-                cmds.setAttr(node + ".scaleY", 1.0)
-                cmds.setAttr(node + ".scaleZ", 1.0)
-            except Exception as error:
-                raise RuntimeError(
-                    "Не удалось нормализовать Maya scale на %s: %s" % (node, error)
-                )
-            if node.rsplit("|", 1)[-1].lower() == "tosketchfab":
-                cmds.setAttr(node + ".translateX", 0.0)
-                cmds.setAttr(node + ".translateY", 0.0)
-                cmds.setAttr(node + ".translateZ", 0.0)
+    # Preserve all Maya-authored transforms. The world-space vertex bake below
+    # captures their combined positions without flattening nested scales or
+    # zeroing ToSketchfab translation.
 
     # Capture world-space points after Bridge inversion and (for Stage 1)
     # after the compatibility normalisation above.
@@ -1840,21 +1828,6 @@ def _stage_one_branch_selection(repo, components):
     if not stage_one_components:
         raise RuntimeError("В отдельной ветке Slopes_Stage1 не найдено polygon mesh.")
 
-    leaked = [
-        item for item in stage_one_components
-        if re.search(
-            r"(stage[_ -]?2|slopes[_ -]?stage[_ -]?2)",
-            " ".join((str(item.get("dagPath") or ""),
-                      str(item.get("name") or ""),
-                      str(item.get("shape") or ""))).lower()
-        )
-    ]
-    if leaked:
-        raise RuntimeError(
-            "Внутри найденной ветки Stage 1 обнаружены пути Stage 2 (%d mesh). "
-            "Экспорт остановлен; проверь DAG-иерархию Maya." % len(leaked)
-        )
-
     return minimal_roots, stage_one_components
 
 
@@ -1951,42 +1924,10 @@ def _export_scene(replace_asset_id=None):
         )
         stage_one_export = str(target_entry.get("phase") or "") == "stage_1"
         if stage_one_export:
-            # Reassert the exact Stage 1-only component list in the manifest.
+            # The Git target is resolved to the Slopes_Stage1 DAG branch above.
+            # Mesh leaf names are labels, not export filters.
             target_entry["mayaExport"]["components"] = list(components)
             target_entry["mayaExport"]["exportedRootName"] = export_roots[0].rsplit("|", 1)[-1]
-            stage_two_components = [
-                item for item in components
-                if re.search(
-                    r"(stage[_ -]?2|slopes[_ -]?stage[_ -]?2)",
-                    " ".join((
-                        str(item.get("dagPath") or ""),
-                        str(item.get("name") or ""),
-                        str(item.get("shape") or "")
-                    )).lower()
-                )
-            ]
-            if stage_two_components:
-                examples = ", ".join(
-                    str(item.get("name") or item.get("shape") or "mesh")
-                    for item in stage_two_components[:6]
-                )
-                raise RuntimeError(
-                    "Экспорт Stage 1 остановлен: в выделении обнаружено %d mesh из Stage 2. "
-                    "Они не должны попадать в Slopes_Stage1. "
-                    "Сними выделение Stage 2 и повтори замену.\n\nПримеры: %s"
-                    % (len(stage_two_components), examples)
-                )
-        base_terrain_components = [
-            item for item in components
-            if "terrain" in (str(item.get("name") or "") + " " + str(item.get("shape") or "")).lower()
-            or "ground" in (str(item.get("name") or "") + " " + str(item.get("shape") or "")).lower()
-        ]
-        if str(replace_asset_id or "") == "slopes_stage1" and base_terrain_components:
-            raise RuntimeError(
-                "В выделение Stage 1 попал также основной terrain (%d mesh). "
-                "Выдели только ветку Slopes_Stage1 внутри MAYA_WORKING_SCENE."
-                % len(base_terrain_components)
-            )
         fbx_export_roots = list(export_roots)
         temporary_export_roots = []
         export_components = list(components)
