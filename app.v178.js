@@ -30,7 +30,7 @@ usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3, labelOpacity:
   importedAssets:[], baseTerrain:null, baseTerrainMats:[], activeTerrainAssetId:null,
   treeAreas:[],treeAreaGroup:null,
   skierSpawns:{},selectedSkierSpawnSlot:'1',skierSpawnGroup:null,
-  slopeAnalysisData:null,slopeAnalysisGroup:null,
+  slopeAnalysisData:null,slopeCurvesData:null,slopeAnalysisGroup:null,
   slopeAnalysisLayers:{angles:true,difficulty:true,names:true}
 };
 
@@ -184,6 +184,257 @@ function applySlopeAnalysisLayerVisibility(){
       ?count+' центральных линий · шаг '+Number(state.slopeAnalysisData.intervalMeters||20)+' м'
       :'Анализ ещё не экспортирован из Maya.';
   }
+}
+
+
+// ---------------------------------------------------------------------------
+// Browser-side slope analysis. Maya exports only dense NURBS centerline points
+// in project metres. This port mirrors CurvePathAnalyzer.analyze() from the
+// supplied Terrain Analysis Pro script and caches each curve by sourceDigest.
+// ---------------------------------------------------------------------------
+const SLOPE_ANALYSIS_INTERVAL_METERS = 20.0;
+const SLOPE_ANALYSIS_CACHE_VERSION = 'curve-analysis-v1';
+const SLOPE_ANALYSIS_ANGLE_LIMITS = {
+  green: Math.atan(0.15) * 180 / Math.PI,
+  blue: Math.atan(0.25) * 180 / Math.PI,
+  red: Math.atan(0.40) * 180 / Math.PI
+};
+const slopeAnalysisMemoryCache = new Map();
+let slopeAnalysisCacheDbPromise = null;
+
+function openSlopeAnalysisCacheDb(){
+  if(!('indexedDB' in window))return Promise.resolve(null);
+  if(slopeAnalysisCacheDbPromise)return slopeAnalysisCacheDbPromise;
+  slopeAnalysisCacheDbPromise=new Promise((resolve,reject)=>{
+    const request=indexedDB.open('grade-optimizer-slope-analysis',1);
+    request.onupgradeneeded=()=>{
+      const db=request.result;
+      if(!db.objectStoreNames.contains('curves'))db.createObjectStore('curves',{keyPath:'key'});
+    };
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error||new Error('Не удалось открыть кэш анализа склонов'));
+  }).catch(error=>{
+    console.warn('[Grade Optimizer] Slope analysis IndexedDB unavailable:',error);
+    return null;
+  });
+  return slopeAnalysisCacheDbPromise;
+}
+
+function slopeCurveCacheKey(curve){
+  const config=[
+    SLOPE_ANALYSIS_CACHE_VERSION,
+    SLOPE_ANALYSIS_INTERVAL_METERS,
+    SLOPE_ANALYSIS_ANGLE_LIMITS.green,
+    SLOPE_ANALYSIS_ANGLE_LIMITS.blue,
+    SLOPE_ANALYSIS_ANGLE_LIMITS.red,
+    20.0
+  ].join('|');
+  if(curve?.sourceDigest)return config+'|'+String(curve.sourceDigest);
+  const source=JSON.stringify(curve?.points||[]);
+  let hash=2166136261;
+  for(let index=0;index<source.length;index++){
+    hash^=source.charCodeAt(index);
+    hash=Math.imul(hash,16777619);
+  }
+  return config+'|fallback-'+(hash>>>0).toString(16);
+}
+
+async function getCachedSlopeCurveAnalysis(key){
+  if(slopeAnalysisMemoryCache.has(key))return slopeAnalysisMemoryCache.get(key);
+  const db=await openSlopeAnalysisCacheDb();
+  if(!db)return null;
+  return new Promise(resolve=>{
+    try{
+      const request=db.transaction('curves','readonly').objectStore('curves').get(key);
+      request.onsuccess=()=>{
+        const value=request.result?.analysis||null;
+        if(value)slopeAnalysisMemoryCache.set(key,value);
+        resolve(value);
+      };
+      request.onerror=()=>resolve(null);
+    }catch(error){resolve(null);}
+  });
+}
+
+async function cacheSlopeCurveAnalysis(key,analysis){
+  slopeAnalysisMemoryCache.set(key,analysis);
+  const db=await openSlopeAnalysisCacheDb();
+  if(!db)return;
+  await new Promise(resolve=>{
+    try{
+      const transaction=db.transaction('curves','readwrite');
+      transaction.objectStore('curves').put({key,analysis,savedAt:Date.now()});
+      transaction.oncomplete=()=>resolve();
+      transaction.onerror=()=>resolve();
+      transaction.onabort=()=>resolve();
+    }catch(error){resolve();}
+  });
+}
+
+function slopePointAtDistance(points,cumulative,distance){
+  if(distance<=0)return {point:points[0].slice(),segment:0,fraction:0};
+  const total=cumulative[cumulative.length-1];
+  if(distance>=total)return {point:points[points.length-1].slice(),segment:points.length-2,fraction:1};
+  let low=0,high=cumulative.length;
+  while(low<high){
+    const middle=(low+high)>>1;
+    if(cumulative[middle]<=distance)low=middle+1;
+    else high=middle;
+  }
+  const segment=Math.max(0,Math.min(points.length-2,low-1));
+  const length=cumulative[segment+1]-cumulative[segment];
+  const fraction=length<=1e-12?0:(distance-cumulative[segment])/length;
+  const a=points[segment],b=points[segment+1];
+  return {
+    point:[
+      a[0]+(b[0]-a[0])*fraction,
+      a[1]+(b[1]-a[1])*fraction,
+      a[2]+(b[2]-a[2])*fraction
+    ],
+    segment,
+    fraction
+  };
+}
+
+function slopeHorizontalDistance(points,startSample,endSample){
+  const startSegment=startSample.segment,endSegment=endSample.segment;
+  if(endSegment<startSegment)return 0;
+  const horizontal=(a,b)=>Math.hypot(b[0]-a[0],b[2]-a[2]);
+  if(startSegment===endSegment){
+    return horizontal(points[startSegment],points[startSegment+1])*
+      Math.max(0,endSample.fraction-startSample.fraction);
+  }
+  let total=horizontal(startSample.point,points[startSegment+1]);
+  for(let index=startSegment+1;index<endSegment;index++){
+    total+=horizontal(points[index],points[index+1]);
+  }
+  total+=horizontal(points[endSegment],endSample.point);
+  return total;
+}
+
+function slopeSectionPolyline(points,cumulative,startDistance,endDistance,startSample,endSample){
+  const sectionPoints=[startSample.point];
+  for(let index=startSample.segment+1;index<=endSample.segment;index++){
+    if(index<points.length-1&&cumulative[index]<endDistance-1e-9){
+      sectionPoints.push(points[index]);
+    }
+  }
+  const last=sectionPoints[sectionPoints.length-1];
+  if(!last||Math.hypot(
+    last[0]-endSample.point[0],
+    last[1]-endSample.point[1],
+    last[2]-endSample.point[2]
+  )>1e-9)sectionPoints.push(endSample.point);
+  return sectionPoints;
+}
+
+function classifySlopeAnalysisAngle(angle){
+  if(angle<=SLOPE_ANALYSIS_ANGLE_LIMITS.green)return 'green';
+  if(angle<=SLOPE_ANALYSIS_ANGLE_LIMITS.blue)return 'blue';
+  if(angle<=SLOPE_ANALYSIS_ANGLE_LIMITS.red)return 'red';
+  return 'black';
+}
+
+function classifySlopeAnalysisRoute(shares){
+  const categories=['green','blue','red','black'];
+  for(let index=0;index<categories.length-1;index++){
+    const harder=categories.slice(index+1);
+    const maximum=Math.max(0,...harder.map(category=>Number(shares[category]||0)));
+    if(maximum<=20.0+1e-9)return categories[index];
+  }
+  return 'black';
+}
+
+function analyzeSlopeCenterline(curve){
+  const points=(Array.isArray(curve?.points)?curve.points:[])
+    .filter(point=>Array.isArray(point)&&point.length>=3&&point.slice(0,3).every(value=>Number.isFinite(Number(value))))
+    .map(point=>[Number(point[0]),Number(point[1]),Number(point[2])]);
+  if(points.length<2)return null;
+
+  const cumulative=[0];
+  for(let index=1;index<points.length;index++){
+    const a=points[index-1],b=points[index];
+    cumulative.push(cumulative[index-1]+Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]));
+  }
+  const totalLength=cumulative[cumulative.length-1];
+  if(totalLength<=1e-12)return null;
+
+  const lengths={green:0,blue:0,red:0,black:0};
+  const sections=[];
+  for(let sectionStart=0;sectionStart<totalLength-1e-8;){
+    const sectionEnd=Math.min(totalLength,sectionStart+SLOPE_ANALYSIS_INTERVAL_METERS);
+    const startSample=slopePointAtDistance(points,cumulative,sectionStart);
+    const endSample=slopePointAtDistance(points,cumulative,sectionEnd);
+    const horizontal=slopeHorizontalDistance(points,startSample,endSample);
+    const vertical=Math.abs(endSample.point[1]-startSample.point[1]);
+    const angle=horizontal<=1e-8?(vertical>1e-8?90:0):Math.atan2(vertical,horizontal)*180/Math.PI;
+    const difficulty=classifySlopeAnalysisAngle(angle);
+    const sectionLength=sectionEnd-sectionStart;
+    lengths[difficulty]+=sectionLength;
+    const midpoint=slopePointAtDistance(points,cumulative,(sectionStart+sectionEnd)*0.5);
+    sections.push({
+      startMeters:sectionStart,
+      endMeters:sectionEnd,
+      angleDegrees:angle,
+      difficulty,
+      labelPosition:midpoint.point,
+      points:slopeSectionPolyline(points,cumulative,sectionStart,sectionEnd,startSample,endSample)
+    });
+    sectionStart=sectionEnd;
+  }
+
+  const shares={};
+  for(const category of ['green','blue','red','black']){
+    shares[category]=lengths[category]/totalLength*100;
+  }
+  const categories=['green','blue','red','black'];
+  const dominantDifficulty=categories.reduce((best,category)=>{
+    if(shares[category]>shares[best]+1e-12)return category;
+    if(Math.abs(shares[category]-shares[best])<=1e-12&&categories.indexOf(category)>categories.indexOf(best))return category;
+    return best;
+  },'green');
+  const routeDifficulty=classifySlopeAnalysisRoute(shares);
+  return {
+    id:String(curve.id||curve.name||'slope'),
+    name:String(curve.name||curve.id||'Slope'),
+    sourceDigest:String(curve.sourceDigest||''),
+    routeDifficulty,
+    dominantDifficulty,
+    difficultyShares:shares,
+    totalLengthMeters:totalLength,
+    intervalMeters:SLOPE_ANALYSIS_INTERVAL_METERS,
+    namePosition:(()=>{const midpoint=slopePointAtDistance(points,cumulative,totalLength*0.5).point;return [midpoint[0]+20.0,midpoint[1],midpoint[2]];})(),
+    sections
+  };
+}
+
+async function buildSlopeAnalysisFromManifest(manifest){
+  const payload=manifest?.slopeCurves;
+  const rawCurves=Array.isArray(payload?.curves)?payload.curves:[];
+  if(!rawCurves.length){
+    state.slopeCurvesData=null;
+    renderSlopeAnalysisOverlays(manifest?.slopeAnalysis||null);
+    return;
+  }
+  state.slopeCurvesData=payload;
+  const analyses=await Promise.all(rawCurves.map(async curve=>{
+    const key=slopeCurveCacheKey(curve);
+    let analysis=await getCachedSlopeCurveAnalysis(key);
+    if(!analysis){
+      analysis=analyzeSlopeCenterline(curve);
+      if(analysis)await cacheSlopeCurveAnalysis(key,analysis);
+    }
+    if(!analysis)return null;
+    // Names and IDs are metadata, not part of the geometry cache key.
+    return {...analysis,id:String(curve.id||analysis.id),name:String(curve.name||analysis.name)};
+  }));
+  const curves=analyses.filter(Boolean);
+  renderSlopeAnalysisOverlays({
+    schemaVersion:'1.0',
+    source:'browser-analysis',
+    intervalMeters:SLOPE_ANALYSIS_INTERVAL_METERS,
+    curves
+  });
 }
 
 function renderSlopeAnalysisOverlays(data){
@@ -5223,6 +5474,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
   }
   if(previousSlug!==slug){state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();updateTreeAreaPanel();}
   if(previousSlug!==slug){state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();}
+  state.slopeCurvesData=null;
   renderSlopeAnalysisOverlays(null);
   currentClientSlug=slug;
   state.savedOverviewCameras={};
@@ -5286,7 +5538,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
 
     const manifest=useBrowserBackup?localBackup.manifest:remoteManifest;
     const backupBuffers=useBrowserBackup?localBackup.assetBuffers:null;
-    renderSlopeAnalysisOverlays(manifest.slopeAnalysis||null);
+    await buildSlopeAnalysisFromManifest(manifest);
     state.treeAreas=normalizeTreeAreas(manifest.treeAreas);
     state.skierSpawns=normalizeSkierSpawnMap(manifest.skierSpawns);
     renderSkierSpawnOverlays();
@@ -5538,7 +5790,7 @@ async function collectClientManifest(slug){
     };
   });
   const editorSettings=await collectProjectEditorSettings();
-  return {schemaVersion:'1.0',clientId:slug,updatedAt:new Date().toISOString(),assets,editorSettings,overviewCameras:normalizeOverviewCameraMap(state.savedOverviewCameras),treeAreas:normalizeTreeAreas(state.treeAreas),skierSpawns:normalizeSkierSpawnMap(state.skierSpawns),slopeAnalysis:state.slopeAnalysisData||undefined};
+  return {schemaVersion:'1.0',clientId:slug,updatedAt:new Date().toISOString(),assets,editorSettings,overviewCameras:normalizeOverviewCameraMap(state.savedOverviewCameras),treeAreas:normalizeTreeAreas(state.treeAreas),skierSpawns:normalizeSkierSpawnMap(state.skierSpawns),slopeAnalysis:state.slopeAnalysisData||undefined,slopeCurves:state.slopeCurvesData||undefined};
 }
 
 async function exportAssetForClientPublish(asset){
