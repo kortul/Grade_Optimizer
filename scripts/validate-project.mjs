@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v208.js')&&!html.includes('app.v207.js'),'HTML must activate the current v208 release');
+assert.ok(html.includes('app.v209.js')&&!html.includes('app.v207.js'),'HTML must activate the current v208 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
@@ -446,7 +446,7 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v103.js'), 'active app must use the overview-visible, unified-physics skier controller');
+assert.ok(entrySource.includes('skier-controller.v104.js'), 'active app must use the overview-visible, unified-physics skier controller');
 const skierSource = read('skier-controller.v103.js').toString('utf8');
 const skierContactUtils = read('skier-terrain-contact.v4.js').toString('utf8');
 const skierViewUtils = read('skier-view-presentation.v1.js').toString('utf8');
@@ -501,7 +501,14 @@ assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='dro
 assert.ok(skierSource.includes('showForOverview(){')&&skierSource.includes('this._updateSkierAvatar(true);'),'overview marker must force full skier avatar materials visible after first-person mode');
 assert.ok(skierSource.includes('this.firstPersonFovScale = 1.3125')&&skierSource.includes('resolveSkierViewFov(this.cameraFovBase,this.viewBlend,this.firstPersonFovScale)'),'first-person FOV must be 31.25 percent wider and blend to scene FOV in third-person');
 assert.ok(skierSource.includes('this.visualHeightOffset = 0.10;')&&skierSource.includes('this.skiRig.position.y+=this.airborneHeight+this.visualHeightOffset;')&&skierSource.includes('this.position.copy(hit.point)'),'10 cm skier lift must affect only the rendered rig, never the physics contact position');
-assert.ok(entrySource.includes('const multiplayerSlot=Number.isInteger(receivedSlot)?receivedSlot:(multiplayerClient.connected?multiplayerClient.getSpawnSlot():0);')&&skierSource.includes('_findSpawn(spawnIndex=0)')&&skierSource.includes('const hit=this._findSpawn();'),'offline default skier spawn must match the key-1 summit respawn while connected multiplayer clients retain assigned slots');
+const initialSpawnStart=skierSource.indexOf('async start(terrain,spawnHint=null');
+const initialSpawnEnd=skierSource.indexOf('this.terrainPerformance.spawnSearchMs=',initialSpawnStart);
+const initialSpawnBlock=initialSpawnStart>=0&&initialSpawnEnd>initialSpawnStart?skierSource.slice(initialSpawnStart,initialSpawnEnd):'';
+const topRespawnStart=skierSource.indexOf('respawnAtTop(){');
+const topRespawnEnd=skierSource.indexOf('enableInput(){',topRespawnStart);
+const topRespawnBlock=topRespawnStart>=0&&topRespawnEnd>topRespawnStart?skierSource.slice(topRespawnStart,topRespawnEnd):'';
+assert.ok(initialSpawnBlock.includes('const defaultHit=this._findSpawn(0);')&&!initialSpawnBlock.includes('this._findSpawn(slot)')&&topRespawnBlock.includes('const hit=this._findSpawn(0);'),'ordinary skier entry and key-1 summit respawn must call the exact same spawn-pool index 0');
+assert.ok(entrySource.includes('Ordinary starts intentionally use the exact same summit spawn as key 1.')&&!entrySource.includes('waitForSlot(1800)')&&!entrySource.includes('const multiplayerSlot=Number.isInteger(receivedSlot)'), 'normal skier entry must not allow the multiplayer server slot to override default key-1 spawn');
 assert.ok(skierViewUtils.includes('export function resolveSkierViewFov('),'skier camera FOV helper is missing');
 assert.ok(skierContactUtils.includes('MIN_TERRAIN_NORMAL_Y')&&skierContactUtils.includes('blendGroundNormal'), 'engine-independent terrain-contact stability helpers are present');
 assert.ok(entrySource.includes('function isVisibleSkierPhysicsObject(')&&entrySource.includes('An active imported Terrain replaces the hidden base terrain')&&entrySource.includes('remove.forEach(object=>object.parent?.remove(object))'), 'skier collision composite must exclude hidden mesh geometry and not collide with stale base terrain');
