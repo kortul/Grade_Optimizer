@@ -31,7 +31,7 @@ assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'semantic 
 assert.match(renderer, /function createSplinePineMaterial\(\)/, 'procedural near/mid forest still uses its physical foliage material');
 assert.match(renderer, /MeshPhysicalNodeMaterial\(\{\s*roughness:0\.88/, 'foliage should retain its physical node material');
 assert.match(renderer, /V8: stable spruce whorls — no spiral tier rotation/, 'spruce must use the new whorled bough geometry');
-assert.match(renderer, /const branches=high\\?5:mid\\?4:3/, 'near, mid and far LODs must use coherent spruce branch tiers');
+assert.match(renderer, /const branches=high\?5:mid\?4:3/, 'near, mid and far LODs must use coherent spruce branch tiers');
 assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
 assert.match(renderer, /const twigCount=high\\?5:mid\\?4:3/, 'spruce should use layered needle sprays at every LOD');
 assert.match(renderer, /const addBlade=/, 'foliage must be made from tapered needle blades, not round clumps');
