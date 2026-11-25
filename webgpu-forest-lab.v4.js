@@ -88,7 +88,10 @@ const resolutionScale = uniform(0.42);
 const marchSteps = uniform(18);
 const spatialSigma = uniform(1.15);
 const depthSensitivity = uniform(22);
-const fogColor = uniform(new THREE.Color(0xc7d9e5));
+const fogColor = uniform(new THREE.Color(0xc6dced));
+const daylightSunColor = new THREE.Color(0xfff8f1);
+const lowSunColor = new THREE.Color(0xffc18e);
+const liveSunColor = new THREE.Color();
 const rayStrength=uniform(Number(ui.godRays.value));
 const raySteps=uniform(12);
 const rayResolutionScale=uniform(0.42);
@@ -163,9 +166,12 @@ function updateSky() {
 
   const directPower=THREE.MathUtils.clamp(Number(ui.sunIntensity.value),0,1.5);
   updateSolarDisc(THREE,sunDisc,camera,solar,directPower);
-  hemisphere.intensity = 0.18 + solar.daylight * 0.62 + solar.nightStrength*0.025;
-  sunLight.intensity = solar.daylight * 3.0 * directPower;
-  sunLight.color.copy(solar.sunColor);
+  // Keep the daytime key close to neutral; let it warm gradually only as the sun approaches the horizon.
+  const warmKey = THREE.MathUtils.clamp(solar.twilight * 0.52, 0, 0.58);
+  liveSunColor.copy(daylightSunColor).lerp(lowSunColor,warmKey);
+  hemisphere.intensity = 0.11 + solar.daylight * 0.42 + solar.nightStrength*0.025;
+  sunLight.intensity = solar.daylight * 3.2 * directPower;
+  sunLight.color.copy(liveSunColor);
   moonLight.intensity=solar.nightStrength*0.16;
   sunLight.position.copy(controls.target).addScaledVector(sunDirection,1800);
   sunLight.target.position.copy(controls.target);
@@ -173,24 +179,25 @@ function updateSky() {
   moonLight.target.position.copy(controls.target);
 
   const nightSky=new THREE.Color(0x28364b);
-  const daySky=new THREE.Color(0xc7d9e7);
-  const warmHorizon=new THREE.Color(0xd8b39a);
+  const daySky=new THREE.Color(0xc6dced);
+  const warmHorizon=new THREE.Color(0xd8bba8);
   fogColor.value.copy(nightSky).lerp(daySky,solar.daylight)
-    .lerp(warmHorizon,solar.twilight*0.28);
+    .lerp(warmHorizon,solar.twilight*0.18);
+  // A cool sky fill and a darker, blue-green ground bounce keep shaded needles from going muddy.
   hemisphere.color.setRGB(
-    0.34+solar.daylight*0.44,
-    0.43+solar.daylight*0.43,
-    0.58+solar.daylight*0.34
+    0.30+solar.daylight*0.42,
+    0.40+solar.daylight*0.43,
+    0.56+solar.daylight*0.37
   );
   hemisphere.groundColor.setRGB(
-    0.13+solar.daylight*0.28,
-    0.16+solar.daylight*0.30,
-    0.20+solar.daylight*0.26
+    0.10+solar.daylight*0.12,
+    0.13+solar.daylight*0.15,
+    0.19+solar.daylight*0.20
   );
   cloudLayer?.setAtmosphere({
     coverage:Number(ui.cloudCoverage.value),density:Number(ui.cloudDensity.value),
     elevation:Number(ui.cloudElevation.value),wind:Number(ui.wind.value),daylight:solar.daylight,
-    twilight:solar.twilight,rayStrength:Number(ui.godRays.value),sunDirection,sunColor:solar.sunColor
+    twilight:solar.twilight,rayStrength:Number(ui.godRays.value),sunDirection,sunColor:liveSunColor
   });
   ui.timeValue.textContent = formatTime(hours);
 }
@@ -445,9 +452,23 @@ function buildFogPipeline() {
       rayPoint.addAssign(stepVector);
     });
     const volumeFog = float(1).sub(opticalDepth.negate().exp());
-    const rangeT = surfaceDistance.sub(rangeFogNear).div(rangeFogFar.sub(rangeFogNear).max(0.001)).clamp(0, 1);
-    const rangeFog = rangeT.mul(rangeT); // Ease into distance haze instead of fogging the whole frame at mid-range.
-    const amount = volumeFog.max(rangeFog).mul(fogStrength).clamp(0, 1);
+    // Beer-Lambert aerial perspective: low viewing rays cross more clean, neutral aerosol than steep rays.
+    // Keep this independent of the sun-coloured god-ray pass so daylight haze never turns the forest brown.
+    const distanceBeyond = surfaceDistance.sub(rangeFogNear).max(0);
+    const rangeGate = smoothstep(rangeFogNear,rangeFogFar,surfaceDistance);
+    const horizonPath = float(1).sub(rayDirection.y.abs()).pow(1.35);
+    const pathScale = float(0.40).add(horizonPath.mul(0.80));
+    const cameraAltitude = cameraPosition.y.sub(groundY).max(0);
+    const surfaceAltitude = worldPosition.y.sub(groundY).max(0);
+    const meanAltitude = cameraAltitude.add(surfaceAltitude).mul(0.5);
+    const aerosolScaleHeight = fogHeight.mul(3.5).add(350);
+    const altitudeDensity = exp(meanAltitude.negate().div(aerosolScaleHeight)).clamp(0.14,1);
+    const extinction = fogDensity.mul(0.016).add(0.000004);
+    const rangeOpticalDepth = distanceBeyond.mul(pathScale).mul(altitudeDensity).mul(extinction);
+    const rangeFog = float(1).sub(rangeOpticalDepth.negate().exp()).mul(rangeGate);
+    // Combine ground fog and distance haze as transmittances, not as competing max values.
+    const amount = float(1).sub(float(1).sub(volumeFog).mul(float(1).sub(rangeFog)))
+      .mul(fogStrength).clamp(0,1);
     return isBackgroundDepth(depth).select(float(0), amount);
   });
   const lowResFog = rtt(fogNode(), null, null, {
@@ -522,7 +543,7 @@ function buildFogPipeline() {
   });
   const raysResult=upsampleRays(lowResRays,sceneDepth);
   const foggedScene=sceneColor.rgb.mix(fogColor,fogResult);
-  const shaftColour=vec3(1.0,0.86,0.67);
+  const shaftColour=vec3(0.92,0.96,1.0);
   renderPipeline.outputNode=foggedScene.add(shaftColour.mul(raysResult.mul(float(0.22).add(fogResult.mul(0.78)))));
   renderPipeline.needsUpdate = true;
   return {
@@ -800,8 +821,9 @@ function buildTreePlacements(footprint, density) {
   };
   const addTree=(x,z,ground,rr,band)=>{
     const height=8.5+rr()*8.5;
-    const hue=(rr()-0.5)*0.045;
-    const tint=new THREE.Color().setHSL(0.31+hue,0.28+rr()*0.12,0.39+rr()*0.08);
+    const hue=(rr()-0.5)*0.025;
+    // Geometry already carries the needle albedo; instance colour is only a subtle tree-to-tree variation.
+    const tint=new THREE.Color().setHSL(0.325+hue,0.12+rr()*0.08,0.90+rr()*0.05);
     trees.push({
       x,y:ground.y+0.08,z,height,width:height*(0.52+rr()*0.12),
       rotation:rr()*Math.PI*2,variant:Math.floor(rr()*3),tint,band
@@ -1057,7 +1079,8 @@ function createPineBacklightNode(){
   const backFace=max(sunFacing.negate().add(0.08),float(0)).div(1.08).clamp(0,1).pow(1.35);
   const grazing=max(sunFacing.negate().add(0.36),float(0)).div(1.36).clamp(0,1).pow(2.0);
   const transmission=backFace.mul(0.76).add(grazing.mul(0.24));
-  return vec3(0.105,0.17,0.064).mul(transmission).mul(foliageBacklight).mul(foliageDaylight);
+  // Restrained green backscatter: the actual needle hue remains in the surface albedo.
+  return vec3(0.045,0.075,0.032).mul(transmission).mul(foliageBacklight).mul(foliageDaylight);
 }
 function createSplinePineMaterial() {
   const material=new THREE.MeshStandardNodeMaterial({roughness:0.91,metalness:0,vertexColors:true,side:THREE.DoubleSide});
@@ -1358,7 +1381,7 @@ async function start() {
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.55;
+  renderer.toneMappingExposure = 0.72;
   stage.appendChild(renderer.domElement);
   await renderer.init();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
