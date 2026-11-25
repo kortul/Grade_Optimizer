@@ -968,7 +968,7 @@ assert.ok(webgpuAtmosphereHtml.includes('id="dayCycleToggle"')&&webgpuAtmosphere
 assert.ok(webgpuAtmosphereSource.includes("from './solar-cycle.v1.js'")&&webgpuAtmosphereSource.includes('calculateSolarCycle(THREE,hours)')&&webgpuAtmosphereSource.includes('advanceSolarClock('), 'Atmosphere Lab must use the shared rotating solar path and animated day cycle');
 assert.ok(webgpuAtmosphereSource.includes('sky.showSunDisc.value = false')&&webgpuAtmosphereSource.includes('createSolarDisc(THREE)')&&webgpuAtmosphereSource.includes('updateSolarDisc(THREE,sunDisc'), 'Atmosphere Lab sun disc must be independently controlled by the sun power slider');
 assert.ok(webgpuAtmosphereSource.includes('sky.mieCoefficient.value = 0.0038')&&webgpuAtmosphereSource.includes('sky.rayleigh.value = Number(ui.rayleigh.value)')&&!webgpuAtmosphereSource.includes('sky.mieColor.value')&&!webgpuAtmosphereSource.includes('sky.mieAlbedo.value')&&!webgpuAtmosphereSource.includes('sky.sunSize.value'), 'Atmosphere Lab must write only uniforms exposed by SkyMesh in Three.js r187');
-assert.ok(webgpuAtmosphereSource.includes('renderer.toneMappingExposure = 0.55;'),'Atmosphere Lab display exposure must use the measured SkyMesh / ACES preview baseline');
+assert.ok(webgpuAtmosphereSource.includes('renderer.toneMappingExposure = 0.55;'),'Atmosphere Lab display exposure must use the shared SkyMesh / ACES preview baseline');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
 // WebGPU Alpine Forest Lab regression checks.
