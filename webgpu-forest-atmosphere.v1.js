@@ -3,7 +3,7 @@
 // and environment lighting. It deliberately does not copy Ponlai source or creative assets.
 
 import {
-  Fn, float, fract, floor, mix, min, max, exp, smoothstep, vec2, vec3, vec4,
+  Fn, float, fract, floor, mix, max, exp, smoothstep, vec2, vec3, vec4,
   positionWorld, uniform, pass, rtt, screenUV, screenCoordinate,
   getViewPosition, interleavedGradientNoise, isBackgroundDepth, fwidth,
   Loop, mrt, normalView, packNormalToRGB, sample, unpackRGBToNormal, builtinAOContext
@@ -368,7 +368,6 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
   const daySky = new THREE.Color(0x6f9bc9);
   const nightGround = new THREE.Color(0x111b23);
   const dayGround = new THREE.Color(0x344638);
-  const liveSun = new THREE.Color(0xfff4e5);
 
   function bakeEnvironment(force = false) {
     const now = performance.now();
@@ -403,7 +402,6 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     cloudDensity = 0.45,
     cloudElevation = 0.55,
     wind = 9,
-    sunIntensity = 0.85
   } = {}, forceEnvironment = false) {
     if (!solar) return;
     state.sunDirection.value.copy(solar.sunDirection).normalize();
@@ -418,7 +416,6 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     state.cloudElevation.value = THREE.MathUtils.clamp(Number(cloudElevation), 0, 1);
     state.wind.value = THREE.MathUtils.clamp(Number(wind), 0, 60);
 
-    liveSun.copy(solar.sunColor).lerp(new THREE.Color(0xfff2e5), state.daylight.value * 0.35);
     const fill = state.daylight.value;
     skyZenith.copy(nightSky).lerp(daySky, fill);
     groundBounce.copy(nightGround).lerp(dayGround, fill);
