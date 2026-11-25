@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v208.js')&&!html.includes('app.v207.js'),'HTML must activate the current v208 release');
+assert.ok(html.includes('app.v209.js')&&!html.includes('app.v207.js'),'HTML must activate the current v209 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
@@ -446,8 +446,8 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v103.js'), 'active app must use the overview-visible, unified-physics skier controller');
-const skierSource = read('skier-controller.v103.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v104.js'), 'active app must use the overview-visible, unified-physics skier controller');
+const skierSource = read('skier-controller.v104.js').toString('utf8');
 const skierContactUtils = read('skier-terrain-contact.v4.js').toString('utf8');
 const skierViewUtils = read('skier-view-presentation.v1.js').toString('utf8');
 const skierContactTests = read('scripts/test-skier-terrain-contact.mjs').toString('utf8');
@@ -501,7 +501,14 @@ assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='dro
 assert.ok(skierSource.includes('showForOverview(){')&&skierSource.includes('this._updateSkierAvatar(true);'),'overview marker must force full skier avatar materials visible after first-person mode');
 assert.ok(skierSource.includes('this.firstPersonFovScale = 1.3125')&&skierSource.includes('resolveSkierViewFov(this.cameraFovBase,this.viewBlend,this.firstPersonFovScale)'),'first-person FOV must be 31.25 percent wider and blend to scene FOV in third-person');
 assert.ok(skierSource.includes('this.visualHeightOffset = 0.10;')&&skierSource.includes('this.skiRig.position.y+=this.airborneHeight+this.visualHeightOffset;')&&skierSource.includes('this.position.copy(hit.point)'),'10 cm skier lift must affect only the rendered rig, never the physics contact position');
-assert.ok(entrySource.includes('const multiplayerSlot=Number.isInteger(receivedSlot)?receivedSlot:(multiplayerClient.connected?multiplayerClient.getSpawnSlot():0);')&&skierSource.includes('_findSpawn(spawnIndex=0)')&&skierSource.includes('const hit=this._findSpawn();'),'offline default skier spawn must match the key-1 summit respawn while connected multiplayer clients retain assigned slots');
+const initialSpawnStart=skierSource.indexOf('async start(terrain,spawnHint=null');
+const initialSpawnEnd=skierSource.indexOf('this.terrainPerformance.spawnSearchMs=',initialSpawnStart);
+const initialSpawnBlock=initialSpawnStart>=0&&initialSpawnEnd>initialSpawnStart?skierSource.slice(initialSpawnStart,initialSpawnEnd):'';
+const topRespawnStart=skierSource.indexOf('respawnAtTop(){');
+const topRespawnEnd=skierSource.indexOf('enableInput(){',topRespawnStart);
+const topRespawnBlock=topRespawnStart>=0&&topRespawnEnd>topRespawnStart?skierSource.slice(topRespawnStart,topRespawnEnd):'';
+assert.ok(initialSpawnBlock.includes('const defaultHit=this._findSpawn(0);')&&!initialSpawnBlock.includes('this._findSpawn(slot)')&&topRespawnBlock.includes('const hit=this._findSpawn(0);'),'ordinary skier entry and key-1 summit respawn must call the exact same spawn-pool index 0');
+assert.ok(entrySource.includes('Ordinary starts intentionally use the exact same summit spawn as key 1.')&&!entrySource.includes('waitForSlot(1800)')&&!entrySource.includes('const multiplayerSlot=Number.isInteger(receivedSlot)'), 'normal skier entry must not allow the multiplayer server slot to override default key-1 spawn');
 assert.ok(skierViewUtils.includes('export function resolveSkierViewFov('),'skier camera FOV helper is missing');
 assert.ok(skierContactUtils.includes('MIN_TERRAIN_NORMAL_Y')&&skierContactUtils.includes('blendGroundNormal'), 'engine-independent terrain-contact stability helpers are present');
 assert.ok(entrySource.includes('function isVisibleSkierPhysicsObject(')&&entrySource.includes('An active imported Terrain replaces the hidden base terrain')&&entrySource.includes('remove.forEach(object=>object.parent?.remove(object))'), 'skier collision composite must exclude hidden mesh geometry and not collide with stale base terrain');
@@ -523,7 +530,7 @@ assert.ok(!entrySource.includes('modeTransition'), 'mode changes must not be blo
 assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.includes("skierController.update(dt);"), 'skier physics must update every frame once skier mode is active');
 assert.ok(entrySource.includes("if(resumePendingSkier)requestAnimationFrame(()=>setSceneMode('skier'))"), 'queued skier request must resume after initial splash removal');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate continuous downhill terrain');
-assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('this._findSpawn(slot)')&&skierSource.includes("this.lastStartError='NO_GROUND_UNDER_DRONE'"), 'drone handoff must never silently relocate to a distant piste when no ground exists beneath it');
+assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('const defaultHit=this._findSpawn(0);')&&skierSource.includes("this.lastStartError='NO_GROUND_UNDER_DRONE'"), 'only ordinary starts may use the slot-0 summit fallback; drone handoff must never silently relocate to a distant piste');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone-to-skier handoff must begin with controlled downhill motion');
 
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
@@ -891,7 +898,7 @@ assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.include
 assert.ok(entrySource.includes("if(state.mode==='drone')droneController.update(dt)"), 'drone controller must update continuously while active');
 assert.ok(!entrySource.includes('modeTransition'), 'stale transition lock must not block mode changes');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate downhill run-out');
-assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('this._findSpawn(slot)'), 'ordinary starts keep the slot-aware piste fallback while drone starts remain at the drone location');
+assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('const defaultHit=this._findSpawn(0);'), 'ordinary starts use the exact default summit spawn while drone starts remain at the drone location');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone handoff must initialize downhill movement');
 assert.ok(skierSource.includes('const fallbackDivisions=12'), 'skier spawn must have a bounded last-resort terrain scan');
 assert.ok(skierSource.includes('fallbackCandidates.sort((a,b)=>b.baseScore-a.baseScore)')&&skierSource.includes('evaluatedFallbacks=fallbackCandidates.map(candidate=>'), 'skier spawn fallback must rank candidates and score downhill clearance');
@@ -1149,7 +1156,7 @@ assert.ok(multiplayerWorkerSource.includes('assignMissingSlots(existing)')&&mult
 assert.ok(multiplayerWorkerSource.includes("ALLOWED_ORIGIN='https://kortul.github.io'")&&multiplayerWorkerSource.includes('MAX_PLAYERS')&&multiplayerWorkerSource.includes('MAX_MESSAGES_PER_SECOND')&&multiplayerWorkerSource.includes('sanitizeClientId')&&multiplayerWorkerSource.includes('normalizeMarker')&&multiplayerWorkerSource.includes('normalizeMeasurement')&&multiplayerWorkerSource.includes("msg.t==='measure'")&&multiplayerWorkerSource.includes("msg.t==='measure-clear'")&&multiplayerWorkerSource.includes("transaction.put('sharedMeasurements',measurements)")&&multiplayerWorkerSource.includes('appendSharedMarker')&&multiplayerWorkerSource.includes('pruneOrphanedSharedMarkers')&&multiplayerWorkerSource.includes('this.ctx.storage.transaction')&&multiplayerWorkerSource.includes("transaction.put('sharedMarkers',update.markers)")&&multiplayerWorkerSource.includes('stateMessagesReceived')&&multiplayerWorkerSource.includes('Session replaced by reconnect')&&multiplayerWorkerSource.includes('if(player.left)continue'),'multiplayer relay must enforce origin, limits, persistent snapshots and stale-session pruning');
 assert.ok(multiplayerProtocolSource.includes('MAX_PLAYERS = 4')&&multiplayerProtocolSource.includes('MAX_IDLE_MS = 60000')&&multiplayerProtocolSource.includes('MAX_MESSAGES_PER_SECOND = 45')&&multiplayerProtocolSource.includes('MAX_SHARED_MARKERS = MAX_PLAYERS * MAX_MARKERS_PER_PLAYER')&&multiplayerProtocolSource.includes('MAX_MARKERS_PER_PLAYER = 10')&&multiplayerProtocolSource.includes('renumberSharedMarkers')&&multiplayerProtocolSource.includes('appendSharedMarker')&&multiplayerProtocolSource.includes('pruneSharedMarkers')&&multiplayerProtocolSource.includes('pruneOrphanedSharedMarkers')&&multiplayerProtocolSource.includes('normalizeMarker')&&multiplayerProtocolSource.includes('normalizeMeasurement')&&multiplayerProtocolSource.includes('sanitizeClientId'),'public resort must allow ten numbered flags per participant and prune orphaned flags');
 assert.ok(multiplayerProtocolSource.includes('normalizeState')&&multiplayerProtocolSource.includes('Number.isFinite')&&multiplayerProtocolSource.includes('JOINT_FLOATS = 72'),'server must validate transforms and skier joint data');
-assert.ok(multiplayerSkierSource.includes('_findSpawn(spawnIndex=0)')&&multiplayerSkierSource.includes('multiplayerSlot:requestedSlot')&&multiplayerSkierSource.includes('const across=new THREE.Vector3().crossVectors')&&multiplayerSkierSource.includes('selectSpawnPool')&&multiplayerSkierSource.includes("spawnSearch:'grid-fallback'")&&multiplayerSkierSource.includes("spawnSearch:'last-resort'")&&multiplayerSkierSource.includes('capture: true')&&multiplayerSkierSource.includes('this.airborneWorldY=this.position.y+this.airborneHeight+0.055')&&!multiplayerSkierSource.includes('this.velocity.multiplyScalar(0.015)')&&entrySource.includes('await multiplayerClient.waitForSlot(1800)')&&entrySource.includes('skierController.diagnostics()'),'skier must retain momentum across terrain seams, fall under gravity and keep distinct starts');
+assert.ok(multiplayerSkierSource.includes('_findSpawn(spawnIndex=0)')&&multiplayerSkierSource.includes('multiplayerSlot:requestedSlot')&&multiplayerSkierSource.includes('const across=new THREE.Vector3().crossVectors')&&multiplayerSkierSource.includes('selectSpawnPool')&&multiplayerSkierSource.includes("spawnSearch:'grid-fallback'")&&multiplayerSkierSource.includes("spawnSearch:'last-resort'")&&multiplayerSkierSource.includes('capture: true')&&multiplayerSkierSource.includes('this.airborneWorldY=this.position.y+this.airborneHeight+0.055')&&!multiplayerSkierSource.includes('this.velocity.multiplyScalar(0.015)')&&entrySource.includes('Ordinary starts intentionally use the exact same summit spawn as key 1.')&&entrySource.includes('skierController.diagnostics()'),'skier must retain terrain-seam momentum, gravity fall, fallback scanning and repeatable default summit spawn');
 pass('public shared multiplayer: ten numbered flags, authoritative removal, reliable ruler, 30 Hz backpressure-safe movement and session diagnostics');
 
 console.log('\nAll project checks passed.');
