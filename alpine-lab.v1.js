@@ -656,6 +656,7 @@ function showError(error) {
   backendStatus.textContent = 'Ошибка запуска Alpine Lab';
   statusDot.classList.add('bad');
   errorBox.hidden = false;
+  errorBox.style.display = 'block';
   errorBox.textContent = message;
   console.error('[Alpine Lab]', error);
 }
