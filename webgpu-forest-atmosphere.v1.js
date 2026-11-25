@@ -9,6 +9,7 @@ import {
   Loop, mrt, normalView, packNormalToRGB, sample, unpackRGBToNormal, builtinAOContext
 } from 'three/tsl';
 import { ao } from 'three/addons/tsl/display/GTAONode.js';
+import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
 
 export function createForestAtmosphere(THREE, scene, camera, renderer, hemisphere, {
   center = new THREE.Vector3(),
@@ -19,6 +20,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     cameraPosition: uniform(new THREE.Vector3()),
     sunDirection: uniform(new THREE.Vector3(0, 1, 0)),
     sunColor: uniform(new THREE.Color(0xfff2df)),
+    hazeColour: uniform(new THREE.Color(0xb8cfe0)),
     daylight: uniform(1),
     twilight: uniform(0),
     night: uniform(0),
@@ -36,44 +38,16 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     godRays: uniform(0.12)
   };
 
-  const skyRadiance = Fn(([direction]) => {
-    const dir = direction.normalize();
-    const up = dir.y.max(0).clamp(0, 1);
-    const vertical = smoothstep(float(0.0), float(0.78), up).pow(0.62);
-    const horizonDay = vec3(0.50, 0.68, 0.86).mul(state.rayleigh.mul(0.50).add(0.55));
-    const zenithDay = vec3(0.075, 0.22, 0.52).mul(state.rayleigh.mul(0.44).add(0.48));
-    const horizonNight = vec3(0.012, 0.025, 0.060);
-    const zenithNight = vec3(0.0018, 0.0045, 0.016);
-    const dayBase = mix(horizonDay, zenithDay, vertical);
-    const nightBase = mix(horizonNight, zenithNight, vertical);
-    const base = mix(nightBase, dayBase, state.daylight);
-
-    const sunCos = max(dir.dot(state.sunDirection), float(0));
-    const rayleighPhase = float(0.72).add(sunCos.mul(sunCos).mul(0.28));
-    const mieHalo = sunCos.pow(9).mul(0.10).add(sunCos.pow(34).mul(0.24));
-    const horizonGlow = float(1).sub(up).pow(1.7);
-    const warmScatter = state.sunColor.mul(mieHalo.mul(state.daylight.mul(0.62).add(state.twilight.mul(0.28))));
-    const blueScatter = vec3(0.075, 0.18, 0.38).mul(rayleighPhase)
-      .mul(state.daylight).mul(state.rayleigh.mul(0.20).add(0.35));
-    const sunsetBand = vec3(0.92, 0.34, 0.16)
-      .mul(horizonGlow).mul(state.twilight).mul(0.22);
-    const nightAir = vec3(0.006, 0.014, 0.034).mul(horizonGlow).mul(state.night);
-    return base.add(blueScatter).add(warmScatter).add(sunsetBand).add(nightAir).clamp(0, 1.7);
-  });
-
-  // The sky is a camera-following inward-facing dome, not a background quad or plane.
-  const skyGeometry = new THREE.SphereGeometry(120000, 96, 64);
-  const skyMaterial = new THREE.MeshBasicNodeMaterial();
-  skyMaterial.colorNode = skyRadiance(positionWorld.sub(state.cameraPosition));
-  skyMaterial.side = THREE.BackSide;
-  skyMaterial.depthTest = false;
-  skyMaterial.depthWrite = false;
-  skyMaterial.fog = false;
-  skyMaterial.toneMapped = false;
-  const skyDome = new THREE.Mesh(skyGeometry, skyMaterial);
-  skyDome.name = 'ForestLab_AtmosphereSkyDome';
-  skyDome.frustumCulled = false;
+  // Use Three.js' physically based atmospheric sky implementation for the visible sky.
+  // This replaces the previous hand-authored RGB gradient that produced the green/purple horizon.
+  const skyDome = new SkyMesh();
+  skyDome.scale.setScalar(450000);
   skyDome.renderOrder = -1000;
+  skyDome.frustumCulled = false;
+  if (skyDome.material) {
+    skyDome.material.depthWrite = false;
+    skyDome.material.depthTest = false;
+  }
   scene.add(skyDome);
 
   const hash21 = Fn(([p]) => {
@@ -119,14 +93,14 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     const forward = sunView.pow(8);
     const topLight = float(0.22).add(state.sunDirection.y.max(0).mul(0.56))
       .add(forward.mul(0.20)).clamp(0, 1);
-    const underside = mix(vec3(0.060, 0.083, 0.125), vec3(0.26, 0.32, 0.40), state.daylight);
+    const underside = mix(vec3(0.13, 0.16, 0.20), vec3(0.40, 0.46, 0.52), state.daylight);
     const upper = state.sunColor.mul(float(0.72).add(topLight.mul(0.48)));
     const cloudColour = mix(underside, upper, topLight.mul(0.86));
     const silverEdge = state.sunColor.mul(forward.mul(0.16).add(float(0.025)));
     const alpha = cloudColumn.mul(state.cloudDensity)
-      .mul(float(0.12).add(state.cloudCoverage.mul(0.58)))
-      .mul(float(0.28).add(state.daylight.mul(0.72)))
-      .clamp(0, 0.78);
+      .mul(float(0.055).add(state.cloudCoverage.mul(0.34)))
+      .mul(float(0.32).add(state.daylight.mul(0.68)))
+      .clamp(0, 0.34);
     return vec4(cloudColour.add(silverEdge), alpha);
   });
 
@@ -141,10 +115,10 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     const strand = float(1).sub(smoothstep(0.035, 0.20, filaments.sub(0.5).abs()));
     const veil = smoothstep(0.57, 0.79, broad).mul(0.12);
     const streaks = smoothstep(0.62, 0.82, broad).mul(strand);
-    const alpha = streaks.mul(0.22).add(veil)
+    const alpha = streaks.mul(0.16).add(veil.mul(0.65))
       .mul(state.cloudCoverage).mul(state.cloudDensity)
-      .mul(float(0.22).add(state.daylight.mul(0.22)))
-      .clamp(0, 0.18);
+      .mul(float(0.18).add(state.daylight.mul(0.18)))
+      .clamp(0, 0.11);
     const forward = max(state.cameraPosition.sub(positionWorld).normalize().dot(state.sunDirection), float(0)).pow(7);
     const base = mix(vec3(0.15, 0.19, 0.29), vec3(0.52, 0.62, 0.75), state.daylight);
     const lit = state.sunColor.mul(float(0.35).add(forward.mul(0.55)));
@@ -161,7 +135,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     material.depthWrite = false;
     material.side = THREE.BackSide;
     material.fog = false;
-    material.toneMapped = false;
+    material.toneMapped = true;
     material.name = name;
     return material;
   }
@@ -190,10 +164,10 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
   const godRays = state.godRays;
   let requestedGodRays = 0.12;
   const groundY = uniform(Number(groundLevel) || 0);
-  const fogResolution = uniform(0.42);
-  const marchSteps = uniform(14);
-  const raySteps = uniform(10);
-  const rayResolution = uniform(0.42);
+  const fogResolution = uniform(0.30);
+  const marchSteps = uniform(9);
+  const raySteps = uniform(6);
+  const rayResolution = uniform(0.24);
   const spatialSigma = uniform(1.15);
   const depthSensitivity = uniform(22);
   const sunScreenUV = uniform(new THREE.Vector2(0.78, 0.16));
@@ -203,11 +177,11 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
   const preNormal = sample(uv => unpackRGBToNormal(prePass.getTextureNode().sample(uv)));
   const preDepth = prePass.getTextureNode('depth');
   const aoPass = ao(preDepth, preNormal, camera);
-  aoPass.resolutionScale = 0.50;
-  aoPass.samples.value = 16;
-  aoPass.radius.value = 2.2;
+  aoPass.resolutionScale = 0.34;
+  aoPass.samples.value = 8;
+  aoPass.radius.value = 1.8;
   aoPass.thickness.value = 1.0;
-  aoPass.scale.value = 1.10;
+  aoPass.scale.value = 0.95;
   aoPass.useTemporalFiltering = false;
 
   const scenePass = pass(scene, camera);
@@ -220,9 +194,8 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
 
   const hazeColourAt = Fn(([direction]) => {
     const dir = direction.normalize();
-    return skyRadiance(dir).add(
-      state.sunColor.mul(max(dir.dot(state.sunDirection), float(0)).pow(12).mul(godRays).mul(0.035))
-    );
+    const forward = max(dir.dot(state.sunDirection), float(0)).pow(12);
+    return state.hazeColour.add(state.sunColor.mul(forward.mul(godRays).mul(0.018)));
   });
 
   const hazeNode = Fn(() => {
@@ -357,7 +330,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
   );
   pipeline.needsUpdate = true;
 
-  // PMREM of the same clear-sky radiance used by the visible dome; no neutral grey fallback.
+  // PMREM of the same physically based SkyMesh visible to the camera; no separate sky-gradient fallback.
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   const environmentScene = new THREE.Scene();
   let environmentTarget = null;
@@ -375,10 +348,8 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     if (lastEnvironmentBake > 0 && now - lastEnvironmentBake < 700) return;
     lastEnvironmentBake = now;
     const savedPosition = skyDome.position.clone();
-    const savedCamera = state.cameraPosition.value.clone();
     try {
       skyDome.position.set(0, 0, 0);
-      state.cameraPosition.value.set(0, 0, 0);
       environmentScene.add(skyDome);
       const next = pmremGenerator.fromScene(environmentScene, 0.035);
       if (!next?.texture) throw new Error('Atmosphere PMREM bake returned no texture.');
@@ -390,7 +361,6 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     } finally {
       scene.add(skyDome);
       skyDome.position.copy(savedPosition);
-      state.cameraPosition.value.copy(savedCamera);
     }
   }
 
@@ -416,9 +386,20 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     state.cloudElevation.value = THREE.MathUtils.clamp(Number(cloudElevation), 0, 1);
     state.wind.value = THREE.MathUtils.clamp(Number(wind), 0, 60);
 
+    skyDome.sunPosition.value.copy(state.sunDirection.value);
+    skyDome.turbidity.value = state.turbidity.value;
+    skyDome.rayleigh.value = state.rayleigh.value;
+    skyDome.mieCoefficient.value = 0.0038;
+    skyDome.mieDirectionalG.value = 0.78;
+    skyDome.cloudCoverage.value = 0;
+    skyDome.cloudDensity.value = 0;
+    skyDome.cloudElevation.value = 0;
+    skyDome.showSunDisc.value = false;
+
     const fill = state.daylight.value;
     skyZenith.copy(nightSky).lerp(daySky, fill);
     groundBounce.copy(nightGround).lerp(dayGround, fill);
+    state.hazeColour.value.set(0x17263e).lerp(new THREE.Color(0xb8cfe0), fill).lerp(new THREE.Color(0xcaa58b), state.twilight.value * 0.30);
     hemisphere.color.copy(skyZenith);
     hemisphere.groundColor.copy(groundBounce);
     hemisphere.intensity = 0.12 + fill * 0.12 + state.night.value * 0.025;
@@ -483,8 +464,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     render() { pipeline.render(); },
     dispose() {
       scene.remove(skyDome, lowerClouds, upperClouds);
-      skyGeometry.dispose();
-      skyMaterial.dispose();
+      
       lowerGeometry.dispose();
       upperGeometry.dispose();
       lowerMaterial.dispose();
