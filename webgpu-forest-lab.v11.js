@@ -916,7 +916,7 @@ function createTreeInstanceBatch(trees,lod,variant,parent,castShadow=false,cellK
     mesh.setMatrixAt(index,dummy.matrix);mesh.setColorAt(index,tree.tint);
   });
   mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
-  mesh.castShadow=!!castShadow;mesh.receiveShadow=true;
+  mesh.castShadow=!!castShadow;mesh.receiveShadow=lod==='near';
   mesh.computeBoundingSphere();mesh.frustumCulled=true;
   parent.add(mesh);
 }
