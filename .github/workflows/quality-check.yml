@@ -53,6 +53,8 @@ jobs:
           node --input-type=module --check < multiplayer.v1.js
           node --input-type=module --check < server/src/protocol.v2.js
           node --input-type=module --check < server/src/worker.js
+      - name: Test shared imported material consolidation
+        run: node scripts/test-editor-shared-materials.mjs
       - name: Test multiplayer protocol
         run: node --test server/test/*.test.mjs
       - name: Test skier terrain contact transitions
