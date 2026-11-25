@@ -55,6 +55,22 @@ assert.ok(entrySource.includes('state.savedOverviewCameras=normalizeOverviewCame
 assert.ok(entrySource.includes('if(restoreSavedOverviewCameraForCurrentSlope())return;'), 'Home must restore the saved overview camera before using the automatic fallback');
 pass('Scene Editor camera-save icon, per-slope manifest persistence and Home restore are present');
 
+assert.ok(entrySource.includes('async function loadSlope(id,{deferSceneLoadingHide=false}={})'),'initial slope loading must support a deferred loading-cover release');
+assert.ok(entrySource.includes("if(!deferSceneLoadingHide)sceneLoadingEl.style.display='none';"),'base-scene loading must not hide the cover before the client workspace restores');
+assert.ok(entrySource.includes('function waitForRenderedFrames(count=2)')&&entrySource.includes('renderedFrameSerial++'),'startup must wait for completed rendered frames, not elapsed-time guesses');
+const startupBootStart=entrySource.indexOf('loadSlopeList().then(async first=>{');
+const startupBootEnd=entrySource.indexOf('let previousFrameTime',startupBootStart);
+assert.ok(startupBootStart>=0&&startupBootEnd>startupBootStart,'startup loading sequence must remain discoverable');
+const startupBootSource=entrySource.slice(startupBootStart,startupBootEnd);
+assert.ok(startupBootSource.includes('await loadSlope(first,{deferSceneLoadingHide:!!currentClientSlug})'),'initial client projects must keep the loading cover during base terrain loading');
+assert.ok(startupBootSource.includes('await openClientWorkspace(currentClientSlug,{updateUrl:false})'),'startup must complete remote/local workspace restoration before exposing the scene');
+assert.ok(startupBootSource.includes('syncViewportSize()')&&startupBootSource.includes('await waitForRenderedFrames(2)')&&startupBootSource.includes('sceneLoadingEl.style.display=\'none\''),'startup cover must be removed only after the restored camera is synchronized and rendered');
+assert.ok(entrySource.includes('function syncSlopeAnalysisLabelRendererVisibility()')&&entrySource.includes('new MutationObserver(syncSlopeAnalysisLabelRendererVisibility)'),'slope label visibility must react to menu state changes');
+for(const id of ['panel','sceneHierarchyPanel','sceneEditorPanel','weatherPanel','slopeLayersPanel','materialLibraryWindow']){
+  assert.ok(entrySource.includes("'"+id+"'")&&html.includes('id="'+id+'"'),'slope labels must be suppressed for the '+id+' menu');
+}
+pass('startup camera/workspace readiness barrier and menu-aware slope-label visibility are present');
+
 assert.ok(html.includes('id="skierSpawnSlots"')&&html.includes('id="placeSkierSpawnButton"')&&html.includes('id="deleteSkierSpawnButton"')&&html.includes('id="sceneLookTab-spawn"')&&html.includes('id="sceneLookPanel-spawn"'), 'Scene Editor skier spawn tool controls / dedicated tab are missing');
 assert.ok(html.includes('class="scene-look-panel scene-look-panel--spawn" id="sceneLookPanel-spawn" data-look-panel="spawn"')&&html.indexOf('id="sceneLookPanel-spawn"')>html.indexOf('<div class="scene-look-panels">'), 'spawn tool must live inside its dedicated Scene Editor tab panel');
 for(const slot of ['1','2','3','4','5','6','7','8','9','0']){
