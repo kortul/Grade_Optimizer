@@ -1088,9 +1088,9 @@ const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
 const alpineForestPageV11=read('webgpu-forest-lab-v11.html').toString('utf8');
 const alpineForestSource=read('webgpu-forest-lab.v11.js').toString('utf8');
 const alpineAtmosphereSource=read('webgpu-forest-atmosphere.v1.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v11.js?v=20261125w'),
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v11.js?v=20261125x'),
   'Alpine Forest Lab must load the pinned Three.js r187 V11 renderer');
-assert.ok(alpineForestPageV11.includes('webgpu-forest-lab.v11.js?v=20261125w')&&
+assert.ok(alpineForestPageV11.includes('webgpu-forest-lab.v11.js?v=20261125x')&&
   alpineForestPageV11.includes('Alpine Spruce Forest Lab V11'),
   'the cache-busted V11 page must load the V11 renderer directly');
 assert.ok(alpineForestSource.includes("import { createForestAtmosphere } from './webgpu-forest-atmosphere.v1.js'")&&
