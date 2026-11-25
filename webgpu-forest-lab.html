@@ -87,7 +87,7 @@
       <input id="windSpeed" type="range" min="0" max="24" step="0.5" value="9">
       <label for="leafTranslucency"><span>Подсветка теневой стороны хвои</span><strong id="leafTranslucencyValue">82%</strong></label>
       <input id="leafTranslucency" type="range" min="0" max="1.5" step="0.01" value="0.82">
-      <div class="note">Три LOD: объёмные ярусные ели с игольчатыми пучками у трассы, облегчённые кроны в лесу, три скрещённые atlas-плоскости вдали. Ближний и средний LOD участвуют в cascaded SunLight shadows; ambient visibility усиливается GTAO. Полноценная bake-сетка directional ambient probes и needle transmission остаются отдельными следующими этапами.</div>
+      <div class="note">Три LOD: детальные ели у трасс, облегчённые кроны в лесу и atlas billboards вдали. В этой быстрой версии тени от деревьев отбрасывает только ближний LOD; средний и дальний не нагружают shadow map.</div>
     </div>
     <div class="section">
       <h2>Атмосферная перспектива</h2>
