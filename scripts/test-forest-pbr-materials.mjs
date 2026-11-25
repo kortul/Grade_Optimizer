@@ -34,7 +34,7 @@ assert.match(renderer, /sculptural alpine spruce built from distinct whorled bou
 assert.match(renderer, /const addSnowRidge=/, 'spruce must have continuous snow caps on branch tops');
 assert.match(renderer, /const branches=high\?7:mid\?6:5/, 'near, mid and far LODs must use coherent spruce branch tiers');
 assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
-assert.match(renderer, /const foliageAxis=radial\.clone\(\)\.multiplyScalar\(0\.96\)/, 'main foliage clumps should grow outward rather than spike upward');
+assert.match(renderer, /const shoots=high\?7:mid\?5:3/, 'spruce should use layered bough shoots at every LOD');
 assert.match(renderer, /const snowExposure=THREE\.MathUtils\.smoothstep\(radial\.y,0\.12,0\.72\)/, 'snow should accumulate on upper-facing foliage surfaces');
 assert.match(renderer, /snowShare\*\(0\.45\+0\.55\*jitter\(seed,ring\*9\+j\)\),0,0\.72/, 'snow coverage should be visible across upper boughs');
 assert.match(renderer, /mesh\.castShadow=!!castShadow;mesh\.receiveShadow=true;/, 'tree batches must expose an explicit shadow-casting switch');
