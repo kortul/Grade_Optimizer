@@ -177,15 +177,15 @@ export function createCloudLayer(THREE, scene, { center = new THREE.Vector3() } 
   cirrusMaterial.toneMapped=false;
   cirrusMaterial.fog=false;
 
-  const lowerRadius=50000,upperRadius=72000;
-  const cirrusGeometry=new THREE.SphereGeometry(upperRadius,144,72,0,Math.PI*2,0,Math.PI*0.5);
+  const lowerRadius=65000,upperRadius=96000;
+  const cirrusGeometry=new THREE.SphereGeometry(upperRadius,128,64,0,Math.PI*2,0,Math.PI*0.5);
   const cirrusMesh=new THREE.Mesh(cirrusGeometry,cirrusMaterial);
   cirrusMesh.name='GO_TSL_HighCirrusSkyShell';
   cirrusMesh.frustumCulled=false;
   cirrusMesh.renderOrder=-901;
   scene.add(cirrusMesh);
 
-  const geometry = new THREE.SphereGeometry(lowerRadius,160,80,0,Math.PI*2,0,Math.PI*0.5);
+  const geometry = new THREE.SphereGeometry(lowerRadius,144,72,0,Math.PI*2,0,Math.PI*0.5);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = 'GO_TSL_LowerCumulusSkyShell';
   mesh.frustumCulled = false;
@@ -215,6 +215,7 @@ export function createCloudLayer(THREE, scene, { center = new THREE.Vector3() } 
     mesh.position.set(center.x,center.y+cloudAltitude-lowerRadius,center.z);
     cirrusMesh.position.set(center.x,center.y+4900+THREE.MathUtils.clamp(Number(elevation),0,1)*1700-upperRadius,center.z);
     mesh.visible = state.coverage.value > 0.015 && state.density.value > 0.002;
+    cirrusMesh.visible = mesh.visible;
     mesh.updateMatrixWorld(true);
     cirrusMesh.updateMatrixWorld(true);
   }
