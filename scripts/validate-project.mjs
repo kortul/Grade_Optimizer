@@ -926,7 +926,7 @@ pass('scene manifest parses');
 
 
 // Atmospheric release v7 regression checks.
-const weatherV8Source=read('weather-system.v8.js').toString('utf8');
+
 assert.ok(weatherV8Source.includes('aColor')&&weatherV8Source.includes('GO_StarField'),'night sky must include the updated star field');
 assert.ok(weatherV8Source.includes('azimuthDelta>0.045')&&weatherV8Source.includes('globalCompositeOperation=\'screen\''),'sky must include wrapped, directional atmospheric scattering');
 assert.ok(weatherV8Source.includes('cloudFbm')&&weatherV8Source.includes('cirrusLayer')&&weatherV8Source.includes('for(int i=0;i<6;i++)'),'cloud shader must retain layered detail with the reduced integration sample count');
