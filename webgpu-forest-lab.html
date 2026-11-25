@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Grade Optimizer · WebGPU Alpine Forest Lab</title>
+  <title>Grade Optimizer · WebGPU Alpine Spruce Forest Lab V7</title>
   <style>
     *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101923;color:#edf5fc;font:14px/1.45 Inter,system-ui,sans-serif}
     #stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
@@ -45,7 +45,7 @@
   <div id="loading">Загружаем рельеф, трассы и готовим spatial lookup для леса…</div>
   <section class="panel">
     <h1>WEBGPU · ALPINE FOREST</h1>
-    <div class="sub">Slopes_Stage1 · physical SkyMesh · unified cloud scattering · neutral snow PBR · shared sky IBL</div>
+    <div class="sub">Slopes_Stage1 · V7 layered alpine spruce geometry · restrained branch flex · physical snow PBR</div>
     <div class="status"><span class="dot" id="statusDot"></span><span id="backendStatus">Инициализация renderer…</span></div>
     <div class="metrics">
       <div class="metric"><b id="fps">—</b><span>FPS</span></div>
@@ -87,7 +87,7 @@
       <input id="windSpeed" type="range" min="0" max="24" step="0.5" value="9">
       <label for="leafTranslucency"><span>Подсветка теневой стороны хвои</span><strong id="leafTranslucencyValue">82%</strong></label>
       <input id="leafTranslucency" type="range" min="0" max="1.5" step="0.01" value="0.82">
-      <div class="note">Три LOD: детальные ели у трасс, облегчённые кроны в лесу и atlas billboards вдали. В этой быстрой версии тени от деревьев отбрасывает только ближний LOD; средний и дальний не нагружают shadow map.</div>
+      <div class="note">Все три LOD используют одну форму настоящей ели: ниспадающие ярусы ветвей, плоские хвойные веера и снежные полосы. Старые кроны, atlas billboards и шарообразные пучки не используются. Двигаются только внешние кончики ветвей; ствол остаётся почти неподвижным.</div>
     </div>
     <div class="section">
       <h2>Атмосферная перспектива</h2>
@@ -109,6 +109,6 @@
     <div class="note"><a href="./index.html">← Вернуться в Grade Optimizer</a> · Солнце, облака, туман и god rays настраиваются здесь же.</div>
   </section>
   <div class="hint">ЛКМ — вращение · колесо — масштаб · ПКМ — панорама</div>
-  <script type="module" src="./webgpu-forest-lab.v6.js?v=20261125q"></script>
+  <script type="module" src="./webgpu-forest-lab.v7.js?v=20261125r"></script>
 </body>
 </html>
