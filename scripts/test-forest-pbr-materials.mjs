@@ -62,11 +62,11 @@ assert.match(atmosphere, /renderer\.render\(scene, camera\)/, 'the baseline must
 assert.doesNotMatch(atmosphere, /GTAONode|buildFogPipeline|rtt\(/, 'the old expensive screen-space pipeline must remain removed');
 
 // HTML and runtime controls must agree.
-assert.match(html, /webgpu-forest-lab\.v7\.js\?v=20261125r/, 'HTML must load the V7 renderer revision');
+assert.match(html, /webgpu-forest-lab\.v8\.js\?v=20261125t/, 'HTML must load the V8 renderer revision');
 assert.doesNotMatch(html, /id="godRays"|id="fogDensity"|id="fogHeight"|id="fogRange"/, 'removed full-screen controls should not remain in the UI');
 assert.match(renderer, /renderer\.toneMappingExposure = 0\.52/, 'terrain and snow must use a stable scene exposure');
 
 console.log('✓ Physical SkyMesh, built-in clouds, native haze and PMREM share one atmosphere');
 console.log('✓ Real terrain, Slopes_Stage1 and procedural apron share one neutral snow PBR material');
-console.log('✓ V7 true spruce boughs, snow patches and restrained branch-only wind are active');
+console.log('✓ V8 stable spruce whorls, snow patches and restrained branch-only wind are active');
 console.log('✓ Near-only tree shadows and direct rendering form the performance baseline');
