@@ -7,11 +7,13 @@ Only the selected Maya hierarchy and its child meshes are exported. The exporter
 - `clients/<slug>/models/<asset-id>.fbx`
 - `clients/<slug>/scene.json` (the asset is added to or updated in the `assets` array)
 
+The replacement list accepts published FBX and GLB files. GLB is converted to a same-stem FBX on replacement because Maya's exporter writes FBX; the manifest switches to the new FBX only after a successful export.
+
 Re-exporting a model with the same root name updates that model's FBX only. The base surface pair `assets/real-terrain.fbx` / `assets/real-terrain.json` is never touched by this exporter. Replacing the base terrain must be an explicit, separate action.
 
 Maya linear units are converted to metres through the imported asset's root transform in `scene.json`. For example, a centimetre-based FBX is registered with a scale of `[0.01, 0.01, 0.01]`.
 
-For `Slopes_Stage1`, the exporter creates `models/slopes_stage1.fbx` and registers it as category `slope`, phase `stage_1`, with `activeTerrain: false`. This leaves the original surface visible and lets the skier controller select this piste as its dedicated physics surface.
+For `Slopes_Stage1`, the manifest may currently point to `models/slopes_stage1.glb`. The Maya replacement tree includes both FBX and GLB assets. When replacing a GLB, Maya writes a same-stem FBX (for example `models/slopes_stage1.fbx`) and changes only the asset's `file` in `scene.json` after the export succeeds. The original GLB is left on disk as a rollback copy; it is not deleted. The asset keeps its ID, category `slope`, phase `stage_1`, `activeTerrain: false`, placement, visibility and Web Editor flags. This leaves the original surface visible and lets the skier controller select this piste as its dedicated physics surface.
 
 The optional collapsible Maya metadata panel applies ready-made object presets to selected nodes. Presets set only Role and standard Tags; custom Role and extra Tags remain available in a collapsed advanced subsection. Collision and Forest blocker can be configured in the Web Editor's Outliner Inspector, on the individual node that needs them. The editor stores these flags in `nodeMetadata` in `clients/<slug>/scene.json`.
 
