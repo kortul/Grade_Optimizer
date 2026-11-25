@@ -6,8 +6,10 @@ on:
       - 'clients/alpine-resort/models/slopes_stage1.fbx'
       - 'clients/alpine-resort/models/slopes_stage1.glb'
       - 'clients/alpine-resort/scene.json'
-      - 'app.v191.js'
+      - 'app.v192.js'
       - '.github/scripts/inspect-stage1-runtime-source.mjs'
+      - 'stage-one-material-groups.v1.js'
+      - 'scripts/test-stage-one-material-groups.mjs'
   push:
     branches: [main]
     paths:
@@ -16,7 +18,7 @@ on:
       - 'clients/alpine-resort/scene.json'
       - 'assets/real-terrain.fbx'
       - 'assets/real-terrain.json'
-      - 'app.v191.js'
+      - 'app.v192.js'
       - 'index.html'
       - '.github/workflows/inspect-stage1-fbx.yml'
       - '.github/scripts/inspect-stage1-fbx.mjs'
@@ -43,5 +45,7 @@ jobs:
         run: npm install --no-save --no-package-lock three@0.160.0
       - name: Parse FBX with the browser's FBXLoader
         run: node .github/scripts/inspect-stage1-fbx.mjs
+      - name: Test Stage1 material-group compaction against the actual FBX
+        run: node --test scripts/test-stage-one-material-groups.mjs
       - name: Inspect the exact published Stage1 source and GLB structure
         run: node .github/scripts/inspect-stage1-runtime-source.mjs
