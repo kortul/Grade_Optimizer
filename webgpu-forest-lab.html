@@ -45,7 +45,7 @@
   <div id="loading">Загружаем рельеф, трассы и готовим spatial lookup для леса…</div>
   <section class="panel">
     <h1>WEBGPU · ALPINE FOREST</h1>
-    <div class="sub">Slopes_Stage1 · physical sky scattering · spherical cloud shells · height-integrated haze · shared sky IBL</div>
+    <div class="sub">Slopes_Stage1 · physical SkyMesh · unified cloud scattering · neutral snow PBR · shared sky IBL</div>
     <div class="status"><span class="dot" id="statusDot"></span><span id="backendStatus">Инициализация renderer…</span></div>
     <div class="metrics">
       <div class="metric"><b id="fps">—</b><span>FPS</span></div>
@@ -77,13 +77,7 @@
       <input id="cloudDensity" type="range" min="0" max="1" step="0.01" value="0.45">
       <label for="cloudElevation"><span>Высота облачного слоя</span><strong id="cloudElevationValue">2.8 км</strong></label>
       <input id="cloudElevation" type="range" min="0" max="1" step="0.01" value="0.55">
-      <div class="note">Два изогнутых слоя неба: нижние объёмные облака и высокие перистые полосы. Они следуют за сферой неба, без прямоугольной границы.</div>
-    </div>
-    <div class="section">
-      <h2>Солнечные лучи</h2>
-      <label for="godRays"><span>God rays · рассеяние</span><strong id="godRaysValue">0%</strong></label>
-      <input id="godRays" type="range" min="0" max="1.5" step="0.01" value="0">
-      <div class="note">Низкоразрешённый screen-space pass по глубине и ярким участкам неба, с depth-aware восстановлением.</div>
+      <div class="note">Облака рассчитываются внутри физической модели неба и используют тот же солнечный свет и атмосферное рассеяние. Отдельных окрашенных cloud-shell объектов нет.</div>
     </div>
     <div class="section">
       <h2>Ели у склонов</h2>
@@ -96,15 +90,10 @@
       <div class="note">Три LOD: объёмные ярусные ели с игольчатыми пучками у трассы, облегчённые кроны в лесу, три скрещённые atlas-плоскости вдали. Ближний и средний LOD участвуют в cascaded SunLight shadows; ambient visibility усиливается GTAO. Полноценная bake-сетка directional ambient probes и needle transmission остаются отдельными следующими этапами.</div>
     </div>
     <div class="section">
-      <h2>Высотная дымка и перспектива</h2>
+      <h2>Атмосферная перспектива</h2>
       <label for="fogStrength"><span>Сила атмосферной дымки</span><strong id="fogStrengthValue">40%</strong></label>
       <input id="fogStrength" type="range" min="0" max="1.5" step="0.01" value="0.40">
-      <label for="fogDensity"><span>Плотность приземного тумана</span><strong id="fogDensityValue">0.0030</strong></label>
-      <input id="fogDensity" type="range" min="0" max="0.02" step="0.0001" value="0.0015">
-      <label for="fogHeight"><span>Высота туманного слоя</span><strong id="fogHeightValue">220 м</strong></label>
-      <input id="fogHeight" type="range" min="80" max="600" step="10" value="220">
-      <label for="fogRange"><span>Дальность атмосферной перспективы</span><strong id="fogRangeValue">3.2–10.2 км</strong></label>
-      <input id="fogRange" type="range" min="0" max="1" step="0.01" value="0.62">
+      <div class="note">Лёгкая экспоненциальная дымка на дальних участках рельефа. В этой быстрой базовой версии нет тяжёлого полноэкранного volumetric pass.</div>
     </div>
     <div class="section">
       <h2>Производительность</h2>
@@ -114,12 +103,12 @@
         <option value="balanced" selected>Balanced · сбалансированный</option>
         <option value="cinematic">Cinematic · максимум качества</option>
       </select>
-      <div class="note">Небо, солнечное рассеяние, облака, атмосферная перспектива и IBL используют один солнечный цикл. Дымка учитывает высоту и длину луча; края склонов восстанавливаются depth-aware фильтром. Настройки не меняют рабочую сцену.</div>
+      <div class="note">Один физический SkyMesh подаёт данные в видимое небо и PMREM для PBR. Рендер выполняется напрямую без нескольких полноэкранных AO / haze / god-rays проходов. Все снеговые поверхности используют согласованный нейтральный snow PBR.</div>
     </div>
     <div id="error"></div>
     <div class="note"><a href="./index.html">← Вернуться в Grade Optimizer</a> · Солнце, облака, туман и god rays настраиваются здесь же.</div>
   </section>
   <div class="hint">ЛКМ — вращение · колесо — масштаб · ПКМ — панорама</div>
-  <script type="module" src="./webgpu-forest-lab.v4.js?v=20261125m"></script>
+  <script type="module" src="./webgpu-forest-lab.v4.js?v=20261125n"></script>
 </body>
 </html>
