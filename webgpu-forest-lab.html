@@ -55,7 +55,7 @@
     <div class="section">
       <h2>Солнце и атмосфера</h2>
       <label for="timeOfDay"><span>Время суток</span><strong id="timeValue">16:00</strong></label>
-      <input id="timeOfDay" type="range" min="0" max="24" step="0.05" value="16">
+      <input id="timeOfDay" type="range" min="0" max="24" step="0.05" value="13">
       <div class="cycle-controls">
         <button id="dayCycleToggle" type="button" aria-pressed="false">▶ Запустить цикл</button>
         <div class="cycle-speed">
@@ -64,11 +64,11 @@
         </div>
       </div>
       <label for="sunIntensity"><span>Сила прямого солнечного света</span><strong id="sunIntensityValue">60%</strong></label>
-      <input id="sunIntensity" type="range" min="0" max="1.5" step="0.01" value="0.6">
+      <input id="sunIntensity" type="range" min="0" max="1.5" step="0.01" value="0.72">
       <label for="turbidity"><span>Мутность атмосферы</span><strong id="turbidityValue">2.6</strong></label>
-      <input id="turbidity" type="range" min="1" max="8" step="0.1" value="2.6">
+      <input id="turbidity" type="range" min="1" max="8" step="0.1" value="2.2">
       <label for="rayleigh"><span>Рассеяние неба</span><strong id="rayleighValue">1.20</strong></label>
-      <input id="rayleigh" type="range" min="0.5" max="2.5" step="0.05" value="1.2">    </div>
+      <input id="rayleigh" type="range" min="0.5" max="2.5" step="0.05" value="1.35">    </div>
     <div class="section">
       <h2>Облака</h2>
       <label for="cloudCoverage"><span>Покрытие</span><strong id="cloudCoverageValue">42%</strong></label>
@@ -120,6 +120,6 @@
     <div class="note"><a href="./index.html">← Вернуться в Grade Optimizer</a> · Солнце, облака, туман и god rays настраиваются здесь же.</div>
   </section>
   <div class="hint">ЛКМ — вращение · колесо — масштаб · ПКМ — панорама</div>
-  <script type="module" src="./webgpu-forest-lab.v4.js?v=20261125e"></script>
+  <script type="module" src="./webgpu-forest-lab.v4.js?v=20261125f"></script>
 </body>
 </html>
