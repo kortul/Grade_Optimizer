@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Grade Optimizer · WebGPU Alpine Spruce Forest Lab V8</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101923;color:#edf5fc;font:14px/1.45 Inter,system-ui,sans-serif}
+    #stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+    .panel{position:fixed;z-index:3;top:16px;left:16px;width:min(360px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:15px 17px;border:1px solid #ffffff20;border-radius:14px;background:#111c28e8;backdrop-filter:blur(16px);box-shadow:0 12px 40px #0005;overscroll-behavior:contain}
+    h1{font-size:15px;letter-spacing:.055em;margin:0 0 3px}.sub{color:#a8bbcd;font-size:11px;margin-bottom:12px}
+    .status{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#ffffff0b;border-radius:8px;font-size:11px;margin-bottom:10px}
+    .dot{width:8px;height:8px;border-radius:50%;background:#e6b65d;box-shadow:0 0 12px currentColor;flex:none}.dot.ok{background:#55d69a}.dot.bad{background:#ff827a}
+    .metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:9px 0 12px}
+    .metric{background:#ffffff0a;border-radius:8px;padding:8px 9px}.metric b{display:block;font-size:19px;font-variant-numeric:tabular-nums}.metric span{font-size:9px;color:#9db0c2;text-transform:uppercase;letter-spacing:.08em}
+    .section{border-top:1px solid #ffffff16;padding-top:10px;margin-top:10px}.section h2{font-size:10px;color:#8eb8d4;text-transform:uppercase;letter-spacing:.12em;margin:0 0 4px}
+    label{display:flex;justify-content:space-between;gap:12px;color:#c9d7e4;font-size:11px;margin:9px 0 4px}label strong{font-variant-numeric:tabular-nums;color:#eaf5ff;font-size:10px;white-space:nowrap}
+    input[type=range]{width:100%;accent-color:#73c8ee;margin:0;height:17px}
+    .cycle-controls{display:grid;grid-template-columns:1fr 1.15fr;gap:9px;align-items:end;margin:7px 0 5px}
+    .cycle-controls button{min-height:34px;border:1px solid #8bc8e64a;border-radius:8px;background:#26445a;color:#eaf6ff;font:700 10px system-ui;cursor:pointer;padding:6px 9px}
+    .cycle-controls button[aria-pressed="true"]{background:#315d49;border-color:#76d3a0}
+    .cycle-speed label{margin:0 0 4px}
+    .cycle-speed input{margin:0}
+    select{width:100%;padding:7px 9px;border-radius:7px;border:1px solid #ffffff25;background:#1a2a38;color:#eef6fc;font:inherit;font-size:11px}
+    .note{font-size:10px;color:#91a5b8;margin-top:12px;line-height:1.5}.note a{color:#a9dfff}
+    #error{display:none;white-space:pre-wrap;color:#ffb0a8;font-size:10px;margin-top:10px}
+    #loading{position:fixed;inset:0;display:grid;place-items:center;background:#101923cc;z-index:2;color:#e8f3fb;font-size:13px;letter-spacing:.03em}
+    .hint{position:fixed;right:16px;bottom:14px;z-index:2;padding:8px 11px;border-radius:8px;background:#111c28b8;color:#c3d2df;font-size:10px;pointer-events:none}
+    @media(max-width:600px){.panel{top:8px;left:8px;width:min(340px,calc(100vw - 16px));max-height:calc(100vh - 16px);padding:12px 13px}.hint{right:8px;bottom:8px;font-size:9px}}
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js",
+        "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js",
+        "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.tsl.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="loading">Загружаем рельеф, трассы и готовим spatial lookup для леса…</div>
+  <section class="panel">
+    <h1>WEBGPU · ALPINE SPRUCE V8</h1>
+    <div class="sub">Slopes_Stage1 · V7 layered alpine spruce geometry · restrained branch flex · physical snow PBR</div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="backendStatus">Инициализация renderer…</span></div>
+    <div class="metrics">
+      <div class="metric"><b id="fps">—</b><span>FPS</span></div>
+      <div class="metric"><b id="frameMs">—</b><span>FRAME ms</span></div>
+      <div class="metric"><b id="terrainInfo">—</b><span>ДЕРЕВЬЯ</span></div>
+    </div>
+    <div class="section">
+      <h2>Солнце и атмосфера</h2>
+      <label for="timeOfDay"><span>Время суток</span><strong id="timeValue">13:00</strong></label>
+      <input id="timeOfDay" type="range" min="0" max="24" step="0.05" value="13">
+      <div class="cycle-controls">
+        <button id="dayCycleToggle" type="button" aria-pressed="false">▶ Запустить цикл</button>
+        <div class="cycle-speed">
+          <label for="dayCycleLength"><span>Полный день</span><strong id="dayCycleLengthValue">10 мин</strong></label>
+          <input id="dayCycleLength" type="range" min="2" max="45" step="1" value="10">
+        </div>
+      </div>
+      <label for="sunIntensity"><span>Сила прямого солнечного света</span><strong id="sunIntensityValue">85%</strong></label>
+      <input id="sunIntensity" type="range" min="0" max="1.5" step="0.01" value="0.85">
+      <label for="turbidity"><span>Мутность атмосферы</span><strong id="turbidityValue">2.2</strong></label>
+      <input id="turbidity" type="range" min="1" max="8" step="0.1" value="2.2">
+      <label for="rayleigh"><span>Рассеяние неба</span><strong id="rayleighValue">1.35</strong></label>
+      <input id="rayleigh" type="range" min="0.5" max="2.5" step="0.05" value="1.35">    </div>
+    <div class="section">
+      <h2>Облака</h2>
+      <label for="cloudCoverage"><span>Покрытие</span><strong id="cloudCoverageValue">42%</strong></label>
+      <input id="cloudCoverage" type="range" min="0" max="1" step="0.01" value="0.42">
+      <label for="cloudDensity"><span>Плотность облаков</span><strong id="cloudDensityValue">45%</strong></label>
+      <input id="cloudDensity" type="range" min="0" max="1" step="0.01" value="0.45">
+      <label for="cloudElevation"><span>Высота облачного слоя</span><strong id="cloudElevationValue">2.8 км</strong></label>
+      <input id="cloudElevation" type="range" min="0" max="1" step="0.01" value="0.55">
+      <div class="note">Облака рассчитываются внутри физической модели неба и используют тот же солнечный свет и атмосферное рассеяние. Отдельных окрашенных cloud-shell объектов нет.</div>
+    </div>
+    <div class="section">
+      <h2>Ели у склонов</h2>
+      <label for="forestDensity"><span>Плотность леса</span><strong id="forestDensityValue">115%</strong></label>
+      <input id="forestDensity" type="range" min="0.25" max="1.35" step="0.05" value="1.15">
+      <label for="windSpeed"><span>Ветер в кронах</span><strong id="windSpeedValue">9 м/с</strong></label>
+      <input id="windSpeed" type="range" min="0" max="24" step="0.5" value="9">
+      <label for="leafTranslucency"><span>Подсветка теневой стороны хвои</span><strong id="leafTranslucencyValue">82%</strong></label>
+      <input id="leafTranslucency" type="range" min="0" max="1.5" step="0.01" value="0.82">
+      <div class="note">Все три LOD используют одну форму настоящей ели: ниспадающие ярусы ветвей, плоские хвойные веера и снежные полосы. Старые кроны, atlas billboards и шарообразные пучки не используются. Двигаются только внешние кончики ветвей; ствол остаётся почти неподвижным.</div>
+    </div>
+    <div class="section">
+      <h2>Атмосферная перспектива</h2>
+      <label for="fogStrength"><span>Сила атмосферной дымки</span><strong id="fogStrengthValue">40%</strong></label>
+      <input id="fogStrength" type="range" min="0" max="1.5" step="0.01" value="0.40">
+      <div class="note">Лёгкая экспоненциальная дымка на дальних участках рельефа. В этой быстрой базовой версии нет тяжёлого полноэкранного volumetric pass.</div>
+    </div>
+    <div class="section">
+      <h2>Производительность</h2>
+      <label for="quality"><span>Профиль качества</span></label>
+      <select id="quality">
+        <option value="performance">Performance · быстрый</option>
+        <option value="balanced" selected>Balanced · сбалансированный</option>
+        <option value="cinematic">Cinematic · максимум качества</option>
+      </select>
+      <div class="note">Один физический SkyMesh подаёт данные в видимое небо и PMREM для PBR. Рендер выполняется напрямую без нескольких полноэкранных AO / haze / god-rays проходов. Все снеговые поверхности используют согласованный нейтральный snow PBR.</div>
+    </div>
+    <div id="error"></div>
+    <div class="note"><a href="./index.html">← Вернуться в Grade Optimizer</a> · Солнце, облака, туман и god rays настраиваются здесь же.</div>
+  </section>
+  <div class="hint">Forest V7 · ЛКМ — вращение · колесо — масштаб · ПКМ — панорама</div>
+  <script type="module" src="./webgpu-forest-lab.v8.js?v=20261125t"></script>
+</body>
+</html>
