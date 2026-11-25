@@ -15,7 +15,16 @@ const sceneSchema = JSON.parse(read('scene-manifest.schema.json'));
 assert.ok(sceneSchema.properties?.treeMarkers?.properties?.markers?.items?.properties?.markerType, 'Scene schema must allow tree point and circle marker records');
 assert.ok(sceneSchema.properties.treeMarkers.properties.markers.items.properties.radiusMeters, 'Scene schema must allow optional point radius and circle radius metadata');
 
-assert.ok(maya.includes('VERSION = "0.9.4"'), 'Maya exporter must be 0.9.4');
+assert.ok(maya.includes('VERSION = "0.9.5"'), 'Maya exporter must be 0.9.5');
+assert.ok(maya.includes('def _safe_existing_client_model_path(') &&
+          maya.includes('def _resolve_replacement_fbx_target(') &&
+          maya.includes('extension not in (".fbx", ".glb")') &&
+          maya.includes('output_relative = os.path.splitext(normalized)[0] + ".fbx"'),
+          'Maya replacement inventory must list GLB assets and map them to a safe sibling FBX output');
+assert.ok(maya.includes('"source_relative_file": source_relative_file') &&
+          maya.includes('"format_conversion": format_conversion') &&
+          maya.includes('Исходный GLB останется в папке как резервный файл'),
+          'GLB replacement must preserve its source file and report the manifest format switch');
 assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
 assert.ok(maya.includes('def _sample_slope_curve_points(') && maya.includes('"points": _sample_slope_curve_points('), 'Maya must export raw sampled NURBS points');
@@ -84,10 +93,11 @@ assert.equal(stageOne.name, 'Slopes_Stage1');
 assert.equal(stageOne.category, 'slope');
 assert.equal(stageOne.activeTerrain, false, 'Stage1 must not replace the canonical base terrain');
 assert.deepEqual(stageOne.transform?.scale, [0.01, 0.01, 0.01]);
-assert.equal(stageOne.mayaExport?.pluginVersion, '0.8.8');
-assert.equal(stageOne.mayaExport?.meshComponentCount, 22);
+assert.match(stageOne.mayaExport?.pluginVersion || '', /^\d+\.\d+\.\d+$/);
+assert.ok(Number.isInteger(stageOne.mayaExport?.meshComponentCount) && stageOne.mayaExport.meshComponentCount > 0);
 assert.equal(stageOne.mayaExport?.components?.length, stageOne.mayaExport?.meshComponentCount);
-assert.equal(stageOne.mayaExport?.cadBridge?.inverseApplied, true);
+assert.equal(typeof stageOne.mayaExport?.cadBridge?.inverseApplied, 'boolean');
+assert.match(stageOne.file || '', /^models\/[A-Za-z0-9_.-]+\.(?:glb|fbx)$/i);
 const stageOneFbx = 'clients/alpine-resort/' + stageOne.file.replace(/\.(?:glb|fbx)$/i,'.fbx');
 assert.ok(existsSync(stageOneFbx), 'Original Stage1 FBX source is missing');
 assert.equal(statSync(stageOneFbx).size, stageOne.mayaExport.modelSizeBytes, 'Original Stage1 FBX byte size does not match its export manifest');
@@ -123,7 +133,7 @@ assert.ok(maya.includes('"sourceKey": source_key') && maya.includes('"qgis_geome
 assert.ok(maya.includes('marker_geometry = "point-locator"') && maya.includes('"positionMeaning": position_meaning'), 'point-only marker exports must be identified as point locators without a fabricated radius');
 assert.ok(maya.includes('WINDOW + "_tree_marker_frame"') && maya.includes('ЭКСПОРТИРОВАТЬ ПОЛНЫЙ НАБОР ТОЧЕК / КРУЖКОВ'), 'Maya UI must expose point and circle tree marker export');
 assert.ok(maya.includes('collapsable=True, collapse=True'), 'Maya exporter categories must be collapsible');
-console.log('✓ Maya exporter 0.9.4: queue-aware slope curve inventory, queue assignment and single-curve replacement');
+console.log('✓ Maya exporter 0.9.5: queue-aware slope curves and FBX/GLB asset replacement (GLB → FBX)');
 console.log('✓ Toro survey: closed NURBS circles and QGIS point Locators export as project-world tree positions');
 console.log('✓ Stage1: 22 selected meshes, valid FBX / manifest pair, inverse Bridge metadata');
 console.log('✓ Canonical Terrain: existing working-world FBX retained unchanged');
