@@ -23,6 +23,7 @@ assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeomet
 
 // Culling and tighter LODs keep a dense forest from drawing the entire map every frame.
 assert.match(renderer, /mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/, 'each tree batch must have bounds and enable frustum culling');
+assert.match(renderer, /mesh\.receiveShadow=lod==='near'/, 'only near trees should pay the shadow-receiver cost');
 assert.match(renderer, /const cellSize=420/, 'forest batches must be split into spatial cells');
 assert.match(renderer, /distanceSq<210\*210/, 'only the closest trees should cast detailed shadows');
 assert.match(renderer, /distanceSq<370\*370/, 'near LOD should be limited to close trees');
