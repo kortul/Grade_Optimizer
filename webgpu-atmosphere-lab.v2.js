@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
 import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
+import { createCloudLayer } from './webgpu-cloud-layer.v1.js';
 import {
   exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
   isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV,
@@ -56,7 +57,7 @@ scene.add(sky);
 const sunDisc=createSolarDisc(THREE);
 scene.add(sunDisc);
 const sunDirection = new THREE.Vector3();
-let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0;
+let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0, cloudLayer = null;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
 let dayCyclePlaying=false;
 let solarState=null;
@@ -110,7 +111,7 @@ function updateSkyLabels() {
   ui.rayleighValue.textContent = Number(ui.rayleigh.value).toFixed(2);
   ui.cloudCoverageValue.textContent = Math.round(Number(ui.cloudCoverage.value) * 100) + '%';
   ui.cloudDensityValue.textContent = Math.round(Number(ui.cloudDensity.value) * 100) + '%';
-  ui.cloudElevationValue.textContent = Math.round(Number(ui.cloudElevation.value) * 100) + '%';
+  ui.cloudElevationValue.textContent = (2.1 + Number(ui.cloudElevation.value) * 1.2).toFixed(1) + ' км';
   ui.sunIntensityValue.textContent = Math.round(Number(ui.sunIntensity.value)*100)+'%';
   ui.dayLengthValue.textContent = Math.round(Number(ui.dayLength.value))+' мин';
 }
@@ -133,9 +134,10 @@ function updateSky() {
   sky.rayleigh.value = Number(ui.rayleigh.value);
   sky.mieCoefficient.value = 0.0038;
   sky.mieDirectionalG.value = 0.78;
-  sky.cloudCoverage.value = Number(ui.cloudCoverage.value);
-  sky.cloudDensity.value = Number(ui.cloudDensity.value);
-  sky.cloudElevation.value = Number(ui.cloudElevation.value);
+  // SkyMesh's built-in cloud sheet is disabled; the shared WeatherSystem v9 field is rendered in TSL.
+  sky.cloudCoverage.value = 0;
+  sky.cloudDensity.value = 0;
+  sky.cloudElevation.value = 0;
   sky.showSunDisc.value = false;
 
   const directPower=THREE.MathUtils.clamp(Number(ui.sunIntensity.value),0,1.5);
@@ -164,6 +166,11 @@ function updateSky() {
     0.16+solar.daylight*0.30,
     0.20+solar.daylight*0.26
   );
+  cloudLayer?.setAtmosphere({
+    coverage:Number(ui.cloudCoverage.value),density:Number(ui.cloudDensity.value),
+    elevation:Number(ui.cloudElevation.value),wind:9,daylight:solar.daylight,
+    twilight:solar.twilight,rayStrength:0.32,sunDirection,sunColor:solar.sunColor
+  });
   ui.timeValue.textContent = formatTime(hours);
 }
 function updateFogControls() {
@@ -396,7 +403,7 @@ async function start() {
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.82;
+  renderer.toneMappingExposure = 0.55;
   stage.appendChild(renderer.domElement);
   await renderer.init();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
@@ -413,6 +420,7 @@ async function start() {
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 0, 0);
   await loadRealTerrain();
+  cloudLayer=createCloudLayer(THREE,scene,{center:controls.target.clone()});
   updateSkyLabels();
   updateSky();
   updateFogControls();
@@ -436,6 +444,8 @@ async function start() {
     if(solarState)updateSolarDisc(THREE,sunDisc,camera,solarState,Number(ui.sunIntensity.value));
     sky.position.copy(camera.position);
     fogPipeline.setTime(elapsed);
+    cloudLayer?.setTime(elapsed);
+    cloudLayer?.updateCamera(camera.position);
     fogPipeline.updateCamera();
     renderPipeline.render();
     fpsFrames++;
