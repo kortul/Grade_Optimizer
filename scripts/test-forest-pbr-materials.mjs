@@ -13,7 +13,7 @@ assert.match(renderer, /MeshPhysicalNodeMaterial\(\{\s*roughness:0\.88/, 'foliag
 
 // Density comes from compact multi-needle tufts; geometry is explicitly reduced for LOD.
 assert.match(renderer, /V11: dense alpine spruce foliage built from compact, volumetric needle tufts/, 'V11 dense spruce generator must be active');
-assert.match(renderer, /const branches=high\?6:mid\?5:4/, 'each LOD must use the V11 branch budget');
+assert.match(renderer, /branches=high\?6:mid\?5:4/, 'each LOD must use the V11 branch budget');
 assert.match(renderer, /const twigStations=high\?3:mid\?2:1/, 'twiglet count must reduce with distance');
 assert.match(renderer, /const tuftCount=high\?3:mid\?2:1/, 'near trees must receive overlapping foliage tufts');
 assert.match(renderer, /const addNeedleTuft=/, 'foliage must use compact 3D needle tufts');
