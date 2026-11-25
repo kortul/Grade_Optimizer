@@ -1107,7 +1107,7 @@ assert.ok(alpineForestSource.includes('V7: true alpine spruce boughs — broad d
   alpineForestSource.includes('const addBlade='),
   'V7 must build layered spruce from flat needle fans, descending bough whorls and snow patches');
 assert.ok(alpineForestSource.includes('function removeLegacyTreeAssets(root)')&&
-  alpineForestSource.includes('removeLegacyTrees'),
+  alpineForestSource.includes('removeLegacyTreeAssets'),
   'named legacy foliage in the imported Stage 1 asset must be removed before tree placement');
 assert.ok(alpineForestSource.includes('const outerReach=positionLocal.x.abs().add(positionLocal.z.abs())')&&
   alpineForestSource.includes('const flex=outerReach.mul(0.012)')&&
