@@ -794,7 +794,7 @@ function buildTreePlacements(footprint, density) {
   return trees;
 }
 function createSplinePineGeometry(lod, variant) {
-  // V8: spruce built from stable horizontal whorls, woody boughs and fine needle sprays.
+  // V8: stable spruce whorls — no spiral tier rotation; woody boughs and fine needle sprays.
   // Whorl azimuth stays nearly fixed between tiers: no golden-angle spiral / vortex silhouette.
   const positions=[],normals=[],colors=[],indices=[];
   const high=lod==='near',mid=lod==='mid';
