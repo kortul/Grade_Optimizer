@@ -123,7 +123,7 @@ assert.ok(maya.includes('"sourceKey": source_key') && maya.includes('"qgis_geome
 assert.ok(maya.includes('marker_geometry = "point-locator"') && maya.includes('"positionMeaning": position_meaning'), 'point-only marker exports must be identified as point locators without a fabricated radius');
 assert.ok(maya.includes('WINDOW + "_tree_marker_frame"') && maya.includes('ЭКСПОРТИРОВАТЬ ПОЛНЫЙ НАБОР ТОЧЕК / КРУЖКОВ'), 'Maya UI must expose point and circle tree marker export');
 assert.ok(maya.includes('collapsable=True, collapse=True'), 'Maya exporter categories must be collapsible');
-console.log('✓ Maya exporter 0.9.3: queue-aware slope curve inventory, queue assignment and single-curve replacement');
+console.log('✓ Maya exporter 0.9.4: queue-aware slope curve inventory, queue assignment and single-curve replacement');
 console.log('✓ Toro survey: closed NURBS circles and QGIS point Locators export as project-world tree positions');
 console.log('✓ Stage1: 22 selected meshes, valid FBX / manifest pair, inverse Bridge metadata');
 console.log('✓ Canonical Terrain: existing working-world FBX retained unchanged');
