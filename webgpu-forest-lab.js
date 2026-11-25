@@ -135,7 +135,7 @@ function updateSky() {
   const solar = calculateSolarCycle(THREE,hours);
   solarState=solar;
   sunDirection.copy(solar.sunDirection);
-  sky.sunPosition.value.copy(sunDirection).multiplyScalar(450000);
+  sky.sunPosition.value.copy(sunDirection);
   sky.turbidity.value = Number(ui.turbidity.value);
   sky.rayleigh.value = Number(ui.rayleigh.value);
   sky.mieCoefficient.value = 0.0038;
@@ -1166,7 +1166,7 @@ async function start() {
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.82;
+  renderer.toneMappingExposure = 0.55;
   stage.appendChild(renderer.domElement);
   await renderer.init();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
