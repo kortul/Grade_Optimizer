@@ -71,6 +71,19 @@ for(const id of ['panel','sceneHierarchyPanel','sceneEditorPanel','weatherPanel'
 }
 pass('startup camera/workspace readiness barrier and menu-aware slope-label visibility are present');
 
+assert.ok(entrySource.includes("labelRenderer.domElement.className='slope-label-renderer'"),'CSS2D slope labels must use a dedicated renderer class');
+assert.ok(entrySource.includes('function updateSlopeAnalysisLabelOcclusion(')&&entrySource.includes('new THREE.Raycaster()'),'CSS2D labels must perform a geometry line-of-sight test because CSS2DRenderer has no depth buffer');
+assert.ok(entrySource.includes('slopeAnalysisOcclusionRaycaster.intersectObjects(')&&entrySource.includes('distance-0.35'),'label occlusion must raycast only to a point before the text, so only nearer geometry can hide it');
+assert.ok(entrySource.includes("['terrain','slope'].includes(String(asset.meta?.category||'').toLowerCase())"),'label occlusion must include imported terrain and piste geometry');
+assert.ok(entrySource.includes("label.element.style.visibility=slopeAnalysisOcclusionHits.length?'hidden':'';"),'occluded labels must be hidden and restored when visible again');
+assert.ok(entrySource.includes('const SLOPE_LABEL_MENU_CLASSES=')&&entrySource.includes("'material-library-open'")&&entrySource.includes('queueMicrotask(syncSlopeAnalysisLabelRendererVisibility)'),'menu labels must be synchronized in the same click turn and through stable app classes');
+assert.ok(!entrySource.includes("labelRenderer.domElement.style.display='';")&&!entrySource.includes("labelRenderer.domElement.style.display='none';"),'mode changes must not bypass centralized label-layer visibility');
+for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
+  assert.ok(html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'CSS must immediately hide slope labels for '+menuClass);
+}
+assert.ok(html.includes('app.v199.js')&&!html.includes('app.v198.js'),'HTML must activate the current v199 release');
+pass('depth-aware slope label occlusion and immediate menu-layer suppression are present');
+
 assert.ok(html.includes('id="skierSpawnSlots"')&&html.includes('id="placeSkierSpawnButton"')&&html.includes('id="deleteSkierSpawnButton"')&&html.includes('id="sceneLookTab-spawn"')&&html.includes('id="sceneLookPanel-spawn"'), 'Scene Editor skier spawn tool controls / dedicated tab are missing');
 assert.ok(html.includes('class="scene-look-panel scene-look-panel--spawn" id="sceneLookPanel-spawn" data-look-panel="spawn"')&&html.indexOf('id="sceneLookPanel-spawn"')>html.indexOf('<div class="scene-look-panels">'), 'spawn tool must live inside its dedicated Scene Editor tab panel');
 for(const slot of ['1','2','3','4','5','6','7','8','9','0']){
