@@ -2,16 +2,87 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { Box3, Vector3 } from 'three';
+import { shareStageOneMaterialsByKind } from '../../stage-one-materials.v1.js';
 
 const file = 'clients/alpine-resort/models/slopes_stage1.fbx';
 const manifestFile = 'clients/alpine-resort/scene.json';
 const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'));
 const asset = manifest.assets?.find(item => item.id === 'slopes_stage1');
 if (!asset) throw new Error('slopes_stage1 entry is missing from scene.json');
+const savedEditorAsset = (manifest.editorSettings?.assets || []).find(item =>
+  item.id === asset.id ||
+  (item.sourceFile && String(item.sourceFile).endsWith('/slopes_stage1.fbx')) ||
+  /slopes[_ -]*stage[_ -]*1/i.test(String(item.name || ''))
+);
+const savedMaterialRows = savedEditorAsset?.materials || [];
+const savedMaterialIds = new Set(savedMaterialRows.map(item => item.materialId).filter(Boolean));
+const savedMaterialNameCounts = savedMaterialRows.reduce((counts,item) => {
+  const name = String(item.materialName || '(unnamed)');
+  counts[name] = (counts[name] || 0) + 1;
+  return counts;
+}, {});
+const savedEditorMaterialAudit = {
+  settingsPresent: !!manifest.editorSettings,
+  savedAssetMatched: !!savedEditorAsset,
+  savedAssetId: savedEditorAsset?.id || null,
+  savedAssetName: savedEditorAsset?.name || null,
+  savedMaterialRows: savedMaterialRows.length,
+  uniqueSavedMaterialIds: savedMaterialIds.size,
+  savedMaterialNameCounts
+};
 
 const bytes = readFileSync(file);
 const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 const root = new FBXLoader().parse(arrayBuffer, '');
+function collectMaterialAudit(rootObject) {
+  const records = new Map();
+  let slots = 0;
+  rootObject.traverse(object => {
+    if (!object.isMesh || !object.material) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach(material => {
+      if (!material) return;
+      slots++;
+      const id = material.uuid || material.name || 'material';
+      let record = records.get(id);
+      if (!record) {
+        record = { name: material.name || 'Material', type: material.type || null,
+          sourceName: material.userData?.gradeOptimizerFbxSourceMaterialName || null, slots: 0 };
+        records.set(id, record);
+      }
+      record.slots++;
+    });
+  });
+  return { uniqueMaterialCount: records.size, materialSlots: slots,
+    materials: [...records.values()].sort((a,b) => a.name.localeCompare(b.name)) };
+}
+const rawMaterialAudit = collectMaterialAudit(root);
+const originalMaterialGroups = [];
+root.traverse(object => {
+  if (object.isMesh && object.geometry) {
+    originalMaterialGroups.push({ geometry: object.geometry,
+      groups: JSON.stringify(object.geometry.groups || []) });
+  }
+});
+const stageOneMaterialSharing = shareStageOneMaterialsByKind(root);
+const sharedMaterialAudit = collectMaterialAudit(root);
+const materialGroupsPreserved = originalMaterialGroups.every(item =>
+  JSON.stringify(item.geometry.groups || []) === item.groups
+);
+console.log(JSON.stringify({
+  savedEditorMaterialAudit,
+  stageOneMaterialSharingAudit: {
+    rawMaterialAudit, stageOneMaterialSharing, sharedMaterialAudit, materialGroupsPreserved
+  }
+}, null, 2));
+if (sharedMaterialAudit.uniqueMaterialCount !== 2) {
+  throw new Error('Stage1 FBX must resolve to exactly two shared surface materials; got ' +
+    sharedMaterialAudit.uniqueMaterialCount + ': ' +
+    sharedMaterialAudit.materials.map(item => item.name).join(', '));
+}
+if (!materialGroupsPreserved) {
+  throw new Error('Stage1 material sharing modified original geometry groups.');
+}
 
 function restoreCadBridgeWorkingCoordinates(rootObject, mayaExport) {
   const bridge = mayaExport?.cadBridge;

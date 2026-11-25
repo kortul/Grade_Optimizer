@@ -30,7 +30,8 @@ jobs:
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
         run: |
-          node --input-type=module --check < app.v196.js
+          node --input-type=module --check < app.v197.js
+          node --input-type=module --check < stage-one-materials.v1.js
           node --input-type=module --check < editor-shared-materials.v1.js
           node --input-type=module --check < stage-one-material-groups.v1.js
           node --input-type=module --check < render-performance.v1.js
@@ -55,6 +56,8 @@ jobs:
           node --input-type=module --check < server/src/worker.js
       - name: Test shared imported material consolidation
         run: node scripts/test-editor-shared-materials.mjs
+      - name: Test Stage1 semantic material sharing
+        run: node scripts/test-stage-one-materials.mjs
       - name: Test multiplayer protocol
         run: node --test server/test/*.test.mjs
       - name: Test skier terrain contact transitions
