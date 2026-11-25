@@ -24,9 +24,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check active Forest Lab PBR and HDR modules
+      - name: Check active Forest Lab physical sky and snow PBR modules
         run: |
           node --input-type=module --check < webgpu-forest-lab.v4.js
+          node --input-type=module --check < webgpu-forest-atmosphere.v1.js
+          node --input-type=module --check < solar-cycle.v1.js
           node --input-type=module --check < webgpu-cloud-layer.v3.js
           node --input-type=module --check < stage-one-materials.v1.js
           node scripts/test-stage-one-materials.mjs
