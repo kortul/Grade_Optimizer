@@ -1017,6 +1017,21 @@ assert.ok(forestPlacementSource.includes('sampleTerrainSurface(x,z,terrainHeight
 assert.ok(alpineForestSource.includes("setLoadingMessage('Строим spatial height lookup для рельефа…')")&&alpineForestSource.includes("setLoadingMessage('Загружаем atlas елей…')")&&alpineForestSource.includes('Не удалось запустить WebGPU Forest Lab'), 'Forest Lab must expose loading stages and its own diagnostic error label');
 pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
 
+// Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
+// The forest is terrain-wide and intentionally does not depend on any piste / Stage 1 asset.
+const alpineLabHtml=read('alpine-lab.html').toString('utf8');
+const alpineLabSource=read('alpine-lab.v1.js').toString('utf8');
+assert.ok(alpineLabHtml.includes('three@0.160.0')&&alpineLabHtml.includes('src="./alpine-lab.v1.js"'),'Alpine Lab must use the stable Three.js 0.160 WebGL entrypoint');
+assert.ok(alpineLabSource.includes("new THREE.WebGLRenderer")&&alpineLabSource.includes("from './weather-system.v9.js'")&&alpineLabSource.includes('new WeatherSystem('),'Alpine Lab must use WebGL and the existing production WeatherSystem v9');
+assert.ok(alpineLabSource.includes("from './solar-cycle.v1.js'")&&alpineLabSource.includes('calculateSolarCycle(THREE')&&alpineLabSource.includes('advanceSolarClock('),'Alpine Lab must support the shared rotating solar path and day cycle');
+assert.ok(alpineLabSource.includes('async function buildTerrainHeightLookup(')&&alpineLabSource.includes('function sampleTerrainSurface(')&&alpineLabSource.includes('function buildTreePlacements('),'Alpine Lab must cache real terrain triangles and distribute trees by sampled terrain height');
+assert.ok(alpineLabSource.includes('new THREE.InstancedMesh(')&&alpineLabSource.includes('GO_AlpineForest_Instances'),'Alpine Lab forest must render instanced spruce geometry');
+assert.ok(alpineLabSource.includes("loadFBX('./assets/real-terrain.fbx')")&&alpineLabSource.includes("fetch('./assets/real-terrain.json'"),'Alpine Lab must load the canonical terrain FBX and manifest');
+assert.ok(!alpineLabSource.includes('Slopes_Stage1')&&!alpineLabSource.includes('buildSlopeFootprint')&&!alpineLabSource.includes('restoreStageOneCoordinates'),'Alpine Lab forest must not depend on piste geometry or Stage 1 transforms');
+assert.ok(alpineLabHtml.includes('id="forestDensity"')&&alpineLabHtml.includes('id="cloudCoverage"')&&alpineLabHtml.includes('id="groundFog"')&&alpineLabHtml.includes('id="dayCycleToggle"'),'Alpine Lab must expose forest, cloud, fog and day-cycle controls');
+assert.ok(read('webgpu-forest-lab.html').toString('utf8').includes('location.replace("./alpine-lab.html")')&&read('webgpu-atmosphere-lab.html').toString('utf8').includes('location.replace("./alpine-lab.html")'),'legacy Forest and Atmosphere Lab URLs must redirect to the unified page');
+pass('unified Alpine Lab: stable WebGL, shared WeatherSystem v9 and terrain-wide instanced forest');
+
 // Public resort multiplayer regression checks.
 const multiplayerImportMatch=entrySource.match(/import\s+\{\s*ResortMultiplayer\s*\}\s+from\s+['"]\.\/(multiplayer\.v\d+\.js)['"]/);
 assert.ok(multiplayerImportMatch,'active app must import a versioned multiplayer client');
