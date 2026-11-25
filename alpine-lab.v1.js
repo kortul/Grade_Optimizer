@@ -48,29 +48,9 @@ const moonLight = new THREE.DirectionalLight(0x9eb6dc, 0.12);
 moonLight.castShadow = false;
 scene.add(moonLight, moonLight.target);
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  powerPreference: 'high-performance',
-  logarithmicDepthBuffer: true
-});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
-renderer.setSize(stage.clientWidth, stage.clientHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.08;
-renderer.shadowMap.enabled = false;
-stage.appendChild(renderer.domElement);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.065;
-controls.screenSpacePanning = true;
-controls.minDistance = 35;
-controls.maxDistance = 18000;
-controls.maxPolarAngle = Math.PI * 0.492;
-controls.target.set(0, 60, 0);
+let renderer = null;
+let controls = null;
 camera.position.set(1200, 920, 1750);
-controls.update();
 
 const weather = new WeatherSystem({
   THREE,
@@ -595,8 +575,10 @@ function createForestMeshes(trees) {
 }
 
 async function buildForest() {
-  setLoading('Строим карту поверхности…');
-  terrainHeightLookup = await buildTerrainHeightLookup(terrainRoot, terrainBounds, 48);
+  if (!terrainHeightLookup) {
+    setLoading('Строим карту поверхности…');
+    terrainHeightLookup = await buildTerrainHeightLookup(terrainRoot, terrainBounds, 48);
+  }
 
   setLoading('Распределяем деревья по всему рельефу…');
   const trees = await buildTreePlacements(terrainHeightLookup, Number(ui.forestDensity.value));
@@ -680,6 +662,29 @@ function showError(error) {
 
 async function start() {
   try {
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance',
+      logarithmicDepthBuffer: true
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
+    renderer.setSize(stage.clientWidth, stage.clientHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    renderer.shadowMap.enabled = false;
+    stage.appendChild(renderer.domElement);
+
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.065;
+    controls.screenSpacePanning = true;
+    controls.minDistance = 35;
+    controls.maxDistance = 18000;
+    controls.maxPolarAngle = Math.PI * 0.492;
+    controls.target.set(0, 60, 0);
+    controls.update();
+
     camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
     camera.updateProjectionMatrix();
 
