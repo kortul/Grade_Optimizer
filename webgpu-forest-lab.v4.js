@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { shareStageOneMaterialsByKind } from './stage-one-materials.v1.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
@@ -42,10 +43,10 @@ const ui = {
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 1000000);
-const hemisphere = new THREE.HemisphereLight(0xc8e2ff, 0x4c5149, 0.8);
+const hemisphere = new THREE.HemisphereLight(0xb6d6f2, 0x27332f, 0.28);
 scene.add(hemisphere);
-const sunLight = new THREE.DirectionalLight(0xfff0df, 1.8);
-sunLight.castShadow = false;
+const sunLight = new THREE.DirectionalLight(0xfff8ef, 3.0);
+sunLight.castShadow = true;
 scene.add(sunLight, sunLight.target);
 const moonLight = new THREE.DirectionalLight(0x9eb6dc, 0.16);
 moonLight.castShadow = false;
@@ -89,6 +90,14 @@ const marchSteps = uniform(18);
 const spatialSigma = uniform(1.15);
 const depthSensitivity = uniform(22);
 const fogColor = uniform(new THREE.Color(0xc6dced));
+let skyEnvironmentTexture=null;
+let skyEnvironmentLastUpdate=0;
+const skyEnvHorizon=new THREE.Color(0xc7d9e5);
+const skyEnvZenith=new THREE.Color(0x4b79a6);
+const skyEnvLower=new THREE.Color(0x53616b);
+const skyEnvPixel=new THREE.Color();
+const skyEnvDirection=new THREE.Vector3();
+const skyEnvSunColor=new THREE.Color();
 const daylightSunColor = new THREE.Color(0xfff8f1);
 const lowSunColor = new THREE.Color(0xffc18e);
 const liveSunColor = new THREE.Color();
@@ -124,6 +133,57 @@ function createNoiseTexture3D(size) {
 function formatTime(hours) {
   const total = Math.round((hours % 24) * 60);
   return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
+}
+function updateSkyEnvironment(solar,force=false){
+  if(!renderer||!solar)return;
+  const now=performance.now();
+  if(!force&&now-skyEnvironmentLastUpdate<900)return;
+  skyEnvironmentLastUpdate=now;
+  const width=512,height=256;
+  const count=width*height;
+  if(!skyEnvironmentTexture){
+    const data=new Uint16Array(count*4);
+    skyEnvironmentTexture=new THREE.DataTexture(data,width,height,THREE.RGBAFormat,THREE.HalfFloatType);
+    skyEnvironmentTexture.name='GO_ForestLab_DynamicSkyIBL';
+    skyEnvironmentTexture.mapping=THREE.EquirectangularReflectionMapping;
+    skyEnvironmentTexture.colorSpace=THREE.LinearSRGBColorSpace;
+    skyEnvironmentTexture.minFilter=THREE.LinearFilter;
+    skyEnvironmentTexture.magFilter=THREE.LinearFilter;
+    skyEnvironmentTexture.generateMipmaps=false;
+    skyEnvironmentTexture.flipY=false;
+  }
+  const data=skyEnvironmentTexture.image.data;
+  const sun=solar.sunDirection;
+  skyEnvSunColor.copy(liveSunColor);
+  for(let y=0;y<height;y++){
+    const v=y/(height-1);
+    const elevation=(0.5-v)*Math.PI;
+    const cosElevation=Math.cos(elevation);
+    const skyBlend=THREE.MathUtils.smoothstep(Math.sin(elevation),-0.025,0.92);
+    const groundBlend=THREE.MathUtils.smoothstep(Math.sin(elevation),-0.09,0.012);
+    for(let x=0;x<width;x++){
+      const azimuth=(x/width-0.5)*Math.PI*2;
+      skyEnvDirection.set(cosElevation*Math.cos(azimuth),Math.sin(elevation),cosElevation*Math.sin(azimuth)).normalize();
+      skyEnvPixel.copy(skyEnvHorizon).lerp(skyEnvZenith,skyBlend*0.93);
+      skyEnvPixel.lerp(skyEnvLower,1-groundBlend);
+      const sunDot=THREE.MathUtils.clamp(skyEnvDirection.dot(sun),-1,1);
+      const angle=Math.acos(sunDot);
+      const halo=Math.exp(-(angle*angle)/(2*0.105*0.105))*solar.daylight*0.20;
+      const disc=solar.daylight>0.02?1-THREE.MathUtils.smoothstep(angle,0.0032,0.0068):0;
+      const sunEnergy=disc*34*solar.daylight+halo*1.4;
+      skyEnvPixel.r+=skyEnvSunColor.r*sunEnergy;
+      skyEnvPixel.g+=skyEnvSunColor.g*sunEnergy;
+      skyEnvPixel.b+=skyEnvSunColor.b*sunEnergy;
+      const offset=(y*width+x)*4;
+      data[offset]=THREE.DataUtils.toHalfFloat(Math.max(0,skyEnvPixel.r));
+      data[offset+1]=THREE.DataUtils.toHalfFloat(Math.max(0,skyEnvPixel.g));
+      data[offset+2]=THREE.DataUtils.toHalfFloat(Math.max(0,skyEnvPixel.b));
+      data[offset+3]=THREE.DataUtils.toHalfFloat(1);
+    }
+  }
+  skyEnvironmentTexture.needsUpdate=true;
+  scene.environment=skyEnvironmentTexture;
+  scene.environmentIntensity=0.72;
 }
 function updateSkyLabels() {
   ui.turbidityValue.textContent = Number(ui.turbidity.value).toFixed(1);
@@ -169,8 +229,8 @@ function updateSky() {
   // Keep the daytime key close to neutral; let it warm gradually only as the sun approaches the horizon.
   const warmKey = THREE.MathUtils.clamp(solar.twilight * 0.52, 0, 0.58);
   liveSunColor.copy(daylightSunColor).lerp(lowSunColor,warmKey);
-  hemisphere.intensity = 0.11 + solar.daylight * 0.42 + solar.nightStrength*0.025;
-  sunLight.intensity = solar.daylight * 3.2 * directPower;
+  hemisphere.intensity = 0.025 + solar.daylight * 0.24 + solar.nightStrength*0.012;
+  sunLight.intensity = solar.daylight * 3.5 * directPower;
   sunLight.color.copy(liveSunColor);
   moonLight.intensity=solar.nightStrength*0.16;
   sunLight.position.copy(controls.target).addScaledVector(sunDirection,1800);
@@ -199,6 +259,7 @@ function updateSky() {
     elevation:Number(ui.cloudElevation.value),wind:Number(ui.wind.value),daylight:solar.daylight,
     twilight:solar.twilight,rayStrength:Number(ui.godRays.value),sunDirection,sunColor:liveSunColor
   });
+  updateSkyEnvironment(solar);
   ui.timeValue.textContent = formatTime(hours);
 }
 function setLoadingMessage(message){
@@ -1083,7 +1144,7 @@ function createPineBacklightNode(){
   return vec3(0.045,0.075,0.032).mul(transmission).mul(foliageBacklight).mul(foliageDaylight);
 }
 function createSplinePineMaterial() {
-  const material=new THREE.MeshStandardNodeMaterial({roughness:0.91,metalness:0,vertexColors:true,side:THREE.DoubleSide});
+  const material=new THREE.MeshStandardNodeMaterial({roughness:0.69,metalness:0,vertexColors:true,side:THREE.DoubleSide});
   const phase=positionLocal.x.mul(0.17).add(positionLocal.z.mul(0.13));
   const swayX=sin(time.mul(0.72).add(positionLocal.y.mul(0.52)).add(phase))
     .mul(positionLocal.y.mul(0.0075)).mul(foliageWind);
@@ -1094,7 +1155,7 @@ function createSplinePineMaterial() {
   return material;
 }
 function createPineAtlasMaterial(texture){
-  const material=new THREE.MeshStandardNodeMaterial({map:texture,color:0xffffff,roughness:0.98,metalness:0,side:THREE.DoubleSide,alphaTest:0.12});
+  const material=new THREE.MeshStandardNodeMaterial({map:texture,color:0xffffff,roughness:0.82,metalness:0,side:THREE.DoubleSide,alphaTest:0.12});
   material.emissiveNode=createPineBacklightNode();
   return material;
 }
@@ -1197,7 +1258,7 @@ function rebuildForestLod(force=false) {
   forestSystem.lastForward.copy(forestSystem.cameraForward);
   forestSystem.group.clear();
   const near=[[],[],[]],nearShadow=[[],[],[]],mid=[[],[],[]],far=Array.from({length:8},()=>[]);
-  const shadowLimitSq=280*280,nearLimitSq=850*850,midLimitSq=3300*3300;
+  const shadowLimitSq=650*650,nearLimitSq=850*850,midLimitSq=3300*3300;
   for(const tree of forestSystem.trees){
     const dx=camera.position.x-tree.x;
     const dy=camera.position.y-(tree.y+tree.height*0.5);
@@ -1246,14 +1307,67 @@ async function loadStageOneAndForest() {
     throw new Error('Неподдерживаемый формат Slopes_Stage1: '+extension);
   }
   restoreStageOneCoordinates(root,item);
-  const slopeMaterial=new THREE.MeshStandardMaterial({color:0xcbd8e4,roughness:0.94,metalness:0});
+  // Keep the authored Slopes / AngledSlopes material groups from Maya; never replace the asset with a flat grey override.
+  const semanticMaterials=shareStageOneMaterialsByKind(root,{defaultKind:'slopes'});
+  const pbrMaterials=new Map();
+  const makeStageOnePbrMaterial=(source)=>{
+    if(!source)return source;
+    if(pbrMaterials.has(source))return pbrMaterials.get(source);
+    const kind=String(source.userData?.gradeOptimizerStageOneSurfaceKind||source.name||'slopes').toLowerCase();
+    const angled=kind.includes('angled');
+    const phongShininess=Number(source.shininess);
+    const phongRoughness=Number.isFinite(phongShininess)&&phongShininess>0
+      ?THREE.MathUtils.clamp(Math.sqrt(2/(phongShininess+2)),0.48,0.88)
+      :(angled?0.48:0.70);
+    const material=new THREE.MeshPhysicalMaterial({
+      name:source.name|| (angled?'AngledSlopes':'Slopes'),
+      color:source.color?.clone?.()||new THREE.Color(0xffffff),
+      map:source.map||null,
+      alphaMap:source.alphaMap||null,
+      aoMap:source.aoMap||null,
+      lightMap:source.lightMap||null,
+      emissive:source.emissive?.clone?.()||new THREE.Color(0x000000),
+      emissiveMap:source.emissiveMap||null,
+      normalMap:source.normalMap||null,
+      normalScale:source.normalScale?.clone?.()||new THREE.Vector2(1,1),
+      bumpMap:source.bumpMap||null,
+      bumpScale:Number.isFinite(source.bumpScale)?source.bumpScale:1,
+      displacementMap:source.displacementMap||null,
+      displacementScale:Number.isFinite(source.displacementScale)?source.displacementScale:1,
+      displacementBias:Number.isFinite(source.displacementBias)?source.displacementBias:0,
+      roughnessMap:source.roughnessMap||null,
+      metalnessMap:source.metalnessMap||null,
+      roughness:source.roughnessMap?1:phongRoughness,
+      metalness:0,
+      clearcoat:angled?0.20:0.10,
+      clearcoatRoughness:angled?0.30:0.42,
+      vertexColors:!!source.vertexColors,
+      side:source.side??THREE.FrontSide,
+      transparent:!!source.transparent,
+      opacity:Number.isFinite(source.opacity)?source.opacity:1,
+      alphaTest:Number.isFinite(source.alphaTest)?source.alphaTest:0,
+      depthWrite:source.depthWrite!==false,
+      flatShading:!!source.flatShading,
+      fog:true
+    });
+    material.userData={...(source.userData||{}),gradeOptimizerPbrSourceMaterial:source.name||source.type||'Material'};
+    if(source.emissiveIntensity!==undefined)material.emissiveIntensity=source.emissiveIntensity;
+    if(source.aoMapIntensity!==undefined)material.aoMapIntensity=source.aoMapIntensity;
+    if(source.lightMapIntensity!==undefined)material.lightMapIntensity=source.lightMapIntensity;
+    pbrMaterials.set(source,material);
+    return material;
+  };
   let slopeMeshCount=0;
   root.traverse(object=>{
     if(!object.isMesh||!object.geometry?.attributes?.position)return;
-    object.material=slopeMaterial;
-    object.castShadow=false;object.receiveShadow=true;
+    object.material=Array.isArray(object.material)
+      ?object.material.map(makeStageOnePbrMaterial)
+      :makeStageOnePbrMaterial(object.material);
+    object.castShadow=true;
+    object.receiveShadow=true;
     slopeMeshCount++;
   });
+  console.info('[Grade Optimizer WebGPU Forest] Preserved Stage 1 material identities:',semanticMaterials);
   if(!slopeMeshCount)throw new Error('Slopes_Stage1 не содержит polygon meshes.');
   root.name='GO_WebGPU_Slopes_Stage1';
   scene.add(root);
@@ -1371,17 +1485,18 @@ async function start() {
   renderer = new THREE.WebGPURenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  sunLight.shadow.mapSize.set(2048,2048);
-  sunLight.shadow.camera.left=-1700;sunLight.shadow.camera.right=1700;
-  sunLight.shadow.camera.top=1700;sunLight.shadow.camera.bottom=-1700;
-  sunLight.shadow.camera.near=1;sunLight.shadow.camera.far=9000;
-  sunLight.shadow.bias=-0.00012;sunLight.shadow.normalBias=0.035;sunLight.shadow.radius=3;
+  sunLight.shadow.mapSize.set(4096,4096);
+  sunLight.shadow.camera.left=-1450;sunLight.shadow.camera.right=1450;
+  sunLight.shadow.camera.top=1450;sunLight.shadow.camera.bottom=-1450;
+  sunLight.shadow.camera.near=1;sunLight.shadow.camera.far=6500;
+  sunLight.shadow.bias=-0.00006;sunLight.shadow.normalBias=0.018;sunLight.shadow.radius=2;
+  sunLight.shadow.autoUpdate=true;
   sunLight.shadow.camera.updateProjectionMatrix();
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.3));
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.72;
+  renderer.toneMappingExposure = 0.86;
   stage.appendChild(renderer.domElement);
   await renderer.init();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
