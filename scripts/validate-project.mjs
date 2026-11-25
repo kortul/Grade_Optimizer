@@ -510,7 +510,15 @@ const topRespawnStart=skierSource.indexOf('respawnAtTop(){');
 const topRespawnEnd=skierSource.indexOf('enableInput(){',topRespawnStart);
 const topRespawnBlock=topRespawnStart>=0&&topRespawnEnd>topRespawnStart?skierSource.slice(topRespawnStart,topRespawnEnd):'';
 assert.ok(initialSpawnBlock.includes('const defaultHit=this._findSpawn(0);')&&!initialSpawnBlock.includes('this._findSpawn(slot)')&&topRespawnBlock.includes('const hit=this._findSpawn(0);'),'ordinary skier entry and key-1 summit respawn must call the exact same spawn-pool index 0');
-assert.ok(entrySource.includes('Ordinary starts intentionally use the exact same summit spawn as key 1.')&&!entrySource.includes('waitForSlot(1800)')&&!entrySource.includes('const multiplayerSlot=Number.isInteger(receivedSlot)'), 'normal skier entry must not allow the multiplayer server slot to override default key-1 spawn');
+assert.ok(
+  entrySource.includes('skierController.start(terrain,spawnHint,{requestPointerLock:false})') &&
+  entrySource.includes("if(skierStarted&&!dronePose&&state.skierSpawns?.['1'])") &&
+  entrySource.includes('skierController.respawnAtCustomSpawn({') &&
+  entrySource.includes('Оставлен спаун Stage 1.') &&
+  !entrySource.includes('waitForSlot(1800)') &&
+  !entrySource.includes('const multiplayerSlot=Number.isInteger(receivedSlot)'),
+  'normal skier entry must use the local saved slot 1 when present and otherwise retain the Stage 1 summit fallback without a multiplayer server slot override'
+);
 assert.ok(skierViewUtils.includes('export function resolveSkierViewFov('),'skier camera FOV helper is missing');
 assert.ok(skierContactUtils.includes('MIN_TERRAIN_NORMAL_Y')&&skierContactUtils.includes('blendGroundNormal'), 'engine-independent terrain-contact stability helpers are present');
 assert.ok(entrySource.includes('function isVisibleSkierPhysicsObject(')&&entrySource.includes('An active imported Terrain replaces the hidden base terrain')&&entrySource.includes('remove.forEach(object=>object.parent?.remove(object))'), 'skier collision composite must exclude hidden mesh geometry and not collide with stale base terrain');
