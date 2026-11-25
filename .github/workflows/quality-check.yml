@@ -24,6 +24,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check active Forest Lab PBR and HDR modules
+        run: |
+          node --input-type=module --check < webgpu-forest-lab.v4.js
+          node --input-type=module --check < webgpu-cloud-layer.v3.js
+          node --input-type=module --check < stage-one-materials.v1.js
       - name: Check Maya exporter Python syntax
         run: python -m py_compile maya/grade_optimizer_exporter.py
       - name: Test Maya FBX and GLB replacement inventory
