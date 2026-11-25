@@ -30,11 +30,7 @@ const ui = {
   cloudDensity: document.getElementById('cloudDensity'), cloudDensityValue: document.getElementById('cloudDensityValue'),
   cloudElevation: document.getElementById('cloudElevation'), cloudElevationValue: document.getElementById('cloudElevationValue'),
   fogStrength: document.getElementById('fogStrength'), fogStrengthValue: document.getElementById('fogStrengthValue'),
-  fogDensity: document.getElementById('fogDensity'), fogDensityValue: document.getElementById('fogDensityValue'),
-  fogHeight: document.getElementById('fogHeight'), fogHeightValue: document.getElementById('fogHeightValue'),
-  fogRange: document.getElementById('fogRange'), fogRangeValue: document.getElementById('fogRangeValue'),
   quality: document.getElementById('quality'),
-  godRays: document.getElementById('godRays'), godRaysValue: document.getElementById('godRaysValue'),
   forestDensity: document.getElementById('forestDensity'), forestDensityValue: document.getElementById('forestDensityValue'),
   wind: document.getElementById('windSpeed'), windValue: document.getElementById('windSpeedValue'),
   leafTranslucency: document.getElementById('leafTranslucency'), leafTranslucencyValue: document.getElementById('leafTranslucencyValue')
@@ -62,6 +58,7 @@ const slopeMarginNoise = new ImprovedNoise();
 let renderer, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
 let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null,pineAtlasTextures=null;
+let snowPbrMaterial=null;
 let atmosphere=null,dayCyclePlaying=false;
 let solarState=null;
 
@@ -132,20 +129,11 @@ function nextAnimationFrame(){
   return new Promise(resolve=>requestAnimationFrame(()=>resolve()));
 }
 function updateFogControls() {
-  const density=Number(ui.fogDensity.value);
-  const height=Number(ui.fogHeight.value);
   const strength=Number(ui.fogStrength.value);
-  const range=Number(ui.fogRange.value);
-  const rays=Number(ui.godRays.value);
-  atmosphere?.setFog({density,height,strength,range,rays});
-  const near=THREE.MathUtils.lerp(1500,4200,range);
-  const far=THREE.MathUtils.lerp(6500,12500,range);
-  ui.fogDensityValue.textContent=density.toFixed(4);
-  ui.fogHeightValue.textContent=Math.round(height)+' м';
+  atmosphere?.setFog({strength});
   ui.fogStrengthValue.textContent=Math.round(strength*100)+'%';
-  ui.fogRangeValue.textContent=(near/1000).toFixed(1)+'–'+(far/1000).toFixed(1)+' км';
 }
-async function buildTerrainHeightLookup(root,bounds,cellSize=40){
+async function buildTerrainHeightLookupasync function buildTerrainHeightLookup(root,bounds,cellSize=40){
   const size=bounds.getSize(new THREE.Vector3());
   const cols=Math.max(1,Math.ceil(size.x/cellSize));
   const rows=Math.max(1,Math.ceil(size.z/cellSize));
@@ -292,7 +280,6 @@ function createAlpineTerrainMaps(){
   const albedoData=new Uint8Array(size*size*4);
   const roughnessData=new Uint8Array(size*size*4);
   const heightData=new Uint8Array(size*size*4);
-  const fract=value=>value-Math.floor(value);
   const hash=(x,y)=>{
     let n=(Math.imul(x|0,374761393)+Math.imul(y|0,668265263))|0;
     n=Math.imul(n^(n>>>13),1274126177);
@@ -311,27 +298,29 @@ function createAlpineTerrainMaps(){
     return THREE.MathUtils.lerp(a,b,ty);
   };
   const ramp=(a,b,t)=>THREE.MathUtils.lerp(a,b,THREE.MathUtils.clamp(t,0,1));
+  const powder=[232,239,245];
+  const compact=[211,224,235];
+  const blueIce=[190,207,222];
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const u=x/size,v=y/size;
     const macro=valueNoise(u,v,5)*0.68+valueNoise(u,v,13)*0.32;
-    const rockNoise=valueNoise(u,v,9)*0.58+valueNoise(u,v,29)*0.42;
+    const structure=valueNoise(u,v,9)*0.58+valueNoise(u,v,29)*0.42;
     const detail=valueNoise(u,v,67);
     const grain=valueNoise(u,v,181);
-    const earth=THREE.MathUtils.smoothstep(macro,0.34,0.65);
-    const rock=THREE.MathUtils.smoothstep(rockNoise,0.58,0.78)*0.78;
-    const fine=(detail-0.5)*12+(grain-0.5)*12;
-    const grass=[67,83,57],soil=[91,72,54],stone=[117,112,101];
+    const packed=THREE.MathUtils.smoothstep(macro,0.42,0.73);
+    const ice=THREE.MathUtils.smoothstep(structure,0.64,0.84)*0.42;
+    const fine=(detail-0.5)*5+(grain-0.5)*5;
     const offset=(y*size+x)*4;
     for(let channel=0;channel<3;channel++){
-      const ground=ramp(grass[channel],soil[channel],earth);
-      const colour=ramp(ground,stone[channel],rock)+fine;
+      const snow=ramp(powder[channel],compact[channel],packed);
+      const colour=ramp(snow,blueIce[channel],ice)+fine;
       albedoData[offset+channel]=Math.round(THREE.MathUtils.clamp(colour,0,255));
     }
     albedoData[offset+3]=255;
-    const rough=Math.round(202+detail*34+grain*15);
+    const rough=Math.round(229+detail*18+grain*8);
     roughnessData[offset]=roughnessData[offset+1]=roughnessData[offset+2]=rough;
     roughnessData[offset+3]=255;
-    const height=Math.round(112+detail*40+grain*30);
+    const height=Math.round(116+detail*52+grain*34);
     heightData[offset]=heightData[offset+1]=heightData[offset+2]=height;
     heightData[offset+3]=255;
   }
@@ -348,11 +337,36 @@ function createAlpineTerrainMaps(){
     return texture;
   };
   alpineTerrainMaps={
-    albedo:makeTexture(albedoData,'GO_AlpineGround_ProceduralAlbedo',THREE.SRGBColorSpace),
-    roughness:makeTexture(roughnessData,'GO_AlpineGround_Roughness',THREE.NoColorSpace),
-    height:makeTexture(heightData,'GO_AlpineGround_MicroHeight',THREE.NoColorSpace)
+    albedo:makeTexture(albedoData,'GO_AlpineSnow_ProceduralAlbedo',THREE.SRGBColorSpace),
+    roughness:makeTexture(roughnessData,'GO_AlpineSnow_Roughness',THREE.NoColorSpace),
+    height:makeTexture(heightData,'GO_AlpineSnow_MicroHeight',THREE.NoColorSpace)
   };
   return alpineTerrainMaps;
+}
+
+function getSnowPbrMaterial(){
+  if(snowPbrMaterial)return snowPbrMaterial;
+  const maps=createAlpineTerrainMaps();
+  snowPbrMaterial=new THREE.MeshPhysicalMaterial({
+    name:'ForestLab_NeutralSnow_PBR',
+    color:0xffffff,
+    map:maps.albedo,
+    roughnessMap:maps.roughness,
+    bumpMap:maps.height,
+    bumpScale:0.035,
+    roughness:0.94,
+    metalness:0,
+    clearcoat:0,
+    specularIntensity:0.20,
+    vertexColors:false,
+    side:THREE.DoubleSide,
+    transparent:false,
+    opacity:1,
+    depthWrite:true,
+    fog:true
+  });
+  snowPbrMaterial.userData.gradeOptimizerSnowSurface=true;
+  return snowPbrMaterial;
 }
 function ensureWorldTerrainUV(mesh,force=false){
   const geometry=mesh.geometry;
@@ -369,61 +383,10 @@ function ensureWorldTerrainUV(mesh,force=false){
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
 }
 function makeTerrainPbrMaterial(source,proceduralMaps,cache){
-  if(!source)return source;
-  if(cache.has(source))return cache.get(source);
-  const sourceRoughness=Number(source.roughness);
-  const shininess=Number(source.shininess);
-  const inferredRoughness=Number.isFinite(sourceRoughness)
-    ?THREE.MathUtils.clamp(sourceRoughness,0.48,0.94)
-    :Number.isFinite(shininess)&&shininess>0
-      ?THREE.MathUtils.clamp(Math.sqrt(2/(shininess+2)),0.52,0.88)
-      :0.76;
-  const material=new THREE.MeshPhysicalMaterial({
-    name:source.name||'AlpineTerrain_PBR',
-    color:source.map?(source.color?.clone?.()||new THREE.Color(0xffffff)):new THREE.Color(0xffffff),
-    map:source.map||proceduralMaps.albedo,
-    alphaMap:source.alphaMap||null,
-    aoMap:source.aoMap||null,
-    lightMap:source.lightMap||null,
-    emissive:source.emissive?.clone?.()||new THREE.Color(0x000000),
-    emissiveMap:source.emissiveMap||null,
-    normalMap:source.normalMap||null,
-    normalScale:source.normalScale?.clone?.()||new THREE.Vector2(1,1),
-    bumpMap:source.bumpMap||proceduralMaps.height,
-    bumpScale:Number.isFinite(source.bumpScale)?source.bumpScale:0.12,
-    displacementMap:source.displacementMap||null,
-    displacementScale:Number.isFinite(source.displacementScale)?source.displacementScale:1,
-    displacementBias:Number.isFinite(source.displacementBias)?source.displacementBias:0,
-    roughnessMap:source.roughnessMap||proceduralMaps.roughness,
-    metalnessMap:source.metalnessMap||null,
-    roughness:inferredRoughness,
-    metalness:0,
-    clearcoat:0.14,
-    clearcoatRoughness:0.38,
-    specularIntensity:0.82,
-    specularColor:new THREE.Color(0xffffff),
-    vertexColors:!!source.vertexColors,
-    side:source.side??THREE.FrontSide,
-    transparent:!!source.transparent,
-    opacity:Number.isFinite(source.opacity)?source.opacity:1,
-    alphaTest:Number.isFinite(source.alphaTest)?source.alphaTest:0,
-    depthWrite:source.depthWrite!==false,
-    flatShading:!!source.flatShading,
-    fog:true
-  });
-  material.userData={
-    ...(source.userData||{}),
-    gradeOptimizerPbrSourceMaterial:source.name||source.type||'Material',
-    gradeOptimizerTerrainPbr:true
-  };
-  if(source.emissiveIntensity!==undefined)material.emissiveIntensity=source.emissiveIntensity;
-  if(source.aoMapIntensity!==undefined)material.aoMapIntensity=source.aoMapIntensity;
-  if(source.lightMapIntensity!==undefined)material.lightMapIntensity=source.lightMapIntensity;
-  cache.set(source,material);
-  return material;
+  return getSnowPbrMaterial();
 }
 
-async function loadRealTerrain() {
+async function loadRealTerrain()async function loadRealTerrain() {
   setLoadingMessage('Загружаем базовый рельеф…');
   await nextAnimationFrame();
   const response = await fetch('./assets/real-terrain.json', { cache: 'no-cache' });
@@ -450,20 +413,17 @@ async function loadRealTerrain() {
   if (bounds.isEmpty() || size.x < 10 || size.z < 10) { if (!usingFallback) throw new Error('FBX рельеф не содержит корректную геометрию.'); }
   // Preserve Maya's exported openPBR baseColor/material data. The old uniform
   // pale-grey override discarded the FBX material before it ever reached the renderer.
-  const proceduralMaps=createAlpineTerrainMaps();
-  const terrainMaterialCache=new Map();
+  const snowMaterial=getSnowPbrMaterial();
   const terrainMaterialReport=[];
   root.updateMatrixWorld(true);
   root.traverse(object => {
     if (!object.isMesh || !object.geometry || !object.geometry.attributes.position) return;
     terrainMeshCount++;
     const original=Array.isArray(object.material)?object.material:[object.material];
-    const needsProceduralAlbedo=original.some(source=>source&&!source.map);
-    if(needsProceduralAlbedo)ensureWorldTerrainUV(object,true);
-    else if(!object.geometry.attributes.uv)ensureWorldTerrainUV(object);
+    ensureWorldTerrainUV(object,true);
     object.material=Array.isArray(object.material)
-      ?object.material.map(source=>makeTerrainPbrMaterial(source,proceduralMaps,terrainMaterialCache))
-      :makeTerrainPbrMaterial(object.material,proceduralMaps,terrainMaterialCache);
+      ?object.material.map(()=>snowMaterial)
+      :snowMaterial;
     if(!object.geometry.attributes.normal)object.geometry.computeVertexNormals();
     object.castShadow=true;
     object.receiveShadow=true;
@@ -1126,21 +1086,19 @@ function rebuildForestLod(force=false) {
   forestSystem.lastCamera.copy(camera.position);
   forestSystem.lastForward.copy(forestSystem.cameraForward);
   forestSystem.group.clear();
-  const nearShadow=[[],[],[]],midShadow=[[],[],[]],mid=[[],[],[]],far=Array.from({length:8},()=>[]);
-  const nearLimitSq=850*850,shadowLimitSq=2050*2050,midLimitSq=3300*3300;
+  const nearShadow=[[],[],[]],mid=[[],[],[]],far=Array.from({length:8},()=>[]);
+  const nearLimitSq=750*750,midLimitSq=3000*3000;
   for(const tree of forestSystem.trees){
     const dx=camera.position.x-tree.x;
     const dy=camera.position.y-(tree.y+tree.height*0.5);
     const dz=camera.position.z-tree.z;
     const distanceSq=dx*dx+dy*dy+dz*dz;
     if(distanceSq<nearLimitSq)nearShadow[tree.variant].push(tree);
-    else if(distanceSq<shadowLimitSq)midShadow[tree.variant].push(tree);
     else if(distanceSq<midLimitSq)mid[tree.variant].push(tree);
     else far[tree.atlasVariant].push(tree);
   }
   for(let variant=0;variant<3;variant++){
     createTreeInstanceBatch(nearShadow[variant],'near',variant,forestSystem.group,true);
-    createTreeInstanceBatch(midShadow[variant],'mid',variant,forestSystem.group,true);
     createTreeInstanceBatch(mid[variant],'mid',variant,forestSystem.group,false);
   }
   for(let variant=0;variant<8;variant++){
@@ -1148,9 +1106,9 @@ function rebuildForestLod(force=false) {
   }
   terrainInfoEl.textContent=forestSystem.trees.length.toLocaleString('ru-RU');
   forestSystem.lastLod={
-    shadow:nearShadow.reduce((sum,items)=>sum+items.length,0)+midShadow.reduce((sum,items)=>sum+items.length,0),
+    shadow:nearShadow.reduce((sum,items)=>sum+items.length,0),
     near:nearShadow.reduce((sum,items)=>sum+items.length,0),
-    mid:midShadow.reduce((sum,items)=>sum+items.length,0)+mid.reduce((sum,items)=>sum+items.length,0),
+    mid:mid.reduce((sum,items)=>sum+items.length,0),
     far:far.reduce((sum,items)=>sum+items.length,0)
   };
 }
@@ -1178,68 +1136,19 @@ async function loadStageOneAndForest() {
   restoreStageOneCoordinates(root,item);
   // Keep the authored Slopes / AngledSlopes material groups from Maya; never replace the asset with a flat grey override.
   const semanticMaterials=shareStageOneMaterialsByKind(root,{defaultKind:'slopes'});
-  const pbrMaterials=new Map();
-  const makeStageOnePbrMaterial=(source)=>{
-    if(!source)return source;
-    if(pbrMaterials.has(source))return pbrMaterials.get(source);
-    const kind=String(source.userData?.gradeOptimizerStageOneSurfaceKind||source.name||'slopes').toLowerCase();
-    const angled=kind.includes('angled');
-    const sourceRoughness=Number(source.roughness);
-    const phongShininess=Number(source.shininess);
-    const phongRoughness=Number.isFinite(sourceRoughness)
-      ?THREE.MathUtils.clamp(sourceRoughness,0.38,0.92)
-      :Number.isFinite(phongShininess)&&phongShininess>0
-        ?THREE.MathUtils.clamp(Math.sqrt(2/(phongShininess+2)),0.48,0.88)
-        :(angled?0.48:0.70);
-    const material=new THREE.MeshPhysicalMaterial({
-      name:source.name|| (angled?'AngledSlopes':'Slopes'),
-      color:source.color?.clone?.()||new THREE.Color(0xffffff),
-      map:source.map||null,
-      alphaMap:source.alphaMap||null,
-      aoMap:source.aoMap||null,
-      lightMap:source.lightMap||null,
-      emissive:source.emissive?.clone?.()||new THREE.Color(0x000000),
-      emissiveMap:source.emissiveMap||null,
-      normalMap:source.normalMap||null,
-      normalScale:source.normalScale?.clone?.()||new THREE.Vector2(1,1),
-      bumpMap:source.bumpMap||null,
-      bumpScale:Number.isFinite(source.bumpScale)?source.bumpScale:1,
-      displacementMap:source.displacementMap||null,
-      displacementScale:Number.isFinite(source.displacementScale)?source.displacementScale:1,
-      displacementBias:Number.isFinite(source.displacementBias)?source.displacementBias:0,
-      roughnessMap:source.roughnessMap||null,
-      metalnessMap:source.metalnessMap||null,
-      roughness:source.roughnessMap?1:phongRoughness,
-      metalness:0,
-      clearcoat:angled?0.20:0.10,
-      clearcoatRoughness:angled?0.30:0.42,
-      vertexColors:!!source.vertexColors,
-      side:source.side??THREE.FrontSide,
-      transparent:!!source.transparent,
-      opacity:Number.isFinite(source.opacity)?source.opacity:1,
-      alphaTest:Number.isFinite(source.alphaTest)?source.alphaTest:0,
-      depthWrite:source.depthWrite!==false,
-      flatShading:!!source.flatShading,
-      fog:true
-    });
-    material.userData={...(source.userData||{}),gradeOptimizerPbrSourceMaterial:source.name||source.type||'Material'};
-    if(source.emissiveIntensity!==undefined)material.emissiveIntensity=source.emissiveIntensity;
-    if(source.aoMapIntensity!==undefined)material.aoMapIntensity=source.aoMapIntensity;
-    if(source.lightMapIntensity!==undefined)material.lightMapIntensity=source.lightMapIntensity;
-    pbrMaterials.set(source,material);
-    return material;
-  };
+  const snowMaterial=getSnowPbrMaterial();
   let slopeMeshCount=0;
   root.traverse(object=>{
     if(!object.isMesh||!object.geometry?.attributes?.position)return;
+    ensureWorldTerrainUV(object,true);
     object.material=Array.isArray(object.material)
-      ?object.material.map(makeStageOnePbrMaterial)
-      :makeStageOnePbrMaterial(object.material);
+      ?object.material.map(()=>snowMaterial)
+      :snowMaterial;
     object.castShadow=true;
     object.receiveShadow=true;
     slopeMeshCount++;
   });
-  console.info('[Grade Optimizer WebGPU Forest] Preserved Stage 1 material identities:',semanticMaterials);
+  console.info('[Grade Optimizer WebGPU Forest] Stage 1 snow material:',{semanticMaterials,material:snowMaterial.name});
   if(!slopeMeshCount)throw new Error('Slopes_Stage1 не содержит polygon meshes.');
   root.name='GO_WebGPU_Slopes_Stage1';
   scene.add(root);
@@ -1329,11 +1238,7 @@ function bindUI() {
     syncDayCycleButton();
   });
   ui.dayLength.addEventListener('input',updateSkyLabels);
-  [ui.fogStrength, ui.fogDensity, ui.fogHeight, ui.fogRange].forEach(input => input.addEventListener('input', updateFogControls));
-  ui.godRays.addEventListener('input',()=>{
-    ui.godRaysValue.textContent=Math.round(Number(ui.godRays.value)*100)+'%';
-    updateFogControls();
-  });
+  ui.fogStrength.addEventListener('input',updateFogControls);
   ui.forestDensity.addEventListener('input',()=>ui.forestDensityValue.textContent=Math.round(Number(ui.forestDensity.value)*100)+'%');
   ui.forestDensity.addEventListener('change',rebuildForestDensity);
   ui.wind.addEventListener('input',()=>{updateSkyLabels();foliageWind.value=Number(ui.wind.value)/9;updateSky();});
@@ -1355,9 +1260,9 @@ async function start() {
   // Configure WebGPU shadows after renderer initialisation, as in the r187 SunLight example.
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFShadowMap;
-  sunLight.shadow.mapSize.setScalar(2048);
-  sunLight.shadow.camera.far=6500;
-  sunLight.shadow.normalBias=0.05;
+  sunLight.shadow.mapSize.setScalar(1024);
+  sunLight.shadow.camera.far=4500;
+  sunLight.shadow.normalBias=0.035;
   sunLight.shadow.autoUpdate=true;
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
   camera.updateProjectionMatrix();
@@ -1385,7 +1290,6 @@ async function start() {
     groundLevel
   });
   updateSkyLabels();
-  ui.godRaysValue.textContent=Math.round(Number(ui.godRays.value)*100)+'%';
   ui.forestDensityValue.textContent=Math.round(Number(ui.forestDensity.value)*100)+'%';
   updateSky(true);
   updateFogControls();
@@ -1406,7 +1310,6 @@ async function start() {
     advanceDayCycleFrame(dt);
     camera.updateMatrixWorld();
     if(solarState)updateSolarDisc(THREE,sunDisc,camera,solarState,Number(ui.sunIntensity.value));
-    atmosphere.setTime(elapsed);
     atmosphere.updateCamera();
     rebuildForestLod(false);
     atmosphere.render();
