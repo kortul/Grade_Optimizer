@@ -1085,17 +1085,17 @@ pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetric
 
 // WebGPU Alpine Forest Lab V8: true descending spruce boughs and branch-only wind; sky preserved.
 const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
-const alpineForestPageV7=read('webgpu-forest-lab-v7.html').toString('utf8');
+const alpineForestPageV8=read('webgpu-forest-lab-v8.html').toString('utf8');
 const alpineForestSource=read('webgpu-forest-lab.v8.js').toString('utf8');
 const alpineAtmosphereSource=read('webgpu-forest-atmosphere.v1.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v7.js?v=20261125t'),
-  'Alpine Forest Lab must load the pinned Three.js r187 V7 renderer');
-assert.ok(alpineForestPageV7.includes('webgpu-forest-lab.v7.js?v=20261125r')&&
-  alpineForestPageV7.includes('Alpine Spruce Forest Lab V7'),
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v8.js?v=20261125t'),
+  'Alpine Forest Lab must load the pinned Three.js r187 V8 renderer');
+assert.ok(alpineForestPageV8.includes('webgpu-forest-lab.v8.js?v=20261125t')&&
+  alpineForestPageV8.includes('Alpine Spruce Forest Lab V8'),
   'the cache-busted V7 page must load the V7 renderer directly');
 assert.ok(alpineForestSource.includes("import { createForestAtmosphere } from './webgpu-forest-atmosphere.v1.js'")&&
   alpineForestSource.includes('createForestAtmosphere(THREE,scene,camera,renderer,hemisphere'),
-  'active V7 renderer must keep the isolated physical atmosphere module unchanged');
+  'active V8 renderer must keep the isolated physical atmosphere module unchanged');
 assert.ok(alpineForestSource.includes("import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'")&&
   alpineForestSource.includes("new GLTFLoader().loadAsync(stageOneUrl)")&&
   alpineForestSource.includes("extension==='glb'")&&
