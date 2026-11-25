@@ -18,7 +18,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.9.3"
+VERSION = "0.9.4"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -1594,6 +1594,90 @@ def _selected_closed_nurbs_curve_transforms():
     return closed
 
 
+def _tree_marker_attribute_string(node, attribute):
+    """Read an optional string attribute from a Maya transform."""
+    try:
+        if cmds.attributeQuery(attribute, node=node, exists=True):
+            value = cmds.getAttr(node + "." + attribute)
+            return str(value) if value is not None else ""
+    except Exception:
+        pass
+    return ""
+
+
+def _selected_tree_spawn_locator_transforms():
+    """
+    Collect QGIS tree-spawn locators, including locators nested under selected groups.
+
+    Only transforms explicitly tagged qgis_geometry_role=tree_spawn_point are
+    included, so unrelated Maya locators are not accidentally exported.
+    """
+    selected = cmds.ls(selection=True, long=True) or []
+    locators = []
+    seen = set()
+    for node in selected:
+        if not cmds.objExists(node):
+            continue
+        node_type = cmds.nodeType(node)
+        transform_nodes = []
+        if node_type == "locator":
+            parents = cmds.listRelatives(node, parent=True, fullPath=True) or []
+            transform_nodes = parents[:1]
+        elif node_type == "transform":
+            transform_nodes = [node]
+            transform_nodes.extend(
+                cmds.listRelatives(node, allDescendents=True, fullPath=True, type="transform") or []
+            )
+
+        for transform in transform_nodes:
+            shapes = cmds.listRelatives(
+                transform, shapes=True, noIntermediate=True, fullPath=True, type="locator"
+            ) or []
+            if not shapes:
+                continue
+            if _tree_marker_attribute_string(transform, "qgis_geometry_role") != "tree_spawn_point":
+                continue
+            if transform not in seen:
+                seen.add(transform)
+                locators.append(transform)
+    return sorted(locators)
+
+
+def _tree_marker_locator_position_meters(locator, meters_per_unit):
+    """Read a tagged point locator's Maya world position and convert scene units to metres."""
+    position = cmds.xform(locator, query=True, worldSpace=True, translation=True) or []
+    if len(position) != 3:
+        raise RuntimeError("Не удалось прочитать world-space позицию tree spawn locator: " + str(locator))
+    result = [round(float(value) * float(meters_per_unit), 5) for value in position]
+    if not all(math.isfinite(value) for value in result):
+        raise RuntimeError("Tree spawn locator produced a non-finite world position: " + str(locator))
+    return result
+
+
+def _tree_marker_locator_digest(locator, bridge_context, linear_unit, meters_per_unit):
+    """Fingerprint the world-space point and stable QGIS feature provenance."""
+    source_uuids = cmds.ls(locator, uuid=True) or []
+    source_uuid = str(source_uuids[0]) if source_uuids else ""
+    source_layer = _tree_marker_attribute_string(locator, "qgis_source_layer")
+    feature_id = _tree_marker_attribute_string(locator, "qgis_feature_id")
+    if source_layer and feature_id:
+        source_key = "qgis:{}:{}".format(source_layer, feature_id)
+    else:
+        source_key = "maya:" + (source_uuid or str(locator))
+
+    position = _tree_marker_locator_position_meters(locator, meters_per_unit)
+    payload = {
+        "sourceKey": source_key,
+        "positionMeters": position,
+        "linearUnit": str(linear_unit),
+        "metersPerUnit": float(meters_per_unit),
+        "coordinateFrame": "maya-working-world-v2",
+        "workingGroup": (bridge_context or {}).get("group")
+    }
+    encoded = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest(), source_uuid, source_key, position
+
+
 def _tree_marker_center_radius_meters(curve):
     """
     Read the center of a closed survey ring in Maya working-world coordinates.
@@ -1654,10 +1738,11 @@ def export_tree_marker_positions(*_):
         repo = cmds.textFieldButtonGrp(WINDOW + "_repo", query=True, text=True).strip()
         git_info = _inspect_git_worktree(repo)
         curves = _selected_closed_nurbs_curve_transforms()
-        if not curves:
+        locators = _selected_tree_spawn_locator_transforms()
+        if not curves and not locators:
             raise RuntimeError(
-                "Выдели всю группу Toro survey с замкнутыми NURBS-кружками. "
-                "Открытые spline-кривые склонов автоматически пропускаются."
+                "Выдели группу Toro survey с замкнутыми NURBS-кружками или QGIS tree-spawn Locators. "
+                "Открытые spline-кривые склонов и обычные, не помеченные Locators игнорируются."
             )
         client_slug, scene_path, manifest, _assets = _read_client_scene(repo)
         old_payload = manifest.get("treeMarkers") or {}
@@ -1672,6 +1757,10 @@ def export_tree_marker_positions(*_):
         old_by_path = {
             str(item.get("sourcePath")): item
             for item in old_markers if item.get("sourcePath")
+        }
+        old_by_source_key = {
+            str(item.get("sourceKey")): item
+            for item in old_markers if item.get("sourceKey")
         }
         linear_unit = str(cmds.currentUnit(query=True, linear=True) or "").strip().lower()
         meters_per_unit = MAYA_LINEAR_UNIT_TO_METERS.get(linear_unit)
@@ -1717,18 +1806,69 @@ def export_tree_marker_positions(*_):
                 marker["workingGroup"] = bridge_context["group"]
             markers.append(marker)
 
+        for locator in locators:
+            bridge_context = _slope_bridge_context(locator)
+            digest, source_uuid, source_key, calculated_position = _tree_marker_locator_digest(
+                locator, bridge_context, linear_unit, meters_per_unit
+            )
+            cached = old_by_source_key.get(source_key)
+            if cached is None and source_uuid:
+                cached = old_by_uuid.get(source_uuid)
+            if cached is None:
+                cached = old_by_path.get(str(locator))
+            if (
+                cached
+                and cached.get("sourceDigest") == digest
+                and isinstance(cached.get("position"), list)
+                and len(cached.get("position")) == 3
+            ):
+                position = list(cached.get("position"))
+                reused += 1
+            else:
+                position = calculated_position
+
+            stable_id = str(cached.get("id")) if cached and cached.get("id") else (
+                "tree_marker_" + hashlib.sha1(source_key.encode("utf-8")).hexdigest()[:14]
+            )
+            marker = {
+                "id": stable_id,
+                "name": locator.rsplit("|", 1)[-1],
+                "sourcePath": str(locator),
+                "sourceUuid": source_uuid,
+                "sourceKey": source_key,
+                "sourceDigest": digest,
+                "markerType": "maya-point-locator",
+                "position": position
+            }
+            if bridge_context:
+                marker["workingGroup"] = bridge_context["group"]
+            markers.append(marker)
+
         markers.sort(key=lambda item: (
             str(item.get("name") or "").lower(), str(item.get("sourcePath") or "")
         ))
+        if locators and curves:
+            marker_source = "maya-qgis-tree-spawn-points-and-toro-circles"
+            marker_geometry = "mixed"
+            position_meaning = "world-space point positions and circle centers"
+        elif locators:
+            marker_source = "maya-qgis-tree-spawn-points"
+            marker_geometry = "point-locator"
+            position_meaning = "world-space point position"
+        else:
+            marker_source = "maya-toro-survey-circle-markers"
+            marker_geometry = "closed-nurbs-curve"
+            position_meaning = "world-space circle center"
+
         manifest["treeMarkers"] = {
             "schemaVersion": "1.0",
-            "source": "maya-toro-survey-circle-markers",
+            "source": marker_source,
             "coordinateSystem": "project-world",
             "worldFrame": "maya-working-world",
             "coordinateFrameVersion": 2,
             "units": "meters",
-            "markerGeometry": "closed-nurbs-curve",
-            "positionMeaning": "world-space circle center",
+            "markerGeometry": marker_geometry,
+            "positionMeaning": position_meaning,
             "markers": markers
         }
         manifest["updatedAt"] = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
@@ -1738,17 +1878,19 @@ def export_tree_marker_positions(*_):
         if cmds.control(WINDOW + "_tree_marker_status", exists=True):
             cmds.text(
                 WINDOW + "_tree_marker_status", edit=True,
-                label="Экспортировано маркеров: %d  ·  из кэша: %d  ·  новых / изменённых: %d"
-                % (len(markers), reused, len(markers) - reused)
+                label="Маркеров: %d (точек: %d, кружков: %d)  ·  из кэша: %d  ·  новых / изменённых: %d"
+                % (len(markers), len(locators), len(curves), reused, len(markers) - reused)
             )
         cmds.confirmDialog(
             title="Grade Optimizer · Toro tree markers",
             message=(
                 "Набор координат деревьев экспортирован в clients/%s/scene.json.\n\n"
-                "Замкнутых NURBS-маркеров: %d\nИз кэша: %d\nНовых / пересчитанных: %d\n\n"
-                "Координаты: Maya working-world, метры. Набор полностью заменён выделенными кружками.\n"
+                "Маркеров всего: %d\nQGIS point Locators: %d\nЗамкнутых NURBS-кружков: %d\n"
+                "Из кэша: %d\nНовых / пересчитанных: %d\n\n"
+                "Координаты: Maya working-world, метры. Набор полностью заменён текущим выделением.\n"
+                "Для точек радиус не записывается; окружности продолжают экспортировать radiusMeters.\n"
                 "Spline-деревья пока не создаются: сайт сможет расставить по одной модели на каждую точку на следующем этапе.\n\n%s"
-            ) % (client_slug, len(markers), reused, len(markers) - reused, git_report),
+            ) % (client_slug, len(markers), len(locators), len(curves), reused, len(markers) - reused, git_report),
             button=["OK"]
         )
     except Exception as exc:
@@ -3013,11 +3155,11 @@ def show():
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
     cmds.text(
-        label="Выдели всю группу survey-маркеров: замкнутые NURBS-кружки, по одному на каждое реальное дерево. Открытые кривые склонов игнорируются. Центр каждого круга записывается в scene.json в метрах и в Maya working-world.",
+        label="Выдели всю группу survey-маркеров: замкнутые NURBS-кружки или QGIS tree-spawn Locators (по одному на дерево). Открытые spline-кривые склонов и обычные Locators игнорируются. В scene.json записываются мировые координаты в метрах.",
         align="left", height=60, wordWrap=True
     )
     cmds.button(
-        label="ЭКСПОРТИРОВАТЬ ПОЛНЫЙ НАБОР КРУЖКОВ",
+        label="ЭКСПОРТИРОВАТЬ ПОЛНЫЙ НАБОР ТОЧЕК / КРУЖКОВ",
         height=38, backgroundColor=(0.22, 0.42, 0.63),
         command=export_tree_marker_positions
     )
@@ -3027,7 +3169,7 @@ def show():
         align="left", height=28, wordWrap=True
     )
     cmds.text(
-        label="Экспорт заменяет весь предыдущий набор treeMarkers текущим выделением. Сначала выдели все кружки. Сами spline-деревья будут расставляться сайтом на следующем этапе — сейчас сохраняются точные позиции и радиусы маркеров.",
+        label="Экспорт заменяет весь предыдущий набор treeMarkers текущим выделением. Для QGIS Locators сохраняются только координаты (без выдуманного радиуса); для старых круглых NURBS-маркеров сохраняются центр и радиус.",
         align="left", height=48, wordWrap=True
     )
     cmds.setParent("..")

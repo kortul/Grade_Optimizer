@@ -76,6 +76,129 @@
         "$ref": "#/$defs/asset"
       }
     },
+    "treeMarkers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "source",
+        "coordinateSystem",
+        "worldFrame",
+        "coordinateFrameVersion",
+        "units",
+        "markerGeometry",
+        "positionMeaning",
+        "markers"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "source": {
+          "type": "string"
+        },
+        "coordinateSystem": {
+          "const": "project-world"
+        },
+        "worldFrame": {
+          "const": "maya-working-world"
+        },
+        "coordinateFrameVersion": {
+          "const": 2
+        },
+        "units": {
+          "const": "meters"
+        },
+        "markerGeometry": {
+          "enum": [
+            "closed-nurbs-curve",
+            "point-locator",
+            "mixed"
+          ]
+        },
+        "positionMeaning": {
+          "type": "string"
+        },
+        "markers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "sourcePath",
+              "sourceUuid",
+              "sourceDigest",
+              "markerType",
+              "position"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "sourcePath": {
+                "type": "string"
+              },
+              "sourceUuid": {
+                "type": "string"
+              },
+              "sourceKey": {
+                "type": "string"
+              },
+              "sourceDigest": {
+                "type": "string",
+                "minLength": 1
+              },
+              "markerType": {
+                "enum": [
+                  "closed-nurbs-circle",
+                  "maya-point-locator"
+                ]
+              },
+              "position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "radiusMeters": {
+                "type": "number",
+                "minimum": 0
+              },
+              "workingGroup": {
+                "type": "string"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "markerType": {
+                      "const": "closed-nurbs-circle"
+                    }
+                  },
+                  "required": [
+                    "markerType"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "radiusMeters"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
     "forestMasks": {
       "type": "array",
       "items": {
