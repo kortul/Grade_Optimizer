@@ -1,8 +1,8 @@
 /**
- * Keep skier first-person camera FOV 25% wider than the scene camera.
+ * Keep skier first-person camera FOV 31.25% wider than the scene camera.
  * Blend back to the unmodified scene FOV when moving into third-person view.
  */
-export function resolveSkierViewFov(baseFov, viewBlend = 0, firstPersonScale = 1.25) {
+export function resolveSkierViewFov(baseFov, viewBlend = 0, firstPersonScale = 1.3125) {
   const base = Number(baseFov);
   const scale = Number(firstPersonScale);
   const blendValue = Number(viewBlend);
