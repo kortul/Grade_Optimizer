@@ -57,7 +57,7 @@ const foliageWind = uniform(1);
 const slopeMarginNoise = new ImprovedNoise();
 let renderer, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
-let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null,pineAtlasTextures=null;
+let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null;
 let snowPbrMaterial=null;
 let atmosphere=null,dayCyclePlaying=false;
 let solarState=null;
@@ -936,63 +936,6 @@ function createSplinePineMaterial() {
   material.emissiveNode=createPineBacklightNode();
   return material;
 }
-function createPineAtlasMaterial(texture){
-  const material=new THREE.MeshPhysicalNodeMaterial({map:texture,color:0xffffff,roughness:0.78,metalness:0,side:THREE.DoubleSide,alphaTest:0.12,clearcoat:0.04,clearcoatRoughness:0.45,specularIntensity:0.45});
-  material.emissiveNode=createPineBacklightNode();
-  return material;
-}
-
-function createCrossBillboardGeometry(){
-  const source=new THREE.PlaneGeometry(1,1),positions=[],normals=[],uvs=[],indices=[];
-  for(let plane=0;plane<3;plane++){
-    const g=source.clone();g.applyMatrix4(new THREE.Matrix4().makeRotationY(plane*Math.PI/3));
-    const p=g.getAttribute('position'),n=g.getAttribute('normal'),uv=g.getAttribute('uv');
-    const offset=positions.length/3;
-    for(let i=0;i<p.count;i++){
-      positions.push(p.getX(i),p.getY(i),p.getZ(i));
-      normals.push(n.getX(i),n.getY(i),n.getZ(i));
-      uvs.push(uv.getX(i),uv.getY(i));
-    }
-    const ix=g.getIndex();for(let i=0;i<ix.count;i++)indices.push(ix.getX(i)+offset);
-    g.dispose();
-  }
-  source.dispose();
-  const merged=new THREE.BufferGeometry();
-  merged.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-  merged.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
-  merged.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-  merged.setIndex(indices);merged.computeBoundingSphere();
-  return merged;
-}
-
-async function loadPineAtlas() {
-  const atlas=await new THREE.TextureLoader().loadAsync('./assets/trees/snowy_conifer_atlas.webp');
-  if(atlas.image.width!==1632||atlas.image.height!==1200){
-    atlas.dispose();
-    throw new Error('Unexpected spruce atlas dimensions.');
-  }
-  const cellWidth=Math.floor(atlas.image.width/4),cellHeight=Math.floor(atlas.image.height/2);
-  const textures=[];
-  for(let index=0;index<8;index++){
-    const canvas=document.createElement('canvas');
-    canvas.width=cellWidth;canvas.height=cellHeight;
-    const context=canvas.getContext('2d');
-    if(!context)throw new Error('Cannot create pine atlas canvas.');
-    context.drawImage(atlas.image,(index%4)*cellWidth,Math.floor(index/4)*cellHeight,cellWidth,cellHeight,0,0,cellWidth,cellHeight);
-    const texture=new THREE.CanvasTexture(canvas);
-    texture.colorSpace=THREE.SRGBColorSpace;
-    texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
-    texture.generateMipmaps=true;
-    texture.minFilter=THREE.LinearMipmapLinearFilter;
-    texture.magFilter=THREE.LinearFilter;
-    const maxAnisotropy=typeof renderer.getMaxAnisotropy==='function'?renderer.getMaxAnisotropy():1;
-    texture.anisotropy=Math.min(8,Math.max(1,maxAnisotropy));
-    textures.push(texture);
-  }
-  atlas.dispose();
-  return textures;
-}
-
 function createTreeInstanceBatch(trees, lod, variant, parent, castShadow=false) {
   if(!trees.length)return;
   const dummy=new THREE.Object3D();
@@ -1142,7 +1085,6 @@ function rebuildForestDensity() {
   if(!stageOneRoot)return;
   const footprint=forestSystem?.footprint||buildSlopeFootprint(stageOneRoot);
   const trees=buildTreePlacements(footprint,Number(ui.forestDensity.value));
-  trees.forEach(tree=>{tree.atlasVariant=Math.floor(seededRandom(tree.x,tree.z,83)()*8);});
   if(forestSystem){
     forestSystem.group.clear();
     forestSystem.trees=trees;
