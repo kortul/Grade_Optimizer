@@ -805,6 +805,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 .weather-control label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;color:#bdcbd7;font-size:10px}
 .weather-control label strong{color:#9edbbd;font-variant-numeric:tabular-nums}
 #weatherPanel input[type=range]{width:100%;margin:8px 0 2px;accent-color:#69c99e}
+.weather-friction-scale{display:flex;justify-content:space-between;gap:8px;margin-top:1px;color:#8199aa;font-size:8px}
+.weather-friction-scale span:last-child{text-align:right}
 #weatherStatus{margin-top:9px;padding:8px 9px;border:1px solid rgba(130,184,226,.12);border-radius:7px;background:rgba(92,145,183,.07);color:#a9c7db;font-size:9px;letter-spacing:.4px}
 .weather-ground-fog-toggle{display:flex;align-items:center;gap:9px;margin-top:10px;padding:10px;border:1px solid rgba(148,187,212,.15);border-radius:8px;background:rgba(97,143,173,.08);color:#c7d9e5;font-size:10px;cursor:pointer}
 .weather-ground-fog-toggle input{width:15px;height:15px;margin:0;accent-color:#72c6a0}
@@ -1196,7 +1198,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 
 <div id="weatherPanel" role="region" aria-label="Настройки погоды">
   <div class="weather-head">
-    <div><strong>ПОГОДА И АТМОСФЕРА</strong><small>Освещение, облачность и снегопад</small></div>
+    <div><strong>ПОГОДА И АТМОСФЕРА</strong><small>Облачность, осадки, ветер и сопротивление снега</small></div>
     <button id="weatherClose" type="button" aria-label="Закрыть погоду">×</button>
   </div>
   <div class="weather-preset-grid" role="group" aria-label="Погодные пресеты">
@@ -1219,6 +1221,11 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   <div class="weather-control">
     <label for="weatherWind">Скорость ветра <strong id="weatherWindValue">2 км/ч</strong></label>
     <input id="weatherWind" type="range" min="0" max="60" step="1" value="2"/>
+  </div>
+  <div class="weather-control weather-friction-control">
+    <label for="snowFriction"><span>СОПРОТИВЛЕНИЕ СНЕГА · μ</span><strong id="snowFrictionValue">0.084</strong></label>
+    <input id="snowFriction" type="range" min="0.02" max="0.14" step="0.001" value="0.084" aria-label="Коэффициент трения снега"/>
+    <div class="weather-friction-scale"><span>Лёд / быстро</span><span>Рыхлый снег / медленнее</span></div>
   </div>
   <label class="weather-ground-fog-toggle" for="weatherVolumetrics"><input id="weatherVolumetrics" type="checkbox" checked/> <span>Объёмные эффекты <small>облака · god rays · ground fog</small></span></label>
   <label class="weather-ground-fog-toggle" for="weatherGroundFog"><input id="weatherGroundFog" type="checkbox"/> <span>Наземный туман <small>выключен по умолчанию</small></span></label>
@@ -1875,14 +1882,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
     <div id="skierLockHint" class="mode-lock-hint">Кликни по склону, чтобы включить управление мышью · ESC освобождает курсор</div>
   </div>
 
-  <details class="hud-advanced">
-    <summary>Дополнительно · скольжение по снегу</summary>
-    <div class="hudSnow">
-      <div class="hudSnowHead"><span>СОПРОТИВЛЕНИЕ СНЕГА · μ</span><strong id="snowFrictionValue">0.045</strong></div>
-      <input id="snowFriction" type="range" min="0.02" max="0.14" step="0.001" value="0.045" aria-label="Коэффициент трения снега"/>
-      <div class="hudSnowScale"><span>Лёд / быстро</span><span>Рыхлый снег / медленнее</span></div>
-    </div>
-  </details>
+
   </div>
 </div>
 
@@ -1970,7 +1970,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v210.js"></script>
+<script type="module" src="./app.v210.js?v=211"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -2032,7 +2032,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v210.js"]');
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v210.js?v=211"]');
   moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить приложение или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
