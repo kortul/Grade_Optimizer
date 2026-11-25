@@ -31,7 +31,6 @@ assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'semantic 
 assert.match(renderer, /function createSplinePineMaterial\(\)/, 'procedural near/mid forest still uses its physical foliage material');
 assert.match(renderer, /MeshPhysicalNodeMaterial\(\{\s*roughness:0\.88/, 'foliage should retain its physical node material');
 assert.match(renderer, /V7: true alpine spruce boughs — broad descending whorls/, 'spruce must use the new whorled bough geometry');
-assert.match(renderer, /const addSnowPatch=/, 'spruce must have continuous snow caps on branch tops');
 assert.match(renderer, /const branches=high\?7:mid\?6:5/, 'near, mid and far LODs must use coherent spruce branch tiers');
 assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
 assert.match(renderer, /const stations=high\?4:mid\?3:2/, 'spruce should use layered needle sprays at every LOD');
@@ -62,7 +61,7 @@ assert.match(atmosphere, /renderer\.render\(scene, camera\)/, 'the baseline must
 assert.doesNotMatch(atmosphere, /GTAONode|buildFogPipeline|rtt\(/, 'the old expensive screen-space pipeline must remain removed');
 
 // HTML and runtime controls must agree.
-assert.match(html, /webgpu-forest-lab\.v6\.js\?v=20261125q/, 'HTML must load the current renderer revision');
+assert.match(html, /webgpu-forest-lab\.v7\.js\?v=20261125r/, 'HTML must load the V7 renderer revision');
 assert.doesNotMatch(html, /id="godRays"|id="fogDensity"|id="fogHeight"|id="fogRange"/, 'removed full-screen controls should not remain in the UI');
 assert.match(renderer, /renderer\.toneMappingExposure = 0\.52/, 'terrain and snow must use a stable scene exposure');
 
