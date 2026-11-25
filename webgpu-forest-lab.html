@@ -45,7 +45,7 @@
   <div id="loading">Загружаем рельеф, трассы и готовим spatial lookup для леса…</div>
   <section class="panel">
     <h1>WEBGPU · ALPINE FOREST</h1>
-    <div class="sub">Slopes_Stage1 · PBR materials · HDR sky IBL · sun shadows · WebGPU</div>
+    <div class="sub">Slopes_Stage1 · physical SunLight · PMREM sky IBL · cascaded shadows · GTAO</div>
     <div class="status"><span class="dot" id="statusDot"></span><span id="backendStatus">Инициализация renderer…</span></div>
     <div class="metrics">
       <div class="metric"><b id="fps">—</b><span>FPS</span></div>
@@ -81,8 +81,8 @@
     </div>
     <div class="section">
       <h2>Солнечные лучи</h2>
-      <label for="godRays"><span>God rays · рассеяние</span><strong id="godRaysValue">48%</strong></label>
-      <input id="godRays" type="range" min="0" max="1.5" step="0.01" value="0.48">
+      <label for="godRays"><span>God rays · рассеяние</span><strong id="godRaysValue">12%</strong></label>
+      <input id="godRays" type="range" min="0" max="1.5" step="0.01" value="0.12">
       <div class="note">Низкоразрешённый screen-space pass по глубине и ярким участкам неба, с depth-aware восстановлением.</div>
     </div>
     <div class="section">
@@ -93,12 +93,12 @@
       <input id="windSpeed" type="range" min="0" max="24" step="0.5" value="9">
       <label for="leafTranslucency"><span>Подсветка теневой стороны хвои</span><strong id="leafTranslucencyValue">82%</strong></label>
       <input id="leafTranslucency" type="range" min="0" max="1.5" step="0.01" value="0.82">
-      <div class="note">Три LOD: объёмные ярусные ели с игольчатыми пучками у трассы, облегчённые кроны в лесу, три скрещённые atlas-плоскости вдали. Ближние к камере деревья отбрасывают солнечные тени. Объёмные кластеры и экспериментальная подсветка хвои; точное подповерхностное рассеяние иголок и полноценные ambient probes остаются следующими этапами.</div>
+      <div class="note">Три LOD: объёмные ярусные ели с игольчатыми пучками у трассы, облегчённые кроны в лесу, три скрещённые atlas-плоскости вдали. Ближний и средний LOD участвуют в cascaded SunLight shadows; ambient visibility усиливается GTAO. Полноценная bake-сетка directional ambient probes и needle transmission остаются отдельными следующими этапами.</div>
     </div>
     <div class="section">
       <h2>Атмосферная перспектива</h2>
-      <label for="fogStrength"><span>Сила атмосферной дымки</span><strong id="fogStrengthValue">45%</strong></label>
-      <input id="fogStrength" type="range" min="0" max="1.5" step="0.01" value="0.26">
+      <label for="fogStrength"><span>Сила атмосферной дымки</span><strong id="fogStrengthValue">0%</strong></label>
+      <input id="fogStrength" type="range" min="0" max="1.5" step="0.01" value="0">
       <label for="fogDensity"><span>Плотность приземного тумана</span><strong id="fogDensityValue">0.0030</strong></label>
       <input id="fogDensity" type="range" min="0" max="0.02" step="0.0001" value="0.0015">
       <label for="fogHeight"><span>Высота туманного слоя</span><strong id="fogHeightValue">220 м</strong></label>
@@ -120,6 +120,6 @@
     <div class="note"><a href="./index.html">← Вернуться в Grade Optimizer</a> · Солнце, облака, туман и god rays настраиваются здесь же.</div>
   </section>
   <div class="hint">ЛКМ — вращение · колесо — масштаб · ПКМ — панорама</div>
-  <script type="module" src="./webgpu-forest-lab.v4.js?v=20261125j"></script>
+  <script type="module" src="./webgpu-forest-lab.v4.js?v=20261125k"></script>
 </body>
 </html>

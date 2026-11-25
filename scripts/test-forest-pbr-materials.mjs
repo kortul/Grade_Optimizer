@@ -22,3 +22,16 @@ assert.match(source,/shadow\.camera\.left=-2100/,'directional shadow frustum sho
 console.log('✓ Real terrain keeps authored FBX baseColor/materials and receives procedural PBR detail only as fallback');
 console.log('✓ Terrain and near/mid forest LODs cast and receive direct-sun shadows');
 console.log('✓ Physical foliage, roughness, bump and stronger environment IBL are active');
+
+
+assert.match(source,/import \{ SunLight \} from 'three\/addons\/lights\/SunLight\.js'/,'WebGPU scene should use cascaded SunLight, not a basic directional light');
+assert.match(source,/SunLight\.registerNode\(SunLightNode\)/,'SunLight node implementation must be registered before renderer init');
+assert.match(source,/new THREE\.PMREMGenerator\(renderer\)/,'sky environment must use the supported PMREM generator');
+assert.match(source,/pmremGenerator\.fromScene\(environmentScene,0\.04\)/,'prefiltered environment must be baked from the real SkyMesh');
+assert.match(source,/scene\.environment=environmentRenderTarget\.texture/,'PBR materials must receive the baked sky environment');
+assert.match(source,/import \{ ao \} from 'three\/addons\/tsl\/display\/GTAONode\.js'/,'screen-space GTAO should be part of the ambient lighting path');
+assert.match(source,/scenePass\.contextNode=builtinAOContext\(aoPass\.getTextureNode\(\)\.sample\(screenUV\)\.r\)/,'GTAO must modulate the scene ambient term, not tint the final image');
+assert.match(source,/sunLight\.intensity = solar\.daylight \* \(3\.0 \+ solar\.daylight \* 2\.0\) \* directPower/,'sunlight should follow the high/low sun irradiance curve');
+assert.match(source,/renderer\.shadowMap\.enabled=true;\s*renderer\.shadowMap\.type=THREE\.PCFShadowMap;\s*sunLight\.shadow\.mapSize\.setScalar\(2048\)/,'cascaded shadows must be enabled after WebGPU renderer init');
+assert.match(source,/renderer\.toneMappingExposure = 0\.6/,'display exposure should match the r187 physical sunlight baseline');
+assert.doesNotMatch(source,/new THREE\.DataTexture\(data,width,height,THREE\.RGBAFormat,THREE\.HalfFloatType\)/,'synthetic flat-gradient HDR texture must not replace the sky PMREM');

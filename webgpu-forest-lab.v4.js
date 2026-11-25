@@ -5,12 +5,16 @@ import { shareStageOneMaterialsByKind } from './stage-one-materials.v1.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
+import { SunLight } from 'three/addons/lights/SunLight.js';
+import { SunLightNode } from 'three/addons/lights/SunLightNode.js';
+import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
 import { createCloudLayer } from './webgpu-cloud-layer.v3.js';
 import {
-  exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
-  isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV, smoothstep,
-  texture3D, uniform, vec2, vec3, vec4, normalWorld, positionLocal, sin, cos, time, dot, max
+  ao, builtinAOContext, exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
+  isBackgroundDepth, Loop, mrt, normalView, packNormalToRGB, pass, rtt, sample,
+  screenCoordinate, screenUV, smoothstep, texture3D, uniform, unpackRGBToNormal,
+  vec2, vec3, vec4, normalWorld, positionLocal, sin, cos, time, dot, max
 } from 'three/tsl';
 
 const stage = document.getElementById('stage');
@@ -43,11 +47,12 @@ const ui = {
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 1000000);
-const hemisphere = new THREE.HemisphereLight(0xb6d6f2, 0x27332f, 0.28);
+const hemisphere = new THREE.HemisphereLight(0xb6d6f2, 0x27332f, 0.22);
 scene.add(hemisphere);
-const sunLight = new THREE.DirectionalLight(0xfff8ef, 3.0);
+// SunLight uses WebGPU's cascaded shadow implementation; registered in start() below.
+const sunLight = new SunLight(0xfff8ef, 1.0);
 sunLight.castShadow = true;
-scene.add(sunLight, sunLight.target);
+scene.add(sunLight);
 const moonLight = new THREE.DirectionalLight(0x9eb6dc, 0.16);
 moonLight.castShadow = false;
 scene.add(moonLight, moonLight.target);
@@ -90,14 +95,10 @@ const marchSteps = uniform(18);
 const spatialSigma = uniform(1.15);
 const depthSensitivity = uniform(22);
 const fogColor = uniform(new THREE.Color(0xc6dced));
-let skyEnvironmentTexture=null;
+// PMREM is generated from the actual SkyMesh, not a hand-painted equirectangular
+// approximation. This supplies the prefiltered specular environment expected by PBR materials.
+let pmremGenerator=null,environmentScene=null,environmentRenderTarget=null;
 let skyEnvironmentLastUpdate=0;
-const skyEnvHorizon=new THREE.Color(0xc7d9e5);
-const skyEnvZenith=new THREE.Color(0x4b79a6);
-const skyEnvLower=new THREE.Color(0x53616b);
-const skyEnvPixel=new THREE.Color();
-const skyEnvDirection=new THREE.Vector3();
-const skyEnvSunColor=new THREE.Color();
 const daylightSunColor = new THREE.Color(0xfff8f1);
 const lowSunColor = new THREE.Color(0xffc18e);
 const liveSunColor = new THREE.Color();
@@ -135,56 +136,29 @@ function formatTime(hours) {
   return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
 }
 function updateSkyEnvironment(solar,force=false){
-  if(!renderer||!solar)return;
+  if(!renderer||!solar||!pmremGenerator||!environmentScene)return;
   const now=performance.now();
-  if(!force&&now-skyEnvironmentLastUpdate<2500)return;
+  if(!force&&now-skyEnvironmentLastUpdate<5000)return;
   skyEnvironmentLastUpdate=now;
-  const width=512,height=256;
-  const count=width*height;
-  if(!skyEnvironmentTexture){
-    const data=new Uint16Array(count*4);
-    skyEnvironmentTexture=new THREE.DataTexture(data,width,height,THREE.RGBAFormat,THREE.HalfFloatType);
-    skyEnvironmentTexture.name='GO_ForestLab_DynamicSkyIBL';
-    skyEnvironmentTexture.mapping=THREE.EquirectangularReflectionMapping;
-    skyEnvironmentTexture.colorSpace=THREE.LinearSRGBColorSpace;
-    skyEnvironmentTexture.minFilter=THREE.LinearFilter;
-    skyEnvironmentTexture.magFilter=THREE.LinearFilter;
-    skyEnvironmentTexture.generateMipmaps=false;
-    skyEnvironmentTexture.flipY=false;
+
+  // SkyMesh is temporarily re-parented to a clean environment scene, just as in
+  // Three.js r187's WebGPU sunlight example. The cube camera sits at the origin,
+  // so the infinite sky must be centred there during the bake.
+  const savedPosition=sky.position.clone();
+  let nextEnvironment=null;
+  try{
+    sky.position.set(0,0,0);
+    environmentScene.add(sky);
+    nextEnvironment=pmremGenerator.fromScene(environmentScene,0.04);
+  }finally{
+    scene.add(sky);
+    sky.position.copy(savedPosition);
   }
-  const data=skyEnvironmentTexture.image.data;
-  const sun=solar.sunDirection;
-  skyEnvSunColor.copy(liveSunColor);
-  for(let y=0;y<height;y++){
-    const v=y/(height-1);
-    // DataTexture row 0 is the bottom row: equirectangular +Y (zenith) must be at v=1.
-    const elevation=(v-0.5)*Math.PI;
-    const cosElevation=Math.cos(elevation);
-    const skyBlend=THREE.MathUtils.smoothstep(Math.sin(elevation),-0.025,0.92);
-    const groundBlend=THREE.MathUtils.smoothstep(Math.sin(elevation),-0.09,0.012);
-    for(let x=0;x<width;x++){
-      const azimuth=(x/width-0.5)*Math.PI*2;
-      skyEnvDirection.set(cosElevation*Math.cos(azimuth),Math.sin(elevation),cosElevation*Math.sin(azimuth)).normalize();
-      skyEnvPixel.copy(skyEnvHorizon).lerp(skyEnvZenith,skyBlend*0.93);
-      skyEnvPixel.lerp(skyEnvLower,1-groundBlend);
-      const sunDot=THREE.MathUtils.clamp(skyEnvDirection.dot(sun),-1,1);
-      const angle=Math.acos(sunDot);
-      const halo=Math.exp(-(angle*angle)/(2*0.105*0.105))*solar.daylight*0.20;
-      const disc=solar.daylight>0.02?1-THREE.MathUtils.smoothstep(angle,0.0032,0.0068):0;
-      const sunEnergy=disc*34*solar.daylight+halo*1.4;
-      skyEnvPixel.r+=skyEnvSunColor.r*sunEnergy;
-      skyEnvPixel.g+=skyEnvSunColor.g*sunEnergy;
-      skyEnvPixel.b+=skyEnvSunColor.b*sunEnergy;
-      const offset=(y*width+x)*4;
-      data[offset]=THREE.DataUtils.toHalfFloat(Math.max(0,skyEnvPixel.r));
-      data[offset+1]=THREE.DataUtils.toHalfFloat(Math.max(0,skyEnvPixel.g));
-      data[offset+2]=THREE.DataUtils.toHalfFloat(Math.max(0,skyEnvPixel.b));
-      data[offset+3]=THREE.DataUtils.toHalfFloat(1);
-    }
-  }
-  skyEnvironmentTexture.needsUpdate=true;
-  scene.environment=skyEnvironmentTexture;
-  scene.environmentIntensity=0.92;
+  if(!nextEnvironment?.texture)throw new Error('Sky PMREM bake did not return an environment texture.');
+  if(environmentRenderTarget)environmentRenderTarget.dispose();
+  environmentRenderTarget=nextEnvironment;
+  scene.environment=environmentRenderTarget.texture;
+  scene.environmentIntensity=0.5;
 }
 function updateSkyLabels() {
   ui.turbidityValue.textContent = Number(ui.turbidity.value).toFixed(1);
@@ -230,12 +204,14 @@ function updateSky(forceEnvironment=false) {
   // Keep the daytime key close to neutral; let it warm gradually only as the sun approaches the horizon.
   const warmKey = THREE.MathUtils.clamp(solar.twilight * 0.52, 0, 0.58);
   liveSunColor.copy(daylightSunColor).lerp(lowSunColor,warmKey);
-  hemisphere.intensity = 0.025 + solar.daylight * 0.24 + solar.nightStrength*0.012;
-  sunLight.intensity = solar.daylight * 3.5 * directPower;
+  // Keep diffuse fill restrained: the sky PMREM supplies the broad environment light,
+  // while the SunLight key supplies a clear directional term and cascaded shadows.
+  hemisphere.intensity = 0.12 + solar.daylight * 0.12 + solar.nightStrength * 0.025;
+  sunLight.intensity = solar.daylight * (3.0 + solar.daylight * 2.0) * directPower;
   sunLight.color.copy(liveSunColor);
   moonLight.intensity=solar.nightStrength*0.16;
-  sunLight.position.copy(controls.target).addScaledVector(sunDirection,1800);
-  sunLight.target.position.copy(controls.target);
+  // SunLight has no target: its position defines the direction toward the origin.
+  sunLight.position.copy(sunDirection).multiplyScalar(1800);
   moonLight.position.copy(controls.target).addScaledVector(sunDirection,-1800);
   moonLight.target.position.copy(controls.target);
 
@@ -516,7 +492,7 @@ function makeTerrainPbrMaterial(source,proceduralMaps,cache){
       :0.76;
   const material=new THREE.MeshPhysicalMaterial({
     name:source.name||'AlpineTerrain_PBR',
-    color:source.color?.clone?.()||new THREE.Color(0xffffff),
+    color:source.map?(source.color?.clone?.()||new THREE.Color(0xffffff)):new THREE.Color(0xffffff),
     map:source.map||proceduralMaps.albedo,
     alphaMap:source.alphaMap||null,
     aoMap:source.aoMap||null,
@@ -635,7 +611,20 @@ async function loadRealTerrain() {
   terrainInfoEl.textContent = terrainMeshCount + ' mesh' + (usingFallback ? ' · procedural' : '');
 }
 function buildFogPipeline() {
-  const scenePass = pass(scene, camera);
+  const prePass=pass(scene,camera);
+  prePass.setMRT(mrt({output:packNormalToRGB(normalView)}));
+  const prePassNormal=sample(uv=>unpackRGBToNormal(prePass.getTextureNode().sample(uv)));
+  const prePassDepth=prePass.getTextureNode('depth');
+  const aoPass=ao(prePassDepth,prePassNormal,camera);
+  aoPass.resolutionScale=0.5;
+  aoPass.samples.value=16;
+  aoPass.radius.value=2.2;
+  aoPass.thickness.value=1.0;
+  aoPass.scale.value=1.15;
+  aoPass.useTemporalFiltering=false;
+
+  const scenePass=pass(scene,camera);
+  scenePass.contextNode=builtinAOContext(aoPass.getTextureNode().sample(screenUV).r);
   const sceneColor = scenePass.getTextureNode('output');
   const sceneDepth = scenePass.getTextureNode('depth');
   const cameraWorld = uniform(camera.matrixWorld.clone());
@@ -773,6 +762,7 @@ function buildFogPipeline() {
   renderPipeline.needsUpdate = true;
   return {
     setResolution(value) { resolutionScale.value = value; lowResFog.setResolutionScale(value); },
+    setAOResolution(value) { aoPass.resolutionScale=value; },
     setSteps(value) { marchSteps.value = value; },
     setRaySteps(value) { raySteps.value = value; },
     setRayResolution(value) { rayResolutionScale.value=value; lowResRays.setResolutionScale(value); },
@@ -1608,14 +1598,15 @@ function rebuildForestDensity() {
 
 function applyQualityProfile(name) {
   const profiles = {
-    performance: { pixelRatio: 1.0, fogResolution: 0.30, steps: 10, rayResolution:0.28, raySteps:7 },
-    balanced: { pixelRatio: 1.3, fogResolution: 0.42, steps: 18, rayResolution:0.42, raySteps:12 },
-    cinematic: { pixelRatio: 1.6, fogResolution: 0.55, steps: 28, rayResolution:0.58, raySteps:18 }
+    performance: { pixelRatio: 1.0, fogResolution: 0.30, steps: 10, rayResolution:0.28, raySteps:7, aoResolution:0.35 },
+    balanced: { pixelRatio: 1.3, fogResolution: 0.42, steps: 18, rayResolution:0.42, raySteps:12, aoResolution:0.50 },
+    cinematic: { pixelRatio: 1.6, fogResolution: 0.55, steps: 28, rayResolution:0.58, raySteps:18, aoResolution:0.65 }
   };
   const profile = profiles[name] || profiles.balanced;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, profile.pixelRatio));
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   fogPipeline.setResolution(profile.fogResolution);
+  fogPipeline.setAOResolution(profile.aoResolution);
   fogPipeline.setSteps(profile.steps);
   fogPipeline.setRayResolution(profile.rayResolution);
   fogPipeline.setRaySteps(profile.raySteps);
@@ -1650,26 +1641,27 @@ function bindUI() {
 }
 async function start() {
   renderer = new THREE.WebGPURenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.shadowMap.enabled=true;
-  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  sunLight.shadow.mapSize.set(4096,4096);
-  sunLight.shadow.camera.left=-2100;sunLight.shadow.camera.right=2100;
-  sunLight.shadow.camera.top=2100;sunLight.shadow.camera.bottom=-2100;
-  sunLight.shadow.camera.near=1;sunLight.shadow.camera.far=8200;
-  sunLight.shadow.bias=-0.00005;sunLight.shadow.normalBias=0.024;sunLight.shadow.radius=2.6;
-  sunLight.shadow.autoUpdate=true;
-  sunLight.shadow.camera.updateProjectionMatrix();
+  SunLight.registerNode(SunLightNode);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.3));
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.94;
+  renderer.toneMappingExposure = 0.6;
   stage.appendChild(renderer.domElement);
   await renderer.init();
+  // Configure WebGPU shadows after renderer initialisation, as in the r187 SunLight example.
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFShadowMap;
+  sunLight.shadow.mapSize.setScalar(2048);
+  sunLight.shadow.camera.far=6500;
+  sunLight.shadow.normalBias=0.05;
+  sunLight.shadow.autoUpdate=true;
+  pmremGenerator=new THREE.PMREMGenerator(renderer);
+  environmentScene=new THREE.Scene();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
   camera.updateProjectionMatrix();
   const isWebGPU = renderer.backend && renderer.backend.isWebGPUBackend === true;
-  statusText.textContent = isWebGPU ? 'WebGPU backend активен · TSL · forest LOD · god rays' : 'WebGL 2 fallback активен · TSL pipeline';
+  statusText.textContent = isWebGPU ? 'WebGPU · SunLight CSM · PMREM sky IBL · GTAO' : 'WebGL fallback · SunLight · sky IBL · GTAO';
   statusDot.classList.add('ok');
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
