@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+<title>V9 spruce branch hierarchy reference</title>
+<desc>Norway spruce with irregularly angled horizontal whorls, drooping woody limbs, secondary twigs and short needles, no radial fan plates or spiral trunk silhouette.</desc>
+<rect width="600" height="800" fill="#eef4f7"/>
+<path d="M300 38 L300 760" stroke="#514536" stroke-width="9" fill="none"/>
+<g fill="none" stroke="#183d2b" stroke-linecap="round" stroke-linejoin="round">
+<path stroke-width="13" d="M300 135 L258 166 L215 187 L170 214 L125 246 M300 135 L342 164 L389 184 L436 212 L481 246"/>
+<path stroke-width="11" d="M300 230 L255 257 L207 280 L160 309 L116 344 M300 230 L347 254 L395 280 L443 308 L487 344"/>
+<path stroke-width="10" d="M300 324 L260 348 L218 371 L175 400 L137 432 M300 324 L343 348 L384 371 L428 400 L463 432"/>
+<path stroke-width="8" d="M300 416 L264 438 L226 462 L190 489 L158 519 M300 416 L338 438 L375 462 L411 489 L442 519"/>
+<path stroke-width="7" d="M300 506 L269 527 L238 550 L208 578 L181 606 M300 506 L332 527 L363 550 L392 578 L419 606"/>
+<path stroke-width="5" d="M300 590 L274 611 L250 634 L226 656 L205 677 M300 590 L327 611 L352 634 L375 656 L395 677"/>
+</g>
+<g fill="none" stroke="#2c5639" stroke-width="5" stroke-linecap="round">
+<path d="M258 166 l-8 26 -20 16 -23 20 M215 187 l-5 28 -20 20 -18 18 M170 214 l-5 28 -19 22"/>
+<path d="M342 164 l8 26 20 16 23 20 M389 184 l5 28 20 20 18 18 M436 212 l5 28 19 22"/>
+<path d="M255 257 l-7 28 -20 18 -21 22 M207 280 l-5 26 -19 20 -18 17 M160 309 l-4 25 -16 18"/>
+<path d="M347 254 l7 28 20 18 21 22 M395 280 l5 26 19 20 18 17 M443 308 l4 25 16 18"/>
+<path d="M260 348 l-7 24 -18 18 -20 20 M218 371 l-4 23 -17 18 -18 18 M175 400 l-3 23 -14 16"/>
+<path d="M343 348 l7 24 18 18 20 20 M384 371 l4 23 17 18 18 18 M428 400 l3 23 14 16"/>
+<path d="M264 438 l-7 22 -17 18 -18 19 M226 462 l-4 21 -17 19 -16 18 M190 489 l-3 21 -13 17"/>
+<path d="M338 438 l7 22 17 18 18 19 M375 462 l4 21 17 19 16 18 M411 489 l3 21 13 17"/>
+<path d="M269 527 l-6 20 -15 18 -16 17 M238 550 l-4 18 -14 15 -13 14 M208 578 l-3 18 -12 14"/>
+<path d="M332 527 l6 20 15 18 16 17 M363 550 l4 18 14 15 13 14 M392 578 l3 18 12 14"/>
+</g>
+<g fill="none" stroke="#dce8ed" stroke-width="4" stroke-linecap="round">
+<path d="M250 163 l-16 8 M213 185 l-17 10 M169 211 l-17 12 M350 161 l16 8 M391 181 l17 10 M437 209 l17 12"/>
+<path d="M246 253 l-16 8 M205 277 l-17 10 M159 306 l-17 12 M354 251 l16 8 M397 277 l17 10 M444 305 l17 12"/>
+<path d="M251 344 l-14 8 M216 367 l-15 9 M173 396 l-13 10 M349 344 l14 8 M384 367 l15 9 M427 396 l13 10"/>
+<path d="M255 434 l-13 8 M224 458 l-13 8 M189 485 l-11 8 M345 434 l13 8 M376 458 l13 8 M411 485 l11 8"/>
+<path d="M263 523 l-11 7 M236 546 l-10 7 M207 574 l-9 7 M337 523 l11 7 M364 546 l10 7 M393 574 l9 7"/>
+</g>
+<path d="M300 38 L300 14" stroke="#183d2b" stroke-width="4" stroke-linecap="round"/>
+</svg>
