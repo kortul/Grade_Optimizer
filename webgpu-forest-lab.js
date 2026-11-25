@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
 import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
+import { createCloudLayer } from './webgpu-cloud-layer.v1.js';
 import {
   exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
   isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV, smoothstep,
@@ -62,7 +63,7 @@ const sunDirection = new THREE.Vector3();
 let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
 let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null,pineAtlasTextures=null;
-let fogPipeline,dayCyclePlaying=false;
+let fogPipeline,cloudLayer=null,dayCyclePlaying=false;
 let solarState=null;
 
 const noiseTexture = createNoiseTexture3D(64);
@@ -117,7 +118,7 @@ function updateSkyLabels() {
   ui.rayleighValue.textContent = Number(ui.rayleigh.value).toFixed(2);
   ui.cloudCoverageValue.textContent = Math.round(Number(ui.cloudCoverage.value) * 100) + '%';
   ui.cloudDensityValue.textContent = Math.round(Number(ui.cloudDensity.value) * 100) + '%';
-  ui.cloudElevationValue.textContent = Math.round(Number(ui.cloudElevation.value) * 100) + '%';
+  ui.cloudElevationValue.textContent = (2.1 + Number(ui.cloudElevation.value) * 1.2).toFixed(1) + ' км';
   ui.sunIntensityValue.textContent = Math.round(Number(ui.sunIntensity.value)*100)+'%';
   ui.dayLengthValue.textContent = Math.round(Number(ui.dayLength.value))+' мин';
 }
@@ -140,9 +141,10 @@ function updateSky() {
   sky.rayleigh.value = Number(ui.rayleigh.value);
   sky.mieCoefficient.value = 0.0038;
   sky.mieDirectionalG.value = 0.78;
-  sky.cloudCoverage.value = Number(ui.cloudCoverage.value);
-  sky.cloudDensity.value = Number(ui.cloudDensity.value);
-  sky.cloudElevation.value = Number(ui.cloudElevation.value);
+  // SkyMesh's built-in cloud sheet is disabled; the shared WeatherSystem v9 field is rendered in TSL.
+  sky.cloudCoverage.value = 0;
+  sky.cloudDensity.value = 0;
+  sky.cloudElevation.value = 0;
   sky.showSunDisc.value = false;
 
   const directPower=THREE.MathUtils.clamp(Number(ui.sunIntensity.value),0,1.5);
@@ -171,6 +173,11 @@ function updateSky() {
     0.16+solar.daylight*0.30,
     0.20+solar.daylight*0.26
   );
+  cloudLayer?.setAtmosphere({
+    coverage:Number(ui.cloudCoverage.value),density:Number(ui.cloudDensity.value),
+    elevation:Number(ui.cloudElevation.value),wind:9,daylight:solar.daylight,
+    twilight:solar.twilight,rayStrength:Number(ui.godRays.value),sunDirection,sunColor:solar.sunColor
+  });
   ui.timeValue.textContent = formatTime(hours);
 }
 function setLoadingMessage(message){
@@ -690,7 +697,7 @@ function buildTreePlacements(footprint, density) {
     return true;
   };
   const addTree=(x,z,ground,rr,band)=>{
-    const height=7.2+rr()*7.4;
+    const height=8.5+rr()*8.5;
     const hue=(rr()-0.5)*0.045;
     const tint=new THREE.Color().setHSL(0.31+hue,0.28+rr()*0.12,0.39+rr()*0.08);
     trees.push({
@@ -744,12 +751,12 @@ function buildTreePlacements(footprint, density) {
   const usedFallback=trees.length<700&&!footprint.bounds.isEmpty();
   if(usedFallback){
     const belt=footprint.bounds;
-    const margin=190;
+    const margin=320;
     const minX=Math.max(baseBounds.min.x+12,belt.min.x-margin);
     const maxX=Math.min(baseBounds.max.x-12,belt.max.x+margin);
     const minZ=Math.max(baseBounds.min.z+12,belt.min.z-margin);
     const maxZ=Math.min(baseBounds.max.z-12,belt.max.z+margin);
-    const grid=19;
+    const grid=18;
     const keep=THREE.MathUtils.clamp(0.38+densityScale*0.34,0.42,0.84);
     const firstX=Math.floor(minX/grid),lastX=Math.ceil(maxX/grid);
     const firstZ=Math.floor(minZ/grid),lastZ=Math.ceil(maxZ/grid);
@@ -1007,22 +1014,30 @@ function rebuildForestLod(force=false) {
   forestSystem.lastCamera.copy(camera.position);
   forestSystem.lastForward.copy(forestSystem.cameraForward);
   forestSystem.group.clear();
-  const near=[],mid=[],far=[];
+  const near=[[],[],[]],mid=[[],[],[]],far=Array.from({length:8},()=>[]);
+  const nearLimitSq=850*850,midLimitSq=3300*3300;
   for(const tree of forestSystem.trees){
-    const distance=camera.position.distanceTo(new THREE.Vector3(tree.x,tree.y+tree.height*0.5,tree.z));
-    if(distance<650)near.push(tree);
-    else if(distance<2500)mid.push(tree);
-    else far.push(tree);
+    const dx=camera.position.x-tree.x;
+    const dy=camera.position.y-(tree.y+tree.height*0.5);
+    const dz=camera.position.z-tree.z;
+    const distanceSq=dx*dx+dy*dy+dz*dz;
+    if(distanceSq<nearLimitSq)near[tree.variant].push(tree);
+    else if(distanceSq<midLimitSq)mid[tree.variant].push(tree);
+    else far[tree.atlasVariant].push(tree);
   }
   for(let variant=0;variant<3;variant++){
-    createTreeInstanceBatch(near.filter(tree=>tree.variant===variant),'near',variant,forestSystem.group);
-    createTreeInstanceBatch(mid.filter(tree=>tree.variant===variant),'mid',variant,forestSystem.group);
+    createTreeInstanceBatch(near[variant],'near',variant,forestSystem.group);
+    createTreeInstanceBatch(mid[variant],'mid',variant,forestSystem.group);
   }
   for(let variant=0;variant<8;variant++){
-    createTreeInstanceBatch(far.filter(tree=>tree.atlasVariant===variant),'far',variant,forestSystem.group);
+    createTreeInstanceBatch(far[variant],'far',variant,forestSystem.group);
   }
   terrainInfoEl.textContent=forestSystem.trees.length.toLocaleString('ru-RU');
-  forestSystem.lastLod={near:near.length,mid:mid.length,far:far.length};
+  forestSystem.lastLod={
+    near:near.reduce((sum,items)=>sum+items.length,0),
+    mid:mid.reduce((sum,items)=>sum+items.length,0),
+    far:far.reduce((sum,items)=>sum+items.length,0)
+  };
 }
 
 async function loadStageOneAndForest() {
@@ -1184,6 +1199,7 @@ async function start() {
   controls.target.set(0, 0, 0);
   await loadRealTerrain();
   await loadStageOneAndForest();
+  cloudLayer=createCloudLayer(THREE,scene,{center:terrainBounds.getCenter(new THREE.Vector3())});
   updateSkyLabels();
   ui.godRaysValue.textContent=Math.round(Number(ui.godRays.value)*100)+'%';
   ui.forestDensityValue.textContent=Math.round(Number(ui.forestDensity.value)*100)+'%';
@@ -1209,6 +1225,8 @@ async function start() {
     if(solarState)updateSolarDisc(THREE,sunDisc,camera,solarState,Number(ui.sunIntensity.value));
     sky.position.copy(camera.position);
     fogPipeline.setTime(elapsed);
+    cloudLayer?.setTime(elapsed);
+    cloudLayer?.updateCamera(camera.position);
     fogPipeline.updateCamera(sunDirection);
     rebuildForestLod(false);
     renderPipeline.render();
