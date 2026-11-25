@@ -118,7 +118,9 @@ root.traverse(object => {
       : Math.floor(positions.count / 3),
     min: bounds.min.toArray(),
     max: bounds.max.toArray(),
-    materialCount: Array.isArray(object.material) ? object.material.length : (object.material ? 1 : 0)
+    materialCount: Array.isArray(object.material) ? object.material.length : (object.material ? 1 : 0),
+    geometryGroupCount: object.geometry.groups?.length || 0,
+    distinctGroupMaterialIndices: [...new Set((object.geometry.groups || []).map(group => group.materialIndex ?? 0))].length
   });
 });
 
