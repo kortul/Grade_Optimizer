@@ -115,7 +115,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     const body = smoothstep(threshold, threshold.add(0.18), carved);
     const brokenEdge = smoothstep(0.015, 0.30, body);
     const cloudColumn = body.mul(brokenEdge);
-    const sunView = max(state.cameraPosition.sub(positionWorld).normalize().dot(state.sunDirection.negate()), float(0));
+    const sunView = max(state.cameraPosition.sub(positionWorld).normalize().dot(state.sunDirection), float(0));
     const forward = sunView.pow(8);
     const topLight = float(0.22).add(state.sunDirection.y.max(0).mul(0.56))
       .add(forward.mul(0.20)).clamp(0, 1);
@@ -145,7 +145,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
       .mul(state.cloudCoverage).mul(state.cloudDensity)
       .mul(float(0.22).add(state.daylight.mul(0.22)))
       .clamp(0, 0.18);
-    const forward = max(state.cameraPosition.sub(positionWorld).normalize().dot(state.sunDirection.negate()), float(0)).pow(7);
+    const forward = max(state.cameraPosition.sub(positionWorld).normalize().dot(state.sunDirection), float(0)).pow(7);
     const base = mix(vec3(0.15, 0.19, 0.29), vec3(0.52, 0.62, 0.75), state.daylight);
     const lit = state.sunColor.mul(float(0.35).add(forward.mul(0.55)));
     return vec4(mix(base, lit, state.daylight.mul(0.58).add(forward.mul(0.12))), alpha);
@@ -188,6 +188,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
   const fogNear = state.fogNear;
   const fogFar = state.fogFar;
   const godRays = state.godRays;
+  let requestedGodRays = 0.12;
   const groundY = uniform(Number(groundLevel) || 0);
   const fogResolution = uniform(0.42);
   const marchSteps = uniform(14);
@@ -320,9 +321,36 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     format: THREE.RedFormat,
     resolutionScale: rayResolution.value
   }).setName('ForestLab_SolarInscatter');
-  const rayAmount = upsample(lowRays, sceneDepth);
-  const finalColour = sceneColour.rgb.mix(hazeColourAt(camera.position.sub(camera.position).add(new THREE.Vector3(0, 0, -1))), float(0));
-  const composited = sceneColour.rgb.mix(hazeColourAt(vec3(0, 1, 0)), hazeAmount);
+  const upsampleRays = Fn(([source, depthTexture]) => {
+    const uv = screenUV;
+    const centreDepth = getViewPosition(uv, depthTexture.sample(uv).r, projectionInverse).z.negate().max(0.1);
+    const texel = fwidth(uv).div(rayResolution);
+    const spatialFactor = float(-0.5).div(spatialSigma.mul(spatialSigma).max(0.01));
+    const depthFactor = depthSensitivity.mul(depthSensitivity).mul(-0.5);
+    const total = float(0).toVar();
+    const weightTotal = float(0).toVar();
+    for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) {
+      const offset = vec2(float(x), float(y));
+      const sampleUV = uv.add(offset.mul(texel));
+      const spatialWeight = exp(offset.dot(offset).mul(spatialFactor));
+      const sampleRay = source.sample(sampleUV);
+      const sampleDepth = getViewPosition(sampleUV, depthTexture.sample(sampleUV).r, projectionInverse).z.negate().max(0.1);
+      const delta = sampleDepth.sub(centreDepth).div(centreDepth.max(0.1));
+      const weight = spatialWeight.mul(exp(delta.mul(delta).mul(depthFactor)));
+      total.addAssign(sampleRay.mul(weight));
+      weightTotal.addAssign(weight);
+    }
+    return total.div(weightTotal.max(0.0001));
+  });
+  const rayAmount = upsampleRays(lowRays, sceneDepth);
+  const hazeInscatter = Fn(() => {
+    const depth = sceneDepth.sample(screenUV).r;
+    const viewPosition = getViewPosition(screenUV, depth, projectionInverse);
+    const worldPosition = cameraWorld.mul(vec4(viewPosition, 1)).xyz;
+    const direction = worldPosition.sub(cameraPosition).normalize();
+    return hazeColourAt(direction);
+  });
+  const composited = sceneColour.rgb.mix(hazeInscatter(), hazeAmount);
   const pipeline = new THREE.RenderPipeline(renderer);
   pipeline.outputNode = composited.add(
     state.sunColor.mul(rayAmount.mul(float(0.12).add(hazeAmount.mul(0.48))))
@@ -345,7 +373,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
   function bakeEnvironment(force = false) {
     const now = performance.now();
     if (!force && now - lastEnvironmentBake < 2200) return;
-    if (now - lastEnvironmentBake < 700) return;
+    if (lastEnvironmentBake > 0 && now - lastEnvironmentBake < 700) return;
     lastEnvironmentBake = now;
     const savedPosition = skyDome.position.clone();
     const savedCamera = state.cameraPosition.value.clone();
@@ -415,7 +443,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
       state.fogNear.value = THREE.MathUtils.lerp(1500, 4200, v);
       state.fogFar.value = THREE.MathUtils.lerp(6500, 12500, v);
     }
-    if (rays !== undefined) state.godRays.value = THREE.MathUtils.clamp(Number(rays), 0, 1.5);
+    if (rays !== undefined) { requestedGodRays = THREE.MathUtils.clamp(Number(rays), 0, 1.5); state.godRays.value = requestedGodRays; }
   }
 
   function setQuality(name) {
@@ -453,7 +481,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
       const visible = projected.z > -1 && projected.z < 1
         && Math.abs(projected.x) < 1.35 && Math.abs(projected.y) < 1.35;
       sunScreenUV.value.set(projected.x * 0.5 + 0.5, 0.5 - projected.y * 0.5);
-      if (!visible) state.godRays.value = 0;
+      state.godRays.value = visible ? requestedGodRays : 0;
     },
     render() { pipeline.render(); },
     dispose() {
