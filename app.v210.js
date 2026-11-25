@@ -7,7 +7,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { SkierController } from './skier-controller.v104.js';
+import { SkierController } from './skier-controller.v104.js?v=105';
 import { DroneController } from './drone-controller.v76.js';
 import { WeatherSystem } from './weather-system.v9.js';
 import { compactStageOneMaterialGroups } from './stage-one-material-groups.v1.js';
@@ -7496,6 +7496,8 @@ window.addEventListener('resize',scheduleModeHudFit,{passive:true});
 snowFrictionInput.addEventListener('input',e=>{
   skierController.setSnowFriction(parseFloat(e.target.value));
 });
+// Apply the configured default immediately, before the first skier-mode entry.
+skierController.setSnowFriction(parseFloat(snowFrictionInput.value));
 
 function resizeSceneAfterModeChange() {
   scheduleViewportResize();
