@@ -38,7 +38,6 @@ assert.match(renderer, /const twigStations=high\?6:mid\?4:3/, 'V10 must add clos
 assert.match(renderer, /for\(const sideSign of \[-1,1\]\)/, 'V10 must fill both flanks of every main branch');
 assert.match(renderer, /const sprayPositions=high\?3:mid\?2:1/, 'V10 must place multiple foliage sprays along each twig');
 assert.match(renderer, /const needlesPerSpray=high\?5:mid\?4:3/, 'V10 must use dense 3D needle whorls');
-assert.match(renderer, /const twigStations=high\?5:mid\?4:3/, 'primary boughs must carry multiple drooping secondary branches');
 assert.match(renderer, /const sprayCount=high\?4:mid\?3:2/, 'secondary branches must carry multiple 3D needle sprays');
 assert.doesNotMatch(renderer, /addTriangle|addQuad|fanWidth/, 'broad flat fan surfaces must be absent from V10 foliage');
 assert.match(renderer, /const phase=hash\(level\+11,variant\+37\)\*Math\.PI\*2/, 'spruce tiers must not rotate into a golden-angle vortex');
