@@ -102,10 +102,18 @@ pass('all current legacy and newly imported model materials default to emissive 
 assert.ok(entrySource.includes('function isMayaStageOneFbx(root,fileName=')&&entrySource.includes('const isStageOneSlopes=isMayaStageOneFbx(root,fileName)'), 'Stage 1 detection must use the FBX filename or its Maya hierarchy / material names, not one exact filename pattern');
 assert.ok(entrySource.includes('const canonicalBySourceName=new Map()')&&entrySource.includes('canonicalBySourceName.has(sourceName)')&&entrySource.includes('gradeOptimizerFbxSourceMaterialName'), 'FBX materials with duplicated Maya IDs but the same shader name must share one material object across meshes');
 assert.ok(entrySource.includes('prepareFbxMaterials(root,{preserveSlopeAlbedo:isStageOneSlopes})')&&entrySource.includes('applyStageOneSurfaceMaterials(root)'), 'Slopes_Stage1 must run its dedicated surface-material pass after FBX conversion');
-assert.ok(entrySource.includes("material.color.set(kind==='slopes'?0xffffff:0x383838)")&&entrySource.includes("if(/(^|_)angled?(_|$)/.test(value))return 'angled'")&&entrySource.includes("if(/(^|_)slopes?(_|$)/.test(value))return 'slopes'")&&entrySource.includes("(/openpbr/i.test(materialName)?'slopes':'')"), 'Stage 1 Slopes must be white, Angled dark grey, and the technical OpenPBR slot must inherit the Maya surface class');
+const stageOneSurfaceRules=await import('../stage-one-materials.v1.js');
+assert.equal(stageOneSurfaceRules.classifyStageOneSurfaceKind('Slopes'),'slopes');
+assert.equal(stageOneSurfaceRules.classifyStageOneSurfaceKind('AngledSlopes'),'angled');
+assert.equal(stageOneSurfaceRules.classifyStageOneSurfaceKind('pasted__AngledSlopes__03'),'angled');
+assert.equal(stageOneSurfaceRules.classifyStageOneSurfaceKind('zzMainLandscape_Slopes'),'slopes');
+assert.equal(stageOneSurfaceRules.classifyStageOneSurfaceKind('zzShapka_Angled'),'angled');
+assert.equal(stageOneSurfaceRules.hasStageOneSurfaceMaterialPair(['Slopes','AngledSlopes']),true);
+assert.equal(stageOneSurfaceRules.hasStageOneSurfaceMaterialPair(['Slopes','Terrain']),false);
+assert.ok(entrySource.includes('hasStageOneSurfaceMaterialPair(surfaceNames)')&&entrySource.includes('const classify=classifyStageOneSurfaceKind')&&entrySource.includes("material.color.set(kind==='slopes'?0xffffff:0x383838)")&&entrySource.includes("(/openpbr/i.test(materialName)?'slopes':'')"), 'Stage 1 detection and canonical material assignment must recognize compound AngledSlopes names and retain the OpenPBR fallback');
 assert.ok(entrySource.includes('material.map=null')&&entrySource.includes('material.emissiveMap=null')&&entrySource.includes('material.vertexColors=false'), 'Stage 1 surface colors must not be tinted by imported albedo maps, emission maps or vertex colors');
 assert.ok(entrySource.includes('gradeOptimizerAlbedoRecovery')&&entrySource.includes('emissive-map-recovered-as-base-color-map')&&entrySource.includes('emissive-color-recovered-as-base-color'), 'black diffuse materials must recover usable albedo from FBX emission data');
-pass('Slopes_Stage1 applies explicit white Slopes and dark-grey Angled materials');
+pass('Slopes_Stage1 recognizes Slopes / AngledSlopes aliases and applies two canonical surface materials');
 
 assert.ok(entrySource.includes('function editorMaterialsEquivalent(a,b)')&&entrySource.includes('function editorGeometryForMaterial(object,materialFilter,ownedGeometries)'), 'material identity matching and group-filtered geometry selection are missing');
 assert.ok(entrySource.includes('filtered.clearGroups()')&&entrySource.includes('filtered.addGroup(group.start,group.count,0)'), 'material highlight must isolate matching FBX geometry groups');
