@@ -467,7 +467,7 @@ function sampleTerrainSurface(x, z, lookup) {
   return best;
 }
 
-function buildTreePlacements(lookup, density) {
+async function buildTreePlacements(lookup, density) {
   const trees = [];
   const grid = 25;
   const probability = THREE.MathUtils.clamp(0.08 + density * 0.15, 0.10, 0.34);
