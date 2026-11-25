@@ -32,7 +32,7 @@ jobs:
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
         run: |
-          node --input-type=module --check < app.v200.js
+          node --input-type=module --check < app.v202.js
           node --input-type=module --check < stage-one-materials.v1.js
           node --input-type=module --check < editor-shared-materials.v1.js
           node --input-type=module --check < stage-one-material-groups.v1.js
@@ -41,7 +41,7 @@ jobs:
           node --input-type=module --check < slope-label-index.v1.js
           node --input-type=module --check < skier-controller.v99.js
           node --input-type=module --check < skier-terrain-contact.v1.js
-          node --input-type=module --check < multiplayer.v10.js
+          node --input-type=module --check < multiplayer.v11.js
           node --input-type=module --check < drone-controller.v76.js
       - name: Check standalone WebGPU lab modules
         run: |
