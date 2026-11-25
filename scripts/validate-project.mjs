@@ -24,6 +24,9 @@ assert.ok(
 );
 assert.ok(existsSync(resolve(root, entryPath)), 'active module does not exist: ' + entryPath);
 pass('active entrypoint exists: ' + entryPath);
+const renderPerformanceSource=read('render-performance.v1.js').toString('utf8');
+assert.ok(renderPerformanceSource.includes('performanceProfileActive ? profileMaximum : maximum')&&renderPerformanceSource.includes('frameIntervalsMs.length < 5'),'render performance helpers must cap skier resolution and reject undersampled rolling FPS');
+pass('skier viewport-resolution cap, rolling FPS sampling and scene draw diagnostics are present');
 const weatherV8Source=read('weather-system.v8.js').toString('utf8');
 assert.ok(existsSync(resolve(root,'assets/cloud-atlas.v1.svg')),'AI cloud atlas asset is missing');
 assert.ok(weatherV8Source.includes('cloud-atlas.v1.svg')&&weatherV8Source.includes('cloudMaterials'),'AI cloud atlas is not used');
@@ -804,6 +807,7 @@ assert.ok(entrySource.includes('let pendingSceneMode = null;'), 'skier mode requ
 assert.ok(entrySource.includes("if(pendingSceneMode==='skier')"), 'queued skier mode must resume after slope loading');
 assert.ok(entrySource.includes("const reason=skierController.lastStartError||'UNKNOWN'"), 'skier startup failures must report the controller error code');
 
+assert.ok(entrySource.includes('resolveRendererPixelRatio')&&entrySource.includes('performanceProfileActive:!!skierPerformanceRestore')&&entrySource.includes('runtimePerformance.rafIntervalMs')&&entrySource.includes('calculateRollingFps')&&entrySource.includes('collectRenderSceneBreakdown()'),'skier resolution profile must survive viewport resize; frame timing must use rolling rAF intervals; per-scene draw diagnostics must be exposed');
 assert.ok(entrySource.includes('renderer.info.autoReset = false')&&entrySource.includes('runtimePerformance.weatherUpdateMs')&&entrySource.includes('runtimePerformance.forestUpdateMs')&&entrySource.includes('runtimePerformance.opticsMs')&&entrySource.includes('runtimePerformance.drawCalls')&&entrySource.includes('renderPipeline:') ,'frame profiler must expose update, render, draw-call and pipeline diagnostics');
 pass('reliable skier/drone mode handoff, spawn fallback and active movement are present');
 assert.ok(entrySource.includes('const forestTerrain=state.baseTerrain;'), 'forest placement must sample only original base terrain');
