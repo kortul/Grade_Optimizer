@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const renderer = readFileSync(new URL('../webgpu-forest-lab.v5.js', import.meta.url), 'utf8');
+const renderer = readFileSync(new URL('../webgpu-forest-lab.v6.js', import.meta.url), 'utf8');
 const atmosphere = readFileSync(new URL('../webgpu-forest-atmosphere.v1.js', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../webgpu-forest-lab.html', import.meta.url), 'utf8');
 
@@ -30,7 +30,10 @@ assert.match(renderer, /shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes
 assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'semantic material identities must not leak Maya display colours into the winter look');
 assert.match(renderer, /function createSplinePineMaterial\(\)/, 'procedural near/mid forest still uses its physical foliage material');
 assert.match(renderer, /MeshPhysicalNodeMaterial\(\{roughness:0\.82/, 'foliage should retain its physical node material');
-assert.match(renderer, /const levels=high\?13:8,branchCount=high\?8:6/, 'spruce should have denser, more closely spaced branch tiers');
+assert.match(renderer, /sculptural alpine spruce built from distinct whorled boughs/, 'spruce must use the new whorled bough geometry');
+assert.match(renderer, /function addSnowRidge/, 'spruce must have continuous snow caps on branch tops');
+assert.match(renderer, /const branches=high\?7:mid\?6:5/, 'near, mid and far LODs must use coherent spruce branch tiers');
+assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
 assert.match(renderer, /const foliageAxis=radial\.clone\(\)\.multiplyScalar\(0\.96\)/, 'main foliage clumps should grow outward rather than spike upward');
 assert.match(renderer, /const snowExposure=THREE\.MathUtils\.smoothstep\(radial\.y,0\.12,0\.72\)/, 'snow should accumulate on upper-facing foliage surfaces');
 assert.match(renderer, /snowShare\*\(0\.45\+0\.55\*jitter\(seed,ring\*9\+j\)\),0,0\.72/, 'snow coverage should be visible across upper boughs');
@@ -55,7 +58,7 @@ assert.match(atmosphere, /renderer\.render\(scene, camera\)/, 'the baseline must
 assert.doesNotMatch(atmosphere, /GTAONode|buildFogPipeline|rtt\(/, 'the old expensive screen-space pipeline must remain removed');
 
 // HTML and runtime controls must agree.
-assert.match(html, /webgpu-forest-lab\.v5\.js\?v=20261125p/, 'HTML must load the current renderer revision');
+assert.match(html, /webgpu-forest-lab\.v6\.js\?v=20261125q/, 'HTML must load the current renderer revision');
 assert.doesNotMatch(html, /id="godRays"|id="fogDensity"|id="fogHeight"|id="fogRange"/, 'removed full-screen controls should not remain in the UI');
 assert.match(renderer, /renderer\.toneMappingExposure = 0\.52/, 'terrain and snow must use a stable scene exposure');
 
