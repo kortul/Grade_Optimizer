@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v201.js')&&!html.includes('app.v200.js'),'HTML must activate the current v201 release');
+assert.ok(html.includes('app.v202.js')&&!html.includes('app.v201.js'),'HTML must activate the current v202 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
@@ -715,6 +715,9 @@ assert.ok(entrySource.includes('const clampSlopeDistance=(value,fallback=100)=>'
 assert.ok(entrySource.includes('const SLOPE_ANALYSIS_LINE_WIDTH_PX = 4.125;') && entrySource.includes('green: 0x0b733a') && entrySource.includes('blue: 0x286bd6') && entrySource.includes('red: 0xe54848') && entrySource.includes('black: 0x2a2e34'), 'difficulty lines must be 25% thinner and use separate, slightly muted shades');
 assert.ok(entrySource.includes('slopeAnalysis:state.slopeAnalysisData||undefined') && entrySource.includes('slopeCurves:state.slopeCurvesData||undefined'), 'derived analysis and raw Maya centerlines must survive client manifest autosave');
 assert.ok(html.includes('id="slopeLayersToggle"') && html.includes('id="slopeLayer_angles"') && html.includes('id="slopeLayer_difficulty"') && html.includes('id="slopeLayer_names"'), 'three slope-analysis layer controls are missing');
+assert.ok(entrySource.includes('object.visible=layerVisible')&&entrySource.includes("object.element.style.display=layerVisible?'':'none'"),'slope-name CSS2D labels must hide and reappear with their layer checkbox');
+assert.ok(entrySource.includes('function syncSlopeLayersPanelPosition()')&&entrySource.includes('const visible=!!open;')&&entrySource.includes('new ResizeObserver(syncSlopeLayersPanelPosition)'),'slope layer panel must remain available in every mode and position itself below the responsive toolbar');
+assert.ok(!html.includes('Только режим «Обзор»')&&!html.includes('дальность настраивается ниже (до 500 м)')&&!html.includes('Толстая цветная линия по участкам')&&!html.includes('Подписи центральных линий')&&!html.includes('id="slopeLayersStatus"'),'slope layer panel must omit the requested redundant copy and status footer');
 
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
@@ -1109,6 +1112,7 @@ assert.ok(multiplayerClientSource.includes('publishMeasurement(points,id)')&&mul
 assert.ok(multiplayerClientSource.includes('const SEND_INTERVAL_MS = 33')&&multiplayerClientSource.includes('MAX_OUTGOING_BUFFERED_BYTES')&&multiplayerClientSource.includes('socket.bufferedAmount')&&multiplayerClientSource.includes('droppedQueuedStates'),'client movement transport must run at 30 Hz and drop stale queued frames under backpressure');
 assert.ok(multiplayerClientSource.includes('remote.lastSequence')&&multiplayerClientSource.includes('lastSequence:0'),'out-of-order state snapshots must not overwrite newer remote movement');
 assert.ok(multiplayerClientSource.includes('sprite.scale.set(6.5,1.44,1)'),'remote player nameplate must be twice its previous size');
+assert.ok(multiplayerClientSource.includes('root.scale.setScalar(7)'),'double-click shared flags must render at seven times their previous size');
 assert.ok(multiplayerWorkerSource.includes("from './protocol.v2.js'")&&multiplayerWorkerSource.includes("msg.t==='marker-sync'")&&multiplayerWorkerSource.includes("msg.t==='marker-clear'")&&multiplayerWorkerSource.includes('broadcastMarkerSnapshot')&&multiplayerWorkerSource.includes('clearMarkersForPlayer(player?.id)')&&multiplayerWorkerSource.includes('pruneOrphanedSharedMarkers(stored,activeMarkerOwners)'),'worker must broadcast authoritative flag snapshots and remove flags owned by disconnected sessions');
 assert.ok(multiplayerWorkerSource.includes("sharedMarkerRevisions")&&multiplayerWorkerSource.includes("sharedMeasurementRevisions")&&multiplayerWorkerSource.includes("t:'measure-ack'"),'worker must revision-check marker and ruler operations and acknowledge them');
 assert.ok(multiplayerWorkerSource.includes('MAX_STATE_BUFFERED_BYTES')&&multiplayerWorkerSource.includes('bufferedAmount')&&!multiplayerWorkerSource.includes("const presence={t:'presence'"),'worker must drop stale state broadcasts under backpressure and avoid redundant heartbeat presence traffic');
