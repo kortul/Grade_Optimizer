@@ -25,6 +25,11 @@ assert.ok(
 assert.ok(existsSync(resolve(root, entryPath)), 'active module does not exist: ' + entryPath);
 pass('active entrypoint exists: ' + entryPath);
 assert.ok(entrySource.includes('function collectImportedAssetDiagnostics')&&entrySource.includes('importedAssets:collectImportedAssetDiagnostics()'),'runtime diagnostics must expose the actual loaded model path and mesh counts');
+const stageOneGroupSource=read('stage-one-material-groups.v1.js').toString('utf8');
+assert.ok(entrySource.includes("import { compactStageOneMaterialGroups } from './stage-one-material-groups.v1.js';")&&entrySource.includes('compactStageOneMaterialGroups(THREE,object)')&&entrySource.includes('Stage1 material groups compacted'),'Stage1 FBX parsing must compact repeated groups by material before render and GLB export');
+assert.ok(entrySource.includes('preferredFbxPath')&&entrySource.includes('canonical FBX'),'remote Stage1 must prefer the canonical FBX over the legacy many-primitive GLB');
+assert.ok(stageOneGroupSource.includes('geometry.groups')&&stageOneGroupSource.includes('geometry.addGroup')&&stageOneGroupSource.includes('trianglesPreserved'),'Stage1 compaction must retain material ranges and preserve every source triangle');
+pass('Stage1 source FBX selection and geometry-group compaction are present');
 const renderPerformanceSource=read('render-performance.v1.js').toString('utf8');
 assert.ok(renderPerformanceSource.includes('performanceProfileActive ? profileMaximum : maximum')&&renderPerformanceSource.includes('frameIntervalsMs.length < 5'),'render performance helpers must cap skier resolution and reject undersampled rolling FPS');
 pass('skier viewport-resolution cap, rolling FPS sampling and scene draw diagnostics are present');
