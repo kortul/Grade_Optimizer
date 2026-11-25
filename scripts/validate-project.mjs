@@ -1099,7 +1099,7 @@ assert.ok(alpineForestSource.includes("import { GLTFLoader } from 'three/addons/
   'Forest Lab must load Slopes_Stage1 and restore the saved CAD Bridge transform');
 assert.ok(alpineForestSource.includes('sculptural alpine spruce built from distinct whorled boughs')&&
   alpineForestSource.includes('const branches=high?7:mid?6:5')&&
-  alpineForestSource.includes('function addSnowRidge')&&
+  alpineForestSource.includes('const addSnowRidge=')&&
   alpineForestSource.includes('Fine needles point diagonally outward and slightly down'),
   'V6 must build layered spruce from individual boughs, fine needles and continuous snow caps');
 assert.ok(!alpineForestSource.includes('Forest_Far_Billboards_')&&
