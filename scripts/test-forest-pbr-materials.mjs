@@ -1,38 +1,60 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const source=readFileSync(new URL('../webgpu-forest-lab.v4.js',import.meta.url),'utf8');
+const renderer = readFileSync(new URL('../webgpu-forest-lab.v4.js', import.meta.url), 'utf8');
+const atmosphere = readFileSync(new URL('../webgpu-forest-atmosphere.v1.js', import.meta.url), 'utf8');
+const html = readFileSync(new URL('../webgpu-forest-lab.html', import.meta.url), 'utf8');
 
-assert.match(source,/function createAlpineTerrainMaps\(\)/,'terrain should have non-flat procedural PBR maps');
-assert.match(source,/function makeTerrainPbrMaterial\(source,proceduralMaps,cache\)/,'FBX materials should be converted through one PBR-preserving path');
-assert.match(source,/map:source\.map\|\|proceduralMaps\.albedo/,'source baseColor maps must be preserved, otherwise use procedural albedo');
-assert.match(source,/if\(needsProceduralAlbedo\)ensureWorldTerrainUV\(object,true\)/,'procedural maps need world-scale UVs even when FBX contains generic UVs');
-assert.match(source,/color:source\.map\?\(source\.color\?\.clone\?\.\(\)\|\|new THREE\.Color\(0xffffff\)\):new THREE\.Color\(0xffffff\)/,'authored baseColor is retained while full procedural albedo is not multiplied by a grey FBX placeholder');
-assert.match(source,/specularColor:new THREE\.Color\(0xffffff\)/,'Phong default dark specular must not suppress physical highlights');
-assert.doesNotMatch(source,/specularColor:source\.specular/,'Phong specular must not be copied as a physical F0 color');
-assert.match(source,/object\.castShadow=true;\s*object\.receiveShadow=true;/,'base terrain must both cast and receive shadows');
-assert.doesNotMatch(source,/new THREE\.MeshStandardMaterial\(\{ color: 0xe7eff4/,'flat pale-grey terrain override must not return');
-assert.match(source,/scene\.environmentIntensity=0\.5;/,'PBR reflections should use the calibrated PMREM environment fill');
-assert.match(source,/new THREE\.MeshPhysicalNodeMaterial\(\{roughness:0\.64/,'near foliage should use a physical node material');
-assert.match(source,/mesh\.castShadow=!!castShadow;mesh\.receiveShadow=true;/,'near and mid tree batches should support shadow casting');
-assert.match(source,/midShadow=\[\[\],\[\],\[\]\]/,'mid-distance trees need a dedicated shadow-casting LOD');
-assert.match(source,/shadowLimitSq=2050\*2050/,'tree shadow coverage should extend beyond the immediate foreground');
-assert.match(source,/sunLight\.shadow\.camera\.far=6500/,'cascaded SunLight shadow distance should cover the forest viewing area');
+// Winter terrain must use one neutral material on real terrain, Stage 1 and the fallback apron.
+assert.match(renderer, /function createAlpineTerrainMaps\(\)/, 'snow terrain should have procedural PBR maps');
+assert.match(renderer, /const powder=\[232,239,245\]/, 'base snow albedo should stay neutral and bright');
+assert.match(renderer, /const compact=\[211,224,235\]/, 'packed snow should have a restrained value shift');
+assert.match(renderer, /const blueIce=\[190,207,222\]/, 'ice detail should stay in a subtle blue range');
+assert.match(renderer, /function getSnowPbrMaterial\(\)/, 'all winter surfaces must share one snow material');
+assert.match(renderer, /name:'ForestLab_NeutralSnow_PBR'/, 'snow material should have a stable debug name');
+assert.match(renderer, /map:maps\.albedo/, 'snow material must use the snow albedo map');
+assert.match(renderer, /roughnessMap:maps\.roughness/, 'snow material must use the micro-roughness map');
+assert.match(renderer, /bumpMap:maps\.height/, 'snow material must use the snow micro-height map');
+assert.match(renderer, /vertexColors:false/, 'Maya vertex colours must not tint the snow');
+assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'real terrain material slots must be normalised to snow');
+assert.match(renderer, /const snowMaterial=getSnowPbrMaterial\(\)/, 'Stage 1 must use the common snow material');
+assert.match(renderer, /GO_WebGPU_SlopeMargin_SnowTerrain/, 'procedural terrain apron must use the same snow look');
+assert.match(renderer, /ground=new THREE\.Mesh\(geometry,getSnowPbrMaterial\(\)\)/, 'terrain apron cannot use a separate coloured vertex material');
+assert.match(renderer, /ensureWorldTerrainUV\(object,true\)/, 'world-space tiling UVs must be generated for every terrain mesh');
+assert.match(renderer, /object\.castShadow=true;\s*object\.receiveShadow=true;/, 'terrain must cast and receive sunlight shadows');
+assert.doesNotMatch(renderer, /colors\[k\]=color\.r;colors\[k\+1\]=color\.g;colors\[k\+2\]=color\.b/, 'procedural apron must not paint grass/rock/snow vertex colours');
 
-console.log('✓ Real terrain keeps authored FBX baseColor/materials and receives procedural PBR detail only as fallback');
-console.log('✓ Terrain and near/mid forest LODs cast and receive direct-sun shadows');
-console.log('✓ Physical foliage, roughness, bump and calibrated environment IBL are active');
+// Preserve terrain topology and semantic material classification while replacing only the
+// winter look-development material used by the isolated Forest Lab.
+assert.match(renderer, /shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes'\}\)/, 'Stage 1 semantic groups must still be recognised');
+assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'semantic material identities must not leak Maya display colours into the winter look');
+assert.match(renderer, /function createSplinePineMaterial\(\)/, 'procedural near/mid forest still uses its physical foliage material');
+assert.match(renderer, /MeshPhysicalNodeMaterial\(\{roughness:0\.64/, 'foliage should retain its physical node material');
+assert.match(renderer, /mesh\.castShadow=!!castShadow;mesh\.receiveShadow=true;/, 'tree batches must expose an explicit shadow-casting switch');
+assert.match(renderer, /createTreeInstanceBatch\(nearShadow\[variant\],'near',variant,forestSystem\.group,true\)/, 'only near detailed trees should cast shadows in the fast baseline');
+assert.match(renderer, /createTreeInstanceBatch\(mid\[variant\],'mid',variant,forestSystem\.group,false\)/, 'mid-distance trees must not add a second shadow cascade load');
+assert.match(renderer, /sunLight\.shadow\.mapSize\.setScalar\(1024\)/, 'fast baseline should use the reduced shadow map');
+assert.match(renderer, /sunLight\.shadow\.camera\.far=4500/, 'shadow camera should be limited to the useful viewing range');
 
+// The sky, native cloud field and IBL must all come from one physical SkyMesh.
+// Heavy full-screen volumetric/GTAO passes are intentionally absent in this baseline.
+assert.match(atmosphere, /new SkyMesh\(\)/, 'physical SkyMesh must be the active sky');
+assert.match(atmosphere, /skyDome\.cloudCoverage\.value/, 'cloud coverage must come from the SkyMesh cloud field');
+assert.match(atmosphere, /skyDome\.cloudDensity\.value/, 'cloud density must come from the SkyMesh cloud field');
+assert.match(atmosphere, /skyDome\.cloudElevation\.value/, 'cloud elevation must come from the SkyMesh cloud field');
+assert.match(atmosphere, /pmremGenerator\.fromScene\(environmentScene, 0\.035\)/, 'PMREM must be generated from that same SkyMesh');
+assert.match(atmosphere, /scene\.environment = next\.texture/, 'PBR materials must receive the sky environment');
+assert.match(atmosphere, /SKY_RADIANCE_SCALE = 0\.096/, 'visible sky radiance must compensate for the scene exposure');
+assert.match(atmosphere, /scene\.environmentIntensity = 3\.8/, 'PMREM intensity must compensate for the sky radiance scale');
+assert.match(atmosphere, /new THREE\.FogExp2\(hazeDay, 0\)/, 'baseline distance haze should use the native light fog');
+assert.match(atmosphere, /renderer\.render\(scene, camera\)/, 'the baseline must use a direct scene render');
+assert.doesNotMatch(atmosphere, /GTAONode|buildFogPipeline|rtt\(/, 'the old expensive screen-space pipeline must remain removed');
 
-assert.match(source,/import \{ SunLight \} from 'three\/addons\/lights\/SunLight\.js'/,'WebGPU scene should use cascaded SunLight, not a basic directional light');
-assert.match(source,/SunLight\.registerNode\(SunLightNode\)/,'SunLight node implementation must be registered before renderer init');
-assert.match(source,/new THREE\.PMREMGenerator\(renderer\)/,'sky environment must use the supported PMREM generator');
-assert.match(source,/pmremGenerator\.fromScene\(environmentScene,0\.04\)/,'prefiltered environment must be baked from the real SkyMesh');
-assert.match(source,/scene\.environment=environmentRenderTarget\.texture/,'PBR materials must receive the baked sky environment');
-assert.match(source,/import \{ ao \} from 'three\/addons\/tsl\/display\/GTAONode\.js'/,'screen-space GTAO should be part of the ambient lighting path');
-assert.match(source,/prePass\.setMRT\(mrt\(\{output:packNormalToRGB\(normalView\)\}\)\)/,'GTAO pre-pass must provide world-consistent scene normals');
-assert.match(source,/scenePass\.contextNode=builtinAOContext\(aoPass\.getTextureNode\(\)\.sample\(screenUV\)\.r\)/,'GTAO must modulate the scene ambient term, not tint the final image');
-assert.match(source,/sunLight\.intensity = solar\.daylight \* \(3\.0 \+ solar\.daylight \* 2\.0\) \* directPower/,'sunlight should follow the high/low sun irradiance curve');
-assert.match(source,/renderer\.shadowMap\.enabled=true;\s*renderer\.shadowMap\.type=THREE\.PCFShadowMap;\s*sunLight\.shadow\.mapSize\.setScalar\(2048\)/,'cascaded shadows must be enabled after WebGPU renderer init');
-assert.match(source,/renderer\.toneMappingExposure = 0\.6/,'display exposure should match the r187 physical sunlight baseline');
-assert.doesNotMatch(source,/new THREE\.DataTexture\(data,width,height,THREE\.RGBAFormat,THREE\.HalfFloatType\)/,'synthetic flat-gradient HDR texture must not replace the sky PMREM');
+// HTML and runtime controls must agree.
+assert.match(html, /webgpu-forest-lab\.v4\.js\?v=20261125n/, 'HTML must load the current renderer revision');
+assert.doesNotMatch(html, /id="godRays"|id="fogDensity"|id="fogHeight"|id="fogRange"/, 'removed full-screen controls should not remain in the UI');
+assert.match(renderer, /renderer\.toneMappingExposure = 0\.52/, 'terrain and snow must use a stable scene exposure');
+
+console.log('✓ Physical SkyMesh, built-in clouds, native haze and PMREM share one atmosphere');
+console.log('✓ Real terrain, Slopes_Stage1 and procedural apron share one neutral snow PBR material');
+console.log('✓ Near-only tree shadows and direct rendering form the performance baseline');
