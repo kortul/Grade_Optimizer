@@ -30,9 +30,9 @@ jobs:
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
         run: |
-          node --input-type=module --check < app.v188.js
+          node --input-type=module --check < app.v189.js
           node --input-type=module --check < render-performance.v1.js
-          node --input-type=module --check < weather-system.v8.js
+          node --input-type=module --check < weather-system.v9.js
           node --input-type=module --check < slope-label-index.v1.js
           node --input-type=module --check < skier-controller.v99.js
           node --input-type=module --check < skier-terrain-contact.v1.js
