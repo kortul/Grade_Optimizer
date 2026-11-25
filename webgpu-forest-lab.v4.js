@@ -157,7 +157,8 @@ function updateSkyEnvironment(solar,force=false){
   skyEnvSunColor.copy(liveSunColor);
   for(let y=0;y<height;y++){
     const v=y/(height-1);
-    const elevation=(0.5-v)*Math.PI;
+    // DataTexture row 0 is the bottom row: equirectangular +Y (zenith) must be at v=1.
+    const elevation=(v-0.5)*Math.PI;
     const cosElevation=Math.cos(elevation);
     const skyBlend=THREE.MathUtils.smoothstep(Math.sin(elevation),-0.025,0.92);
     const groundBlend=THREE.MathUtils.smoothstep(Math.sin(elevation),-0.09,0.012);
