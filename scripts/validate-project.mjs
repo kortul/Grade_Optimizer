@@ -24,14 +24,15 @@ assert.ok(
 );
 assert.ok(existsSync(resolve(root, entryPath)), 'active module does not exist: ' + entryPath);
 pass('active entrypoint exists: ' + entryPath);
-const weatherV4Source=read('weather-system.v7.js').toString('utf8');
+const weatherV8Source=read('weather-system.v8.js').toString('utf8');
 assert.ok(existsSync(resolve(root,'assets/cloud-atlas.v1.svg')),'AI cloud atlas asset is missing');
-assert.ok(weatherV4Source.includes('cloud-atlas.v1.svg')&&weatherV4Source.includes('cloudMaterials'),'AI cloud atlas is not used');
-assert.ok(weatherV4Source.includes('CLOUD_VOLUME_FRAGMENT_SHADER')&&weatherV4Source.includes('GROUND_FOG_FRAGMENT_SHADER')&&weatherV4Source.includes('setSceneReady(ready)'),'volumetric cloud/fog shaders are missing');
-assert.ok(!weatherV4Source.includes('sin(dot(p, vec2(127.1, 311.7)))')&&!weatherV4Source.includes('for (int i = 0; i < 14; i++)'),'volumetric shaders must avoid expensive trigonometric hashes and 14-step fog loops');
-assert.ok(weatherV4Source.includes('shadowDensity')&&weatherV4Source.includes('uRayStrength'),'volumetric god-ray scattering or cloud self-shadowing is missing');
-assert.ok(weatherV4Source.includes('createNightSky()')&&weatherV4Source.includes('GO_StarField')&&weatherV4Source.includes('GO_Moon'),'night sky stars or moon are missing');
-assert.ok(entrySource.includes('./weather-system.v7.js')&&entrySource.includes('setVolumetrics')&&entrySource.includes('weatherSystem.setSceneReady(false)')&&entrySource.includes('weatherSystem.setSceneReady(!!state.root)'),'app must import the volumetric weather system');
+assert.ok(weatherV8Source.includes('cloud-atlas.v1.svg')&&weatherV8Source.includes('cloudMaterials'),'AI cloud atlas is not used');
+assert.ok(weatherV8Source.includes('CLOUD_VOLUME_FRAGMENT_SHADER')&&weatherV8Source.includes('GROUND_FOG_FRAGMENT_SHADER')&&weatherV8Source.includes('setSceneReady(ready)'),'volumetric cloud/fog shaders are missing');
+assert.ok(weatherV8Source.includes('VOLUMETRIC_CLOUD_MIN_COVERAGE = 0.38')&&weatherV8Source.includes('shouldRenderVolumetricClouds(coverage, enabled = true)'),'light cloud cover must avoid the full-screen volumetric shader');
+assert.ok(!weatherV8Source.includes('sin(dot(p, vec2(127.1, 311.7)))')&&!weatherV8Source.includes('for (int i = 0; i < 14; i++)'),'volumetric shaders must avoid expensive trigonometric hashes and 14-step fog loops');
+assert.ok(weatherV8Source.includes('shadowDensity')&&weatherV8Source.includes('uRayStrength'),'volumetric god-ray scattering or cloud self-shadowing is missing');
+assert.ok(weatherV8Source.includes('createNightSky()')&&weatherV8Source.includes('GO_StarField')&&weatherV8Source.includes('GO_Moon'),'night sky stars or moon are missing');
+assert.ok(entrySource.includes('./weather-system.v8.js')&&entrySource.includes('setVolumetrics')&&entrySource.includes('weatherSystem.setSceneReady(false)')&&entrySource.includes('weatherSystem.setSceneReady(!!state.root)'),'app must import the volumetric weather system');
 assert.ok(html.includes('id="weatherVolumetrics"')&&html.includes('id="sceneVolumetrics"'),'volumetric toggle UI is missing');
 assert.ok(html.includes('id="timeOfDay" type="range" min="0" max="24"'),'time slider must span 24 hours');
 pass('AI cloud atlas, volume shaders, god rays, stars, moon, 24h time and toggle UI are present');
@@ -179,7 +180,7 @@ assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missi
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
 
 const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map(m => m[1]);
-assert.ok(entrySource.includes('weather-system.v7.js'), 'active app must use the updated atmospheric weather engine');
+assert.ok(entrySource.includes('weather-system.v8.js'), 'active app must use the updated atmospheric weather engine');
 const mayaExporterSource = read('maya/grade_optimizer_exporter.py').toString('utf8');
 assert.ok(mayaExporterSource.includes('def _inspect_git_worktree(repo):')&&mayaExporterSource.includes('"--show-toplevel"'), 'Maya exporter must verify the selected Git working tree');
 assert.ok(
@@ -205,7 +206,7 @@ assert.ok(entrySource.includes("const FORCE_REMOTE_PROJECT=WORKSPACE_QUERY.get('
 assert.ok(entrySource.includes('if(!FORCE_REMOTE_PROJECT)') && entrySource.includes('Локальный черновик браузера оставлен без изменений.'), 'forced GitHub load must preserve unsynced browser backup');
 assert.ok(entrySource.includes('const geometryBounds=new THREE.Box3().setFromObject(root)') && entrySource.includes('if(!visibleMeshCount)'), 'FBX loader must validate actual nonempty and visible geometry');
 pass('published project bypass and imported FBX geometry diagnostics are present');
-const weatherSource = read('weather-system.v7.js').toString('utf8');
+const weatherSource = read('weather-system.v8.js').toString('utf8');
 assert.ok(weatherSource.includes("this.cameraWeatherRig = new THREE.Group()"), 'weather camera-follow scene root missing');
 assert.ok(weatherSource.includes('this.scene.add(this.cameraWeatherRig)'), 'camera-follow weather layer must belong to the renderable scene graph');
 assert.ok(weatherSource.includes('this.cameraWeatherRig.add(this.snow)')&&weatherSource.includes('this.cameraWeatherRig.add(this.streaks)'), 'snow and wind streaks must be children of the renderable camera-follow root');
@@ -803,6 +804,7 @@ assert.ok(entrySource.includes('let pendingSceneMode = null;'), 'skier mode requ
 assert.ok(entrySource.includes("if(pendingSceneMode==='skier')"), 'queued skier mode must resume after slope loading');
 assert.ok(entrySource.includes("const reason=skierController.lastStartError||'UNKNOWN'"), 'skier startup failures must report the controller error code');
 
+assert.ok(entrySource.includes('renderer.info.autoReset = false')&&entrySource.includes('runtimePerformance.weatherUpdateMs')&&entrySource.includes('runtimePerformance.forestUpdateMs')&&entrySource.includes('runtimePerformance.opticsMs')&&entrySource.includes('runtimePerformance.drawCalls')&&entrySource.includes('renderPipeline:') ,'frame profiler must expose update, render, draw-call and pipeline diagnostics');
 pass('reliable skier/drone mode handoff, spawn fallback and active movement are present');
 assert.ok(entrySource.includes('const forestTerrain=state.baseTerrain;'), 'forest placement must sample only original base terrain');
 assert.ok(entrySource.includes('buildSlopeFootprintLookup(bounds,slopeAssets)')&&entrySource.includes('isTreePointOnSlope(candidate.x,candidate.z,slopeFootprint)'), 'visible piste meshes must be excluded from tree placement');
@@ -839,7 +841,7 @@ assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedbac
 assert.ok(entrySource.includes("showModeSwitchFeedback(message)"), 'mode startup failures must be visible on screen');
 assert.ok(entrySource.includes('function resolveSkierTerrain()')&&entrySource.includes('function resolveSkierTerrainForDroneSpawn(position)')&&entrySource.indexOf('const requestedTerrain=mode===\'skier\'')<entrySource.indexOf("if(mode==='skier'&&!requestedTerrain)"), 'skier mode must resolve the correct surface before its early return guard');
 assert.ok(entrySource.includes('function createSkierPhysicsSurface(roots)')&&entrySource.includes('GO_SkierPhysicsTerrainComposite')&&entrySource.includes('if(activeAsset&&hasGeometry(activeAsset.root))')&&entrySource.includes('if(state.baseTerrain&&state.baseTerrain!==state.terrain&&hasGeometry(state.baseTerrain))')&&entrySource.includes('const preferredSlope=state.importedAssets.find('),'skier collision surface must combine the Stage 1 piste with visible active Terrain while excluding hidden replaced terrain');
-assert.ok(entrySource.includes('function applySkierPerformanceProfile()')&&entrySource.includes('cameraOptics.setOptions({enabled:false})')&&entrySource.includes('renderer.shadowMap.enabled=false')&&entrySource.includes('performanceRatio')&&entrySource.includes('lastForestBillboardUpdateAt<100'),'skier mode must temporarily reduce render cost and throttle forest billboards');
+assert.ok(entrySource.includes('function applySkierPerformanceProfile()')&&entrySource.includes('cameraOptics.setOptions({enabled:false})')&&entrySource.includes('renderer.shadowMap.enabled=false')&&entrySource.includes('performanceRatio')&&entrySource.includes('FOREST_BILLBOARD_UPDATE_INTERVAL_MS=66')&&entrySource.includes('updateInterval=state.mode===\'skier\'?100:FOREST_BILLBOARD_UPDATE_INTERVAL_MS'),'skier mode must temporarily reduce render cost and throttle forest billboards');
 assert.ok(entrySource.includes("sceneLoadingEl.getClientRects().length>0"), 'loading-state detection must use rendered visibility');
 
 assert.ok(skierSource.includes("if (e.code === 'KeyC')"), 'C key third-person camera toggle missing');
@@ -924,14 +926,14 @@ pass('scene manifest parses');
 
 
 // Atmospheric release v7 regression checks.
-const weatherV7Source=read('weather-system.v7.js').toString('utf8');
-assert.ok(weatherV7Source.includes('aColor')&&weatherV7Source.includes('GO_StarField'),'night sky must include the updated star field');
-assert.ok(weatherV7Source.includes('azimuthDelta>0.045')&&weatherV7Source.includes('globalCompositeOperation=\'screen\''),'sky must include wrapped, directional atmospheric scattering');
-assert.ok(weatherV7Source.includes('cloudFbm')&&weatherV7Source.includes('cirrusLayer')&&weatherV7Source.includes('for(int i=0;i<6;i++)'),'cloud shader must retain layered detail with the reduced integration sample count');
+const weatherV8Source=read('weather-system.v8.js').toString('utf8');
+assert.ok(weatherV8Source.includes('aColor')&&weatherV8Source.includes('GO_StarField'),'night sky must include the updated star field');
+assert.ok(weatherV8Source.includes('azimuthDelta>0.045')&&weatherV8Source.includes('globalCompositeOperation=\'screen\''),'sky must include wrapped, directional atmospheric scattering');
+assert.ok(weatherV8Source.includes('cloudFbm')&&weatherV8Source.includes('cirrusLayer')&&weatherV8Source.includes('for(int i=0;i<6;i++)'),'cloud shader must retain layered detail with the reduced integration sample count');
 pass('v7 sky atmosphere, cloud layers and night-sky regression checks');
 
-assert.ok(weatherV7Source.includes('InstancedBufferGeometry')&&weatherV7Source.includes('uFallSpeed')&&weatherV7Source.includes('uLateralSpeed'),'snow particle motion must be vertex-shader driven');
-assert.ok(!weatherV7Source.includes('this.snow.instanceMatrix.needsUpdate'),'snow must not upload per-instance matrices every frame');
+assert.ok(weatherV8Source.includes('InstancedBufferGeometry')&&weatherV8Source.includes('uFallSpeed')&&weatherV8Source.includes('uLateralSpeed'),'snow particle motion must be vertex-shader driven');
+assert.ok(!weatherV8Source.includes('this.snow.instanceMatrix.needsUpdate'),'snow must not upload per-instance matrices every frame');
 pass('GPU-animated snowfall regression checks');
 
 // Isolated WebGPU atmosphere lab: keep the production renderer entrypoint untouched.
