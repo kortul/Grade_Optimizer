@@ -1156,7 +1156,11 @@ assert.ok(alpineLabSource.includes('new THREE.InstancedMesh(')&&alpineLabSource.
 assert.ok(alpineLabSource.includes("loadFBX('./assets/real-terrain.fbx')")&&alpineLabSource.includes("fetch('./assets/real-terrain.json'"),'Alpine Lab must load the canonical terrain FBX and manifest');
 assert.ok(!alpineLabSource.includes('Slopes_Stage1')&&!alpineLabSource.includes('buildSlopeFootprint')&&!alpineLabSource.includes('restoreStageOneCoordinates'),'Alpine Lab forest must not depend on piste geometry or Stage 1 transforms');
 assert.ok(alpineLabHtml.includes('id="forestDensity"')&&alpineLabHtml.includes('id="cloudCoverage"')&&alpineLabHtml.includes('id="groundFog"')&&alpineLabHtml.includes('id="dayCycleToggle"'),'Alpine Lab must expose forest, cloud, fog and day-cycle controls');
-assert.ok(read('webgpu-forest-lab.html').toString('utf8').includes('location.replace("./alpine-lab.html")')&&read('webgpu-atmosphere-lab.html').toString('utf8').includes('location.replace("./alpine-lab.html")'),'legacy Forest and Atmosphere Lab URLs must redirect to the unified page');
+assert.ok(
+  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v4.js') &&
+  read('webgpu-atmosphere-lab.html').toString('utf8').includes('location.replace("./webgpu-forest-lab.html")'),
+  'Forest Lab must load the active V4 renderer and the legacy Atmosphere Lab URL must redirect to it'
+);
 pass('unified Alpine Lab: stable WebGL, shared WeatherSystem v9 and terrain-wide instanced forest');
 
 // Public resort multiplayer regression checks.
