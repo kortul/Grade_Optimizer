@@ -30,7 +30,7 @@ jobs:
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
         run: |
-          node --input-type=module --check < app.v195.js
+          node --input-type=module --check < app.v196.js
           node --input-type=module --check < editor-shared-materials.v1.js
           node --input-type=module --check < stage-one-material-groups.v1.js
           node --input-type=module --check < render-performance.v1.js
