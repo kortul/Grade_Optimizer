@@ -970,9 +970,12 @@ def refresh_git_asset_list(*_):
                 cmds.treeView(
                     tree_control, edit=True, addItem=(tree_item, group_key)
                 )
+                display_label = "%s    [%s]" % (asset_name, asset_id)
+                if asset.get("_format_conversion"):
+                    display_label += "    ·    " + asset.get("_format_conversion")
                 cmds.treeView(
                     tree_control, edit=True,
-                    displayLabel=(tree_item, "%s    [%s]" % (asset_name, asset_id))
+                    displayLabel=(tree_item, display_label)
                 )
                 if asset_id == previous_id:
                     previous_tree_item = tree_item
