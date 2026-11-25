@@ -372,7 +372,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
 
   function bakeEnvironment(force = false) {
     const now = performance.now();
-    if (!force && now - lastEnvironmentBake < 2200) return;
+    if (!force && now - lastEnvironmentBake < 5000) return;
     if (lastEnvironmentBake > 0 && now - lastEnvironmentBake < 700) return;
     lastEnvironmentBake = now;
     const savedPosition = skyDome.position.clone();
