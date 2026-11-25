@@ -11,8 +11,11 @@ assert.match(entryPath, /^app\.v\d+\.js$/, 'index.html must activate a versioned
 const app = read(entryPath);
 const terrain = JSON.parse(read('assets/real-terrain.json'));
 const clientScene = JSON.parse(read('clients/alpine-resort/scene.json'));
+const sceneSchema = JSON.parse(read('scene-manifest.schema.json'));
+assert.ok(sceneSchema.properties?.treeMarkers?.properties?.markers?.items?.properties?.markerType, 'Scene schema must allow tree point and circle marker records');
+assert.ok(sceneSchema.properties.treeMarkers.properties.markers.items.properties.radiusMeters, 'Scene schema must allow optional point radius and circle radius metadata');
 
-assert.ok(maya.includes('VERSION = "0.9.3"'), 'Maya exporter must be 0.9.3');
+assert.ok(maya.includes('VERSION = "0.9.4"'), 'Maya exporter must be 0.9.4');
 assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
 assert.ok(maya.includes('def _sample_slope_curve_points(') && maya.includes('"points": _sample_slope_curve_points('), 'Maya must export raw sampled NURBS points');
@@ -114,11 +117,14 @@ assert.ok(maya.includes('def refresh_slope_curve_list(') && maya.includes('SLOPE
 assert.ok(maya.includes('"queue": _normalize_slope_queue(') && maya.includes('(cached or {}).get("queue"), default_queue'), 'each slope curve must retain a Queue 1 / Queue 2 assignment');
 assert.ok(maya.includes('def assign_selected_slope_curve_queue(') && maya.includes('def replace_selected_slope_curve('), 'Maya exporter must support queue assignment and targeted curve replacement');
 assert.ok(maya.includes('def _selected_closed_nurbs_curve_transforms(') && maya.includes('def export_tree_marker_positions('), 'Toro closed NURBS circle markers must be exportable as tree positions');
-assert.ok(maya.includes('manifest["treeMarkers"]') && maya.includes('"positionMeaning": "world-space circle center"') && maya.includes('"radiusMeters"'), 'Toro tree markers must export world-space center coordinates and radii in metres');
-assert.ok(maya.includes('WINDOW + "_tree_marker_frame"') && maya.includes('ЭКСПОРТИРОВАТЬ ПОЛНЫЙ НАБОР КРУЖКОВ'), 'Maya UI must expose the Toro survey marker export section');
+assert.ok(maya.includes('manifest["treeMarkers"]') && maya.includes('position_meaning = "world-space circle center"') && maya.includes('"radiusMeters"'), 'Toro circle markers must retain world-space center coordinates and radii in metres');
+assert.ok(maya.includes('def _selected_tree_spawn_locator_transforms(') && maya.includes('def _tree_marker_locator_position_meters(') && maya.includes('"markerType": "maya-point-locator"'), 'QGIS tree spawn locators must export one world-space point per Maya locator');
+assert.ok(maya.includes('"sourceKey": source_key') && maya.includes('"qgis_geometry_role"'), 'QGIS tree point IDs and source provenance must remain stable across re-imports');
+assert.ok(maya.includes('marker_geometry = "point-locator"') && maya.includes('"positionMeaning": position_meaning'), 'point-only marker exports must be identified as point locators without a fabricated radius');
+assert.ok(maya.includes('WINDOW + "_tree_marker_frame"') && maya.includes('ЭКСПОРТИРОВАТЬ ПОЛНЫЙ НАБОР ТОЧЕК / КРУЖКОВ'), 'Maya UI must expose point and circle tree marker export');
 assert.ok(maya.includes('collapsable=True, collapse=True'), 'Maya exporter categories must be collapsible');
 console.log('✓ Maya exporter 0.9.3: queue-aware slope curve inventory, queue assignment and single-curve replacement');
-console.log('✓ Toro survey: closed NURBS circle markers export as project-world tree positions and radii');
+console.log('✓ Toro survey: closed NURBS circles and QGIS point Locators export as project-world tree positions');
 console.log('✓ Stage1: 22 selected meshes, valid FBX / manifest pair, inverse Bridge metadata');
 console.log('✓ Canonical Terrain: existing working-world FBX retained unchanged');
 console.log('✓ Browser: restores Stage1 FBX into the Terrain working-world frame and preserves metadata');
