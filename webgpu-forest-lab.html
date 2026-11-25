@@ -77,7 +77,7 @@
       <input id="cloudDensity" type="range" min="0" max="1" step="0.01" value="0.45">
       <label for="cloudElevation"><span>Высота облачного слоя</span><strong id="cloudElevationValue">2.8 км</strong></label>
       <input id="cloudElevation" type="range" min="0" max="1" step="0.01" value="0.55">
-      <div class="note">Процедурные объёмные облака с многомасштабной формой, освещённой верхней частью и затенённым основанием.</div>
+      <div class="note">Два изогнутых слоя неба: нижние объёмные облака и высокие перистые полосы. Они следуют за сферой неба, без прямоугольной границы.</div>
     </div>
     <div class="section">
       <h2>Солнечные лучи</h2>
@@ -96,7 +96,7 @@
       <div class="note">Три LOD: объёмные ярусные ели с игольчатыми пучками у трассы, облегчённые кроны в лесу, три скрещённые atlas-плоскости вдали. Ближние к камере деревья отбрасывают солнечные тени. Объёмные кластеры и экспериментальная подсветка хвои; точное подповерхностное рассеяние иголок и полноценные ambient probes остаются следующими этапами.</div>
     </div>
     <div class="section">
-      <h2>Туман и дальность</h2>
+      <h2>Атмосферная перспектива</h2>
       <label for="fogStrength"><span>Сила атмосферной дымки</span><strong id="fogStrengthValue">45%</strong></label>
       <input id="fogStrength" type="range" min="0" max="1.5" step="0.01" value="0.45">
       <label for="fogDensity"><span>Плотность приземного тумана</span><strong id="fogDensityValue">0.0030</strong></label>
@@ -120,6 +120,6 @@
     <div class="note"><a href="./index.html">← Вернуться в Grade Optimizer</a> · Солнце, облака, туман и god rays настраиваются здесь же.</div>
   </section>
   <div class="hint">ЛКМ — вращение · колесо — масштаб · ПКМ — панорама</div>
-  <script type="module" src="./webgpu-forest-lab.v3.js?v=20261125b"></script>
+  <script type="module" src="./webgpu-forest-lab.v4.js?v=20261125c"></script>
 </body>
 </html>
