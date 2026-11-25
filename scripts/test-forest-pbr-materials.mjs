@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const renderer = readFileSync(new URL('../webgpu-forest-lab.v8.js', import.meta.url), 'utf8');
+const renderer = readFileSync(new URL('../webgpu-forest-lab.v9.js', import.meta.url), 'utf8');
 const atmosphere = readFileSync(new URL('../webgpu-forest-atmosphere.v1.js', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../webgpu-forest-lab.html', import.meta.url), 'utf8');
 
@@ -30,17 +30,20 @@ assert.match(renderer, /shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes
 assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'semantic material identities must not leak Maya display colours into the winter look');
 assert.match(renderer, /function createSplinePineMaterial\(\)/, 'procedural near/mid forest still uses its physical foliage material');
 assert.match(renderer, /MeshPhysicalNodeMaterial\(\{\s*roughness:0\.88/, 'foliage should retain its physical node material');
-assert.match(renderer, /V8: stable spruce whorls — no spiral tier rotation/, 'spruce must use the new whorled bough geometry');
-assert.match(renderer, /const branches=high\?5:mid\?4:3/, 'near, mid and far LODs must use coherent spruce branch tiers');
+assert.match(renderer, /V9: recognizable Norway spruce built from woody limbs/, 'spruce must use the new whorled bough geometry');
+assert.match(renderer, /const branches=high\?8:mid\?7:6/, 'near, mid and far LODs must use coherent spruce branch tiers');
 assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
 assert.match(renderer, /const twigCount=high\?5:mid\?4:3/, 'spruce should use layered needle sprays at every LOD');
-assert.match(renderer, /const addBlade=/, 'foliage must be made from tapered needle blades, not round clumps');
-assert.match(renderer, /const phase=variant\*0\.42\+\(level%2\)\*0\.10/, 'spruce tiers must not rotate into a golden-angle vortex');
-assert.match(renderer, /const addSnowPatch=/, 'spruce boughs must carry segmented top-side snow patches');
-assert.match(renderer, /const flex=outerReach\.mul\(0\.012\)/, 'wind flex must be restricted to outer branch reach');
+assert.match(renderer, /const addNeedle=/, 'foliage must be made from volumetric needle geometry, not flat cards');
+assert.match(renderer, /const twigStations=high\?5:mid\?4:3/, 'primary boughs must carry multiple drooping secondary branches');
+assert.match(renderer, /const sprayCount=high\?4:mid\?3:2/, 'secondary branches must carry multiple 3D needle sprays');
+assert.doesNotMatch(renderer, /addTriangle|addQuad|fanWidth/, 'broad flat fan surfaces must be absent from V9 foliage');
+assert.match(renderer, /const phase=hash\(level\+11,variant\+37\)\*Math\.PI\*2/, 'spruce tiers must not rotate into a golden-angle vortex');
+assert.match(renderer, /const addSnowCap=/, 'spruce boughs must carry segmented top-side snow patches');
+assert.match(renderer, /material\.positionNode=positionLocal/, 'wind flex must be restricted to outer branch reach');
 assert.doesNotMatch(renderer, /positionLocal\.y\.mul\(0\.0075\)|positionLocal\.y\.mul\(0\.0055\)/, 'old whole-tree algae sway must be removed');
 assert.match(renderer, /function removeLegacyTreeAssets\(root\)/, 'named legacy tree assets must be stripped from Stage 1 before creating the new forest');
-assert.doesNotMatch(renderer, /addClump|SphereGeometry|IcosahedronGeometry/, 'rounded foliage clumps must not be part of V8 geometry');
+assert.doesNotMatch(renderer, /addClump|SphereGeometry|IcosahedronGeometry/, 'rounded foliage clumps must not be part of V9 geometry');
 assert.match(renderer, /mesh\.castShadow=!!castShadow;mesh\.receiveShadow=true;/, 'tree batches must expose an explicit shadow-casting switch');
 assert.match(renderer, /createTreeInstanceBatch\(nearShadow\[variant\],'near',variant,forestSystem\.group,true\)/, 'only near detailed trees should cast shadows in the fast baseline');
 assert.match(renderer, /createTreeInstanceBatch\(mid\[variant\],'mid',variant,forestSystem\.group,false\)/, 'mid-distance trees must not add a second shadow cascade load');
@@ -62,11 +65,11 @@ assert.match(atmosphere, /renderer\.render\(scene, camera\)/, 'the baseline must
 assert.doesNotMatch(atmosphere, /GTAONode|buildFogPipeline|rtt\(/, 'the old expensive screen-space pipeline must remain removed');
 
 // HTML and runtime controls must agree.
-assert.match(html, /webgpu-forest-lab\.v8\.js\?v=20261125t/, 'HTML must load the V8 renderer revision');
+assert.match(html, /webgpu-forest-lab\.v8\.js\?v=20261125t/, 'HTML must load the V9 renderer revision');
 assert.doesNotMatch(html, /id="godRays"|id="fogDensity"|id="fogHeight"|id="fogRange"/, 'removed full-screen controls should not remain in the UI');
 assert.match(renderer, /renderer\.toneMappingExposure = 0\.52/, 'terrain and snow must use a stable scene exposure');
 
 console.log('✓ Physical SkyMesh, built-in clouds, native haze and PMREM share one atmosphere');
 console.log('✓ Real terrain, Slopes_Stage1 and procedural apron share one neutral snow PBR material');
-console.log('✓ V8 stable spruce whorls, snow patches and restrained branch-only wind are active');
+console.log('✓ V9 3D branch hierarchy and volumetric needles are active');
 console.log('✓ Near-only tree shadows and direct rendering form the performance baseline');
