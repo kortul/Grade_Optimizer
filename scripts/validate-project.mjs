@@ -1145,7 +1145,7 @@ assert.ok(alpineForestSource.includes("createTreeInstanceBatch(nearShadow[varian
   'only near detailed trees should cast shadows in the performance baseline');
 assert.ok(alpineForestSource.includes('atmosphere.updateCamera()')&&
   alpineForestSource.includes('atmosphere.render()'),
-  'active V7 renderer must update the unchanged sky camera and render the unified scene');
+  'active V8 renderer must update the unchanged sky camera and render the unified scene');
 assert.ok(alpineAtmosphereSource.includes('new SkyMesh()')&&
   alpineAtmosphereSource.includes('skyDome.cloudCoverage.value')&&
   alpineAtmosphereSource.includes('skyDome.cloudDensity.value')&&
@@ -1180,7 +1180,7 @@ assert.ok(alpineLabSource.includes("loadFBX('./assets/real-terrain.fbx')")&&alpi
 assert.ok(!alpineLabSource.includes('Slopes_Stage1')&&!alpineLabSource.includes('buildSlopeFootprint')&&!alpineLabSource.includes('restoreStageOneCoordinates'),'Alpine Lab forest must not depend on piste geometry or Stage 1 transforms');
 assert.ok(alpineLabHtml.includes('id="forestDensity"')&&alpineLabHtml.includes('id="cloudCoverage"')&&alpineLabHtml.includes('id="groundFog"')&&alpineLabHtml.includes('id="dayCycleToggle"'),'Alpine Lab must expose forest, cloud, fog and day-cycle controls');
 assert.ok(
-  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v7.js') &&
+  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v8.js') &&
   read('webgpu-atmosphere-lab.html').toString('utf8').includes('location.replace("./webgpu-forest-lab.html")'),
   'Forest Lab must load the active V7 renderer and the legacy Atmosphere Lab URL must redirect to it'
 );
