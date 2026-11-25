@@ -7787,8 +7787,8 @@ async function setSceneMode(mode){
     skierModePreparing=true;
     let skierStarted=false;
     try{
-      // Ordinary starts intentionally use the exact same summit spawn as key 1.
-      // Multiplayer slot assignment must never override the default local start.
+      // Key 1 first uses the saved local spawn slot 1; when that slot is empty,
+      // it falls back to the automatic Stage 1 summit spawn.
       const spawnHint=dronePose?{
         position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true
       }:null;
@@ -7803,6 +7803,22 @@ async function setSceneMode(mode){
       dbg(message);showModeSwitchFeedback(message);
     }finally{
       skierModePreparing=false;
+    }
+
+    // Match the actual key-1 behavior on a normal Overview -> Skier entry.
+    // A saved slot 1 takes precedence; otherwise start() has already placed
+    // the skier at the automatic Stage 1 summit returned by _findSpawn(0).
+    if(skierStarted&&!dronePose&&state.skierSpawns?.['1']){
+      const slotOneSpawned=skierController.respawnAtCustomSpawn({
+        ...state.skierSpawns['1'],slot:'1'
+      });
+      if(slotOneSpawned){
+        dbg('ЛЫЖНИК: начальный спаун совпадает с клавишей 1 · '+
+          JSON.stringify(skierController.lastSpawnInfo?.position||[]));
+      }else{
+        const reason=skierController.lastCustomSpawnError?.message||'неизвестная причина';
+        dbg('ЛЫЖНИК: сохранённый слот 1 не применён при первом запуске ('+reason+'). Оставлен спаун Stage 1.');
+      }
     }
 
     if(!skierStarted){
@@ -8052,7 +8068,10 @@ function requestSkierSpawnFromHotkey(slot){
   setSceneMode('skier').then(()=>{
     skierSpawnHotkeyTransitionPending=false;
     if(state.mode==='skier'&&skierController.active&&!skierModePreparing){
-      respawnSkierAtSpawnSlot(slot);
+      const slotAlreadyApplied=String(slot)==='1'&&
+        skierController.lastSpawnInfo?.spawnType==='scene-editor'&&
+        String(skierController.lastSpawnInfo?.slot)==='1';
+      if(!slotAlreadyApplied)respawnSkierAtSpawnSlot(slot);
     }
   }).catch(error=>{
     skierSpawnHotkeyTransitionPending=false;
