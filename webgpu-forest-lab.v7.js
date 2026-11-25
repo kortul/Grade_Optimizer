@@ -957,8 +957,6 @@ function createSplinePineGeometry(lod, variant) {
   const leaderA=new THREE.Vector3(lean*0.9,9.15,0);
   const leaderB=trunkTop.clone().add(new THREE.Vector3(0,0.24,0));
   addTube(leaderA,leaderB,0.026,0.0025,5,5,green,dark);
-  const topNeedle=new THREE.Vector3(lean,10.48,0);
-  addBlade(leaderB,topNeedle,new THREE.Vector3(1,0,0),0.018,lit,991+variant);
 
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
