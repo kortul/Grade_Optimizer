@@ -81,7 +81,7 @@ assert.ok(entrySource.includes("restoreCadBridgeWorkingCoordinates(root,manifest
 assert.ok(entrySource.includes('restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id)'), 'client FBX loader must restore assets to the terrain working-world frame');
 assert.ok(entrySource.includes('mayaExport:asset.meta.mayaExport||undefined'), 'client scene backups must preserve Maya CAD Bridge metadata');
 pass('canonical terrain and imported Maya FBX assets share their original CAD working-world coordinate frame');
-assert.ok(entrySource.includes("if(/\\.fbx$/i.test(item.file))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id)"), 'CAD Bridge restoration must run only on source FBX files, not already-normalized GLB backups');
+assert.ok(entrySource.includes("if(/\\.fbx$/i.test(sourcePath))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id)"), 'CAD Bridge restoration must run only on source FBX files, not already-normalized GLB backups');
 const bridgeOffset = [218704.14299926758, 0, -50152.88024902344];
 const bridgeScale = 1000;
 const workingPoint = [-265699.25, 1528.5089111328125, -374683.03125];
