@@ -1092,7 +1092,7 @@ assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes(
   'Alpine Forest Lab must load the pinned Three.js r187 V8 renderer');
 assert.ok(alpineForestPageV8.includes('webgpu-forest-lab.v8.js?v=20261125t')&&
   alpineForestPageV8.includes('Alpine Spruce Forest Lab V8'),
-  'the cache-busted V7 page must load the V7 renderer directly');
+  'the cache-busted V8 page must load the V8 renderer directly');
 assert.ok(alpineForestSource.includes("import { createForestAtmosphere } from './webgpu-forest-atmosphere.v1.js'")&&
   alpineForestSource.includes('createForestAtmosphere(THREE,scene,camera,renderer,hemisphere'),
   'active V8 renderer must keep the isolated physical atmosphere module unchanged');
