@@ -25,7 +25,9 @@ function sourceMaterialName(material){
 
   const key=name.normalize('NFKC').toLowerCase().replace(/[^a-z0-9]+/g,'');
   if(!key||['material','defaultmaterial','meshstandardmaterial','standardmaterial'].includes(key))return '';
-  return 'name:'+key+':'+String(material?.type||'');
+  // Authored material identity is the name, not the loader's concrete PBR
+  // class: FBX and GLB loaders may represent equivalent named slots differently.
+  return 'name:'+key;
 }
 
 export function mergeImportedMaterialsByName(root){
