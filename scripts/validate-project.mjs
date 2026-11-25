@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v203.js')&&!html.includes('app.v202.js'),'HTML must activate the current v203 release');
+assert.ok(html.includes('app.v204.js')&&!html.includes('app.v203.js'),'HTML must activate the current v204 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
@@ -97,6 +97,9 @@ assert.ok(entrySource.includes('function onSkierSpawnPlacementPointerDown(')&&en
 assert.ok(entrySource.includes('lastSkierSpawnPlacementPointerAt=performance.now();')&&entrySource.includes('if(performance.now()-lastSkierSpawnPlacementPointerAt<700)'), 'spawn placement clicks must bypass Inspector geometry selection / yellow pulse');
 assert.ok(entrySource.includes('function respawnSkierAtSpawnSlot(')&&entrySource.includes('respawnAtCustomSpawn('), 'numeric spawn slots must teleport the active skier to saved custom locations');
 assert.ok(entrySource.includes('function getSkierSpawnKeyFromEvent(event)')&&entrySource.includes('const spawnKey=getSkierSpawnKeyFromEvent(e)')&&entrySource.includes("const editingText=!!(eventTarget?.isContentEditable||/^(INPUT|TEXTAREA)$/.test(eventTarget?.tagName||''));"), 'number-row and numpad spawn shortcuts must work even when a Scene Editor select retains focus');
+assert.ok(entrySource.includes('const keyCode=Number(event?.keyCode??event?.which)')&&entrySource.includes('keyCode>=96&&keyCode<=105'),'numeric spawn shortcuts must support number-row, numpad and legacy keyboard events');
+assert.ok(entrySource.includes('function requestSkierSpawnFromHotkey(slot)')&&entrySource.includes("setSceneMode('skier').then(")&&entrySource.includes("state.mode==='overview'||state.mode==='drone'"),'a configured spawn hotkey from Overview or Drone must enter Skier mode and use that custom point');
+assert.ok(entrySource.includes("if(state.mode==='skier')respawnSkierAtSpawnSlot(spawnKey)")&&entrySource.includes("const message='Слот '+spawnKey+' пуст."),'configured slots must respawn immediately in Skier mode and empty slots must show clear feedback');
 pass('Scene Editor ten-slot skier spawn placement, direction, manifest persistence and numeric respawn controls are present');
 
 assert.ok(entrySource.includes('async function loadCanonicalTerrainFbx('), 'canonical Maya terrain FBX loader is missing');
@@ -456,7 +459,7 @@ assert.ok(skierSource.includes('if(spawnHint?.position&&!spawnHint.startAtTop)')
 assert.ok(entrySource.includes('function hasTerrainSurfaceAtWorldXZ(')&&entrySource.includes('hasTerrainSurfaceAtWorldXZ(originalTerrain,position)')&&entrySource.includes('return droneSpawnSurfaceRaycaster.intersectObject(terrain,true).some(hit=>hit.object?.isMesh)'), 'drone handoff must resolve the actual surface under exact drone X/Z on Stage 1 or original Terrain');
 assert.ok(skierSource.includes('const hit=Number.isFinite(droneX)&&Number.isFinite(droneZ)')&&skierSource.includes('this._groundAt(droneX,droneZ)')&&!skierSource.includes('_findGroundNear('), 'drone handoff must project vertically at the exact drone X/Z without a nearby piste search');
 assert.ok(skierSource.includes('respawnAtTop(){')&&skierSource.includes("this.lastSpawnInfo={...this.lastSpawnInfo,spawnType:'stage1-summit'}"), 'key 1 summit respawn must reuse the cached terrain lookup');
-assert.ok(entrySource.includes('const spawnKey=getSkierSpawnKeyFromEvent(e)')&&entrySource.includes("if(spawnKey==='1')")&&entrySource.includes('respawnSkierAtStageOneSummit()')&&entrySource.indexOf('if(spawnKey&&state.skierSpawns?.[spawnKey])')<entrySource.indexOf("if(spawnKey==='1')"), 'key 1 must use its configured spawn when present and keep the Stage 1 summit fallback when slot 1 is empty');
+assert.ok(entrySource.includes('const spawnKey=getSkierSpawnKeyFromEvent(e)')&&entrySource.includes("if(state.mode==='skier'&&spawnKey==='1')")&&entrySource.includes('respawnSkierAtStageOneSummit()')&&entrySource.indexOf('if(spawnKey&&state.skierSpawns?.[spawnKey])')<entrySource.indexOf("if(state.mode==='skier'&&spawnKey==='1')"), 'key 1 must use its configured spawn when present and keep the Stage 1 summit fallback when slot 1 is empty');
 assert.ok(html.includes('Спавн на вершине Stage 1'), 'skier HUD must explain the key 1 summit spawn');
 assert.ok(skierSource.includes('const topSamples=candidates.slice(0,Math.min(180,candidates.length));')&&!skierSource.includes('0.334')&&!skierSource.includes('0.187'), 'piste spawn search must prefer the highest mesh vertices instead of the old fixed A1 seed');
 assert.ok(skierSource.includes('const clearance=this._downhillClearance(hit.point.x,hit.point.z,hit.normal,[6,12,18,26]);')&&skierSource.includes('lastSpawnInfo={'), 'summit spawn must validate a downhill run and expose its world position');
