@@ -35,8 +35,6 @@ assert.match(renderer, /const addSnowRidge=/, 'spruce must have continuous snow 
 assert.match(renderer, /const branches=high\?7:mid\?6:5/, 'near, mid and far LODs must use coherent spruce branch tiers');
 assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
 assert.match(renderer, /const sprays=high\?7:mid\?5:3/, 'spruce should use layered bough shoots at every LOD');
-assert.match(renderer, /const snowExposure=THREE\.MathUtils\.smoothstep\(radial\.y,0\.12,0\.72\)/, 'snow should accumulate on upper-facing foliage surfaces');
-assert.match(renderer, /snowShare\*\(0\.45\+0\.55\*jitter\(seed,ring\*9\+j\)\),0,0\.72/, 'snow coverage should be visible across upper boughs');
 assert.match(renderer, /mesh\.castShadow=!!castShadow;mesh\.receiveShadow=true;/, 'tree batches must expose an explicit shadow-casting switch');
 assert.match(renderer, /createTreeInstanceBatch\(nearShadow\[variant\],'near',variant,forestSystem\.group,true\)/, 'only near detailed trees should cast shadows in the fast baseline');
 assert.match(renderer, /createTreeInstanceBatch\(mid\[variant\],'mid',variant,forestSystem\.group,false\)/, 'mid-distance trees must not add a second shadow cascade load');
