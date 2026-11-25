@@ -209,7 +209,8 @@ const stageOneComponents = stageOneAsset.mayaExport?.components || [];
 assert.ok(stageOneComponents.length > 0, 'Slopes_Stage1 manifest must list its exported mesh components');
 const stageOneSourceMaterialNames=[...new Set(stageOneComponents.flatMap(component=>component.materials||[]))].sort();
 assert.deepEqual(stageOneSourceMaterialNames,[
-  'openPBR_shader1','pasted__pasted__zzMainlandscape_Slopes','zzMainlandscape_Slopes','zzShapka_Angled'
+  'openPBR_shader1','pasted__pasted__pasted__zzMainlandscape_Slopes',
+  'pasted__pasted__zzMainlandscape_Slopes','zzMainlandscape_Slopes','zzShapka_Angled'
 ], 'Maya Stage 1 source aliases / technical shader inventory changed');
 assert.ok(entrySource.includes('meshCount,materialSlots')&&entrySource.includes('materialCount:canonicalMaterials.size'), 'Stage 1 material normalization must report total meshes, source slots and canonical unique materials');
 assert.equal(
