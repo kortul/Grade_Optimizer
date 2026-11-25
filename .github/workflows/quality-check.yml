@@ -27,7 +27,7 @@ jobs:
       - name: Check active Forest Lab physical sky and snow PBR modules
         run: |
           node --input-type=module --check < webgpu-forest-lab.v4.js
-          node --input-type=module --check < webgpu-forest-lab.v10.js
+          node --input-type=module --check < webgpu-forest-lab.v11.js
           node --input-type=module --check < webgpu-forest-atmosphere.v1.js
           node --input-type=module --check < solar-cycle.v1.js
           node --input-type=module --check < webgpu-cloud-layer.v3.js
