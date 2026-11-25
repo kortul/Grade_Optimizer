@@ -125,6 +125,13 @@ assert.ok(entrySource.includes("materialCount.textContent=editorMaterialTargets.
 assert.ok(entrySource.includes('material.color.set(document.getElementById(\'editorBaseColor\').value)')&&entrySource.includes('markEditorMaterialOwnersDirty(material)'), 'editing a shared material instance must update and persist every mesh slot that references it');
 assert.ok(entrySource.includes('const bindings=target.bindings?.length?target.bindings:[target]')&&entrySource.includes('bindings.forEach(binding=>'), 'assign and Make Unique operations must update every grouped material slot');
 pass('FBX-wide shared materials: one Slopes / Angled material instance across all matching groups and meshes');
+const materialTreeStart=entrySource.indexOf('function renderEditorTree(');
+const materialTreeEnd=entrySource.indexOf('function expandEditorTree(',materialTreeStart);
+const materialTreeSource=entrySource.slice(materialTreeStart,materialTreeEnd);
+assert.ok(materialTreeSource.includes('function appendAssetMaterials(owner,depth)')&&materialTreeSource.includes('collectEditorMaterials(owner)')&&materialTreeSource.includes("label.textContent='MATERIALS'"), 'FBX hierarchy must show one consolidated Materials folder per asset, not repeated per-mesh material rows');
+assert.ok(materialTreeSource.includes('target.meshCount')&&materialTreeSource.includes('target.slotCount')&&materialTreeSource.includes('selectEditorNode(owner,owner.root,-1,material)'), 'each consolidated material row must report all mesh/slot bindings and select the material across the whole FBX');
+assert.ok(entrySource.includes('return assigned===materialFilter?geometry:null;')&&entrySource.includes('return assigned===materialFilter;'), 'material selection overlay must highlight only faces assigned to the exact shared material instance');
+pass('asset-wide material folder and exact face-material selection are validated');
 
 const originalTerrainManifest = JSON.parse(read('assets/real-terrain.json').toString('utf8'));
 assert.equal(originalTerrainManifest.assetId, 'real-terrain', 'base terrain manifest identity changed');
