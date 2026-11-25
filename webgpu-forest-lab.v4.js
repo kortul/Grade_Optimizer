@@ -11,7 +11,7 @@ import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
 import { createCloudLayer } from './webgpu-cloud-layer.v3.js';
 import {
-  ao, builtinAOContext, exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
+  builtinAOContext, exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
   isBackgroundDepth, Loop, mrt, normalView, packNormalToRGB, pass, rtt, sample,
   screenCoordinate, screenUV, smoothstep, texture3D, uniform, unpackRGBToNormal,
   vec2, vec3, vec4, normalWorld, positionLocal, sin, cos, time, dot, max
