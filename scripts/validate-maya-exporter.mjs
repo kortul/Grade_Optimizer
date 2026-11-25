@@ -25,7 +25,7 @@ assert.ok(maya.includes('"source_relative_file": source_relative_file') &&
           maya.includes('"format_conversion": format_conversion') &&
           maya.includes('Исходный GLB останется в папке как резервный файл'),
           'GLB replacement must preserve its source file and report the manifest format switch');
-assert.ok(html.includes('src="./' + entryPath + '"'), 'index.html must activate the current app module');
+assert.ok(html.includes('src="./' + entryPath), 'index.html must activate the current app module (an optional cache-busting query is allowed)');
 assert.ok(app.includes('function restoreCadBridgeWorkingCoordinates('), 'browser CAD Bridge restoration helper is missing');
 assert.ok(maya.includes('def _sample_slope_curve_points(') && maya.includes('"points": _sample_slope_curve_points('), 'Maya must export raw sampled NURBS points');
 assert.ok(maya.includes('def _slope_points_cm_to_meters('), 'Maya raw curve export must convert API world centimetres to metres');
