@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const renderer = readFileSync(new URL('../webgpu-forest-lab.v7.js', import.meta.url), 'utf8');
+const renderer = readFileSync(new URL('../webgpu-forest-lab.v8.js', import.meta.url), 'utf8');
 const atmosphere = readFileSync(new URL('../webgpu-forest-atmosphere.v1.js', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../webgpu-forest-lab.html', import.meta.url), 'utf8');
 
@@ -41,7 +41,7 @@ assert.match(renderer, /const addSnowPatch=/, 'spruce boughs must carry segmente
 assert.match(renderer, /const flex=outerReach\.mul\(0\.012\)/, 'wind flex must be restricted to outer branch reach');
 assert.doesNotMatch(renderer, /positionLocal\.y\.mul\(0\.0075\)|positionLocal\.y\.mul\(0\.0055\)/, 'old whole-tree algae sway must be removed');
 assert.match(renderer, /function removeLegacyTreeAssets\(root\)/, 'named legacy tree assets must be stripped from Stage 1 before creating the new forest');
-assert.doesNotMatch(renderer, /addClump|SphereGeometry|IcosahedronGeometry/, 'rounded foliage clumps must not be part of V7 geometry');
+assert.doesNotMatch(renderer, /addClump|SphereGeometry|IcosahedronGeometry/, 'rounded foliage clumps must not be part of V8 geometry');
 assert.match(renderer, /mesh\.castShadow=!!castShadow;mesh\.receiveShadow=true;/, 'tree batches must expose an explicit shadow-casting switch');
 assert.match(renderer, /createTreeInstanceBatch\(nearShadow\[variant\],'near',variant,forestSystem\.group,true\)/, 'only near detailed trees should cast shadows in the fast baseline');
 assert.match(renderer, /createTreeInstanceBatch\(mid\[variant\],'mid',variant,forestSystem\.group,false\)/, 'mid-distance trees must not add a second shadow cascade load');
