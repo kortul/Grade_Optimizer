@@ -13,7 +13,7 @@ test('spatial index preserves negative and positive world coordinates',()=>{
 });
 
 test('broad phase includes every in-radius point across cell boundaries',()=>{
-  const records=[{id:'a',x:95,z:0},{id:'b',x:105,z:0},{id:'c',x:-105,z:0},{id:'d',x:310,z:0}];
+  const records=[{id:'a',x:95,z:0},{id:'b',x:105,z:0},{id:'c',x:-5,z:0},{id:'d',x:310,z:0}];
   const index=buildSlopeAngleSpatialIndex(records,100);
   const candidates=new Set();
   forEachSlopeAngleSpatialCandidate(index,100,0,120,record=>candidates.add(record.id));
