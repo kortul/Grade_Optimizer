@@ -1971,7 +1971,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v200.js"></script>
+<script type="module" src="./app.v201.js"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -2033,7 +2033,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v200.js"]');
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v201.js"]');
   moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить приложение или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
@@ -2663,13 +2663,8 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 #sceneLookPanel-layers .layer-queue-empty{padding:10px 7px 3px;color:#879dac;font-size:9px;line-height:1.55}
 @media(max-width:620px){#sceneLookPanel-layers .layer-queue-folder{padding:8px}#sceneLookPanel-layers .layer-queue-folder-state{font-size:6px}}
 
-/* v199 — depth-aware slope labels and immediate menu suppression */
+/* v201 — keep slope labels visible outside UI panels; hide only in skier mode */
 #view > .slope-label-renderer{z-index:4;pointer-events:none}
-#app.optimizer-open #view > .slope-label-renderer,
-#app.editor-open #view > .slope-label-renderer,
-#app.weather-open #view > .slope-label-renderer,
-#app.slope-layers-open #view > .slope-label-renderer,
-#app.material-library-open #view > .slope-label-renderer,
 #app.skier-mode #view > .slope-label-renderer{display:none!important}
 </style>
 

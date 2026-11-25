@@ -74,13 +74,14 @@ pass('startup camera/workspace readiness barrier and menu-aware slope-label visi
 assert.ok(entrySource.includes("labelRenderer.domElement.className='slope-label-renderer'"),'CSS2D slope labels must use a dedicated renderer class');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('function updateSlopeAnalysisLabelOcclusion('),'slope-label update must not raycast every visible CSS2D label against full terrain meshes');
 assert.ok(entrySource.includes('function updateSlopeAnalysisAngleLabelVisibility(force=false){')&&entrySource.includes('forEachSlopeAngleSpatialCandidate(slopeAnalysisAngleLabelIndex'),'angle labels must retain the spatial-index distance culling from the fast v198 path');
-assert.ok(entrySource.includes('const SLOPE_LABEL_MENU_CLASSES=')&&entrySource.includes("'material-library-open'")&&entrySource.includes('queueMicrotask(syncSlopeAnalysisLabelRendererVisibility)'),'menu labels must be synchronized in the same click turn and through stable app classes');
+assert.ok(!entrySource.includes('const SLOPE_LABEL_MENU_CLASSES=')&&entrySource.includes("const hidden=state.mode==='skier'||appRoot.classList.contains('skier-mode')")&&entrySource.includes('queueMicrotask(syncSlopeAnalysisLabelRendererVisibility)'),'opening menus must not globally hide slope labels; skier mode still hides them');
 assert.ok(!entrySource.includes("labelRenderer.domElement.style.display='';")&&!entrySource.includes("labelRenderer.domElement.style.display='none';"),'mode changes must not bypass centralized label-layer visibility');
+assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:none}')&&html.includes('#app.skier-mode #view > .slope-label-renderer{display:none!important}'),'CSS2D labels must stay below menus and hide only in skier mode');
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
-  assert.ok(html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'CSS must immediately hide slope labels for '+menuClass);
+  assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v200.js')&&!html.includes('app.v198.js'),'HTML must activate the current v200 release');
-pass('fast spatial-index slope-label culling and immediate menu-layer suppression are present');
+assert.ok(html.includes('app.v201.js')&&!html.includes('app.v200.js'),'HTML must activate the current v201 release');
+pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
 
