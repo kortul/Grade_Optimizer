@@ -100,6 +100,10 @@ assert.ok(entrySource.includes('function disableMaterialEmissionByDefault(')&&en
 assert.ok(entrySource.includes("gradeOptimizerEmissiveEnabled:false")&&entrySource.includes("if('emissiveIntensity' in material)material.emissiveIntensity=0"), 'legacy material configurations must migrate to emission OFF');
 pass('all current legacy and newly imported model materials default to emissive OFF');
 assert.ok(entrySource.includes('function isMayaStageOneFbx(root,fileName=')&&entrySource.includes('const isStageOneSlopes=isMayaStageOneFbx(root,fileName)'), 'Stage 1 detection must use the FBX filename or its Maya hierarchy / material names, not one exact filename pattern');
+const stageOneMaterialsSource=read('stage-one-materials.v1.js').toString('utf8');
+assert.ok(entrySource.includes('shareStageOneMaterialsByKind')&&entrySource.includes('Stage1 inspector re-shared semantic material slots')&&entrySource.includes('Re-shared Stage1 surface materials after restoring scene.json'), 'Stage1 materials must be consolidated at parse, restore and inspector refresh boundaries');
+assert.ok(stageOneMaterialsSource.includes('export function shareStageOneMaterialsByKind')&&stageOneMaterialsSource.includes("kind==='angled'?'AngledSlopes':'Slopes'"), 'Stage1 must expose exactly two semantic material identities');
+pass('Stage1 inspector enforces the two shared surface materials after project restores');
 assert.ok(entrySource.includes('const canonicalBySourceName=new Map()')&&entrySource.includes('canonicalBySourceName.has(sourceName)')&&entrySource.includes('gradeOptimizerFbxSourceMaterialName'), 'FBX materials with duplicated Maya IDs but the same shader name must share one material object across meshes');
 assert.ok(entrySource.includes('prepareFbxMaterials(root,{preserveSlopeAlbedo:isStageOneSlopes})')&&entrySource.includes('applyStageOneSurfaceMaterials(root)'), 'Slopes_Stage1 must run its dedicated surface-material pass after FBX conversion');
 const stageOneSurfaceRules=await import('../stage-one-materials.v1.js');
