@@ -396,7 +396,7 @@ async function start() {
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.82;
+  renderer.toneMappingExposure = 0.55;
   stage.appendChild(renderer.domElement);
   await renderer.init();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
