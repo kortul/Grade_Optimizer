@@ -1083,42 +1083,66 @@ assert.ok(webgpuAtmosphereSource.includes('sky.mieCoefficient.value = 0.0038')&&
 assert.ok(webgpuAtmosphereSource.includes('renderer.toneMappingExposure = 0.55;'),'Atmosphere Lab display exposure must use the shared SkyMesh / ACES preview baseline');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
-// WebGPU Alpine Forest Lab regression checks.
+// WebGPU Alpine Forest Lab V4: physical SkyMesh, unified snow PBR and direct-render baseline.
 const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
-const alpineForestSource=read('webgpu-forest-lab.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('src="./webgpu-forest-lab.js"'),'Alpine Forest lab must use pinned Three.js r187 and its isolated entrypoint');
-assert.ok(alpineForestSource.includes("import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'")&&alpineForestSource.includes("new GLTFLoader().loadAsync(stageOneUrl)")&&alpineForestSource.includes("extension==='glb'")&&alpineForestSource.includes('restoreStageOneCoordinates(root,item)'),'Alpine Forest lab must load the published Slopes_Stage1 GLB with GLTFLoader and restore its saved CAD Bridge transform');
-assert.ok(alpineForestSource.includes('function createFallbackTerrain(manifest, metersPerUnit)')&&alpineForestSource.includes('loadFBXTerrain')&&alpineForestSource.includes('Резервный процедурный рельеф'),'Forest Lab must validate the base FBX and keep a procedural terrain fallback');
-assert.ok(alpineForestSource.includes('buildSlopeFootprint(root)')&&alpineForestSource.includes('buildTreePlacements(footprint'),'procedural forest must derive placements from the actual slope footprint');
-assert.ok(alpineForestSource.includes('createSplinePineGeometry')&&alpineForestSource.includes('THREE.CatmullRomCurve3')&&alpineForestSource.includes('const nearLimitSq=850*850,midLimitSq=3300*3300'),'spruce forest must provide near and mid spline-based geometry LODs');
-assert.ok(alpineForestSource.includes('const bounds = new THREE.Box3()')&&alpineForestSource.includes('return {triangles,edges,contains,bounds}'),'slope footprint must retain its world-space bounds for deterministic forest placement and camera framing');
-assert.ok(alpineForestSource.includes('const usedFallback=trees.length<700&&!footprint.bounds.isEmpty()')&&alpineForestSource.includes('fallbackGrid:usedFallback'),'forest placement must create a deterministic fallback belt when track boundaries produce too few trees');
-assert.ok(alpineForestSource.includes('controls.target.set(focus.x,focus.y+')&&alpineForestSource.includes('camera.position.set(focus.x+distance*0.72'),'Forest Lab must initially frame the real Stage 1 piste instead of the terrain-wide origin');
-assert.ok(alpineForestSource.includes('renderer.toneMappingExposure = 0.55;'),'Forest Lab display exposure must match the tuned atmosphere preview');
-assert.ok(alpineForestSource.includes('const addBlade=')&&alpineForestSource.includes('needle sprays')&&alpineForestSource.includes('DoubleSide'),'spline spruce branches must include dense, two-sided procedural needle sprays');
-assert.ok(alpineForestSource.includes("getObjectByName?.('ToSketchfab')")&&alpineForestSource.includes('sketchfabGroup.position.set(0,0,0)'),'Stage 1 loader must normalize Maya ToSketchfab wrapper transforms before CAD Bridge restoration');
-assert.ok(alpineForestSource.includes('lastForward.dot(forestSystem.cameraForward)<0.94'),'far billboard LOD must rebuild on camera rotation, not only camera translation');
-assert.ok(alpineForestSource.includes('smoothstep,'),'TSL smoothstep must be imported for the god-ray shader');
-assert.ok(alpineForestSource.includes('snowy_conifer_atlas.webp')&&alpineForestSource.includes("lod==='far" ),'far forest must use the existing atlas billboard LOD');
-assert.ok(alpineForestSource.includes('new THREE.RenderPipeline(renderer)')&&alpineForestSource.includes('GO_LowResolutionGodRays')&&alpineForestSource.includes('upsampleRays'),'god rays must use a separate low-resolution TSL pass and depth-aware upsampling');
-assert.ok(alpineForestSource.includes('sunScreenUV.value.set(')&&alpineForestSource.includes('rayStrength.value=visible?'),'god rays must track the projected sun and disable when it is off-screen');
-assert.ok(alpineForestSource.includes('sceneColor.rgb.mix(fogColor,fogResult)') && !alpineForestSource.includes('fogResult.mix(sceneColor.rgb,fogColor)'), 'forest fog composite must use fog opacity as the mix factor');
-assert.ok(alpineForestSource.includes('const rangeFog = rangeT.mul(rangeT)') && alpineForestSource.includes('addScaledVector(sunPosition,100000)'), 'forest distance haze and sun projection must remain correctly framed');
-assert.ok(alpineForestHtml.includes('value="16"'), 'forest preview must open at the shared neutral daytime default');
-assert.ok(alpineForestHtml.includes('id="godRays"')&&alpineForestHtml.includes('id="forestDensity"'),'Alpine Forest lab controls for god rays and forest density are missing');
-assert.ok(alpineForestHtml.includes('id="dayCycleToggle"')&&alpineForestHtml.includes('id="dayCycleLength"')&&alpineForestHtml.includes('id="sunIntensity"'), 'Forest Lab must expose the shared time-of-day and sun-power controls');
-assert.ok(alpineForestSource.includes("from './solar-cycle.v1.js'")&&alpineForestSource.includes('calculateSolarCycle(THREE,hours)')&&alpineForestSource.includes('advanceSolarClock('), 'Forest Lab must use the shared solar path and animated day cycle');
-assert.ok(alpineForestSource.includes('ui.dayLengthValue.textContent')&&!alpineForestSource.includes('ui.dayCycleLengthValue.textContent'), 'Forest Lab day-cycle label must reference the declared UI field');
-assert.ok(alpineForestSource.includes('sky.mieCoefficient.value = 0.0038')&&alpineForestSource.includes('sky.rayleigh.value = Number(ui.rayleigh.value)')&&!alpineForestSource.includes('sky.mieColor.value')&&!alpineForestSource.includes('sky.mieAlbedo.value')&&!alpineForestSource.includes('sky.sunSize.value'), 'Forest Lab must write only uniforms exposed by SkyMesh in Three.js r187');
-assert.ok(alpineForestSource.includes("from './webgpu-cloud-layer.v1.js'")&&alpineForestSource.includes('createCloudLayer(THREE,scene')&&alpineForestSource.includes('cloudLayer?.updateCamera(camera.position)'),'Forest Lab must render and update the shared TSL cloud layer');
-assert.ok(alpineForestSource.includes('const near=[[],[],[]],mid=[[],[],[]],far=Array.from')&&alpineForestSource.includes('const distanceSq=dx*dx+dy*dy+dz*dz'),'Forest LOD batching must avoid per-tree Vector3 allocation and repeated filtering');
-assert.ok(alpineForestSource.includes('sky.showSunDisc.value = false')&&alpineForestSource.includes('createSolarDisc(THREE)')&&alpineForestSource.includes('updateSolarDisc(THREE,sunDisc'), 'Forest Lab sun disc must respond to the direct-sun power slider');
-assert.ok(alpineForestSource.includes('renderer.getMaxAnisotropy()')&&!alpineForestSource.includes('renderer.capabilities.getMaxAnisotropy'), 'Forest atlas loading must use the WebGPURenderer anisotropy API rather than WebGL capabilities');
-assert.ok(alpineForestSource.includes('async function buildTerrainHeightLookup(')&&alpineForestSource.includes('function sampleTerrainSurface(')&&alpineForestSource.includes('terrainHeightLookup=await buildTerrainHeightLookup('), 'Forest Lab must precompute a spatial terrain height lookup before placing trees');
-const forestPlacementSource=alpineForestSource.slice(alpineForestSource.indexOf('function buildTreePlacements('),alpineForestSource.indexOf('function createSplinePineGeometry('));
-assert.ok(forestPlacementSource.includes('sampleTerrainSurface(x,z,terrainHeightLookup)')&&!forestPlacementSource.includes('intersectObject(terrainRoot,true)'), 'tree placement must query cached terrain triangles instead of raycasting the entire terrain for each tree');
-assert.ok(alpineForestSource.includes("setLoadingMessage('Строим spatial height lookup для рельефа…')")&&alpineForestSource.includes("setLoadingMessage('Загружаем atlas елей…')")&&alpineForestSource.includes('Не удалось запустить WebGPU Forest Lab'), 'Forest Lab must expose loading stages and its own diagnostic error label');
-pass('isolated WebGPU Alpine Forest lab: Slopes_Stage1, deterministic track-edge spruce LODs and depth-aware god rays');
+const alpineForestSource=read('webgpu-forest-lab.v4.js').toString('utf8');
+const alpineAtmosphereSource=read('webgpu-forest-atmosphere.v1.js').toString('utf8');
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v4.js?v=20261125n'),
+  'Alpine Forest Lab must load the pinned Three.js r187 active V4 entrypoint');
+assert.ok(alpineForestSource.includes("import { createForestAtmosphere } from './webgpu-forest-atmosphere.v1.js'")&&
+  alpineForestSource.includes('createForestAtmosphere(THREE,scene,camera,renderer,hemisphere'),
+  'active V4 renderer must use the isolated physical atmosphere module');
+assert.ok(alpineForestSource.includes("import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'")&&
+  alpineForestSource.includes("new GLTFLoader().loadAsync(stageOneUrl)")&&
+  alpineForestSource.includes("extension==='glb'")&&
+  alpineForestSource.includes('restoreStageOneCoordinates(root,item)'),
+  'Forest Lab must load Slopes_Stage1 and restore the saved CAD Bridge transform');
+assert.ok(alpineForestSource.includes('function buildSlopeFootprint(root)')&&
+  alpineForestSource.includes('buildTreePlacements(footprint'),
+  'procedural forest must derive placement from the real slope footprint');
+assert.ok(alpineForestSource.includes('function buildTerrainHeightLookup(')&&
+  alpineForestSource.includes('function sampleTerrainSurface(')&&
+  alpineForestSource.includes('terrainHeightLookup=await buildTerrainHeightLookup('),
+  'terrain placement must use a cached spatial height lookup');
+assert.ok(alpineForestSource.includes('function getSnowPbrMaterial()')&&
+  alpineForestSource.includes('ForestLab_NeutralSnow_PBR')&&
+  alpineForestSource.includes('vertexColors:false')&&
+  alpineForestSource.includes('GO_AlpineSnow_ProceduralAlbedo'),
+  'all visible winter surfaces must use the same neutral snow PBR material');
+assert.ok(alpineForestSource.includes('object.material.map(()=>snowMaterial)')&&
+  alpineForestSource.includes('GO_WebGPU_SlopeMargin_SnowTerrain'),
+  'Stage 1 and the procedural apron must not leak Maya/vertex display colours');
+assert.ok(alpineForestSource.includes('createSplinePineGeometry')&&
+  alpineForestSource.includes('snowy_conifer_atlas.webp')&&
+  alpineForestSource.includes("lod==='far"),
+  'forest must keep near/mid spline pines and far atlas billboards');
+assert.ok(alpineForestSource.includes("createTreeInstanceBatch(nearShadow[variant],'near',variant,forestSystem.group,true)")&&
+  alpineForestSource.includes("createTreeInstanceBatch(mid[variant],'mid',variant,forestSystem.group,false)"),
+  'only near detailed trees should cast shadows in the performance baseline');
+assert.ok(alpineForestSource.includes('atmosphere.updateCamera()')&&
+  alpineForestSource.includes('atmosphere.render()'),
+  'active V4 renderer must update the sky camera and render the unified scene');
+assert.ok(alpineAtmosphereSource.includes('new SkyMesh()')&&
+  alpineAtmosphereSource.includes('skyDome.cloudCoverage.value')&&
+  alpineAtmosphereSource.includes('skyDome.cloudDensity.value')&&
+  alpineAtmosphereSource.includes('skyDome.cloudElevation.value'),
+  'physical SkyMesh must own the visible sky and cloud field');
+assert.ok(alpineAtmosphereSource.includes('pmremGenerator.fromScene(environmentScene, 0.035)')&&
+  alpineAtmosphereSource.includes('scene.environment = next.texture'),
+  'PBR IBL must be baked from the same visible physical SkyMesh');
+assert.ok(alpineAtmosphereSource.includes('new THREE.FogExp2(hazeDay, 0)')&&
+  alpineAtmosphereSource.includes('renderer.render(scene, camera)')&&
+  !alpineAtmosphereSource.includes('GTAONode')&&!alpineAtmosphereSource.includes('rtt('),
+  'fast baseline must use native distance fog and direct rendering, not the removed fullscreen pipeline');
+assert.ok(alpineForestHtml.includes('id="dayCycleToggle"')&&
+  alpineForestHtml.includes('id="dayCycleLength"')&&
+  alpineForestHtml.includes('id="sunIntensity"')&&
+  alpineForestHtml.includes('id="forestDensity"'),
+  'Forest Lab must expose day-cycle, direct-sun and forest controls');
+assert.doesNotMatch(alpineForestHtml,/id="godRays"|id="fogDensity"|id="fogHeight"|id="fogRange"/,
+  'removed fullscreen volumetric controls must not remain in the UI');
+pass('WebGPU Alpine Forest V4: physical SkyMesh, unified snow PBR, near-only shadows and direct rendering');
+
 
 // Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
 // The forest is terrain-wide and intentionally does not depend on any piste / Stage 1 asset.
