@@ -64,7 +64,7 @@ jobs:
       - name: Test multiplayer protocol
         run: node --test server/test/*.test.mjs
       - name: Test skier terrain contact transitions
-        run: node --test scripts/test-skier-terrain-contact.mjs scripts/test-skier-custom-spawn.mjs scripts/test-skier-view-presentation.mjs
+        run: node --test scripts/test-skier-terrain-contact.mjs scripts/test-skier-custom-spawn.mjs scripts/test-skier-surface-physics.mjs scripts/test-skier-view-presentation.mjs
       - name: Test slope angle label spatial culling
         run: node --test scripts/test-slope-label-index.mjs
       - name: Test render performance fallbacks
