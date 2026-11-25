@@ -135,7 +135,7 @@ function updateSky() {
   const solar = calculateSolarCycle(THREE,hours);
   solarState=solar;
   sunDirection.copy(solar.sunDirection);
-  sky.sunPosition.value.copy(sunDirection);
+  sky.sunPosition.value.copy(sunDirection).multiplyScalar(450000);
   sky.turbidity.value = Number(ui.turbidity.value);
   sky.rayleigh.value = Number(ui.rayleigh.value);
   sky.mieCoefficient.value = 0.0038;
@@ -541,6 +541,7 @@ function seededRandom(x, z, salt = 0) {
 function buildSlopeFootprint(root) {
   const triangles = [];
   const edgeMap = new Map();
+  const bounds = new THREE.Box3();
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
   const keyPoint = p => Math.round(p.x * 4) + ',' + Math.round(p.z * 4);
   const addEdge = (p0, p1) => {
@@ -566,6 +567,9 @@ function buildSlopeFootprint(root) {
       c.fromBufferAttribute(position, ic).applyMatrix4(object.matrixWorld);
       const area = (b.x-a.x)*(c.z-a.z) - (c.x-a.x)*(b.z-a.z);
       if (Math.abs(area) < 0.035) continue;
+      bounds.expandByPoint(a);
+      bounds.expandByPoint(b);
+      bounds.expandByPoint(c);
       const tri = {
         ax:a.x,az:a.z,bx:b.x,bz:b.z,cx:c.x,cz:c.z,
         minX:Math.min(a.x,b.x,c.x),maxX:Math.max(a.x,b.x,c.x),
@@ -578,7 +582,6 @@ function buildSlopeFootprint(root) {
   });
   const cellSize = 24;
   const cells = new Map(), large = [];
-  const cellKey = (x,z) => Math.floor(x/cellSize)+':'+Math.floor(z/cellSize);
   for (const tri of triangles) {
     const ix0=Math.floor(tri.minX/cellSize),ix1=Math.floor(tri.maxX/cellSize);
     const iz0=Math.floor(tri.minZ/cellSize),iz1=Math.floor(tri.maxZ/cellSize);
@@ -592,8 +595,7 @@ function buildSlopeFootprint(root) {
     }
   }
   const contains = (x,z) => {
-    const ix=Math.floor(x/cellSize),iz=Math.floor(z/cellSize);
-    const bucket=cells.get(ix+':'+iz)||[];
+    const bucket=cells.get(Math.floor(x/cellSize)+':'+Math.floor(z/cellSize))||[];
     const test = tri => {
       if(x<tri.minX-0.01||x>tri.maxX+0.01||z<tri.minZ-0.01||z>tri.maxZ+0.01)return false;
       const wa=((tri.bz-tri.cz)*(x-tri.cx)+(tri.cx-tri.bx)*(z-tri.cz))/tri.den;
@@ -605,9 +607,8 @@ function buildSlopeFootprint(root) {
     return false;
   };
   const edges=[...edgeMap.values()].filter(edge=>edge.count===1);
-  return {triangles,edges,contains};
+  return {triangles,edges,contains,bounds};
 }
-
 function restoreStageOneCoordinates(root, item) {
   // Normalize the imported Maya ToSketchfab
   // wrapper / child scales before restoring the CAD Bridge world coordinates.
@@ -652,9 +653,10 @@ function restoreStageOneCoordinates(root, item) {
 }
 
 function buildTreePlacements(footprint, density) {
-  if(!terrainRoot||!terrainBounds||!terrainHeightLookup)return [];
+  if(!terrainRoot||!terrainBounds||!terrainHeightLookup||!stageOneRoot)return [];
   const occupied=new Map();
   const trees=[];
+  const densityScale=THREE.MathUtils.clamp(Number(density)||0.85,0.25,1.35);
   const rows=[
     {min:7,max:21,keep:0.94,spacing:7.2},
     {min:22,max:68,keep:0.72,spacing:9.0},
@@ -672,7 +674,7 @@ function buildTreePlacements(footprint, density) {
   };
   const findGround=(x,z)=>{
     const surface=sampleTerrainSurface(x,z,terrainHeightLookup);
-    if(!surface||surface.normalY<0.48)return null;
+    if(!surface||surface.normalY<0.46)return null;
     return {y:surface.y,normalY:surface.normalY};
   };
   const canPlace=(x,z,spacing)=>{
@@ -687,9 +689,20 @@ function buildTreePlacements(footprint, density) {
     bucket.push({x,z});
     return true;
   };
+  const addTree=(x,z,ground,rr,band)=>{
+    const height=7.2+rr()*7.4;
+    const hue=(rr()-0.5)*0.045;
+    const tint=new THREE.Color().setHSL(0.31+hue,0.28+rr()*0.12,0.39+rr()*0.08);
+    trees.push({
+      x,y:ground.y+0.08,z,height,width:height*(0.52+rr()*0.12),
+      rotation:rr()*Math.PI*2,variant:Math.floor(rr()*3),tint,band
+    });
+  };
+
   const baseBounds=terrainBounds;
-  let attempt=0;
+  let edgeAttempts=0;
   for(const edge of footprint.edges){
+    if(trees.length>=3200)break;
     const dx=edge.bx-edge.ax,dz=edge.bz-edge.az;
     const length=Math.hypot(dx,dz);
     if(length<4||length>180)continue;
@@ -697,6 +710,7 @@ function buildTreePlacements(footprint, density) {
     const nx=-dz/length,nz=dx/length;
     const tx=dx/length,tz=dz/length;
     for(let step=0;step<steps;step++){
+      if(trees.length>=3200)break;
       const u=(step+0.5)/steps;
       const jitter=(randomAt(edge.ax+u*dx,edge.az+u*dz,7)-0.5)*sampleStep*0.46;
       const mx=edge.ax+dx*u+tx*jitter;
@@ -706,36 +720,70 @@ function buildTreePlacements(footprint, density) {
       if(sideA&&sideB)continue;
       const sign=sideA?-1:sideB?1:(randomAt(mx,mz,9)<0.5?-1:1);
       for(let row=0;row<rows.length;row++){
+        if(trees.length>=3200)break;
         const band=rows[row];
-        const rng=randomAt(mx,mz,13+row);
-        if(rng>density*band.keep)continue;
+        if(randomAt(mx,mz,13+row)>densityScale*band.keep)continue;
         const offset=band.min+(band.max-band.min)*randomAt(mx,mz,21+row);
         const x=mx+nx*sign*offset+(randomAt(mx,mz,31+row)-0.5)*3.5;
         const z=mz+nz*sign*offset+(randomAt(mx,mz,41+row)-0.5)*3.5;
         if(x<baseBounds.min.x+2||x>baseBounds.max.x-2||z<baseBounds.min.z+2||z>baseBounds.max.z-2)continue;
         if(footprint.contains(x,z))continue;
-        const spacing=band.spacing;
-        if(!canPlace(x,z,spacing))continue;
         const ground=findGround(x,z);
         if(!ground)continue;
+        if(!canPlace(x,z,band.spacing))continue;
         const rr=seededRandom(x,z,53);
-        const height=6.0+rr()*5.6;
-        const variant=Math.floor(rr()*3);
-        const hue=(rr()-0.5)*0.045;
-        const tint=new THREE.Color().setHSL(0.31+hue,0.28+rr()*0.12,0.39+rr()*0.08);
-        trees.push({
-          x,y:ground.y+0.05,z,height,width:height*(0.52+rr()*0.12),
-          rotation:rr()*Math.PI*2,variant,tint,band:row
-        });
-        attempt++;
-        if(trees.length>=2600)return trees;
+        addTree(x,z,ground,rr,row);
+        edgeAttempts++;
       }
     }
   }
-  console.info('[Grade Optimizer WebGPU] Slope-edge forest:',{boundaryEdges:footprint.edges.length,triangles:footprint.triangles.length,placements:trees.length,attempts:attempt});
+
+  // A disconnected or non-manifold Stage 1 FBX can have no usable outer edges.
+  // In that case, fill a deterministic forest belt around the piste bounds instead
+  // of silently returning an empty forest. Keep a clear buffer around the ski surface.
+  const usedFallback=trees.length<700&&!footprint.bounds.isEmpty();
+  if(usedFallback){
+    const belt=footprint.bounds;
+    const margin=190;
+    const minX=Math.max(baseBounds.min.x+12,belt.min.x-margin);
+    const maxX=Math.min(baseBounds.max.x-12,belt.max.x+margin);
+    const minZ=Math.max(baseBounds.min.z+12,belt.min.z-margin);
+    const maxZ=Math.min(baseBounds.max.z-12,belt.max.z+margin);
+    const grid=19;
+    const keep=THREE.MathUtils.clamp(0.38+densityScale*0.34,0.42,0.84);
+    const firstX=Math.floor(minX/grid),lastX=Math.ceil(maxX/grid);
+    const firstZ=Math.floor(minZ/grid),lastZ=Math.ceil(maxZ/grid);
+    for(let iz=firstZ;iz<=lastZ&&trees.length<3200;iz++){
+      for(let ix=firstX;ix<=lastX&&trees.length<3200;ix++){
+        const rr=seededRandom(ix*grid,iz*grid,907);
+        if(rr()>keep)continue;
+        const x=(ix+0.5+(rr()-0.5)*0.62)*grid;
+        const z=(iz+0.5+(rr()-0.5)*0.62)*grid;
+        if(x<minX||x>maxX||z<minZ||z>maxZ)continue;
+        if(footprint.contains(x,z))continue;
+        const clearance=9;
+        if(
+          footprint.contains(x+clearance,z)||footprint.contains(x-clearance,z)||
+          footprint.contains(x,z+clearance)||footprint.contains(x,z-clearance)||
+          footprint.contains(x+clearance*0.7,z+clearance*0.7)||
+          footprint.contains(x-clearance*0.7,z-clearance*0.7)||
+          footprint.contains(x+clearance*0.7,z-clearance*0.7)||
+          footprint.contains(x-clearance*0.7,z+clearance*0.7)
+        )continue;
+        const ground=findGround(x,z);
+        if(!ground)continue;
+        const spacing=13.5+rr()*3.5;
+        if(!canPlace(x,z,spacing))continue;
+        addTree(x,z,ground,rr,3);
+      }
+    }
+  }
+  console.info('[Grade Optimizer WebGPU] Slope-edge forest:',{
+    boundaryEdges:footprint.edges.length,triangles:footprint.triangles.length,
+    edgePlacements:edgeAttempts,fallbackGrid:usedFallback,placements:trees.length
+  });
   return trees;
 }
-
 function createSplinePineGeometry(lod, variant) {
   const positions=[],normals=[],colors=[],indices=[];
   const height=10;
@@ -962,8 +1010,8 @@ function rebuildForestLod(force=false) {
   const near=[],mid=[],far=[];
   for(const tree of forestSystem.trees){
     const distance=camera.position.distanceTo(new THREE.Vector3(tree.x,tree.y+tree.height*0.5,tree.z));
-    if(distance<520)near.push(tree);
-    else if(distance<1900)mid.push(tree);
+    if(distance<650)near.push(tree);
+    else if(distance<2500)mid.push(tree);
     else far.push(tree);
   }
   for(let variant=0;variant<3;variant++){
@@ -1013,6 +1061,17 @@ async function loadStageOneAndForest() {
   setLoadingMessage('Строим границы трассы и размещаем лес…');
   await nextAnimationFrame();
   const footprint=buildSlopeFootprint(root);
+  const focusBounds=footprint.bounds.isEmpty()?new THREE.Box3().setFromObject(root):footprint.bounds;
+  if(!focusBounds.isEmpty()){
+    const focus=focusBounds.getCenter(new THREE.Vector3());
+    const extent=focusBounds.getSize(new THREE.Vector3());
+    const span=Math.max(extent.x,extent.z,250);
+    const distance=THREE.MathUtils.clamp(span*0.72,720,1650);
+    controls.target.set(focus.x,focus.y+Math.max(18,extent.y*0.12),focus.z);
+    camera.position.set(focus.x+distance*0.72,focus.y+distance*0.52,focus.z+distance*0.92);
+    controls.update();
+    camera.updateMatrixWorld(true);
+  }
   setLoadingMessage('Загружаем atlas елей…');
   await nextAnimationFrame();
   pineAtlasTextures=await loadPineAtlas();
