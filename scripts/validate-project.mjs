@@ -28,7 +28,7 @@ assert.ok(entrySource.includes('function collectImportedAssetDiagnostics')&&entr
 const stageOneGroupSource=read('stage-one-material-groups.v1.js').toString('utf8');
 assert.ok(entrySource.includes("import { compactStageOneMaterialGroups } from './stage-one-material-groups.v1.js';")&&entrySource.includes('compactStageOneMaterialGroups(THREE,object)')&&entrySource.includes('Stage1 material groups compacted'),'Stage1 FBX parsing must compact repeated groups by material before render and GLB export');
 assert.ok(entrySource.includes('preferredFbxPath')&&entrySource.includes('canonical FBX'),'remote Stage1 must prefer the canonical FBX over the legacy many-primitive GLB');
-assert.ok(stageOneGroupSource.includes('geometry.groups')&&stageOneGroupSource.includes('geometry.addGroup')&&stageOneGroupSource.includes('trianglesPreserved'),'Stage1 compaction must retain material ranges and preserve every source triangle');
+assert.ok(stageOneGroupSource.includes('originalGroups')&&stageOneGroupSource.includes('compactGeometry.addGroup')&&stageOneGroupSource.includes('trianglesPreserved'),'Stage1 compaction must retain material ranges and preserve every source triangle');
 pass('Stage1 source FBX selection and geometry-group compaction are present');
 const renderPerformanceSource=read('render-performance.v1.js').toString('utf8');
 assert.ok(renderPerformanceSource.includes('performanceProfileActive ? profileMaximum : maximum')&&renderPerformanceSource.includes('frameIntervalsMs.length < 5'),'render performance helpers must cap skier resolution and reject undersampled rolling FPS');
