@@ -4,11 +4,13 @@ Interactive 3D ski-resort viewer with terrain optimization tools, terrain-follow
 
 **Live site:** https://kortul.github.io/Grade_Optimizer/
 
+**Unified Forest + Atmosphere:** [Open Alpine Lab](https://kortul.github.io/Grade_Optimizer/alpine-lab.html)
+
 ## Active runtime
 
 - `index.html` loads the current versioned browser entrypoint.
-- Current app: `app.v178.js` (asset-wide shared FBX materials; Maya Stage 1 exposes only the shared Slopes / Angled material pair).
-- Weather: `weather-system.v7.js`; layered procedural clouds, directional horizon scattering, a color-varied star field, snowfall and wind streaks render through the scene weather layers.
+- Current app: `app.v192.js` (asset-wide shared FBX materials; Maya Stage 1 exposes only the shared Slopes / Angled material pair).
+- Weather: `weather-system.v9.js`; layered procedural clouds, directional horizon scattering, a color-varied star field, snowfall and wind streaks render through the scene weather layers.
 - Camera optics: `camera-optics.v2.js` with GLSL regression checks and direct-render fallback.
 - Scene Look is part of the Scene Editor and uses six category-card tabs: General, Environment, Camera, Color, Materials, and Render. Camera includes lens character and optical processing. Depth of field starts disabled.
 - Skier: `skier-controller.v98.js`, with a 75 kg skier-equipment point-mass reference, mass-scaled pole / jump impulses, 3D ballistic take-off inheriting slope velocity and terrain-aware landing, grounded ski-snow friction, speed-limited edge force, calculated inside / outside ski loads, load-aware stance animation and first / third-person cameras. Third-person camera orbit is independent of physical skier / ski heading; switching from the drone starts the first-person view aligned with the skis. When an imported `Slopes_Stage1` asset is present, skier physics uses that group and selects the highest skiable point with downhill clearance, including when switching from drone. Skier-mode preparation is non-modal and keeps the current view interactive. Forest placement uses cached terrain vertices to avoid large synchronous raycast batches. Terrain contact queries use a 192×192 triangle lookup with a Raycaster fallback; live counters and timings are available through `window.__GRADE_OPTIMIZER_MODE_API.diagnostics().terrainPerformance`.
