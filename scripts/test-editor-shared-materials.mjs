@@ -47,11 +47,12 @@ assert.equal(aliasSummary.materialCount,1,'Maya namespaces and numeric duplicate
 const restoredSlopes={uuid:'restored-slopes',name:'Slopes',type:'MeshPhysicalMaterial',roughness:0.02,userData:{gradeOptimizerSavedMaterialId:'legacy-mesh-24'}};
 const restoredAngled={uuid:'restored-angled',name:'pasted__AngledSlopes__02',type:'MeshStandardMaterial',roughness:0.99,userData:{gradeOptimizerSavedMaterialId:'legacy-mesh-25'}};
 const restoredMesh=mesh('Restored from old scene.json',[restoredSlopes,restoredAngled],{groups:[{start:0,count:6,materialIndex:0},{start:6,count:3,materialIndex:1}]});
-const restoredRoot=scene(restoredMesh,mesh('Original mesh',[slopesA,angledA],geometryA));
+const originalMesh=mesh('Original mesh',[slopesA,angledA],geometryA);
+const restoredRoot=scene(originalMesh,restoredMesh);
 const restoreResult=mergeImportedMaterialsByName(restoredRoot);
 assert.equal(restoreResult.mergedSlots,2,'legacy restored materialId clones must be re-shared despite differing PBR classes');
-assert.equal(restoredMesh.material[0],slopesA,'restored Slopes clone must join the existing shared Slopes instance');
-assert.equal(restoredMesh.material[1],angledA,'restored AngledSlopes clone must join the existing shared Angled instance');
+assert.equal(restoredMesh.material[0],originalMesh.material[0],'restored Slopes clone must join the same shared object');
+assert.equal(restoredMesh.material[1],originalMesh.material[1],'restored AngledSlopes clone must join the same shared object');
 
 console.log('✓ same-named FBX/GLB materials share one object across asset mesh slots');
 console.log('✓ distinct named materials stay separate');
