@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v208.js')&&!html.includes('app.v207.js'),'HTML must activate the current v207 release');
+assert.ok(html.includes('app.v208.js')&&!html.includes('app.v207.js'),'HTML must activate the current v208 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');

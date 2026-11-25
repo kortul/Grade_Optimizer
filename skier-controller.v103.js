@@ -635,7 +635,7 @@ export class SkierController {
     const rig = new THREE.Group();
     rig.name = 'Skier_FirstPerson_Skis';
     const outline = new THREE.Shape();
-    // Keep bindings and tails fixed; extend the front overhang to 1.5x its original length.
+    // Keep bindings and tails fixed; extend only the front ski nose by another 10%.
     outline.moveTo(-0.047,-0.92);
     outline.quadraticCurveTo(-0.052,-0.58,-0.050,0.60);
     outline.lineTo(-0.050,0.87225);
