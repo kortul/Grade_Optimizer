@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v204.js')&&!html.includes('app.v203.js'),'HTML must activate the current v204 release');
+assert.ok(html.includes('app.v205.js')&&!html.includes('app.v204.js'),'HTML must activate the current v205 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
@@ -446,12 +446,15 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v99.js'), 'active app must use the stable terrain-contact skier controller');
-const skierSource = read('skier-controller.v99.js').toString('utf8');
-const skierContactUtils = read('skier-terrain-contact.v1.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v100.js'), 'active app must use the custom-spawn validation controller');
+const skierSource = read('skier-controller.v100.js').toString('utf8');
+const skierContactUtils = read('skier-terrain-contact.v2.js').toString('utf8');
 const skierContactTests = read('scripts/test-skier-terrain-contact.mjs').toString('utf8');
 assert.ok(skierContactTests.includes('overlapping piste and terrain choose the surface continuous with the skier height')&&skierContactTests.includes('near-vertical wall normals are rejected'), 'skier terrain-contact regression tests must cover surface transitions and wall rejection');
 assert.ok(skierSource.includes('respawnAtCustomSpawn(spawn)')&&skierSource.includes('spawnHint.headingYaw'), 'skier controller must apply custom spawn position and heading');
+assert.ok(skierSource.includes('this._groundAt(x,z,hasReferenceY?savedY:null,hasReferenceY?2.5:Infinity)'),'manual spawn must resolve the exact saved XYZ surface instead of selecting another overlapping layer');
+assert.ok(skierSource.includes('evaluateCustomSpawnRunout(')&&skierSource.includes('runout.clearance'),'manual spawn must validate a short run-out along the authored heading / fall line rather than requiring 6m along interpolated normal');
+assert.ok(skierSource.includes("code:'UNSUITABLE_SLOPE'")&&skierSource.includes("code:'NO_RUNOUT'")&&entrySource.includes('lastCustomSpawnError?.message'),'failed custom spawns must expose a specific reason to the user');
 assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), "imported Slopes_Stage1 geometry must take priority as the skier surface");
 assert.ok(entrySource.includes('position:dronePose.position,yaw:dronePose.yaw,velocity:dronePose.velocity,fromDrone:true')&&entrySource.includes('resolveSkierTerrainForDroneSpawn(dronePose.position)')&&entrySource.includes('skierTerrainName:skierController.terrain?.name')&&entrySource.includes('skierSpawn:skierController.lastSpawnInfo')&&!entrySource.includes('velocity:dronePose.velocity,fromDrone:true,startAtTop:true'), 'drone handoff must try the drone world position before the summit fallback');
 assert.ok(!entrySource.includes('droneController.setTerrain(terrain);\\n    applySkierPresentation();'), 'using a dedicated skier piste must not replace the drone collision surface');
