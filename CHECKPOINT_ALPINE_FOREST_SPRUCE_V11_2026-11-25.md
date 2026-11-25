@@ -15,6 +15,7 @@ Keep the recognizable spruce branch hierarchy from V9/V10, make the crowns subst
 - LOD ranges tightened: shadow subset within 210 m, near LOD within 370 m, mid LOD within 1350 m; far LOD beyond.
 - Instanced meshes are split into 420 m spatial cells.
 - Each cell/LOD/variant uses a bounded InstancedMesh, computes its bounding sphere and enables frustum culling. The previous global batches forced all trees to render even when outside the camera frustum.
+- Only near LOD receives shadows; shadow-caster trees are limited to the inner 210 m band.
 - The renderer logs placements, per-LOD vertex counts and batch counts for browser-side profiling.
 - Whole-tree wind remains disabled; avoid adding per-vertex deformation until it can be implemented per branch / spray.
 
