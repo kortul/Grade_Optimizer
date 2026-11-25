@@ -92,6 +92,7 @@ for(const slot of ['1','2','3','4','5','6','7','8','9','0']){
 }
 assert.ok(entrySource.includes("const SKIER_SPAWN_KEYS=['1','2','3','4','5','6','7','8','9','0']"), 'exactly ten numeric skier spawn slots must be available');
 assert.ok(entrySource.includes('function normalizeSkierSpawnMap(')&&entrySource.includes('skierSpawns:normalizeSkierSpawnMap(state.skierSpawns)'), 'skier spawn points must be normalized and persisted in client scene.json');
+assert.ok(entrySource.includes('const sceneJson=JSON.stringify(manifest)')&&entrySource.includes('maxSceneJsonBytes=90*1024*1024')&&entrySource.includes("'clients/'+slug+'/scene.json',sceneJson"), 'Local Sync must write compact scene.json and block oversized writes before replacing the previous file');
 assert.ok(entrySource.includes('state.skierSpawns=normalizeSkierSpawnMap(manifest.skierSpawns)'), 'skier spawn points must be restored when opening a client project');
 assert.ok(entrySource.includes('function onSkierSpawnPlacementPointerDown(')&&entrySource.includes('function onSkierSpawnPlacementPointerMove(')&&entrySource.includes('pickSkierSpawnSurface(event)'), 'spawn placement must capture both surface position and facing direction');
 assert.ok(entrySource.includes('lastSkierSpawnPlacementPointerAt=performance.now();')&&entrySource.includes('if(performance.now()-lastSkierSpawnPlacementPointerAt<700)'), 'spawn placement clicks must bypass Inspector geometry selection / yellow pulse');
