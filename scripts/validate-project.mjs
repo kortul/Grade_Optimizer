@@ -959,8 +959,8 @@ assert.ok(entrySource.includes('if(modeCameraTransition)prepareModeCameraTransit
 assert.ok(skierSource.includes('this.airborneCameraPitch+=(flightPitchTarget-this.airborneCameraPitch)*(1-Math.exp(-dt*5.5))'), 'first-person jump pitch must be damped');
 assert.ok(!skierSource.includes('travelPitch+this.lookPitch'), 'first-person camera must not directly follow raw vertical flight velocity');
 assert.ok(entrySource.includes('skierController.showForDrone()'), 'first-person skier must be shown to the drone during handoff');
-assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='drone'})"), 'skier model must remain in the scene when entering drone mode');
-assert.ok(entrySource.includes("if(mode==='overview')skierController.hideForOverview()"), 'skier model must be hidden when leaving drone for overview');
+assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='drone'||mode==='overview'})"), 'skier model must remain visible in both Overview and Drone after leaving Skier mode');
+assert.ok(!entrySource.includes("if(mode==='overview')skierController.hideForOverview()"), 'skier model must remain visible when leaving Drone for Overview');
 assert.ok(skierSource.includes('0.26*this.stanceCameraBlend'), 'first-person camera eye-height compensation in speed tuck missing');
 assert.ok(skierSource.includes('0.085*this.stanceCameraBlend'), 'camera pitch adjustment in speed tuck missing');
 assert.ok(skierSource.includes('this.avatarLegs.forEach'), 'third-person skier legs must bend into speed tuck');
