@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v202.js')&&!html.includes('app.v201.js'),'HTML must activate the current v202 release');
+assert.ok(html.includes('app.v203.js')&&!html.includes('app.v202.js'),'HTML must activate the current v203 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
@@ -719,6 +719,11 @@ assert.ok(html.includes('id="slopeLayersToggle"') && html.includes('id="slopeLay
 assert.ok(entrySource.includes('object.visible=layerVisible')&&entrySource.includes("object.element.style.display=layerVisible?'':'none'"),'slope-name CSS2D labels must hide and reappear with their layer checkbox');
 assert.ok(entrySource.includes('function syncSlopeLayersPanelPosition()')&&entrySource.includes('const visible=!!open;')&&entrySource.includes('new ResizeObserver(syncSlopeLayersPanelPosition)'),'slope layer panel must remain available in every mode and position itself below the responsive toolbar');
 assert.ok(!html.includes('Только режим «Обзор»')&&!html.includes('дальность настраивается ниже (до 500 м)')&&!html.includes('Толстая цветная линия по участкам')&&!html.includes('Подписи центральных линий')&&!html.includes('id="slopeLayersStatus"'),'slope layer panel must omit the requested redundant copy and status footer');
+assert.ok(entrySource.includes('const clampSlopeDistance=(value,fallback=790)=>')&&entrySource.includes('clampSlopeDistance(savedSlopeLayerSettings?.angleDistanceMeters,790)'),'the default angle-label distance must be 790 m while preserving saved settings');
+assert.ok(entrySource.includes('clampSlopeDistance(target.value,790)'),'invalid distance input must fall back to the 790 m default');
+assert.ok(html.includes('id="slopeLayerAngleDistanceValue">790 м</strong>')&&html.includes('id="slopeLayerAngleDistance" type="range" min="0" max="1500" step="10" value="790"'),'slope layer distance control must start at 790 m');
+for(const id of ['angles','difficulty','names'])assert.ok(html.includes('id="slopeLayer_'+id+'" type="checkbox" checked'),'slope layer '+id+' must be enabled by default');
+assert.ok(html.includes('id="slopeLayerOpacityValue_angles">100%</strong>')&&html.includes('id="slopeLayerOpacityValue_difficulty">100%</strong>')&&html.includes('id="slopeLayerOpacityValue_names">65%</strong>'),'slope layer opacity defaults must be 100%, 100%, and 65%');
 
 assert.ok(mayaExporter.includes('def prepare_fbx_compatible_materials(components):') && mayaExporter.includes('def restore_fbx_compatible_materials(overrides):'), 'Maya exporter must bridge unsupported shading nodes for FBX and restore original assignments');
 assert.ok(mayaExporter.includes('supported_node_types = {"lambert", "phong"}') && mayaExporter.includes('cmds.connectAttr(proxy + ".outColor", destination, force=True)'), 'FBX material bridge must use supported Lambert / Phong nodes on the existing shading groups');
