@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const renderer = readFileSync(new URL('../webgpu-forest-lab.v4.js', import.meta.url), 'utf8');
+const renderer = readFileSync(new URL('../webgpu-forest-lab.v5.js', import.meta.url), 'utf8');
 const atmosphere = readFileSync(new URL('../webgpu-forest-atmosphere.v1.js', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../webgpu-forest-lab.html', import.meta.url), 'utf8');
 
@@ -29,7 +29,11 @@ assert.doesNotMatch(renderer, /colors\[k\]=color\.r;colors\[k\+1\]=color\.g;colo
 assert.match(renderer, /shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes'\}\)/, 'Stage 1 semantic groups must still be recognised');
 assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'semantic material identities must not leak Maya display colours into the winter look');
 assert.match(renderer, /function createSplinePineMaterial\(\)/, 'procedural near/mid forest still uses its physical foliage material');
-assert.match(renderer, /MeshPhysicalNodeMaterial\(\{roughness:0\.64/, 'foliage should retain its physical node material');
+assert.match(renderer, /MeshPhysicalNodeMaterial\(\{roughness:0\.82/, 'foliage should retain its physical node material');
+assert.match(renderer, /const levels=high\?13:8,branchCount=high\?8:6/, 'spruce should have denser, more closely spaced branch tiers');
+assert.match(renderer, /const foliageAxis=radial\.clone\(\)\.multiplyScalar\(0\.96\)/, 'main foliage clumps should grow outward rather than spike upward');
+assert.match(renderer, /const snowExposure=THREE\.MathUtils\.smoothstep\(radial\.y,0\.12,0\.72\)/, 'snow should accumulate on upper-facing foliage surfaces');
+assert.match(renderer, /snowShare\*\(0\.45\+0\.55\*jitter\(seed,ring\*9\+j\)\),0,0\.72/, 'snow coverage should be visible across upper boughs');
 assert.match(renderer, /mesh\.castShadow=!!castShadow;mesh\.receiveShadow=true;/, 'tree batches must expose an explicit shadow-casting switch');
 assert.match(renderer, /createTreeInstanceBatch\(nearShadow\[variant\],'near',variant,forestSystem\.group,true\)/, 'only near detailed trees should cast shadows in the fast baseline');
 assert.match(renderer, /createTreeInstanceBatch\(mid\[variant\],'mid',variant,forestSystem\.group,false\)/, 'mid-distance trees must not add a second shadow cascade load');
@@ -51,7 +55,7 @@ assert.match(atmosphere, /renderer\.render\(scene, camera\)/, 'the baseline must
 assert.doesNotMatch(atmosphere, /GTAONode|buildFogPipeline|rtt\(/, 'the old expensive screen-space pipeline must remain removed');
 
 // HTML and runtime controls must agree.
-assert.match(html, /webgpu-forest-lab\.v4\.js\?v=20261125n/, 'HTML must load the current renderer revision');
+assert.match(html, /webgpu-forest-lab\.v5\.js\?v=20261125p/, 'HTML must load the current renderer revision');
 assert.doesNotMatch(html, /id="godRays"|id="fogDensity"|id="fogHeight"|id="fogRange"/, 'removed full-screen controls should not remain in the UI');
 assert.match(renderer, /renderer\.toneMappingExposure = 0\.52/, 'terrain and snow must use a stable scene exposure');
 
