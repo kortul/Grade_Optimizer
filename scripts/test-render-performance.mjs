@@ -1,15 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shouldRenderVolumetricClouds, VOLUMETRIC_CLOUD_MIN_COVERAGE } from '../weather-system.v8.js';
+import { shouldRenderVolumetricClouds, VOLUMETRIC_CLOUD_MIN_COVERAGE } from '../weather-system.v9.js';
 
-test('light and partly cloudy presets stay on the atlas fallback', () => {
-  assert.equal(VOLUMETRIC_CLOUD_MIN_COVERAGE, 0.38);
+test('light and partly cloudy presets retain volumetric clouds', () => {
+  assert.equal(VOLUMETRIC_CLOUD_MIN_COVERAGE, 0.015);
   assert.equal(shouldRenderVolumetricClouds(0.00, true), false);
-  assert.equal(shouldRenderVolumetricClouds(0.18, true), false);
-  assert.equal(shouldRenderVolumetricClouds(0.34, true), false);
+  assert.equal(shouldRenderVolumetricClouds(0.015, true), false);
+  assert.equal(shouldRenderVolumetricClouds(0.18, true), true);
+  assert.equal(shouldRenderVolumetricClouds(0.34, true), true);
 });
 
-test('medium and heavy cloud coverage can use volumetric rendering', () => {
+test('medium and heavy cloud coverage also use volumetric rendering', () => {
+  assert.equal(shouldRenderVolumetricClouds(0.016, true), true);
   assert.equal(shouldRenderVolumetricClouds(0.38, true), true);
   assert.equal(shouldRenderVolumetricClouds(0.66, true), true);
   assert.equal(shouldRenderVolumetricClouds(0.96, true), true);
