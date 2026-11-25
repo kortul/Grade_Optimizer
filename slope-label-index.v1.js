@@ -29,7 +29,13 @@ export function forEachSlopeAngleSpatialCandidate(index, x, z, radius, visit) {
     for(let xCell=cellX-cellRadius;xCell<=cellX+cellRadius;xCell++){
       const bucket=index.cells.get(xCell+':'+zCell);
       if(!bucket)continue;
-      for(const record of bucket){visit(record);visited++;}
+      for(const record of bucket){
+        const dx=Number(record.x)-centerX;
+        const dz=Number(record.z)-centerZ;
+        if(dx*dx+dz*dz>reach*reach)continue;
+        visit(record);
+        visited++;
+      }
     }
   }
   return visited;
