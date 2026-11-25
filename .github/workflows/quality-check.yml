@@ -30,7 +30,8 @@ jobs:
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
         run: |
-          node --input-type=module --check < app.v185.js
+          node --input-type=module --check < app.v186.js
+          node --input-type=module --check < slope-label-index.v1.js
           node --input-type=module --check < skier-controller.v99.js
           node --input-type=module --check < skier-terrain-contact.v1.js
           node --input-type=module --check < multiplayer.v10.js
@@ -50,5 +51,7 @@ jobs:
         run: node --test server/test/*.test.mjs
       - name: Test skier terrain contact transitions
         run: node --test scripts/test-skier-terrain-contact.mjs
+      - name: Test slope angle label spatial culling
+        run: node --test scripts/test-slope-label-index.mjs
       - name: Validate project
         run: node scripts/validate-project.mjs
