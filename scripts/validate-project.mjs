@@ -24,9 +24,12 @@ assert.ok(
 );
 assert.ok(existsSync(resolve(root, entryPath)), 'active module does not exist: ' + entryPath);
 pass('active entrypoint exists: ' + entryPath);
-const skierBatchSource=read('skier-render-batching.v1.js').toString('utf8');
-assert.ok(skierBatchSource.includes('mergeGeometries')&&skierBatchSource.includes('physicsCollision: false')&&skierBatchSource.includes('goSkierBatchHidden'),'Stage1 skier render batching must merge static meshes while keeping a separate collision source');
-assert.ok(entrySource.includes('setStageOneSkierRenderBatch')&&entrySource.includes('Skier Stage1 mesh batching'),'active app must batch Stage1 static meshes only in skier mode');
+assert.ok(entrySource.includes('function collectImportedAssetDiagnostics')&&entrySource.includes('importedAssets:collectImportedAssetDiagnostics()'),'runtime diagnostics must expose the actual loaded model path and mesh counts');
+const stageOneGroupSource=read('stage-one-material-groups.v1.js').toString('utf8');
+assert.ok(entrySource.includes("import { compactStageOneMaterialGroups } from './stage-one-material-groups.v1.js';")&&entrySource.includes('compactStageOneMaterialGroups(THREE,object)')&&entrySource.includes('Stage1 material groups compacted'),'Stage1 FBX parsing must compact repeated groups by material before render and GLB export');
+assert.ok(entrySource.includes('preferredFbxPath')&&entrySource.includes('canonical FBX'),'remote Stage1 must prefer the canonical FBX over the legacy many-primitive GLB');
+assert.ok(stageOneGroupSource.includes('originalGroups')&&stageOneGroupSource.includes('compactGeometry.addGroup')&&stageOneGroupSource.includes('trianglesPreserved'),'Stage1 compaction must retain material ranges and preserve every source triangle');
+pass('Stage1 source FBX selection and geometry-group compaction are present');
 const renderPerformanceSource=read('render-performance.v1.js').toString('utf8');
 assert.ok(renderPerformanceSource.includes('performanceProfileActive ? profileMaximum : maximum')&&renderPerformanceSource.includes('frameIntervalsMs.length < 5'),'render performance helpers must cap skier resolution and reject undersampled rolling FPS');
 pass('skier viewport-resolution cap, rolling FPS sampling and scene draw diagnostics are present');
@@ -78,7 +81,7 @@ assert.ok(entrySource.includes("restoreCadBridgeWorkingCoordinates(root,manifest
 assert.ok(entrySource.includes('restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id)'), 'client FBX loader must restore assets to the terrain working-world frame');
 assert.ok(entrySource.includes('mayaExport:asset.meta.mayaExport||undefined'), 'client scene backups must preserve Maya CAD Bridge metadata');
 pass('canonical terrain and imported Maya FBX assets share their original CAD working-world coordinate frame');
-assert.ok(entrySource.includes("if(/\\.fbx$/i.test(item.file))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id)"), 'CAD Bridge restoration must run only on source FBX files, not already-normalized GLB backups');
+assert.ok(entrySource.includes("if(/\\.fbx$/i.test(sourcePath))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id)"), 'CAD Bridge restoration must run only on source FBX files, not already-normalized GLB backups');
 const bridgeOffset = [218704.14299926758, 0, -50152.88024902344];
 const bridgeScale = 1000;
 const workingPoint = [-265699.25, 1528.5089111328125, -374683.03125];
@@ -848,7 +851,6 @@ assert.ok(entrySource.includes("current==='drone'?'skier':current==='skier'?'dro
 assert.ok(html.includes('id="modeSwitchFeedback"'), 'visible mode-switch feedback element missing');
 assert.ok(entrySource.includes("showModeSwitchFeedback(message)"), 'mode startup failures must be visible on screen');
 assert.ok(entrySource.includes('function resolveSkierTerrain()')&&entrySource.includes('function resolveSkierTerrainForDroneSpawn(position)')&&entrySource.indexOf('const requestedTerrain=mode===\'skier\'')<entrySource.indexOf("if(mode==='skier'&&!requestedTerrain)"), 'skier mode must resolve the correct surface before its early return guard');
-assert.ok(entrySource.includes('object.userData?.goSkierBatchHidden===true)object.visible=true')&&entrySource.includes('node.userData?.goSkierBatchHidden!==true'),'skier physics clones must retain hidden source meshes when the render-only batch is active');
 assert.ok(entrySource.includes('function createSkierPhysicsSurface(roots)')&&entrySource.includes('GO_SkierPhysicsTerrainComposite')&&entrySource.includes('if(activeAsset&&hasGeometry(activeAsset.root))')&&entrySource.includes('if(state.baseTerrain&&state.baseTerrain!==state.terrain&&hasGeometry(state.baseTerrain))')&&entrySource.includes('const preferredSlope=state.importedAssets.find('),'skier collision surface must combine the Stage 1 piste with visible active Terrain while excluding hidden replaced terrain');
 assert.ok(entrySource.includes('function applySkierPerformanceProfile()')&&entrySource.includes('cameraOptics.setOptions({enabled:false})')&&entrySource.includes('renderer.shadowMap.enabled=false')&&entrySource.includes('performanceRatio')&&entrySource.includes('FOREST_BILLBOARD_UPDATE_INTERVAL_MS=66')&&entrySource.includes('updateInterval=state.mode===\'skier\'?100:FOREST_BILLBOARD_UPDATE_INTERVAL_MS'),'skier mode must temporarily reduce render cost and throttle forest billboards');
 assert.ok(entrySource.includes("sceneLoadingEl.getClientRects().length>0"), 'loading-state detection must use rendered visibility');
