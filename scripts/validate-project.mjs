@@ -454,7 +454,10 @@ assert.ok(skierContactTests.includes('overlapping piste and terrain choose the s
 assert.ok(skierSource.includes('respawnAtCustomSpawn(spawn)')&&skierSource.includes('spawnHint.headingYaw'), 'skier controller must apply custom spawn position and heading');
 assert.ok(skierSource.includes('this._groundAt(x,z,hasReferenceY?savedY:null,hasReferenceY?2.5:Infinity)'),'manual spawn must resolve the exact saved XYZ surface instead of selecting another overlapping layer');
 assert.ok(skierSource.includes('evaluateCustomSpawnRunout(')&&skierSource.includes('runout.clearance'),'manual spawn must validate a short run-out along the authored heading / fall line rather than requiring 6m along interpolated normal');
-assert.ok(skierSource.includes('isCustomSpawnSlopeAllowed(slope,55)')&&!skierSource.includes("slope<4||slope>55"),'manual custom spawns must accept flat 0-degree terrain while retaining the 55-degree upper limit');
+const customSpawnStart=skierSource.indexOf('respawnAtCustomSpawn(spawn)');
+const customSpawnEnd=skierSource.indexOf('respawnAtTop()',customSpawnStart);
+const customSpawnBlock=customSpawnStart>=0&&customSpawnEnd>customSpawnStart?skierSource.slice(customSpawnStart,customSpawnEnd):'';
+assert.ok(customSpawnBlock.includes('isCustomSpawnSlopeAllowed(slope,55)')&&!customSpawnBlock.includes('slope<4'),'manual custom spawns must accept flat 0-degree terrain while retaining the 55-degree upper limit');
 assert.ok(skierContactUtils.includes('export function isCustomSpawnSlopeAllowed('),'flat-start slope policy helper is missing');
 assert.ok(skierSource.includes("code:'UNSUITABLE_SLOPE'")&&skierSource.includes("code:'NO_RUNOUT'")&&entrySource.includes('lastCustomSpawnError?.message'),'failed custom spawns must expose a specific reason to the user');
 assert.ok(entrySource.includes('function isPreferredStageOneSkierSlopeAsset(')&&entrySource.includes("normalized.includes('slopes_stage1')")&&entrySource.includes('const preferredSlope=state.importedAssets.find('), "imported Slopes_Stage1 geometry must take priority as the skier surface");
