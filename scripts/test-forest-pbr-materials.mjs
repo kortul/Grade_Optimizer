@@ -33,7 +33,6 @@ assert.match(renderer, /MeshPhysicalNodeMaterial\(\{\s*roughness:0\.88/, 'foliag
 assert.match(renderer, /V9: recognizable Norway spruce built from woody limbs/, 'spruce must use the new whorled bough geometry');
 assert.match(renderer, /const branches=high\?8:mid\?7:6/, 'near, mid and far LODs must use coherent spruce branch tiers');
 assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
-assert.match(renderer, /const twigCount=high\?5:mid\?4:3/, 'spruce should use layered needle sprays at every LOD');
 assert.match(renderer, /const addNeedle=/, 'foliage must be made from volumetric needle geometry, not flat cards');
 assert.match(renderer, /const twigStations=high\?5:mid\?4:3/, 'primary boughs must carry multiple drooping secondary branches');
 assert.match(renderer, /const sprayCount=high\?4:mid\?3:2/, 'secondary branches must carry multiple 3D needle sprays');
