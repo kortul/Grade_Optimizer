@@ -1083,29 +1083,42 @@ assert.ok(webgpuAtmosphereSource.includes('sky.mieCoefficient.value = 0.0038')&&
 assert.ok(webgpuAtmosphereSource.includes('renderer.toneMappingExposure = 0.55;'),'Atmosphere Lab display exposure must use the shared SkyMesh / ACES preview baseline');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
-// WebGPU Alpine Forest Lab V6: complete whorled-bough spruce rebuild; sky preserved.
+// WebGPU Alpine Forest Lab V7: true descending spruce boughs and branch-only wind; sky preserved.
 const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
-const alpineForestSource=read('webgpu-forest-lab.v6.js').toString('utf8');
+const alpineForestPageV7=read('webgpu-forest-lab-v7.html').toString('utf8');
+const alpineForestSource=read('webgpu-forest-lab.v7.js').toString('utf8');
 const alpineAtmosphereSource=read('webgpu-forest-atmosphere.v1.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v6.js?v=20261125q'),
-  'Alpine Forest Lab must load the pinned Three.js r187 active V4 entrypoint');
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v7.js?v=20261125r'),
+  'Alpine Forest Lab must load the pinned Three.js r187 V7 renderer');
+assert.ok(alpineForestPageV7.includes('webgpu-forest-lab.v7.js?v=20261125r')&&
+  alpineForestPageV7.includes('Alpine Spruce Forest Lab V7'),
+  'the cache-busted V7 page must load the V7 renderer directly');
 assert.ok(alpineForestSource.includes("import { createForestAtmosphere } from './webgpu-forest-atmosphere.v1.js'")&&
   alpineForestSource.includes('createForestAtmosphere(THREE,scene,camera,renderer,hemisphere'),
-  'active V6 renderer must keep the isolated physical atmosphere module unchanged');
+  'active V7 renderer must keep the isolated physical atmosphere module unchanged');
 assert.ok(alpineForestSource.includes("import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'")&&
   alpineForestSource.includes("new GLTFLoader().loadAsync(stageOneUrl)")&&
   alpineForestSource.includes("extension==='glb'")&&
   alpineForestSource.includes('restoreStageOneCoordinates(root,item)'),
   'Forest Lab must load Slopes_Stage1 and restore the saved CAD Bridge transform');
-assert.ok(alpineForestSource.includes('sculptural alpine spruce built from distinct whorled boughs')&&
+assert.ok(alpineForestSource.includes('V7: true alpine spruce boughs — broad descending whorls')&&
   alpineForestSource.includes('const branches=high?7:mid?6:5')&&
-  alpineForestSource.includes('const addSnowRidge=')&&
-  alpineForestSource.includes('Fine needles point diagonally outward and slightly down'),
-  'V6 must build layered spruce from individual boughs, fine needles and continuous snow caps');
-assert.ok(!alpineForestSource.includes('Forest_Far_Billboards_')&&
-  !alpineForestSource.includes('createCrossBillboardGeometry(),')&&
+  alpineForestSource.includes('const addSnowPatch=')&&
+  alpineForestSource.includes('const addBlade='),
+  'V7 must build layered spruce from flat needle fans, descending bough whorls and snow patches');
+assert.ok(alpineForestSource.includes('function removeLegacyTreeAssets(root)')&&
+  alpineForestSource.includes('removeLegacyTrees'),
+  'named legacy foliage in the imported Stage 1 asset must be removed before tree placement');
+assert.ok(alpineForestSource.includes('const outerReach=positionLocal.x.abs().add(positionLocal.z.abs())')&&
+  alpineForestSource.includes('const flex=outerReach.mul(0.012)')&&
+  !alpineForestSource.includes('positionLocal.y.mul(0.0075)')&&
+  !alpineForestSource.includes('positionLocal.y.mul(0.0055)'),
+  'wind must flex branch tips only and must not sway the entire tree like algae');
+assert.ok(!alpineForestSource.includes('addClump')&&
+  !alpineForestSource.includes('Forest_Far_Billboards_')&&
+  !alpineForestSource.includes('createCrossBillboardGeometry()')&&
   !alpineForestSource.includes('loadPineAtlas();'),
-  'V6 must remove the old billboard atlas tree path for every LOD');
+  'old rounded foliage clumps, crossed billboards and foliage atlas must be absent');
 assert.ok(alpineForestSource.includes('function buildSlopeFootprint(root)')&&
   alpineForestSource.includes('buildTreePlacements(footprint'),
   'procedural forest must derive placement from the real slope footprint');
@@ -1124,13 +1137,13 @@ assert.ok(alpineForestSource.includes('object.material.map(()=>snowMaterial)')&&
 assert.ok(alpineForestSource.includes('createSplinePineGeometry')&&
   alpineForestSource.includes("geometries.far.push(createSplinePineGeometry('far',variant))")&&
   alpineForestSource.includes("createTreeInstanceBatch(far[variant],'far',variant,forestSystem.group,false)"),
-  'forest must use the same sculpted spruce geometry for near, mid and far LODs');
+  'forest must use the same new spruce geometry for near, mid and far LODs');
 assert.ok(alpineForestSource.includes("createTreeInstanceBatch(nearShadow[variant],'near',variant,forestSystem.group,true)")&&
   alpineForestSource.includes("createTreeInstanceBatch(mid[variant],'mid',variant,forestSystem.group,false)"),
   'only near detailed trees should cast shadows in the performance baseline');
 assert.ok(alpineForestSource.includes('atmosphere.updateCamera()')&&
   alpineForestSource.includes('atmosphere.render()'),
-  'active V6 renderer must update the unchanged sky camera and render the unified scene');
+  'active V7 renderer must update the unchanged sky camera and render the unified scene');
 assert.ok(alpineAtmosphereSource.includes('new SkyMesh()')&&
   alpineAtmosphereSource.includes('skyDome.cloudCoverage.value')&&
   alpineAtmosphereSource.includes('skyDome.cloudDensity.value')&&
@@ -1150,8 +1163,7 @@ assert.ok(alpineForestHtml.includes('id="dayCycleToggle"')&&
   'Forest Lab must expose day-cycle, direct-sun and forest controls');
 assert.doesNotMatch(alpineForestHtml,/id="godRays"|id="fogDensity"|id="fogHeight"|id="fogRange"/,
   'removed fullscreen volumetric controls must not remain in the UI');
-pass('WebGPU Alpine Forest V6: physical SkyMesh preserved, sculpted whorled spruce and snow caps');
-
+pass('WebGPU Alpine Forest V7: physical SkyMesh preserved, true spruce boughs and restrained branch wind');
 
 // Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
 // The forest is terrain-wide and intentionally does not depend on any piste / Stage 1 asset.
@@ -1166,9 +1178,9 @@ assert.ok(alpineLabSource.includes("loadFBX('./assets/real-terrain.fbx')")&&alpi
 assert.ok(!alpineLabSource.includes('Slopes_Stage1')&&!alpineLabSource.includes('buildSlopeFootprint')&&!alpineLabSource.includes('restoreStageOneCoordinates'),'Alpine Lab forest must not depend on piste geometry or Stage 1 transforms');
 assert.ok(alpineLabHtml.includes('id="forestDensity"')&&alpineLabHtml.includes('id="cloudCoverage"')&&alpineLabHtml.includes('id="groundFog"')&&alpineLabHtml.includes('id="dayCycleToggle"'),'Alpine Lab must expose forest, cloud, fog and day-cycle controls');
 assert.ok(
-  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v6.js') &&
+  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v7.js') &&
   read('webgpu-atmosphere-lab.html').toString('utf8').includes('location.replace("./webgpu-forest-lab.html")'),
-  'Forest Lab must load the active V6 renderer and the legacy Atmosphere Lab URL must redirect to it'
+  'Forest Lab must load the active V7 renderer and the legacy Atmosphere Lab URL must redirect to it'
 );
 pass('unified Alpine Lab: stable WebGL, shared WeatherSystem v9 and terrain-wide instanced forest');
 
