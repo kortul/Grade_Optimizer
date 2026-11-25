@@ -652,6 +652,7 @@ function renderSlopeAnalysisOverlays(data){
   updateSlopeAnalysisAngleLabelVisibility(true);
 }
 
+const slopeAnalysisCameraPosition=new THREE.Vector3();
 function updateSlopeAnalysisAngleLabelVisibility(force=false){
   const group=state.slopeAnalysisGroup?.getObjectByName('SlopeAnalysis_Angles');
   if(!group)return;
