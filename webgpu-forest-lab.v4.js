@@ -107,7 +107,7 @@ function updateSky(forceEnvironment=false) {
   updateSolarDisc(THREE,sunDisc,camera,solar,directPower);
   const warmKey = THREE.MathUtils.clamp(solar.twilight * 0.52, 0, 0.58);
   liveSunColor.copy(daylightSunColor).lerp(lowSunColor,warmKey);
-  sunLight.intensity = solar.daylight * (3.0 + solar.daylight * 2.0) * directPower;
+  sunLight.intensity = Math.min(3.8, solar.daylight * (2.4 + solar.daylight * 1.0) * Math.min(directPower, 1.15));
   sunLight.color.copy(liveSunColor);
   moonLight.intensity=solar.nightStrength*0.16;
   sunLight.position.copy(sunDirection).multiplyScalar(1800);
@@ -1349,7 +1349,7 @@ async function start() {
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.6;
+  renderer.toneMappingExposure = 0.52;
   stage.appendChild(renderer.domElement);
   await renderer.init();
   // Configure WebGPU shadows after renderer initialisation, as in the r187 SunLight example.
