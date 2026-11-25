@@ -97,6 +97,7 @@ A second isolated [WebGPU Atmosphere Lab](https://kortul.github.io/Grade_Optimiz
 ### Ponlai rendering reference
 
 The look-development workflow is informed by [Ponlai](https://github.com/HuberyLL/ponlai): keep scene materials physically based, and tune the image through shared lighting, atmosphere and display controls rather than hiding lighting errors in material albedo. The MIT render pipeline in Ponlai also demonstrates a deeper WebGPU architecture for atmospheric LUTs, volumetric clouds, GPU vegetation culling, GTAO and exposure. The current labs are **not a direct port** of those interdependent systems: they still use Three.js `SkyMesh`, the existing TSL fog/god-ray passes and the project's procedural spruce meshes. The full Ponlai frame graph depends on its own stage assembly and data formats, so transplanting isolated files would not reproduce its renderer. No Ponlai game, island or non-MIT creative content is copied into this repository.
+
 Open the page through HTTPS (for example, the GitHub Pages preview for the feature branch) or localhost. The lab is intentionally not imported by `index.html`: the production app remains on Three.js 0.160.0 / WebGLRenderer while the WebGPU prototype is measured independently. This first prototype validates the modern renderer, TSL shader path, scene rendering and fallback without touching production materials, GLSL effects, loaders, or controls. It is GPU vertex animation, not yet a compute-shader simulation; GPU compute and a production integration require a separate measured follow-up.
 
 
