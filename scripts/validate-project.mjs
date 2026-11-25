@@ -1122,9 +1122,9 @@ assert.ok(alpineForestSource.includes('object.material.map(()=>snowMaterial)')&&
   alpineForestSource.includes('GO_WebGPU_SlopeMargin_SnowTerrain'),
   'Stage 1 and the procedural apron must not leak Maya/vertex display colours');
 assert.ok(alpineForestSource.includes('createSplinePineGeometry')&&
-  alpineForestSource.includes('snowy_conifer_atlas.webp')&&
-  alpineForestSource.includes("lod==='far"),
-  'forest must keep near/mid spline pines and far atlas billboards');
+  alpineForestSource.includes("geometries.far.push(createSplinePineGeometry('far',variant))")&&
+  alpineForestSource.includes("createTreeInstanceBatch(far[variant],'far',variant,forestSystem.group,false)"),
+  'forest must use the same sculpted spruce geometry for near, mid and far LODs');
 assert.ok(alpineForestSource.includes("createTreeInstanceBatch(nearShadow[variant],'near',variant,forestSystem.group,true)")&&
   alpineForestSource.includes("createTreeInstanceBatch(mid[variant],'mid',variant,forestSystem.group,false)"),
   'only near detailed trees should cast shadows in the performance baseline');
