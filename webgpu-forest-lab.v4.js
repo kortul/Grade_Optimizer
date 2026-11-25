@@ -133,7 +133,7 @@ function updateFogControls() {
   atmosphere?.setFog({strength});
   ui.fogStrengthValue.textContent=Math.round(strength*100)+'%';
 }
-async function buildTerrainHeightLookupasync function buildTerrainHeightLookup(root,bounds,cellSize=40){
+async function buildTerrainHeightLookup(root,bounds,cellSize=40){
   const size=bounds.getSize(new THREE.Vector3());
   const cols=Math.max(1,Math.ceil(size.x/cellSize));
   const rows=Math.max(1,Math.ceil(size.z/cellSize));
@@ -596,29 +596,22 @@ function createSlopeMarginTerrain(footprint){
   const geometry=new THREE.PlaneGeometry(width,depth,segmentsX,segmentsZ);
   geometry.rotateX(-Math.PI/2);
   const positions=geometry.attributes.position;
-  const colors=new Float32Array(positions.count*3);
-  const low=new THREE.Color(0x203b2c),meadow=new THREE.Color(0x496444);
-  const rock=new THREE.Color(0x777a72),snow=new THREE.Color(0xcbd5da),color=new THREE.Color();
-  const verticalRange=Math.max(90,source.max.y-source.min.y+42);
   for(let i=0;i<positions.count;i++){
     const x=centerX+positions.getX(i),z=centerZ+positions.getZ(i);
     const sample=sampleSlopeMarginSurface(x,z,footprint,620);
-    const y=sample?sample.y:source.min.y-34;
-    positions.setY(i,y);
-    const elevation=THREE.MathUtils.clamp((y-source.min.y+26)/verticalRange,0,1);
-    color.copy(low).lerp(meadow,THREE.MathUtils.smoothstep(elevation,0.04,0.52));
-    color.lerp(rock,THREE.MathUtils.smoothstep(elevation,0.40,0.83)*0.84);
-    color.lerp(snow,THREE.MathUtils.smoothstep(elevation,0.80,1.0)*0.72);
-    const k=i*3;colors[k]=color.r;colors[k+1]=color.g;colors[k+2]=color.b;
+    positions.setY(i,sample?sample.y:source.min.y-34);
   }
-  geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
-  geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
-  const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.97,metalness:0});
-  const ground=new THREE.Mesh(geometry,material);
-  ground.name='GO_WebGPU_SlopeMargin_Terrain';
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  const ground=new THREE.Mesh(geometry,getSnowPbrMaterial());
+  ground.name='GO_WebGPU_SlopeMargin_SnowTerrain';
   ground.position.set(centerX,0,centerZ);
-  ground.castShadow=false;ground.receiveShadow=true;
-  terrainRoot=ground;terrainBounds=new THREE.Box3().setFromObject(ground);
+  ensureWorldTerrainUV(ground,true);
+  ground.castShadow=false;
+  ground.receiveShadow=true;
+  terrainRoot=ground;
+  terrainBounds=new THREE.Box3().setFromObject(ground);
   groundLevel=terrainBounds.min.y;
   scene.add(ground);
   return ground;
@@ -1262,7 +1255,7 @@ async function start() {
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
   camera.updateProjectionMatrix();
   const isWebGPU = renderer.backend && renderer.backend.isWebGPUBackend === true;
-  statusText.textContent = isWebGPU ? 'WebGPU · SunLight CSM · PMREM sky IBL · GTAO' : 'WebGL fallback · SunLight · sky IBL · GTAO';
+  statusText.textContent = isWebGPU ? 'WebGPU · physical SkyMesh · snow PBR · near-tree shadows' : 'WebGL fallback · physical SkyMesh · snow PBR';
   statusDot.classList.add('ok');
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
