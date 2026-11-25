@@ -817,11 +817,12 @@ function createSplinePineGeometry(lod,variant){
   };
   // An eight-needle 3D tuft shares its shoot base: 24 vertices rather than separate tube geometry per needle.
   const addNeedleTuft=(center,axis,seed,size,colour)=>{
+    const needleCount=8;
     const forward=axis.clone().normalize();let side=forward.clone().cross(up);
     if(side.lengthSq()<1e-5)side.set(1,0,0);side.normalize();
     const lift=side.clone().cross(forward).normalize(),base=positions.length/3;
-    for(let i=0;i<8;i++){
-      const angle=i/8*Math.PI*2+hash(seed,i)*0.24;
+    for(let i=0;i<needleCount;i++){
+      const angle=i/needleCount*Math.PI*2+hash(seed,i)*0.24;
       const radial=side.clone().multiplyScalar(Math.cos(angle)).addScaledVector(lift,Math.sin(angle)).normalize();
       const direction=forward.clone().multiplyScalar(0.58).addScaledVector(radial,0.78).add(new THREE.Vector3(0,-0.10,0)).normalize();
       const length=size*(0.76+hash(seed+3,i)*0.42),tip=center.clone().addScaledVector(direction,length);
