@@ -41,6 +41,7 @@ jobs:
       - name: Check standalone WebGPU lab modules
         run: |
           node --input-type=module --check < solar-cycle.v1.js
+          node --input-type=module --check < webgpu-cloud-layer.v1.js
           node --input-type=module --check < webgpu-atmosphere-lab.js
           node --input-type=module --check < webgpu-atmosphere-lab.v2.js
           node --input-type=module --check < webgpu-forest-lab.js
