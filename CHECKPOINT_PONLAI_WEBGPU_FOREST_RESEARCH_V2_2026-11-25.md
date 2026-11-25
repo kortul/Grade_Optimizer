@@ -25,7 +25,7 @@ Date: 2026-11-25
 The implementation is independently authored and inspired by Ponlai's architectural principles: vegetation instancing, LOD, branch motion, clumped foliage, material-aware light-through response, and day-linked atmosphere. It does not copy Ponlai source or use its creative assets.
 
 ## Verification / remaining work
-- Static source checks and JS parsing after stripping module import/export declarations are required for this commit.
+- Static linkage checks passed; both JavaScript modules passed syntax parsing after stripping their static import/export declarations.
 - No live Chrome/Edge WebGPU session or visual capture was run. Runtime shader compilation, actual tree appearance, cloud visibility, shadow artifacts and GPU timings remain to be verified in the browser.
 - The apron still estimates ground height from the nearest Stage 1 footprint edge when terrain source data is absent.
 - Tree shadows remain limited to near instances. Foliage transmission is approximate. Cloud layers are procedural horizontal decks, not a full 3D atmosphere.

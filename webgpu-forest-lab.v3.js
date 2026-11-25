@@ -96,7 +96,7 @@ const sunScreenUV=uniform(new THREE.Vector2(0.78,0.16));
 
 const ATMOSPHERE_TONES={
   nightSky:new THREE.Color(0x1e2c40),daySky:new THREE.Color(0xbfd4e2),
-  warmHorizon:new THREE.Color(0xe7aa83),twilightHorizon:new THREE.Color(0x887486),
+  warmHorizon:new THREE.Color(0xe7aa83),twilightHorizon:new THREE.Color(0x887486),haze:new THREE.Color(),
   overcastHorizon:new THREE.Color(0xb9c6cc),nightGround:new THREE.Color(0x1b2532),
   dayGround:new THREE.Color(0x6f796e),warmGround:new THREE.Color(0x806b5a),
   cloudyGround:new THREE.Color(0x59645f)
@@ -185,7 +185,7 @@ function updateSky() {
   moonLight.target.position.copy(controls.target);
 
   const tones=ATMOSPHERE_TONES;
-  const haze=tones.nightSky.clone().lerp(tones.daySky,solar.daylight);
+  const haze=tones.haze.copy(tones.nightSky).lerp(tones.daySky,solar.daylight);
   haze.lerp(tones.warmHorizon,THREE.MathUtils.clamp(solar.warm*0.52+solar.twilight*0.12,0,0.62));
   haze.lerp(tones.twilightHorizon,solar.twilight*(0.16+solar.nightStrength*0.28));
   haze.lerp(tones.overcastHorizon,cloudLoad*0.12);
