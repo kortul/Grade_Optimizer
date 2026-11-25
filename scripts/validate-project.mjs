@@ -1088,7 +1088,7 @@ const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
 const alpineForestPageV7=read('webgpu-forest-lab-v7.html').toString('utf8');
 const alpineForestSource=read('webgpu-forest-lab.v7.js').toString('utf8');
 const alpineAtmosphereSource=read('webgpu-forest-atmosphere.v1.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v7.js?v=20261125r'),
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v7.js?v=20261125s'),
   'Alpine Forest Lab must load the pinned Three.js r187 V7 renderer');
 assert.ok(alpineForestPageV7.includes('webgpu-forest-lab.v7.js?v=20261125r')&&
   alpineForestPageV7.includes('Alpine Spruce Forest Lab V7'),
@@ -1101,11 +1101,13 @@ assert.ok(alpineForestSource.includes("import { GLTFLoader } from 'three/addons/
   alpineForestSource.includes("extension==='glb'")&&
   alpineForestSource.includes('restoreStageOneCoordinates(root,item)'),
   'Forest Lab must load Slopes_Stage1 and restore the saved CAD Bridge transform');
-assert.ok(alpineForestSource.includes('V7: true alpine spruce boughs — broad descending whorls')&&
-  alpineForestSource.includes('const branches=high?7:mid?6:5')&&
+assert.ok(alpineForestSource.includes('V8: stable spruce whorls — no spiral tier rotation')&&
+  alpineForestSource.includes('const branches=high?5:mid?4:3')&&
   alpineForestSource.includes('const addSnowPatch=')&&
+  alpineForestSource.includes('const twigCount=high?5:mid?4:3')&&
+  alpineForestSource.includes('const phase=variant*0.42+(level%2)*0.10')&&
   alpineForestSource.includes('const addBlade='),
-  'V7 must build layered spruce from flat needle fans, descending bough whorls and snow patches');
+  'V8 must build spruce from stable whorls, twig sprays and snow patches without spiral tier rotation');
 assert.ok(alpineForestSource.includes('function removeLegacyTreeAssets(root)')&&
   alpineForestSource.includes('removeLegacyTreeAssets'),
   'named legacy foliage in the imported Stage 1 asset must be removed before tree placement');
