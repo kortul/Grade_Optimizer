@@ -490,9 +490,9 @@ function createAlpineTerrainMaps(){
   };
   return alpineTerrainMaps;
 }
-function ensureWorldTerrainUV(mesh){
+function ensureWorldTerrainUV(mesh,force=false){
   const geometry=mesh.geometry;
-  if(!geometry?.attributes?.position||geometry.attributes.uv)return;
+  if(!geometry?.attributes?.position||(!force&&geometry.attributes.uv))return;
   const positions=geometry.attributes.position;
   const uvs=new Float32Array(positions.count*2);
   const point=new THREE.Vector3();
@@ -594,7 +594,9 @@ async function loadRealTerrain() {
     if (!object.isMesh || !object.geometry || !object.geometry.attributes.position) return;
     terrainMeshCount++;
     const original=Array.isArray(object.material)?object.material:[object.material];
-    if(!object.geometry.attributes.uv)ensureWorldTerrainUV(object);
+    const needsProceduralAlbedo=original.some(source=>source&&!source.map);
+    if(needsProceduralAlbedo)ensureWorldTerrainUV(object,true);
+    else if(!object.geometry.attributes.uv)ensureWorldTerrainUV(object);
     object.material=Array.isArray(object.material)
       ?object.material.map(source=>makeTerrainPbrMaterial(source,proceduralMaps,terrainMaterialCache))
       :makeTerrainPbrMaterial(object.material,proceduralMaps,terrainMaterialCache);
