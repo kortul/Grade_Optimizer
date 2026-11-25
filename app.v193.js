@@ -4910,7 +4910,6 @@ function renderEditorTree(assets,selectedKey=editorSelectionKey()){
     {label:'RESORT SCENE',key:'scene',items:assets.filter(asset=>asset.sourceType==='scene')},
     {label:'IMPORTED MODELS',key:'imported',items:assets.filter(asset=>asset.sourceType!=='scene')}
   ];
-  const materialUseCounts=collectSharedMaterialUseCounts(assets);
   let visibleCount=0;
 
   function appendMaterialRow(owner,target,depth){
