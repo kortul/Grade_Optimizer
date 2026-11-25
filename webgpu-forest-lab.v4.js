@@ -184,7 +184,7 @@ function updateSkyEnvironment(solar,force=false){
   }
   skyEnvironmentTexture.needsUpdate=true;
   scene.environment=skyEnvironmentTexture;
-  scene.environmentIntensity=0.72;
+  scene.environmentIntensity=0.92;
 }
 function updateSkyLabels() {
   ui.turbidityValue.textContent = Number(ui.turbidity.value).toFixed(1);
@@ -420,6 +420,145 @@ function createFallbackTerrain(manifest, metersPerUnit) {
   group.add(mesh);
   return group;
 }
+
+let alpineTerrainMaps=null;
+function createAlpineTerrainMaps(){
+  if(alpineTerrainMaps)return alpineTerrainMaps;
+  const size=512;
+  const albedoData=new Uint8Array(size*size*4);
+  const roughnessData=new Uint8Array(size*size*4);
+  const heightData=new Uint8Array(size*size*4);
+  const fract=value=>value-Math.floor(value);
+  const hash=(x,y)=>{
+    let n=(Math.imul(x|0,374761393)+Math.imul(y|0,668265263))|0;
+    n=Math.imul(n^(n>>>13),1274126177);
+    n^=n>>>16;
+    return (n>>>0)/4294967295;
+  };
+  const smooth=t=>t*t*(3-2*t);
+  const valueNoise=(u,v,grid)=>{
+    const x=u*grid,y=v*grid;
+    const x0=Math.floor(x),y0=Math.floor(y);
+    const tx=smooth(x-x0),ty=smooth(y-y0);
+    const ix=((x0%grid)+grid)%grid,iy=((y0%grid)+grid)%grid;
+    const ix1=(ix+1)%grid,iy1=(iy+1)%grid;
+    const a=THREE.MathUtils.lerp(hash(ix,iy),hash(ix1,iy),tx);
+    const b=THREE.MathUtils.lerp(hash(ix,iy1),hash(ix1,iy1),tx);
+    return THREE.MathUtils.lerp(a,b,ty);
+  };
+  const ramp=(a,b,t)=>THREE.MathUtils.lerp(a,b,THREE.MathUtils.clamp(t,0,1));
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const u=x/size,v=y/size;
+    const macro=valueNoise(u,v,5)*0.68+valueNoise(u,v,13)*0.32;
+    const rockNoise=valueNoise(u,v,9)*0.58+valueNoise(u,v,29)*0.42;
+    const detail=valueNoise(u,v,67);
+    const grain=valueNoise(u,v,181);
+    const earth=THREE.MathUtils.smoothstep(macro,0.34,0.65);
+    const rock=THREE.MathUtils.smoothstep(rockNoise,0.58,0.78)*0.78;
+    const fine=(detail-0.5)*12+(grain-0.5)*12;
+    const grass=[67,83,57],soil=[91,72,54],stone=[117,112,101];
+    const offset=(y*size+x)*4;
+    for(let channel=0;channel<3;channel++){
+      const ground=ramp(grass[channel],soil[channel],earth);
+      const colour=ramp(ground,stone[channel],rock)+fine;
+      albedoData[offset+channel]=Math.round(THREE.MathUtils.clamp(colour,0,255));
+    }
+    albedoData[offset+3]=255;
+    const rough=Math.round(202+detail*34+grain*15);
+    roughnessData[offset]=roughnessData[offset+1]=roughnessData[offset+2]=rough;
+    roughnessData[offset+3]=255;
+    const height=Math.round(112+detail*40+grain*30);
+    heightData[offset]=heightData[offset+1]=heightData[offset+2]=height;
+    heightData[offset+3]=255;
+  }
+  const makeTexture=(data,name,colorSpace)=>{
+    const texture=new THREE.DataTexture(data,size,size,THREE.RGBAFormat,THREE.UnsignedByteType);
+    texture.name=name;
+    texture.colorSpace=colorSpace;
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    texture.minFilter=THREE.LinearMipmapLinearFilter;
+    texture.magFilter=THREE.LinearFilter;
+    texture.generateMipmaps=true;
+    texture.anisotropy=Math.min(8,renderer?.getMaxAnisotropy?.()||1);
+    texture.needsUpdate=true;
+    return texture;
+  };
+  alpineTerrainMaps={
+    albedo:makeTexture(albedoData,'GO_AlpineGround_ProceduralAlbedo',THREE.SRGBColorSpace),
+    roughness:makeTexture(roughnessData,'GO_AlpineGround_Roughness',THREE.NoColorSpace),
+    height:makeTexture(heightData,'GO_AlpineGround_MicroHeight',THREE.NoColorSpace)
+  };
+  return alpineTerrainMaps;
+}
+function ensureWorldTerrainUV(mesh){
+  const geometry=mesh.geometry;
+  if(!geometry?.attributes?.position||geometry.attributes.uv)return;
+  const positions=geometry.attributes.position;
+  const uvs=new Float32Array(positions.count*2);
+  const point=new THREE.Vector3();
+  mesh.updateWorldMatrix(true,false);
+  for(let i=0;i<positions.count;i++){
+    point.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
+    uvs[i*2]=point.x/48;
+    uvs[i*2+1]=point.z/48;
+  }
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+}
+function makeTerrainPbrMaterial(source,proceduralMaps,cache){
+  if(!source)return source;
+  if(cache.has(source))return cache.get(source);
+  const sourceRoughness=Number(source.roughness);
+  const shininess=Number(source.shininess);
+  const inferredRoughness=Number.isFinite(sourceRoughness)
+    ?THREE.MathUtils.clamp(sourceRoughness,0.48,0.94)
+    :Number.isFinite(shininess)&&shininess>0
+      ?THREE.MathUtils.clamp(Math.sqrt(2/(shininess+2)),0.52,0.88)
+      :0.76;
+  const material=new THREE.MeshPhysicalMaterial({
+    name:source.name||'AlpineTerrain_PBR',
+    color:source.color?.clone?.()||new THREE.Color(0xffffff),
+    map:source.map||proceduralMaps.albedo,
+    alphaMap:source.alphaMap||null,
+    aoMap:source.aoMap||null,
+    lightMap:source.lightMap||null,
+    emissive:source.emissive?.clone?.()||new THREE.Color(0x000000),
+    emissiveMap:source.emissiveMap||null,
+    normalMap:source.normalMap||null,
+    normalScale:source.normalScale?.clone?.()||new THREE.Vector2(1,1),
+    bumpMap:source.bumpMap||proceduralMaps.height,
+    bumpScale:Number.isFinite(source.bumpScale)?source.bumpScale:0.12,
+    displacementMap:source.displacementMap||null,
+    displacementScale:Number.isFinite(source.displacementScale)?source.displacementScale:1,
+    displacementBias:Number.isFinite(source.displacementBias)?source.displacementBias:0,
+    roughnessMap:source.roughnessMap||proceduralMaps.roughness,
+    metalnessMap:source.metalnessMap||null,
+    roughness:inferredRoughness,
+    metalness:0,
+    clearcoat:0.14,
+    clearcoatRoughness:0.38,
+    specularIntensity:0.72,
+    specularColor:source.specular?.clone?.()||new THREE.Color(0xffffff),
+    vertexColors:!!source.vertexColors,
+    side:source.side??THREE.FrontSide,
+    transparent:!!source.transparent,
+    opacity:Number.isFinite(source.opacity)?source.opacity:1,
+    alphaTest:Number.isFinite(source.alphaTest)?source.alphaTest:0,
+    depthWrite:source.depthWrite!==false,
+    flatShading:!!source.flatShading,
+    fog:true
+  });
+  material.userData={
+    ...(source.userData||{}),
+    gradeOptimizerPbrSourceMaterial:source.name||source.type||'Material',
+    gradeOptimizerTerrainPbr:true
+  };
+  if(source.emissiveIntensity!==undefined)material.emissiveIntensity=source.emissiveIntensity;
+  if(source.aoMapIntensity!==undefined)material.aoMapIntensity=source.aoMapIntensity;
+  if(source.lightMapIntensity!==undefined)material.lightMapIntensity=source.lightMapIntensity;
+  cache.set(source,material);
+  return material;
+}
+
 async function loadRealTerrain() {
   setLoadingMessage('Загружаем базовый рельеф…');
   await nextAnimationFrame();
@@ -445,13 +584,35 @@ async function loadRealTerrain() {
   const bounds = new THREE.Box3().setFromObject(root);
   const size = bounds.getSize(new THREE.Vector3());
   if (bounds.isEmpty() || size.x < 10 || size.z < 10) { if (!usingFallback) throw new Error('FBX рельеф не содержит корректную геометрию.'); }
-  const material = new THREE.MeshStandardMaterial({ color: 0xe7eff4, vertexColors: usingFallback, roughness: 0.96, metalness: 0 });
+  // Preserve Maya's exported openPBR baseColor/material data. The old uniform
+  // pale-grey override discarded the FBX material before it ever reached the renderer.
+  const proceduralMaps=createAlpineTerrainMaps();
+  const terrainMaterialCache=new Map();
+  const terrainMaterialReport=[];
+  root.updateMatrixWorld(true);
   root.traverse(object => {
     if (!object.isMesh || !object.geometry || !object.geometry.attributes.position) return;
     terrainMeshCount++;
-    object.material = material;
-    object.castShadow = false;
-    object.receiveShadow = true;
+    const original=Array.isArray(object.material)?object.material:[object.material];
+    if(!object.geometry.attributes.uv)ensureWorldTerrainUV(object);
+    object.material=Array.isArray(object.material)
+      ?object.material.map(source=>makeTerrainPbrMaterial(source,proceduralMaps,terrainMaterialCache))
+      :makeTerrainPbrMaterial(object.material,proceduralMaps,terrainMaterialCache);
+    if(!object.geometry.attributes.normal)object.geometry.computeVertexNormals();
+    object.castShadow=true;
+    object.receiveShadow=true;
+    original.forEach(source=>{
+      if(source)terrainMaterialReport.push({
+        source:source.name||source.type,
+        color:source.color?.getHexString?.()||'n/a',
+        hadMap:!!source.map
+      });
+    });
+  });
+  console.info('[Grade Optimizer Forest Lab] Real terrain PBR materials:',{
+    meshCount:terrainMeshCount,
+    materials:terrainMaterialReport,
+    proceduralAlbedo:!terrainMaterialReport.some(item=>item.hadMap)
   });
   if (!terrainMeshCount) throw new Error('В FBX не найдено ни одного polygon mesh.');
   root.name = 'GO_WebGPU_RealTerrain';
@@ -1145,7 +1306,7 @@ function createPineBacklightNode(){
   return vec3(0.045,0.075,0.032).mul(transmission).mul(foliageBacklight).mul(foliageDaylight);
 }
 function createSplinePineMaterial() {
-  const material=new THREE.MeshStandardNodeMaterial({roughness:0.69,metalness:0,vertexColors:true,side:THREE.DoubleSide});
+  const material=new THREE.MeshPhysicalNodeMaterial({roughness:0.64,metalness:0,vertexColors:true,side:THREE.DoubleSide,clearcoat:0.14,clearcoatRoughness:0.34,specularIntensity:0.78});
   const phase=positionLocal.x.mul(0.17).add(positionLocal.z.mul(0.13));
   const swayX=sin(time.mul(0.72).add(positionLocal.y.mul(0.52)).add(phase))
     .mul(positionLocal.y.mul(0.0075)).mul(foliageWind);
@@ -1156,7 +1317,7 @@ function createSplinePineMaterial() {
   return material;
 }
 function createPineAtlasMaterial(texture){
-  const material=new THREE.MeshStandardNodeMaterial({map:texture,color:0xffffff,roughness:0.82,metalness:0,side:THREE.DoubleSide,alphaTest:0.12});
+  const material=new THREE.MeshPhysicalNodeMaterial({map:texture,color:0xffffff,roughness:0.78,metalness:0,side:THREE.DoubleSide,alphaTest:0.12,clearcoat:0.04,clearcoatRoughness:0.45,specularIntensity:0.45});
   material.emissiveNode=createPineBacklightNode();
   return material;
 }
@@ -1245,7 +1406,7 @@ function createTreeInstanceBatch(trees, lod, variant, parent, castShadow=false) 
   });
   mesh.instanceMatrix.needsUpdate=true;
   if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
-  mesh.frustumCulled=false;mesh.castShadow=!!castShadow&&lod==='near';mesh.receiveShadow=true;
+  mesh.frustumCulled=false;mesh.castShadow=!!castShadow;mesh.receiveShadow=true;
   parent.add(mesh);
 }
 
@@ -1258,21 +1419,21 @@ function rebuildForestLod(force=false) {
   forestSystem.lastCamera.copy(camera.position);
   forestSystem.lastForward.copy(forestSystem.cameraForward);
   forestSystem.group.clear();
-  const near=[[],[],[]],nearShadow=[[],[],[]],mid=[[],[],[]],far=Array.from({length:8},()=>[]);
-  const shadowLimitSq=650*650,nearLimitSq=850*850,midLimitSq=3300*3300;
+  const nearShadow=[[],[],[]],midShadow=[[],[],[]],mid=[[],[],[]],far=Array.from({length:8},()=>[]);
+  const nearLimitSq=850*850,shadowLimitSq=2050*2050,midLimitSq=3300*3300;
   for(const tree of forestSystem.trees){
     const dx=camera.position.x-tree.x;
     const dy=camera.position.y-(tree.y+tree.height*0.5);
     const dz=camera.position.z-tree.z;
     const distanceSq=dx*dx+dy*dy+dz*dz;
-    if(distanceSq<shadowLimitSq)nearShadow[tree.variant].push(tree);
-    else if(distanceSq<nearLimitSq)near[tree.variant].push(tree);
+    if(distanceSq<nearLimitSq)nearShadow[tree.variant].push(tree);
+    else if(distanceSq<shadowLimitSq)midShadow[tree.variant].push(tree);
     else if(distanceSq<midLimitSq)mid[tree.variant].push(tree);
     else far[tree.atlasVariant].push(tree);
   }
   for(let variant=0;variant<3;variant++){
     createTreeInstanceBatch(nearShadow[variant],'near',variant,forestSystem.group,true);
-    createTreeInstanceBatch(near[variant],'near',variant,forestSystem.group,false);
+    createTreeInstanceBatch(midShadow[variant],'mid',variant,forestSystem.group,true);
     createTreeInstanceBatch(mid[variant],'mid',variant,forestSystem.group,false);
   }
   for(let variant=0;variant<8;variant++){
@@ -1280,9 +1441,9 @@ function rebuildForestLod(force=false) {
   }
   terrainInfoEl.textContent=forestSystem.trees.length.toLocaleString('ru-RU');
   forestSystem.lastLod={
-    shadow:nearShadow.reduce((sum,items)=>sum+items.length,0),
-    near:near.reduce((sum,items)=>sum+items.length,0),
-    mid:mid.reduce((sum,items)=>sum+items.length,0),
+    shadow:nearShadow.reduce((sum,items)=>sum+items.length,0)+midShadow.reduce((sum,items)=>sum+items.length,0),
+    near:nearShadow.reduce((sum,items)=>sum+items.length,0),
+    mid:midShadow.reduce((sum,items)=>sum+items.length,0)+mid.reduce((sum,items)=>sum+items.length,0),
     far:far.reduce((sum,items)=>sum+items.length,0)
   };
 }
@@ -1490,17 +1651,17 @@ async function start() {
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   sunLight.shadow.mapSize.set(4096,4096);
-  sunLight.shadow.camera.left=-1450;sunLight.shadow.camera.right=1450;
-  sunLight.shadow.camera.top=1450;sunLight.shadow.camera.bottom=-1450;
-  sunLight.shadow.camera.near=1;sunLight.shadow.camera.far=6500;
-  sunLight.shadow.bias=-0.00006;sunLight.shadow.normalBias=0.018;sunLight.shadow.radius=2;
+  sunLight.shadow.camera.left=-2100;sunLight.shadow.camera.right=2100;
+  sunLight.shadow.camera.top=2100;sunLight.shadow.camera.bottom=-2100;
+  sunLight.shadow.camera.near=1;sunLight.shadow.camera.far=8200;
+  sunLight.shadow.bias=-0.00005;sunLight.shadow.normalBias=0.024;sunLight.shadow.radius=2.6;
   sunLight.shadow.autoUpdate=true;
   sunLight.shadow.camera.updateProjectionMatrix();
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.3));
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.86;
+  renderer.toneMappingExposure = 0.94;
   stage.appendChild(renderer.domElement);
   await renderer.init();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
