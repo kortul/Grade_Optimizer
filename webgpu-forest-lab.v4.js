@@ -1315,10 +1315,13 @@ async function loadStageOneAndForest() {
     if(pbrMaterials.has(source))return pbrMaterials.get(source);
     const kind=String(source.userData?.gradeOptimizerStageOneSurfaceKind||source.name||'slopes').toLowerCase();
     const angled=kind.includes('angled');
+    const sourceRoughness=Number(source.roughness);
     const phongShininess=Number(source.shininess);
-    const phongRoughness=Number.isFinite(phongShininess)&&phongShininess>0
-      ?THREE.MathUtils.clamp(Math.sqrt(2/(phongShininess+2)),0.48,0.88)
-      :(angled?0.48:0.70);
+    const phongRoughness=Number.isFinite(sourceRoughness)
+      ?THREE.MathUtils.clamp(sourceRoughness,0.38,0.92)
+      :Number.isFinite(phongShininess)&&phongShininess>0
+        ?THREE.MathUtils.clamp(Math.sqrt(2/(phongShininess+2)),0.48,0.88)
+        :(angled?0.48:0.70);
     const material=new THREE.MeshPhysicalMaterial({
       name:source.name|| (angled?'AngledSlopes':'Slopes'),
       color:source.color?.clone?.()||new THREE.Color(0xffffff),
