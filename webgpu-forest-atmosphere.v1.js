@@ -385,7 +385,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
       const previous = environmentTarget;
       environmentTarget = next;
       scene.environment = next.texture;
-      scene.environmentIntensity = 0.78;
+      scene.environmentIntensity = 0.50;
       previous?.dispose();
     } finally {
       scene.add(skyDome);
@@ -421,7 +421,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     groundBounce.copy(nightGround).lerp(dayGround, fill);
     hemisphere.color.copy(skyZenith);
     hemisphere.groundColor.copy(groundBounce);
-    hemisphere.intensity = 0.46 + fill * 0.30 + state.night.value * 0.08;
+    hemisphere.intensity = 0.12 + fill * 0.12 + state.night.value * 0.025;
 
     lowerClouds.position.set(center.x, groundLevel + 2450 + state.cloudElevation.value * 1100 - lowerRadius, center.z);
     upperClouds.position.set(center.x, groundLevel + 6100 + state.cloudElevation.value * 1400 - upperRadius, center.z);
