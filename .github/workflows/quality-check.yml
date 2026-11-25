@@ -41,6 +41,7 @@ jobs:
           node --input-type=module --check < drone-controller.v76.js
       - name: Check standalone WebGPU lab modules
         run: |
+          node --input-type=module --check < alpine-lab.v1.js
           node --input-type=module --check < solar-cycle.v1.js
           node --input-type=module --check < webgpu-cloud-layer.v1.js
           node --input-type=module --check < webgpu-atmosphere-lab.js
