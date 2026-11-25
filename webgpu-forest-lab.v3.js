@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
 import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
-import { createCloudLayer } from './webgpu-cloud-layer.v2.js';
+import { createCloudLayer } from './webgpu-cloud-layer.v1.js';
 import {
   exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
   isBackgroundDepth, Loop, pass, rtt, screenCoordinate, screenUV, smoothstep,
@@ -94,13 +94,6 @@ const raySteps=uniform(12);
 const rayResolutionScale=uniform(0.42);
 const sunScreenUV=uniform(new THREE.Vector2(0.78,0.16));
 
-const ATMOSPHERE_TONES={
-  nightSky:new THREE.Color(0x1e2c40),daySky:new THREE.Color(0xbfd4e2),
-  warmHorizon:new THREE.Color(0xe7aa83),twilightHorizon:new THREE.Color(0x887486),haze:new THREE.Color(),
-  overcastHorizon:new THREE.Color(0xb9c6cc),nightGround:new THREE.Color(0x1b2532),
-  dayGround:new THREE.Color(0x6f796e),warmGround:new THREE.Color(0x806b5a),
-  cloudyGround:new THREE.Color(0x59645f)
-};
 
 
 function createNoiseTexture3D(size) {
@@ -158,11 +151,10 @@ function updateSky() {
   foliageDaylight.value=solar.daylight;
   sunLight.castShadow=solar.daylight>0.035;
   sky.sunPosition.value.copy(sunDirection);
-  const turbidity=Number(ui.turbidity.value);
-  sky.turbidity.value = turbidity;
+  sky.turbidity.value = Number(ui.turbidity.value);
   sky.rayleigh.value = Number(ui.rayleigh.value);
-  sky.mieCoefficient.value = 0.0016+turbidity*0.00084;
-  sky.mieDirectionalG.value = 0.765+solar.daylight*0.018;
+  sky.mieCoefficient.value = 0.0038;
+  sky.mieDirectionalG.value = 0.78;
   // SkyMesh's built-in cloud sheet is disabled; the shared WeatherSystem v9 field is rendered in TSL.
   sky.cloudCoverage.value = 0;
   sky.cloudDensity.value = 0;
@@ -171,12 +163,8 @@ function updateSky() {
 
   const directPower=THREE.MathUtils.clamp(Number(ui.sunIntensity.value),0,1.5);
   updateSolarDisc(THREE,sunDisc,camera,solar,directPower);
-  const cloudLoad=THREE.MathUtils.clamp(
-    Number(ui.cloudCoverage.value)*Number(ui.cloudDensity.value),0,1
-  );
-  const directCloudAttenuation=1-cloudLoad*0.27;
-  hemisphere.intensity=0.18+solar.daylight*(0.62+cloudLoad*0.10)+solar.nightStrength*0.035;
-  sunLight.intensity=solar.daylight*3.0*directPower*directCloudAttenuation;
+  hemisphere.intensity = 0.18 + solar.daylight * 0.62 + solar.nightStrength*0.025;
+  sunLight.intensity = solar.daylight * 3.0 * directPower;
   sunLight.color.copy(solar.sunColor);
   moonLight.intensity=solar.nightStrength*0.16;
   sunLight.position.copy(controls.target).addScaledVector(sunDirection,1800);
@@ -184,19 +172,21 @@ function updateSky() {
   moonLight.position.copy(controls.target).addScaledVector(sunDirection,-1800);
   moonLight.target.position.copy(controls.target);
 
-  const tones=ATMOSPHERE_TONES;
-  const haze=tones.haze.copy(tones.nightSky).lerp(tones.daySky,solar.daylight);
-  haze.lerp(tones.warmHorizon,THREE.MathUtils.clamp(solar.warm*0.52+solar.twilight*0.12,0,0.62));
-  haze.lerp(tones.twilightHorizon,solar.twilight*(0.16+solar.nightStrength*0.28));
-  haze.lerp(tones.overcastHorizon,cloudLoad*0.12);
-  const turbidityHaze=THREE.MathUtils.clamp((turbidity-1)/7,0,1);
-  haze.lerp(tones.overcastHorizon,turbidityHaze*0.10);
-  fogColor.value.copy(haze);
-
-  hemisphere.color.copy(tones.nightSky).lerp(tones.daySky,solar.daylight)
-    .lerp(solar.sunColor,solar.warm*0.16).lerp(tones.overcastHorizon,cloudLoad*0.17);
-  hemisphere.groundColor.copy(tones.nightGround).lerp(tones.dayGround,solar.daylight)
-    .lerp(tones.warmGround,solar.warm*0.30).lerp(tones.cloudyGround,cloudLoad*0.14);
+  const nightSky=new THREE.Color(0x28364b);
+  const daySky=new THREE.Color(0xc7d9e7);
+  const warmHorizon=new THREE.Color(0xd8b39a);
+  fogColor.value.copy(nightSky).lerp(daySky,solar.daylight)
+    .lerp(warmHorizon,solar.twilight*0.28);
+  hemisphere.color.setRGB(
+    0.34+solar.daylight*0.44,
+    0.43+solar.daylight*0.43,
+    0.58+solar.daylight*0.34
+  );
+  hemisphere.groundColor.setRGB(
+    0.13+solar.daylight*0.28,
+    0.16+solar.daylight*0.30,
+    0.20+solar.daylight*0.26
+  );
   cloudLayer?.setAtmosphere({
     coverage:Number(ui.cloudCoverage.value),density:Number(ui.cloudDensity.value),
     elevation:Number(ui.cloudElevation.value),wind:Number(ui.wind.value),daylight:solar.daylight,
