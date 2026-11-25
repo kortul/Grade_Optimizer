@@ -250,7 +250,8 @@ const missingDomRefs = [...new Set(staticDomRefs.filter(id => !ids.includes(id))
 assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missingDomRefs.join(', '));
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
 
-const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map(m => m[1]);
+const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)]
+  .map(m => m[1].split(/[?#]/, 1)[0]);
 assert.ok(entrySource.includes('weather-system.v9.js'), 'active app must use the updated atmospheric weather engine');
 const mayaExporterSource = read('maya/grade_optimizer_exporter.py').toString('utf8');
 assert.ok(mayaExporterSource.includes('def _inspect_git_worktree(repo):')&&mayaExporterSource.includes('"--show-toplevel"'), 'Maya exporter must verify the selected Git working tree');
