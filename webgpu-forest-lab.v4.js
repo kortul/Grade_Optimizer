@@ -4,12 +4,11 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { shareStageOneMaterialsByKind } from './stage-one-materials.v1.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
-import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
 import { SunLight } from 'three/addons/lights/SunLight.js';
 import { SunLightNode } from 'three/addons/lights/SunLightNode.js';
 import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
-import { createCloudLayer } from './webgpu-cloud-layer.v3.js';
+import { createForestAtmosphere } from './webgpu-forest-atmosphere.v1.js';
 import {
   builtinAOContext, exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
   isBackgroundDepth, Loop, mrt, normalView, packNormalToRGB, pass, rtt, sample,
@@ -56,15 +55,6 @@ scene.add(sunLight);
 const moonLight = new THREE.DirectionalLight(0x9eb6dc, 0.16);
 moonLight.castShadow = false;
 scene.add(moonLight, moonLight.target);
-const sky = new SkyMesh();
-sky.scale.setScalar(450000);
-sky.renderOrder = -1000;
-sky.frustumCulled = false;
-if (sky.material) {
-  sky.material.depthWrite = false;
-  sky.material.depthTest = false;
-}
-scene.add(sky);
 const sunDisc=createSolarDisc(THREE);
 scene.add(sunDisc);
 const sunDirection = new THREE.Vector3();
@@ -73,33 +63,13 @@ const foliageDaylight = uniform(1);
 const foliageBacklight = uniform(0.82);
 const foliageWind = uniform(1);
 const slopeMarginNoise = new ImprovedNoise();
-let renderer, renderPipeline, controls, groundLevel = 0, elapsed = 0;
+let renderer, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
 let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null,pineAtlasTextures=null;
-let fogPipeline,cloudLayer=null,dayCyclePlaying=false;
+let atmosphere=null,dayCyclePlaying=false;
 let solarState=null;
 
-const noiseTexture = createNoiseTexture3D(64);
-const fogDensity = uniform(Number(ui.fogDensity.value));
-const fogHeight = uniform(Number(ui.fogHeight.value));
-const fogStrength = uniform(Number(ui.fogStrength.value));
-const windTime = uniform(0);
-const cloudScale = uniform(0.0027);
-const cloudThreshold = uniform(0.48);
-const heightFalloff = uniform(1.65);
-const maxRayDistance = uniform(4200);
-const rangeFogNear = uniform(2200);
-const rangeFogFar = uniform(9000);
-const resolutionScale = uniform(0.42);
-const marchSteps = uniform(18);
-const spatialSigma = uniform(1.15);
-const depthSensitivity = uniform(22);
-const fogColor = uniform(new THREE.Color(0xc6dced));
-// PMREM is generated from the actual SkyMesh, not a hand-painted equirectangular
-// approximation. This supplies the prefiltered specular environment expected by PBR materials.
-let pmremGenerator=null,environmentScene=null,environmentRenderTarget=null;
-let skyEnvironmentLastUpdate=0;
-const daylightSunColor = new THREE.Color(0xfff8f1);
+const daylightSunColorconst daylightSunColor = new THREE.Color(0xfff8f1);
 const lowSunColor = new THREE.Color(0xffc18e);
 const liveSunColor = new THREE.Color();
 const rayStrength=uniform(Number(ui.godRays.value));
@@ -109,58 +79,11 @@ const sunScreenUV=uniform(new THREE.Vector2(0.78,0.16));
 
 
 
-function createNoiseTexture3D(size) {
-  const data = new Uint8Array(size * size * size);
-  const perlin = new ImprovedNoise();
-  const v = new THREE.Vector3();
-  let i = 0;
-  for (let z = 0; z < size; z++) for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    v.set(x, y, z).subScalar(size * 0.5).divideScalar(size);
-    const edge = THREE.MathUtils.clamp(1 - v.length() * 0.30, 0.52, 1);
-    const a = perlin.noise(x * 0.045, y * 0.045, z * 0.045);
-    const b = perlin.noise(x * 0.091 + 17.2, y * 0.091 + 4.3, z * 0.091 - 8.1) * 0.34;
-    data[i++] = Math.round(THREE.MathUtils.clamp((0.53 + a * 0.31 + b * 0.16) * edge, 0, 1) * 255);
-  }
-  const texture = new THREE.Data3DTexture(data, size, size, size);
-  texture.format = THREE.RedFormat;
-  texture.type = THREE.UnsignedByteType;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.wrapS = texture.wrapT = texture.wrapR = THREE.RepeatWrapping;
-  texture.unpackAlignment = 1;
-  texture.needsUpdate = true;
-  return texture;
-}
-function formatTime(hours) {
+function formatTime(hours) {function formatTime(hours) {
   const total = Math.round((hours % 24) * 60);
   return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
 }
-function updateSkyEnvironment(solar,force=false){
-  if(!renderer||!solar||!pmremGenerator||!environmentScene)return;
-  const now=performance.now();
-  if(!force&&now-skyEnvironmentLastUpdate<5000)return;
-  skyEnvironmentLastUpdate=now;
-
-  // SkyMesh is temporarily re-parented to a clean environment scene, just as in
-  // Three.js r187's WebGPU sunlight example. The cube camera sits at the origin,
-  // so the infinite sky must be centred there during the bake.
-  const savedPosition=sky.position.clone();
-  let nextEnvironment=null;
-  try{
-    sky.position.set(0,0,0);
-    environmentScene.add(sky);
-    nextEnvironment=pmremGenerator.fromScene(environmentScene,0.04);
-  }finally{
-    scene.add(sky);
-    sky.position.copy(savedPosition);
-  }
-  if(!nextEnvironment?.texture)throw new Error('Sky PMREM bake did not return an environment texture.');
-  if(environmentRenderTarget)environmentRenderTarget.dispose();
-  environmentRenderTarget=nextEnvironment;
-  scene.environment=environmentRenderTarget.texture;
-  scene.environmentIntensity=0.5;
-}
-function updateSkyLabels() {
+function updateSkyLabels() {function updateSkyLabels() {
   ui.turbidityValue.textContent = Number(ui.turbidity.value).toFixed(1);
   ui.rayleighValue.textContent = Number(ui.rayleigh.value).toFixed(2);
   ui.cloudCoverageValue.textContent = Math.round(Number(ui.cloudCoverage.value) * 100) + '%';
@@ -188,55 +111,26 @@ function updateSky(forceEnvironment=false) {
   foliageSunDirection.value.copy(sunDirection).normalize();
   foliageDaylight.value=solar.daylight;
   sunLight.castShadow=solar.daylight>0.035;
-  sky.sunPosition.value.copy(sunDirection);
-  sky.turbidity.value = Number(ui.turbidity.value);
-  sky.rayleigh.value = Number(ui.rayleigh.value);
-  sky.mieCoefficient.value = 0.0038;
-  sky.mieDirectionalG.value = 0.78;
-  // SkyMesh's built-in cloud sheet is disabled; the shared WeatherSystem v9 field is rendered in TSL.
-  sky.cloudCoverage.value = 0;
-  sky.cloudDensity.value = 0;
-  sky.cloudElevation.value = 0;
-  sky.showSunDisc.value = false;
-
   const directPower=THREE.MathUtils.clamp(Number(ui.sunIntensity.value),0,1.5);
   updateSolarDisc(THREE,sunDisc,camera,solar,directPower);
-  // Keep the daytime key close to neutral; let it warm gradually only as the sun approaches the horizon.
   const warmKey = THREE.MathUtils.clamp(solar.twilight * 0.52, 0, 0.58);
   liveSunColor.copy(daylightSunColor).lerp(lowSunColor,warmKey);
-  // Keep diffuse fill restrained: the sky PMREM supplies the broad environment light,
-  // while the SunLight key supplies a clear directional term and cascaded shadows.
-  hemisphere.intensity = 0.12 + solar.daylight * 0.12 + solar.nightStrength * 0.025;
   sunLight.intensity = solar.daylight * (3.0 + solar.daylight * 2.0) * directPower;
   sunLight.color.copy(liveSunColor);
   moonLight.intensity=solar.nightStrength*0.16;
-  // SunLight has no target: its position defines the direction toward the origin.
   sunLight.position.copy(sunDirection).multiplyScalar(1800);
   moonLight.position.copy(controls.target).addScaledVector(sunDirection,-1800);
   moonLight.target.position.copy(controls.target);
-
-  const nightSky=new THREE.Color(0x28364b);
-  const daySky=new THREE.Color(0xc6dced);
-  const warmHorizon=new THREE.Color(0xd8bba8);
-  fogColor.value.copy(nightSky).lerp(daySky,solar.daylight)
-    .lerp(warmHorizon,solar.twilight*0.18);
-  // A cool sky fill and a darker, blue-green ground bounce keep shaded needles from going muddy.
-  hemisphere.color.setRGB(
-    0.30+solar.daylight*0.42,
-    0.40+solar.daylight*0.43,
-    0.56+solar.daylight*0.37
-  );
-  hemisphere.groundColor.setRGB(
-    0.10+solar.daylight*0.12,
-    0.13+solar.daylight*0.15,
-    0.19+solar.daylight*0.20
-  );
-  cloudLayer?.setAtmosphere({
-    coverage:Number(ui.cloudCoverage.value),density:Number(ui.cloudDensity.value),
-    elevation:Number(ui.cloudElevation.value),wind:Number(ui.wind.value),daylight:solar.daylight,
-    twilight:solar.twilight,rayStrength:Number(ui.godRays.value),sunDirection,sunColor:liveSunColor
-  });
-  updateSkyEnvironment(solar,forceEnvironment);
+  atmosphere?.setAtmosphere({
+    solar,
+    turbidity:Number(ui.turbidity.value),
+    rayleigh:Number(ui.rayleigh.value),
+    cloudCoverage:Number(ui.cloudCoverage.value),
+    cloudDensity:Number(ui.cloudDensity.value),
+    cloudElevation:Number(ui.cloudElevation.value),
+    wind:Number(ui.wind.value),
+    sunIntensity:directPower
+  },forceEnvironment);
   ui.timeValue.textContent = formatTime(hours);
 }
 function setLoadingMessage(message){
@@ -246,18 +140,20 @@ function nextAnimationFrame(){
   return new Promise(resolve=>requestAnimationFrame(()=>resolve()));
 }
 function updateFogControls() {
-  fogDensity.value = Number(ui.fogDensity.value);
-  fogHeight.value = Number(ui.fogHeight.value);
-  fogStrength.value = Number(ui.fogStrength.value);
-  const range = Number(ui.fogRange.value);
-  rangeFogNear.value = THREE.MathUtils.lerp(1500, 4200, range);
-  rangeFogFar.value = THREE.MathUtils.lerp(6500, 12500, range);
-  ui.fogDensityValue.textContent = fogDensity.value.toFixed(4);
-  ui.fogHeightValue.textContent = Math.round(fogHeight.value) + ' м';
-  ui.fogStrengthValue.textContent = Math.round(fogStrength.value * 100) + '%';
-  ui.fogRangeValue.textContent = (rangeFogNear.value / 1000).toFixed(1) + '–' + (rangeFogFar.value / 1000).toFixed(1) + ' км';
+  const density=Number(ui.fogDensity.value);
+  const height=Number(ui.fogHeight.value);
+  const strength=Number(ui.fogStrength.value);
+  const range=Number(ui.fogRange.value);
+  const rays=Number(ui.godRays.value);
+  atmosphere?.setFog({density,height,strength,range,rays});
+  const near=THREE.MathUtils.lerp(1500,4200,range);
+  const far=THREE.MathUtils.lerp(6500,12500,range);
+  ui.fogDensityValue.textContent=density.toFixed(4);
+  ui.fogHeightValue.textContent=Math.round(height)+' м';
+  ui.fogStrengthValue.textContent=Math.round(strength*100)+'%';
+  ui.fogRangeValue.textContent=(near/1000).toFixed(1)+'–'+(far/1000).toFixed(1)+' км';
 }
-async function buildTerrainHeightLookup(root,bounds,cellSize=40){
+async function buildTerrainHeightLookupasync function buildTerrainHeightLookup(root,bounds,cellSize=40){
   const size=bounds.getSize(new THREE.Vector3());
   const cols=Math.max(1,Math.ceil(size.x/cellSize));
   const rows=Math.max(1,Math.ceil(size.z/cellSize));
@@ -610,180 +506,7 @@ async function loadRealTerrain() {
   controls.update();
   terrainInfoEl.textContent = terrainMeshCount + ' mesh' + (usingFallback ? ' · procedural' : '');
 }
-function buildFogPipeline() {
-  const prePass=pass(scene,camera);
-  prePass.setMRT(mrt({output:packNormalToRGB(normalView)}));
-  const prePassNormal=sample(uv=>unpackRGBToNormal(prePass.getTextureNode().sample(uv)));
-  const prePassDepth=prePass.getTextureNode('depth');
-  const aoPass=ao(prePassDepth,prePassNormal,camera);
-  aoPass.resolutionScale=0.5;
-  aoPass.samples.value=16;
-  aoPass.radius.value=2.2;
-  aoPass.thickness.value=1.0;
-  aoPass.scale.value=1.15;
-  aoPass.useTemporalFiltering=false;
-
-  const scenePass=pass(scene,camera);
-  scenePass.contextNode=builtinAOContext(aoPass.getTextureNode().sample(screenUV).r);
-  const sceneColor = scenePass.getTextureNode('output');
-  const sceneDepth = scenePass.getTextureNode('depth');
-  const cameraWorld = uniform(camera.matrixWorld.clone());
-  const projectionInverse = uniform(camera.projectionMatrixInverse.clone());
-  const cameraPosition = uniform(camera.position.clone());
-  const groundY = uniform(groundLevel);
-  const time = uniform(0);
-  const densityAt = Fn(([worldPosition]) => {
-    const p = vec3(worldPosition.mul(cloudScale));
-    const driftA = vec3(time.mul(0.0016), time.mul(0.00025), time.mul(0.0009));
-    const driftB = vec3(time.mul(-0.00065), time.mul(0.00040), time.mul(0.00030));
-    const n1 = texture3D(noiseTexture, p.add(driftA)).r;
-    const n2 = texture3D(noiseTexture, p.mul(2.15).add(vec3(1.7, 0.9, 2.5)).add(driftB).add(n1.mul(0.32))).r;
-    const noise = n1.mul(0.72).add(n2.mul(0.28));
-    const relativeHeight = worldPosition.y.sub(groundY).div(fogHeight.max(0.01));
-    const profile = float(1).sub(relativeHeight).clamp(0, 1).pow(heightFalloff);
-    const turbulent = noise.sub(cloudThreshold).max(0).mul(1.4).add(0.08);
-    return turbulent.mul(profile);
-  });
-  const fogNode = Fn(() => {
-    const depth = sceneDepth.sample(screenUV).r;
-    const viewPosition = getViewPosition(screenUV, depth, projectionInverse);
-    const worldPosition = cameraWorld.mul(vec4(viewPosition, 1)).xyz;
-    const rayVector = worldPosition.sub(cameraPosition);
-    const surfaceDistance = rayVector.length();
-    const rayDirection = rayVector.normalize();
-    const safeY = rayDirection.y.greaterThanEqual(0).select(rayDirection.y.max(0.00001), rayDirection.y.min(-0.00001));
-    const t0 = groundY.sub(cameraPosition.y).div(safeY);
-    const t1 = groundY.add(fogHeight).sub(cameraPosition.y).div(safeY);
-    const tStart = t0.min(t1).max(0);
-    const tEnd = t0.max(t1).min(surfaceDistance).min(tStart.add(maxRayDistance));
-    const segment = tEnd.sub(tStart).max(0);
-    const stepSize = segment.div(marchSteps);
-    const stepVector = rayDirection.mul(stepSize);
-    const rayPoint = cameraPosition.add(rayDirection.mul(tStart)).add(stepVector.mul(interleavedGradientNoise(screenCoordinate.xy))).toVar();
-    const opticalDepth = float(0).toVar();
-    Loop(marchSteps, () => {
-      opticalDepth.addAssign(densityAt(rayPoint).mul(stepSize).mul(fogDensity));
-      rayPoint.addAssign(stepVector);
-    });
-    const volumeFog = float(1).sub(opticalDepth.negate().exp());
-    // Beer-Lambert aerial perspective: low viewing rays cross more clean, neutral aerosol than steep rays.
-    // Keep this independent of the sun-coloured god-ray pass so daylight haze never turns the forest brown.
-    const distanceBeyond = surfaceDistance.sub(rangeFogNear).max(0);
-    const rangeGate = smoothstep(rangeFogNear,rangeFogFar,surfaceDistance);
-    const horizonPath = float(1).sub(rayDirection.y.abs()).pow(1.35);
-    const pathScale = float(0.40).add(horizonPath.mul(0.80));
-    const cameraAltitude = cameraPosition.y.sub(groundY).max(0);
-    const surfaceAltitude = worldPosition.y.sub(groundY).max(0);
-    const meanAltitude = cameraAltitude.add(surfaceAltitude).mul(0.5);
-    const aerosolScaleHeight = fogHeight.mul(3.5).add(350);
-    const altitudeDensity = exp(meanAltitude.negate().div(aerosolScaleHeight)).clamp(0.14,1);
-    const extinction = fogDensity.mul(0.016).add(0.000004);
-    const rangeOpticalDepth = distanceBeyond.mul(pathScale).mul(altitudeDensity).mul(extinction);
-    const rangeFog = float(1).sub(rangeOpticalDepth.negate().exp()).mul(rangeGate);
-    // Combine ground fog and distance haze as transmittances, not as competing max values.
-    const amount = float(1).sub(float(1).sub(volumeFog).mul(float(1).sub(rangeFog)))
-      .mul(fogStrength).clamp(0,1);
-    return isBackgroundDepth(depth).select(float(0), amount);
-  });
-  const lowResFog = rtt(fogNode(), null, null, {
-    type: THREE.UnsignedByteType,
-    format: THREE.RedFormat,
-    resolutionScale: resolutionScale.value
-  }).setName('GO_LowResolutionVolumetricFog');
-  const upsample = Fn(([fogTexture, depthTexture]) => {
-    const uv = screenUV;
-    const centreDepth = getViewPosition(uv, depthTexture.sample(uv).r, projectionInverse).z.negate().max(0.1);
-    const texel = fwidth(uv).div(resolutionScale);
-    const spatialFactor = float(-0.5).div(spatialSigma.mul(spatialSigma).max(0.01));
-    const depthFactor = depthSensitivity.mul(depthSensitivity).mul(-0.5);
-    const total = float(0).toVar(), weightTotal = float(0).toVar();
-    for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) {
-      const offset = vec2(float(x), float(y));
-      const sampleUv = uv.add(offset.mul(texel));
-      const spatialWeight = exp(offset.dot(offset).mul(spatialFactor));
-      const sampleFog = fogTexture.sample(sampleUv);
-      const sampleDepth = getViewPosition(sampleUv, depthTexture.sample(sampleUv).r, projectionInverse).z.negate().max(0.1);
-      const depthDelta = sampleDepth.sub(centreDepth).div(centreDepth.max(0.1));
-      const w = spatialWeight.mul(exp(depthDelta.mul(depthDelta).mul(depthFactor)));
-      total.addAssign(sampleFog.mul(w));
-      weightTotal.addAssign(w);
-    }
-    return total.div(weightTotal.max(0.0001));
-  });
-  const fogResult = upsample(lowResFog, sceneDepth);
-  renderPipeline = new THREE.RenderPipeline(renderer);
-  const rayNode=Fn(()=>{
-    const uv=screenUV;
-    const step=sunScreenUV.sub(uv).div(raySteps.max(1));
-    const sampleUv=uv.add(step.mul(0.5)).add(interleavedGradientNoise(screenCoordinate.xy).mul(step)).toVar();
-    const accumulation=float(0).toVar();
-    const weight=float(1).toVar();
-    Loop(raySteps,()=>{
-      const sampleDepth=sceneDepth.sample(sampleUv).r;
-      const sampleColor=sceneColor.sample(sampleUv).rgb;
-      const luminance=sampleColor.dot(vec3(0.2126,0.7152,0.0722));
-      const bright=smoothstep(float(0.48),float(1.55),luminance);
-      const skyVisibility=isBackgroundDepth(sampleDepth).select(float(1),float(0.045));
-      accumulation.addAssign(bright.mul(skyVisibility).mul(weight));
-      weight.mulAssign(0.985);
-      sampleUv.addAssign(step);
-    });
-    return accumulation.div(raySteps.max(1)).mul(rayStrength);
-  });
-  const lowResRays=rtt(rayNode(),null,null,{
-    type:THREE.UnsignedByteType,
-    format:THREE.RedFormat,
-    resolutionScale:rayResolutionScale.value
-  }).setName('GO_LowResolutionGodRays');
-  const upsampleRays=Fn(([rayTexture,depthTexture])=>{
-    const uv=screenUV;
-    const centreDepth=getViewPosition(uv,depthTexture.sample(uv).r,projectionInverse).z.negate().max(0.1);
-    const texel=fwidth(uv).div(rayResolutionScale);
-    const spatialFactor=float(-0.5).div(spatialSigma.mul(spatialSigma).max(0.01));
-    const depthFactor=depthSensitivity.mul(depthSensitivity).mul(-0.5);
-    const total=float(0).toVar(),weightTotal=float(0).toVar();
-    for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++){
-      const offset=vec2(float(x),float(y));
-      const sampleUv=uv.add(offset.mul(texel));
-      const spatialWeight=exp(offset.dot(offset).mul(spatialFactor));
-      const sampleRay=rayTexture.sample(sampleUv).r;
-      const sampleDepth=getViewPosition(sampleUv,depthTexture.sample(sampleUv).r,projectionInverse).z.negate().max(0.1);
-      const depthDelta=sampleDepth.sub(centreDepth).div(centreDepth.max(0.1));
-      const w=spatialWeight.mul(exp(depthDelta.mul(depthDelta).mul(depthFactor)));
-      total.addAssign(sampleRay.mul(w));
-      weightTotal.addAssign(w);
-    }
-    return total.div(weightTotal.max(0.0001));
-  });
-  const raysResult=upsampleRays(lowResRays,sceneDepth);
-  const foggedScene=sceneColor.rgb.mix(fogColor,fogResult);
-  const shaftColour=vec3(0.92,0.96,1.0);
-  renderPipeline.outputNode=foggedScene.add(shaftColour.mul(raysResult.mul(float(0.22).add(fogResult.mul(0.78)))));
-  renderPipeline.needsUpdate = true;
-  return {
-    setResolution(value) { resolutionScale.value = value; lowResFog.setResolutionScale(value); },
-    setAOResolution(value) { aoPass.resolutionScale=value; },
-    setSteps(value) { marchSteps.value = value; },
-    setRaySteps(value) { raySteps.value = value; },
-    setRayResolution(value) { rayResolutionScale.value=value; lowResRays.setResolutionScale(value); },
-    setRayStrength(value) { rayStrength.value=value; },
-    setTime(value) { time.value = value; },
-    updateCamera(sunPosition) {
-      cameraWorld.value.copy(camera.matrixWorld);
-      projectionInverse.value.copy(camera.projectionMatrixInverse);
-      cameraPosition.value.copy(camera.position);
-      if(sunPosition){
-        const projectedPoint=camera.position.clone().addScaledVector(sunPosition,100000);
-        const projected=projectedPoint.project(camera);
-        const visible=projected.z>-1&&projected.z<1&&Math.abs(projected.x)<1.35&&Math.abs(projected.y)<1.35;
-        sunScreenUV.value.set(projected.x*0.5+0.5,0.5-projected.y*0.5);
-        rayStrength.value=visible?Number(ui.godRays.value):0;
-      }
-    }
-  };
-}
-
-function seededRandom(x, z, salt = 0) {
+function seededRandomfunction seededRandom(x, z, salt = 0) {
   let state = (Math.imul(Math.floor(x * 2), 374761393) ^
     Math.imul(Math.floor(z * 2), 668265263) ^ Math.imul(salt + 71, 1274126177) ^ 0x51a1) >>> 0;
   return () => {
@@ -1597,21 +1320,9 @@ function rebuildForestDensity() {
 }
 
 function applyQualityProfile(name) {
-  const profiles = {
-    performance: { pixelRatio: 1.0, fogResolution: 0.30, steps: 10, rayResolution:0.28, raySteps:7, aoResolution:0.35 },
-    balanced: { pixelRatio: 1.3, fogResolution: 0.42, steps: 18, rayResolution:0.42, raySteps:12, aoResolution:0.50 },
-    cinematic: { pixelRatio: 1.6, fogResolution: 0.55, steps: 28, rayResolution:0.58, raySteps:18, aoResolution:0.65 }
-  };
-  const profile = profiles[name] || profiles.balanced;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, profile.pixelRatio));
-  renderer.setSize(stage.clientWidth, stage.clientHeight);
-  fogPipeline.setResolution(profile.fogResolution);
-  fogPipeline.setAOResolution(profile.aoResolution);
-  fogPipeline.setSteps(profile.steps);
-  fogPipeline.setRayResolution(profile.rayResolution);
-  fogPipeline.setRaySteps(profile.raySteps);
+  atmosphere?.setQuality(name);
 }
-function bindUI() {
+function bindUI()function bindUI() {
   ui.time.addEventListener('input',()=>{
     dayCyclePlaying=false;
     syncDayCycleButton();
@@ -1629,7 +1340,7 @@ function bindUI() {
   [ui.fogStrength, ui.fogDensity, ui.fogHeight, ui.fogRange].forEach(input => input.addEventListener('input', updateFogControls));
   ui.godRays.addEventListener('input',()=>{
     ui.godRaysValue.textContent=Math.round(Number(ui.godRays.value)*100)+'%';
-    if(fogPipeline)fogPipeline.setRayStrength(Number(ui.godRays.value));
+    updateFogControls();
   });
   ui.forestDensity.addEventListener('input',()=>ui.forestDensityValue.textContent=Math.round(Number(ui.forestDensity.value)*100)+'%');
   ui.forestDensity.addEventListener('change',rebuildForestDensity);
@@ -1656,8 +1367,6 @@ async function start() {
   sunLight.shadow.camera.far=6500;
   sunLight.shadow.normalBias=0.05;
   sunLight.shadow.autoUpdate=true;
-  pmremGenerator=new THREE.PMREMGenerator(renderer);
-  environmentScene=new THREE.Scene();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
   camera.updateProjectionMatrix();
   const isWebGPU = renderer.backend && renderer.backend.isWebGPUBackend === true;
@@ -1679,13 +1388,15 @@ async function start() {
     statusDot.classList.remove('ok');statusDot.classList.add('warning');
   }
   await loadStageOneAndForest();
-  cloudLayer=createCloudLayer(THREE,scene,{center:terrainBounds.getCenter(new THREE.Vector3())});
+  atmosphere=createForestAtmosphere(THREE,scene,camera,renderer,hemisphere,{
+    center:terrainBounds.getCenter(new THREE.Vector3()),
+    groundLevel
+  });
   updateSkyLabels();
   ui.godRaysValue.textContent=Math.round(Number(ui.godRays.value)*100)+'%';
   ui.forestDensityValue.textContent=Math.round(Number(ui.forestDensity.value)*100)+'%';
-  updateSky();
+  updateSky(true);
   updateFogControls();
-  fogPipeline = buildFogPipeline();
   bindUI();
   applyQualityProfile(ui.quality.value);
   loading.style.display = 'none';
@@ -1703,13 +1414,10 @@ async function start() {
     advanceDayCycleFrame(dt);
     camera.updateMatrixWorld();
     if(solarState)updateSolarDisc(THREE,sunDisc,camera,solarState,Number(ui.sunIntensity.value));
-    sky.position.copy(camera.position);
-    fogPipeline.setTime(elapsed);
-    cloudLayer?.setTime(elapsed);
-    cloudLayer?.updateCamera(camera.position);
-    fogPipeline.updateCamera(sunDirection);
+    atmosphere.setTime(elapsed);
+    atmosphere.updateCamera();
     rebuildForestLod(false);
-    renderPipeline.render();
+    atmosphere.render();
     fpsFrames++;
     if (now - fpsStart >= 1000) {
       fpsEl.textContent = String(Math.round(fpsFrames * 1000 / (now - fpsStart)));
