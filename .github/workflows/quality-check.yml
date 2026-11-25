@@ -32,15 +32,15 @@ jobs:
         run: node scripts/validate-maya-exporter.mjs
       - name: Check active browser module syntax
         run: |
-          node --input-type=module --check < app.v204.js
+          node --input-type=module --check < app.v205.js
           node --input-type=module --check < stage-one-materials.v1.js
           node --input-type=module --check < editor-shared-materials.v1.js
           node --input-type=module --check < stage-one-material-groups.v1.js
           node --input-type=module --check < render-performance.v1.js
           node --input-type=module --check < weather-system.v9.js
           node --input-type=module --check < slope-label-index.v1.js
-          node --input-type=module --check < skier-controller.v99.js
-          node --input-type=module --check < skier-terrain-contact.v1.js
+          node --input-type=module --check < skier-controller.v100.js
+          node --input-type=module --check < skier-terrain-contact.v2.js
           node --input-type=module --check < multiplayer.v11.js
           node --input-type=module --check < drone-controller.v76.js
       - name: Check standalone WebGPU lab modules
@@ -63,7 +63,7 @@ jobs:
       - name: Test multiplayer protocol
         run: node --test server/test/*.test.mjs
       - name: Test skier terrain contact transitions
-        run: node --test scripts/test-skier-terrain-contact.mjs
+        run: node --test scripts/test-skier-terrain-contact.mjs scripts/test-skier-custom-spawn.mjs
       - name: Test slope angle label spatial culling
         run: node --test scripts/test-slope-label-index.mjs
       - name: Test render performance fallbacks
