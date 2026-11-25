@@ -69,8 +69,8 @@ export class SkierController {
     this.airDensity = 1.0;        // kg/m^3; proxy for an alpine-altitude atmosphere
     this.cdaUpright = 0.53;       // m^2, effective drag area
     this.cdaTuck = 0.34;          // m^2, reduced frontal area in a tuck
-    this.snowMu = 0.045;          // groomed mid-winter baseline
-    this.staticMu = 0.053;
+    this.snowMu = 0.084;          // default groomed snow resistance
+    this.staticMu = 0.092;
     this.brakeMu = 0.16;          // additional effective snow-machining resistance
     this.turnScrubMu = 0.008;     // small extra loss while edging / turning
     this.maxEdgeG = 1.25;
@@ -832,7 +832,7 @@ export class SkierController {
   }
 
   setSnowFriction(value) {
-    this.snowMu = THREE.MathUtils.clamp(Number(value) || 0.045, 0.02, 0.14);
+    this.snowMu = THREE.MathUtils.clamp(Number(value) || 0.084, 0.02, 0.14);
     this.staticMu = Math.min(0.16, this.snowMu + 0.008);
     this.onHud({
       speed: this.velocity.length(),
