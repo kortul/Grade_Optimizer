@@ -356,7 +356,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
       const previous = environmentTarget;
       environmentTarget = next;
       scene.environment = next.texture;
-      scene.environmentIntensity = 0.50;
+      scene.environmentIntensity = 0.38;
       previous?.dispose();
     } finally {
       scene.add(skyDome);
@@ -402,7 +402,7 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
     state.hazeColour.value.set(0x17263e).lerp(new THREE.Color(0xb8cfe0), fill).lerp(new THREE.Color(0xcaa58b), state.twilight.value * 0.30);
     hemisphere.color.copy(skyZenith);
     hemisphere.groundColor.copy(groundBounce);
-    hemisphere.intensity = 0.12 + fill * 0.12 + state.night.value * 0.025;
+    hemisphere.intensity = 0.14 + fill * 0.11 + state.night.value * 0.025;
 
     lowerClouds.position.set(center.x, groundLevel + 2450 + state.cloudElevation.value * 1100 - lowerRadius, center.z);
     upperClouds.position.set(center.x, groundLevel + 6100 + state.cloudElevation.value * 1400 - upperRadius, center.z);
@@ -426,9 +426,9 @@ export function createForestAtmosphere(THREE, scene, camera, renderer, hemispher
 
   function setQuality(name) {
     const profiles = {
-      performance: { pixelRatio: 1.0, fog: 0.30, fogSteps: 9, rays: 0.28, raySteps: 6, ao: 0.34 },
-      balanced: { pixelRatio: 1.3, fog: 0.42, fogSteps: 14, rays: 0.42, raySteps: 10, ao: 0.50 },
-      cinematic: { pixelRatio: 1.6, fog: 0.58, fogSteps: 22, rays: 0.58, raySteps: 14, ao: 0.65 }
+      performance: { pixelRatio: 0.75, fog: 0.22, fogSteps: 6, rays: 0.16, raySteps: 4, ao: 0.24 },
+      balanced: { pixelRatio: 1.0, fog: 0.30, fogSteps: 8, rays: 0.25, raySteps: 6, ao: 0.32 },
+      cinematic: { pixelRatio: 1.25, fog: 0.45, fogSteps: 12, rays: 0.35, raySteps: 8, ao: 0.45 }
     };
     const p = profiles[name] || profiles.balanced;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, p.pixelRatio));
