@@ -382,11 +382,7 @@ function ensureWorldTerrainUV(mesh,force=false){
   }
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
 }
-function makeTerrainPbrMaterial(source,proceduralMaps,cache){
-  return getSnowPbrMaterial();
-}
-
-async function loadRealTerrain()async function loadRealTerrain() {
+async function loadRealTerrain() {
   setLoadingMessage('Загружаем базовый рельеф…');
   await nextAnimationFrame();
   const response = await fetch('./assets/real-terrain.json', { cache: 'no-cache' });
@@ -411,8 +407,7 @@ async function loadRealTerrain()async function loadRealTerrain() {
   const bounds = new THREE.Box3().setFromObject(root);
   const size = bounds.getSize(new THREE.Vector3());
   if (bounds.isEmpty() || size.x < 10 || size.z < 10) { if (!usingFallback) throw new Error('FBX рельеф не содержит корректную геометрию.'); }
-  // Preserve Maya's exported openPBR baseColor/material data. The old uniform
-  // pale-grey override discarded the FBX material before it ever reached the renderer.
+  // This isolated winter look-dev lab intentionally gives all base-terrain meshes one neutral snow PBR.
   const snowMaterial=getSnowPbrMaterial();
   const terrainMaterialReport=[];
   root.updateMatrixWorld(true);
@@ -438,7 +433,7 @@ async function loadRealTerrain()async function loadRealTerrain() {
   console.info('[Grade Optimizer Forest Lab] Real terrain PBR materials:',{
     meshCount:terrainMeshCount,
     materials:terrainMaterialReport,
-    proceduralAlbedo:!terrainMaterialReport.some(item=>item.hadMap)
+    snowMaterial:true
   });
   if (!terrainMeshCount) throw new Error('В FBX не найдено ни одного polygon mesh.');
   root.name = 'GO_WebGPU_RealTerrain';
@@ -1134,7 +1129,7 @@ async function loadStageOneAndForest() {
     throw new Error('Неподдерживаемый формат Slopes_Stage1: '+extension);
   }
   restoreStageOneCoordinates(root,item);
-  // Keep the authored Slopes / AngledSlopes material groups from Maya; never replace the asset with a flat grey override.
+  // Keep the Slopes / AngledSlopes geometry and group layout, but render both as neutral snow.
   const semanticMaterials=shareStageOneMaterialsByKind(root,{defaultKind:'slopes'});
   const snowMaterial=getSnowPbrMaterial();
   let slopeMeshCount=0;
