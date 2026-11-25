@@ -27,15 +27,16 @@ pass('active entrypoint exists: ' + entryPath);
 const renderPerformanceSource=read('render-performance.v1.js').toString('utf8');
 assert.ok(renderPerformanceSource.includes('performanceProfileActive ? profileMaximum : maximum')&&renderPerformanceSource.includes('frameIntervalsMs.length < 5'),'render performance helpers must cap skier resolution and reject undersampled rolling FPS');
 pass('skier viewport-resolution cap, rolling FPS sampling and scene draw diagnostics are present');
-const weatherV8Source=read('weather-system.v8.js').toString('utf8');
+const weatherV8Source=read('weather-system.v9.js').toString('utf8');
 assert.ok(existsSync(resolve(root,'assets/cloud-atlas.v1.svg')),'AI cloud atlas asset is missing');
 assert.ok(weatherV8Source.includes('cloud-atlas.v1.svg')&&weatherV8Source.includes('cloudMaterials'),'AI cloud atlas is not used');
 assert.ok(weatherV8Source.includes('CLOUD_VOLUME_FRAGMENT_SHADER')&&weatherV8Source.includes('GROUND_FOG_FRAGMENT_SHADER')&&weatherV8Source.includes('setSceneReady(ready)'),'volumetric cloud/fog shaders are missing');
-assert.ok(weatherV8Source.includes('VOLUMETRIC_CLOUD_MIN_COVERAGE = 0.38')&&weatherV8Source.includes('shouldRenderVolumetricClouds(coverage, enabled = true)'),'light cloud cover must avoid the full-screen volumetric shader');
+assert.ok(weatherV8Source.includes('VOLUMETRIC_CLOUD_MIN_COVERAGE = 0.015')&&weatherV8Source.includes('shouldRenderVolumetricClouds(coverage, enabled = true)')&&weatherV8Source.includes('value > VOLUMETRIC_CLOUD_MIN_COVERAGE'),'light and partial cloud cover must retain the original volumetric cloud shader');
+assert.ok(weatherV8Source.includes('material.opacity=volumetrics?0.12+coverage*0.12:0.50+coverage*0.30')&&weatherV8Source.includes('this.sceneReady&&volumetrics&&coverage>0.015'),'cloud sprites and volumetric activation must match the original weather behavior');
 assert.ok(!weatherV8Source.includes('sin(dot(p, vec2(127.1, 311.7)))')&&!weatherV8Source.includes('for (int i = 0; i < 14; i++)'),'volumetric shaders must avoid expensive trigonometric hashes and 14-step fog loops');
 assert.ok(weatherV8Source.includes('shadowDensity')&&weatherV8Source.includes('uRayStrength'),'volumetric god-ray scattering or cloud self-shadowing is missing');
 assert.ok(weatherV8Source.includes('createNightSky()')&&weatherV8Source.includes('GO_StarField')&&weatherV8Source.includes('GO_Moon'),'night sky stars or moon are missing');
-assert.ok(entrySource.includes('./weather-system.v8.js')&&entrySource.includes('setVolumetrics')&&entrySource.includes('weatherSystem.setSceneReady(false)')&&entrySource.includes('weatherSystem.setSceneReady(!!state.root)'),'app must import the volumetric weather system');
+assert.ok(entrySource.includes('./weather-system.v9.js')&&entrySource.includes('setVolumetrics')&&entrySource.includes('weatherSystem.setSceneReady(false)')&&entrySource.includes('weatherSystem.setSceneReady(!!state.root)'),'app must import the volumetric weather system');
 assert.ok(html.includes('id="weatherVolumetrics"')&&html.includes('id="sceneVolumetrics"'),'volumetric toggle UI is missing');
 assert.ok(html.includes('id="timeOfDay" type="range" min="0" max="24"'),'time slider must span 24 hours');
 pass('AI cloud atlas, volume shaders, god rays, stars, moon, 24h time and toggle UI are present');
@@ -183,7 +184,7 @@ assert.deepEqual(missingDomRefs, [], 'app references missing HTML ids: ' + missi
 pass('all static DOM lookups resolve (' + new Set(staticDomRefs).size + ')');
 
 const localImports = [...entrySource.matchAll(/from\s+["'](\.[^"']+)["']/g)].map(m => m[1]);
-assert.ok(entrySource.includes('weather-system.v8.js'), 'active app must use the updated atmospheric weather engine');
+assert.ok(entrySource.includes('weather-system.v9.js'), 'active app must use the updated atmospheric weather engine');
 const mayaExporterSource = read('maya/grade_optimizer_exporter.py').toString('utf8');
 assert.ok(mayaExporterSource.includes('def _inspect_git_worktree(repo):')&&mayaExporterSource.includes('"--show-toplevel"'), 'Maya exporter must verify the selected Git working tree');
 assert.ok(
@@ -209,7 +210,7 @@ assert.ok(entrySource.includes("const FORCE_REMOTE_PROJECT=WORKSPACE_QUERY.get('
 assert.ok(entrySource.includes('if(!FORCE_REMOTE_PROJECT)') && entrySource.includes('Локальный черновик браузера оставлен без изменений.'), 'forced GitHub load must preserve unsynced browser backup');
 assert.ok(entrySource.includes('const geometryBounds=new THREE.Box3().setFromObject(root)') && entrySource.includes('if(!visibleMeshCount)'), 'FBX loader must validate actual nonempty and visible geometry');
 pass('published project bypass and imported FBX geometry diagnostics are present');
-const weatherSource = read('weather-system.v8.js').toString('utf8');
+const weatherSource = read('weather-system.v9.js').toString('utf8');
 assert.ok(weatherSource.includes("this.cameraWeatherRig = new THREE.Group()"), 'weather camera-follow scene root missing');
 assert.ok(weatherSource.includes('this.scene.add(this.cameraWeatherRig)'), 'camera-follow weather layer must belong to the renderable scene graph');
 assert.ok(weatherSource.includes('this.cameraWeatherRig.add(this.snow)')&&weatherSource.includes('this.cameraWeatherRig.add(this.streaks)'), 'snow and wind streaks must be children of the renderable camera-follow root');
