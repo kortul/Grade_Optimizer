@@ -1,12 +1,12 @@
 {
   "schemaVersion": "1.0",
   "clientId": "alpine-resort",
-  "updatedAt": "2026-11-25T10:17:50Z",
+  "updatedAt": "2026-11-25T12:13:02Z",
   "assets": [
     {
       "id": "slopes_stage1",
       "name": "Slopes_Stage1",
-      "file": "models/slopes_stage1.glb",
+      "file": "models/slopes_stage1.fbx",
       "category": "slope",
       "phase": "stage_1",
       "visible": true,
@@ -14,24 +14,15 @@
       "forestBlocker": true,
       "activeTerrain": false,
       "mayaExport": {
-        "pluginVersion": "0.8.8",
+        "pluginVersion": "0.9.5",
         "sourceScene": "Slope_ToGaea_Land_341_CADScale.ma",
         "mayaVersion": "2026",
         "linearUnit": "cm",
         "metersPerUnit": 0.01,
-        "meshComponentCount": 22,
-        "exportedRootName": "G1Slope_Mesh_30m, Stage2_40mNew_Slopes3, polySurface849, sweep53_Topo_Intersection, sweep42_Topo_Intersection, sweep43_Topo_Intersection, sweep44_Topo_Intersection, H4Slope_Mesh_30m, sweep56_Topo_Intersection, sweep57_Topo_Intersection, A1FromRoad, sweep49_Topo_Intersection, sweep54_Topo_Intersection, sweep45_Topo_Intersection, sweep47_Topo_Intersection, polySurface848, Stage1_40M7, sweep48_Topo_Intersection, sweep46_Topo_Intersection, sweep55_Topo_Intersection, sweep51_Topo_Intersection, sweep52_Topo_Intersection",
+        "meshComponentCount": 20,
+        "exportedRootName": "G1Slope_Mesh_30m, Stage2_40mNew_Slopes3, polySurface849, sweep53_Topo_Intersection, sweep43_Topo_Intersection, H4Slope_Mesh_30m, sweep56_Topo_Intersection, sweep57_Topo_Intersection, pasted__sweep54_Topo_Intersection, sweep49_Topo_Intersection, sweep45_Topo_Intersection, sweep47_Topo_Intersection, polySurface848, pasted__sweep46_Topo_Intersection, Stage1_40M7, sweep48_Topo_Intersection, sweep55_Topo_Intersection, sweep51_Topo_Intersection, sweep52_Topo_Intersection, pasted__sweep44_Topo_Intersection",
         "replacement": true,
         "components": [
-          {
-            "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|A1FromRoad",
-            "name": "A1FromRoad",
-            "shape": "A1FromRoadShape",
-            "materials": [
-              "zzMainlandscape_Slopes",
-              "pasted__pasted__zzMainlandscape_Slopes"
-            ]
-          },
           {
             "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage2_40M|Slopes_Stage2|G1Slope_Mesh_30m",
             "name": "G1Slope_Mesh_30m",
@@ -68,6 +59,31 @@
             ]
           },
           {
+            "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|pasted__sweep44_Topo_Intersection",
+            "name": "pasted__sweep44_Topo_Intersection",
+            "shape": "pasted__sweep44_Topo_IntersectionShape",
+            "materials": [
+              "pasted__pasted__pasted__zzMainlandscape_Slopes",
+              "openPBR_shader1"
+            ]
+          },
+          {
+            "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|pasted__sweep46_Topo_Intersection",
+            "name": "pasted__sweep46_Topo_Intersection",
+            "shape": "pasted__sweep46_Topo_IntersectionShape",
+            "materials": [
+              "pasted__pasted__pasted__zzMainlandscape_Slopes"
+            ]
+          },
+          {
+            "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|pasted__sweep54_Topo_Intersection",
+            "name": "pasted__sweep54_Topo_Intersection",
+            "shape": "pasted__sweep54_Topo_IntersectionShape",
+            "materials": [
+              "pasted__pasted__pasted__zzMainlandscape_Slopes"
+            ]
+          },
+          {
             "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage2_40M|Slopes_Stage2|SlopesCut|polySurface848",
             "name": "polySurface848",
             "shape": "polySurfaceShape3088",
@@ -86,30 +102,11 @@
             ]
           },
           {
-            "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage2_40M|Slopes_Stage2|SlopesCut|sweep42_Topo_Intersection",
-            "name": "sweep42_Topo_Intersection",
-            "shape": "sweep42_Topo_IntersectionShape",
-            "materials": [
-              "zzShapka_Angled",
-              "openPBR_shader1"
-            ]
-          },
-          {
             "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|sweep43_Topo_Intersection",
             "name": "sweep43_Topo_Intersection",
             "shape": "sweep43_Topo_IntersectionShape",
             "materials": [
               "zzMainlandscape_Slopes",
-              "pasted__pasted__zzMainlandscape_Slopes"
-            ]
-          },
-          {
-            "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|sweep44_Topo_Intersection",
-            "name": "sweep44_Topo_Intersection",
-            "shape": "sweep44_Topo_IntersectionShape",
-            "materials": [
-              "zzMainlandscape_Slopes",
-              "openPBR_shader1",
               "pasted__pasted__zzMainlandscape_Slopes"
             ]
           },
@@ -120,15 +117,6 @@
             "materials": [
               "zzMainlandscape_Slopes",
               "openPBR_shader1",
-              "pasted__pasted__zzMainlandscape_Slopes"
-            ]
-          },
-          {
-            "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|sweep46_Topo_Intersection",
-            "name": "sweep46_Topo_Intersection",
-            "shape": "sweep46_Topo_IntersectionShape",
-            "materials": [
-              "zzMainlandscape_Slopes",
               "pasted__pasted__zzMainlandscape_Slopes"
             ]
           },
@@ -190,15 +178,6 @@
             ]
           },
           {
-            "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|sweep54_Topo_Intersection",
-            "name": "sweep54_Topo_Intersection",
-            "shape": "sweep54_Topo_IntersectionShape",
-            "materials": [
-              "zzMainlandscape_Slopes",
-              "pasted__pasted__zzMainlandscape_Slopes"
-            ]
-          },
-          {
             "dagPath": "|MAYA_WORKING_SCENE_001|ToSketchfab|Stage1_40m1|Slopes_Stage1|sweep55_Topo_Intersection",
             "name": "sweep55_Topo_Intersection",
             "shape": "sweep55_Topo_IntersectionShape",
@@ -239,203 +218,185 @@
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             },
             {
               "workingGroup": "|MAYA_WORKING_SCENE_001",
               "originalOffset": [
                 218704.14299926758,
-                0,
+                0.0,
                 -50152.88024902344
               ],
-              "originalScale": 1000
-            },
-            {
-              "workingGroup": "|MAYA_WORKING_SCENE_001",
-              "originalOffset": [
-                218704.14299926758,
-                0,
-                -50152.88024902344
-              ],
-              "originalScale": 1000
-            },
-            {
-              "workingGroup": "|MAYA_WORKING_SCENE_001",
-              "originalOffset": [
-                218704.14299926758,
-                0,
-                -50152.88024902344
-              ],
-              "originalScale": 1000
+              "originalScale": 1000.0
             }
           ]
         },
-        "modelSizeBytes": 2328640,
+        "modelSizeBytes": 1869600,
         "fbxMaterialConversions": [
           {
             "sourceMaterial": "openPBR_shader1",
@@ -463,7 +424,270 @@
         ]
       },
       "nodeVisibility": [],
-      "nodeMetadata": []
+      "nodeMetadata": [
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "G1Slope_Mesh_30m"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "H4Slope_Mesh_30m"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage1_40m1",
+            "Slopes_Stage1",
+            "Stage1_40M7"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "Stage2_40mNew_Slopes3"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "SlopesCut",
+            "polySurface848"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "SlopesCut",
+            "polySurface849"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage1_40m1",
+            "Slopes_Stage1",
+            "sweep43_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage1_40m1",
+            "Slopes_Stage1",
+            "sweep45_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage1_40m1",
+            "Slopes_Stage1",
+            "sweep47_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage1_40m1",
+            "Slopes_Stage1",
+            "sweep48_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage1_40m1",
+            "Slopes_Stage1",
+            "sweep49_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "SlopesCut",
+            "sweep51_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "SlopesCut",
+            "sweep52_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "SlopesCut",
+            "sweep53_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage1_40m1",
+            "Slopes_Stage1",
+            "sweep55_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage1_40m1",
+            "Slopes_Stage1",
+            "sweep56_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        },
+        {
+          "namePath": [
+            "MAYA_WORKING_SCENE_001",
+            "ToSketchfab",
+            "Stage2_40M",
+            "Slopes_Stage2",
+            "SlopesCut",
+            "sweep57_Topo_Intersection"
+          ],
+          "role": "object",
+          "tags": [
+            "object"
+          ],
+          "collision": false,
+          "forestBlocker": false
+        }
+      ],
+      "sourceFile": "Slope_ToGaea_Land_341_CADScale.ma"
     }
   ],
   "editorSettings": {
