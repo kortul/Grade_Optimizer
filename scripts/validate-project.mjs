@@ -1083,12 +1083,12 @@ assert.ok(webgpuAtmosphereSource.includes('sky.mieCoefficient.value = 0.0038')&&
 assert.ok(webgpuAtmosphereSource.includes('renderer.toneMappingExposure = 0.55;'),'Atmosphere Lab display exposure must use the shared SkyMesh / ACES preview baseline');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
-// WebGPU Alpine Forest Lab V7: true descending spruce boughs and branch-only wind; sky preserved.
+// WebGPU Alpine Forest Lab V8: true descending spruce boughs and branch-only wind; sky preserved.
 const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
 const alpineForestPageV7=read('webgpu-forest-lab-v7.html').toString('utf8');
-const alpineForestSource=read('webgpu-forest-lab.v7.js').toString('utf8');
+const alpineForestSource=read('webgpu-forest-lab.v8.js').toString('utf8');
 const alpineAtmosphereSource=read('webgpu-forest-atmosphere.v1.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v7.js?v=20261125s'),
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v7.js?v=20261125t'),
   'Alpine Forest Lab must load the pinned Three.js r187 V7 renderer');
 assert.ok(alpineForestPageV7.includes('webgpu-forest-lab.v7.js?v=20261125r')&&
   alpineForestPageV7.includes('Alpine Spruce Forest Lab V7'),
