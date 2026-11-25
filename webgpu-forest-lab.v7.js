@@ -794,11 +794,12 @@ function buildTreePlacements(footprint, density) {
   return trees;
 }
 function createSplinePineGeometry(lod, variant) {
-  // V7: true alpine spruce boughs — broad descending whorls, flat needle fans and snow on top.
+  // V8: spruce built from stable horizontal whorls, woody boughs and fine needle sprays.
+  // Whorl azimuth stays nearly fixed between tiers: no golden-angle spiral / vortex silhouette.
   const positions=[],normals=[],colors=[],indices=[];
   const high=lod==='near',mid=lod==='mid';
-  const height=10,levels=high?14:mid?10:7;
-  const branches=high?7:mid?6:5;
+  const height=10,levels=high?11:mid?8:6;
+  const branches=high?5:mid?4:3;
   const dark=new THREE.Color(0x0e2a20),green=new THREE.Color(0x183d2b);
   const lit=new THREE.Color(0x315a3e),snow=new THREE.Color(0xeaf1f5);
   const bark=new THREE.Color(0x4a4034);
@@ -808,9 +809,7 @@ function createSplinePineGeometry(lod, variant) {
   const up=new THREE.Vector3(0,1,0);
 
   const addVertex=(p,n,c)=>{
-    positions.push(p.x,p.y,p.z);
-    normals.push(n.x,n.y,n.z);
-    colors.push(c.r,c.g,c.b);
+    positions.push(p.x,p.y,p.z);normals.push(n.x,n.y,n.z);colors.push(c.r,c.g,c.b);
   };
   const addTriangle=(a,b,c,color)=>{
     let p1=b,p2=c;
@@ -848,9 +847,6 @@ function createSplinePineGeometry(lod, variant) {
       indices.push(a0,b0,c0,b0,d0,c0);
     }
   };
-
-  // A tapered, flat needle blade. Several blades overlap into a recognizable spruce spray;
-  // unlike the previous clump model, there are no ellipsoids or round foliage blobs.
   const addBlade=(start,tip,side,halfWidth,color,seed=0)=>{
     const direction=tip.clone().sub(start);
     if(direction.lengthSq()<1e-8)return;
@@ -858,33 +854,30 @@ function createSplinePineGeometry(lod, variant) {
     const lateral=side.clone().addScaledVector(direction,-side.dot(direction)).normalize();
     if(lateral.lengthSq()<1e-8)return;
     const shoulder=start.clone().lerp(tip,0.58);
-    shoulder.y+=Math.max(0.012,halfWidth*0.16)+hash(seed,3)*0.012;
+    shoulder.y+=Math.max(0.006,halfWidth*0.10)+hash(seed,3)*0.006;
     const left=shoulder.clone().addScaledVector(lateral,halfWidth);
     const right=shoulder.clone().addScaledVector(lateral,-halfWidth);
-    addTriangle(start,left,tip,color);
-    addTriangle(start,tip,right,color);
+    addTriangle(start,left,tip,color);addTriangle(start,tip,right,color);
   };
-
-  // Thin broken powder caps rest on the upper face of each bough, never as round snow balls.
   const addSnowPatch=(start,end,side,halfWidth,seed)=>{
     const a=start.clone(),b=end.clone();
-    a.y+=0.075+hash(seed,0)*0.018;
-    b.y+=0.052+hash(seed,1)*0.018;
+    a.y+=0.045+hash(seed,0)*0.012;b.y+=0.032+hash(seed,1)*0.012;
     const lateral=side.clone().normalize();
     const aL=a.clone().addScaledVector(lateral,halfWidth),aR=a.clone().addScaledVector(lateral,-halfWidth);
-    const bL=b.clone().addScaledVector(lateral,halfWidth*0.62),bR=b.clone().addScaledVector(lateral,-halfWidth*0.62);
+    const bL=b.clone().addScaledVector(lateral,halfWidth*0.55),bR=b.clone().addScaledVector(lateral,-halfWidth*0.55);
     addQuad(aL,bL,bR,aR,snow);
   };
 
   const trunkTop=new THREE.Vector3(lean,height,0);
-  addTube(new THREE.Vector3(0,0,0),trunkTop,0.145,0.009,16,7,bark,dark);
+  addTube(new THREE.Vector3(0,0,0),trunkTop,0.15,0.006,18,7,bark,dark);
 
   for(let level=0;level<levels;level++){
     const t=level/(levels-1);
-    const y=0.48+9.08*t;
+    const y=0.48+9.05*t;
     const envelope=Math.pow(1-t,0.82);
-    const crownRadius=(0.20+3.72*Math.pow(1-t,0.92))*width;
-    const phase=level*2.399+variant*0.79;
+    const crownRadius=(0.18+3.68*Math.pow(1-t,0.92))*width;
+    // All tiers share a consistent compass orientation; alternate only a few degrees.
+    const phase=variant*0.42+(level%2)*0.10;
     for(let branch=0;branch<branches;branch++){
       const angle=phase+branch/branches*Math.PI*2;
       const radial=new THREE.Vector3(Math.cos(angle),0,Math.sin(angle));
@@ -892,79 +885,60 @@ function createSplinePineGeometry(lod, variant) {
       const start=new THREE.Vector3(lean*t,y,0);
       const length=crownRadius*(0.90+hash(level,branch)*0.10);
       const end=start.clone().addScaledVector(radial,length);
-      end.y-=0.12+0.30*envelope;
+      end.y-=0.22+0.34*envelope;
       const branchColour=hash(level,branch)>0.55?lit:green;
-      addTube(start,end,0.045*envelope+0.007,0.006,4,4,bark,green);
+      addTube(start,end,0.052*envelope+0.006,0.004,5,5,bark,green);
 
-      // Wide, flattened bough: a six-section triangular fan with a gently drooping outer edge.
-      const sections=high?7:mid?5:4;
-      const rows=[];
-      for(let section=0;section<=sections;section++){
-        const u=section/sections;
-        const center=start.clone().lerp(end,u);
-        center.y-=0.10*Math.sin(u*Math.PI)+0.035*u;
-        const fanWidth=length*(0.018+0.135*Math.pow(Math.sin(u*Math.PI),0.78));
-        const left=center.clone().addScaledVector(tangent,fanWidth);
-        const right=center.clone().addScaledVector(tangent,-fanWidth);
-        const ridge=center.clone();ridge.y+=0.035+0.02*Math.sin(u*Math.PI);
-        rows.push({left,right,ridge,center});
-      }
-      for(let section=0;section<sections;section++){
-        const a=rows[section],b=rows[section+1];
-        const tint=branchColour.clone();
-        tint.offsetHSL(0,(hash(level,section)-0.5)*0.018,(hash(branch,section)-0.5)*0.055);
-        addQuad(a.left,b.left,b.ridge,a.ridge,tint);
-        addQuad(a.ridge,b.ridge,b.right,a.right,dark.clone().lerp(tint,0.72));
-      }
-
-      // Four pairs of outward/downward sprays break the edge into fine spruce needles.
-      const stations=high?4:mid?3:2;
-      for(let station=0;station<stations;station++){
-        const u=0.25+station/(Math.max(1,stations-1))*0.53;
+      // Secondary twigs leave the bough in paired directions and droop toward the ground.
+      const twigCount=high?5:mid?4:3;
+      for(let twig=0;twig<twigCount;twig++){
+        const u=0.30+twig/(Math.max(1,twigCount-1))*0.58;
         const root=start.clone().lerp(end,u);
-        root.y-=0.10*Math.sin(u*Math.PI);
-        const sprayLength=length*(0.17+0.025*hash(level,station+branch));
-        for(const sign of [-1,1]){
-          const direction=radial.clone().multiplyScalar(0.80)
-            .addScaledVector(tangent,sign*0.50).add(new THREE.Vector3(0,-0.20,0)).normalize();
-          const tip=root.clone().addScaledVector(direction,sprayLength);
-          tip.y-=sprayLength*0.10;
-          addBlade(root,tip,tangent,sprayLength*0.17,branchColour,level*31+branch*7+station);
-          const forkRoot=root.clone().lerp(tip,0.52);
-          const forkDirection=radial.clone().multiplyScalar(0.68)
-            .addScaledVector(tangent,sign*0.72).add(new THREE.Vector3(0,-0.24,0)).normalize();
-          const forkTip=forkRoot.clone().addScaledVector(forkDirection,sprayLength*0.46);
-          addBlade(forkRoot,forkTip,tangent,sprayLength*0.095,dark.clone().lerp(lit,0.38),level*17+station*5+branch);
+        const twigLength=length*(0.19+0.025*hash(level+twig,branch));
+        for(const sideSign of [-1,1]){
+          const direction=radial.clone().multiplyScalar(0.72)
+            .addScaledVector(tangent,sideSign*0.66).add(new THREE.Vector3(0,-0.34,0)).normalize();
+          const tip=root.clone().addScaledVector(direction,twigLength);
+          tip.y-=twigLength*0.12;
+          addTube(root,tip,0.014*envelope+0.002,0.001,2,4,green,dark);
+
+          // Short paired sprays make a feathery spruce edge rather than a solid fan or a blob.
+          const spraySide=direction.clone().cross(up).normalize();
+          for(let needle=0;needle<3;needle++){
+            const q=needle/2;
+            const base=root.clone().lerp(tip,0.28+q*0.55);
+            const needleLength=twigLength*(0.24+0.035*hash(needle+twig,branch+level));
+            const outward=direction.clone().multiplyScalar(0.48)
+              .addScaledVector(radial,0.50).add(new THREE.Vector3(0,-0.50,0)).normalize();
+            const needleTip=base.clone().addScaledVector(outward,needleLength);
+            addBlade(base,needleTip,spraySide,needleLength*0.12,branchColour,level*41+branch*13+twig*3+needle);
+            const opposite=base.clone().addScaledVector(tangent,sideSign*needleLength*0.18);
+            const oppositeTip=opposite.clone().addScaledVector(outward,needleLength*0.78)
+              .add(new THREE.Vector3(0,-needleLength*0.08,0));
+            addBlade(opposite,oppositeTip,spraySide,needleLength*0.085,dark.clone().lerp(lit,0.32),level*23+twig*7+needle);
+          }
         }
       }
 
-      // Snow rests in three short, separated strips so the dark green branch structure remains clear.
+      // Snow sits in short broken caps on the upper side of the woody bough.
       for(let patch=0;patch<3;patch++){
-        const u0=0.27+patch*0.22,u1=u0+0.16;
+        const u0=0.22+patch*0.23,u1=u0+0.15;
         const a=start.clone().lerp(end,u0),b=start.clone().lerp(end,u1);
-        a.y-=0.10*Math.sin(u0*Math.PI);b.y-=0.10*Math.sin(u1*Math.PI);
-        addSnowPatch(a,b,tangent,0.045*envelope+0.009,level*19+branch*3+patch);
-      }
-      if(level%2===0||high){
-        const capA=end.clone();capA.y+=0.055;
-        const capB=end.clone().addScaledVector(radial,0.13*envelope);capB.y+=0.03;
-        addSnowPatch(capA,capB,tangent,0.052*envelope+0.008,level*29+branch);
+        addSnowPatch(a,b,tangent,0.032*envelope+0.004,level*19+branch*3+patch);
       }
     }
   }
 
-  // A narrow leader stays visible above the uppermost whorl; the treetop is a spruce tip, not a pin.
-  const leaderA=new THREE.Vector3(lean*0.9,9.15,0);
-  const leaderB=trunkTop.clone().add(new THREE.Vector3(0,0.24,0));
-  addTube(leaderA,leaderB,0.026,0.0025,5,5,green,dark);
+  const leaderA=new THREE.Vector3(lean*0.9,9.18,0);
+  const leaderB=trunkTop.clone().add(new THREE.Vector3(0,0.28,0));
+  addTube(leaderA,leaderB,0.025,0.0018,5,5,green,dark);
 
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   geometry.setIndex(indices);
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
+  geometry.computeBoundingBox();geometry.computeBoundingSphere();
   return geometry;
 }
 function createPineBacklightNode(){
