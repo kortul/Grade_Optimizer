@@ -69,7 +69,7 @@ let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, 
 let atmosphere=null,dayCyclePlaying=false;
 let solarState=null;
 
-const daylightSunColorconst daylightSunColor = new THREE.Color(0xfff8f1);
+const daylightSunColor = new THREE.Color(0xfff8f1);
 const lowSunColor = new THREE.Color(0xffc18e);
 const liveSunColor = new THREE.Color();
 const rayStrength=uniform(Number(ui.godRays.value));
@@ -79,11 +79,11 @@ const sunScreenUV=uniform(new THREE.Vector2(0.78,0.16));
 
 
 
-function formatTime(hours) {function formatTime(hours) {
+function formatTime(hours) {
   const total = Math.round((hours % 24) * 60);
   return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
 }
-function updateSkyLabels() {function updateSkyLabels() {
+function updateSkyLabels() {
   ui.turbidityValue.textContent = Number(ui.turbidity.value).toFixed(1);
   ui.rayleighValue.textContent = Number(ui.rayleigh.value).toFixed(2);
   ui.cloudCoverageValue.textContent = Math.round(Number(ui.cloudCoverage.value) * 100) + '%';
@@ -153,7 +153,7 @@ function updateFogControls() {
   ui.fogStrengthValue.textContent=Math.round(strength*100)+'%';
   ui.fogRangeValue.textContent=(near/1000).toFixed(1)+'–'+(far/1000).toFixed(1)+' км';
 }
-async function buildTerrainHeightLookupasync function buildTerrainHeightLookup(root,bounds,cellSize=40){
+async function buildTerrainHeightLookup(root,bounds,cellSize=40){
   const size=bounds.getSize(new THREE.Vector3());
   const cols=Math.max(1,Math.ceil(size.x/cellSize));
   const rows=Math.max(1,Math.ceil(size.z/cellSize));
@@ -506,7 +506,7 @@ async function loadRealTerrain() {
   controls.update();
   terrainInfoEl.textContent = terrainMeshCount + ' mesh' + (usingFallback ? ' · procedural' : '');
 }
-function seededRandomfunction seededRandom(x, z, salt = 0) {
+function seededRandom(x, z, salt = 0) {
   let state = (Math.imul(Math.floor(x * 2), 374761393) ^
     Math.imul(Math.floor(z * 2), 668265263) ^ Math.imul(salt + 71, 1274126177) ^ 0x51a1) >>> 0;
   return () => {
@@ -1322,7 +1322,7 @@ function rebuildForestDensity() {
 function applyQualityProfile(name) {
   atmosphere?.setQuality(name);
 }
-function bindUI()function bindUI() {
+function bindUI() {
   ui.time.addEventListener('input',()=>{
     dayCyclePlaying=false;
     syncDayCycleButton();
