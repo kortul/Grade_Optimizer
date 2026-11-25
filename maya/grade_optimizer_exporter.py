@@ -18,7 +18,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as om2
 
 WINDOW = "GradeOptimizerExporter"
-VERSION = "0.9.4"
+VERSION = "0.9.5"
 MAYA_LINEAR_UNIT_TO_METERS = {
     "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0,
     "in": 0.0254, "ft": 0.3048, "yd": 0.9144
@@ -733,14 +733,45 @@ def _read_client_scene(repo):
 def _safe_existing_fbx_path(client_dir, relative_file, require_exists=True):
     normalized = str(relative_file or "").replace("\\", "/").strip()
     if not re.match(r"^models/[A-Za-z0-9_.-]+\.fbx$", normalized, re.IGNORECASE):
-        raise RuntimeError("Заменять можно только FBX внутри clients/<project>/models/: " + normalized)
+        raise RuntimeError("Целевой FBX должен находиться внутри clients/<project>/models/: " + normalized)
     absolute = os.path.abspath(os.path.join(client_dir, *normalized.split("/")))
     base = os.path.abspath(client_dir)
     if os.path.commonpath([base, absolute]) != base:
         raise RuntimeError("Путь модели выходит за пределы папки клиентского проекта.")
     if require_exists and not os.path.isfile(absolute):
-        raise RuntimeError("Текущий FBX не найден в локальном Git-репозитории: " + normalized)
+        raise RuntimeError("Целевой FBX не найден в локальном Git-репозитории: " + normalized)
     return absolute
+
+
+def _safe_existing_client_model_path(client_dir, relative_file, require_exists=True):
+    """Resolve a published FBX/GLB source without allowing paths outside models/."""
+    normalized = str(relative_file or "").replace("\\", "/").strip()
+    if not re.match(r"^models/[A-Za-z0-9_.-]+\.(?:fbx|glb)$", normalized, re.IGNORECASE):
+        raise RuntimeError("Поддерживаются только FBX/GLB внутри clients/<project>/models/: " + normalized)
+    absolute = os.path.abspath(os.path.join(client_dir, *normalized.split("/")))
+    base = os.path.abspath(client_dir)
+    if os.path.commonpath([base, absolute]) != base:
+        raise RuntimeError("Путь модели выходит за пределы папки клиентского проекта.")
+    if require_exists and not os.path.isfile(absolute):
+        raise RuntimeError("Исходная модель не найдена в локальном Git-репозитории: " + normalized)
+    return absolute
+
+
+def _resolve_replacement_fbx_target(client_dir, relative_file):
+    """Return (source path, FBX output path, FBX output relative path) for an asset."""
+    normalized = str(relative_file or "").replace("\\", "/").strip()
+    source_path = _safe_existing_client_model_path(client_dir, normalized, require_exists=True)
+    extension = os.path.splitext(normalized)[1].lower()
+    if extension == ".fbx":
+        output_relative = normalized
+    elif extension == ".glb":
+        # Maya writes FBX, not GLB. Keep the published asset ID and switch only
+        # its manifest file to a same-stem FBX after the replacement succeeds.
+        output_relative = os.path.splitext(normalized)[0] + ".fbx"
+    else:
+        raise RuntimeError("Для замены Maya поддерживаются только FBX и GLB: " + normalized)
+    output_path = _safe_existing_fbx_path(client_dir, output_relative, require_exists=False)
+    return source_path, output_path, output_relative
 
 
 def list_replaceable_client_assets(repo):
@@ -753,25 +784,37 @@ def list_replaceable_client_assets(repo):
         if not isinstance(raw_asset, dict):
             continue
         relative_file = str(raw_asset.get("file") or "").replace("\\", "/")
-        if not relative_file.lower().endswith(".fbx"):
+        extension = os.path.splitext(relative_file)[1].lower()
+        if extension not in (".fbx", ".glb"):
             non_fbx += 1
             continue
         try:
-            model_path = _safe_existing_fbx_path(client_dir, relative_file, require_exists=False)
+            source_path = _safe_existing_client_model_path(client_dir, relative_file, require_exists=False)
+            if extension == ".glb":
+                replacement_relative = os.path.splitext(relative_file)[0] + ".fbx"
+                replacement_path = _safe_existing_fbx_path(client_dir, replacement_relative, require_exists=False)
+            else:
+                replacement_relative = relative_file
+                replacement_path = _safe_existing_fbx_path(client_dir, replacement_relative, require_exists=False)
         except Exception:
             continue
-        if not os.path.isfile(model_path):
+        if not os.path.isfile(source_path):
             missing_fbx += 1
             continue
         asset = dict(raw_asset)
-        asset["_model_path"] = model_path
+        asset["_model_path"] = source_path
         asset["_relative_file"] = relative_file
-        asset["_size_bytes"] = os.path.getsize(model_path)
-        asset["_label"] = "%s  [%s]  ·  %s / %s" % (
+        asset["_replacement_model_path"] = replacement_path
+        asset["_replacement_relative_file"] = replacement_relative
+        asset["_format_conversion"] = "GLB → FBX" if extension == ".glb" else ""
+        asset["_size_bytes"] = os.path.getsize(source_path)
+        format_note = "  ·  GLB → FBX" if extension == ".glb" else ""
+        asset["_label"] = "%s  [%s]  ·  %s / %s%s" % (
             asset.get("name") or asset.get("id") or "Без имени",
             asset.get("id") or "no-id",
             asset.get("category") or "model",
-            asset.get("phase") or "always"
+            asset.get("phase") or "always",
+            format_note
         )
         result.append(asset)
     # The canonical base terrain is global (assets/), not a client asset.
@@ -811,7 +854,7 @@ def list_replaceable_client_assets(repo):
 
 
 def _selected_git_asset():
-    """Return the currently selected FBX asset from the Outliner-style tree."""
+    """Return the currently selected FBX/GLB-compatible asset from the tree."""
     try:
         selected_items = cmds.treeView(
             WINDOW + "_git_asset_tree", query=True, selectItem=True
@@ -829,7 +872,7 @@ def _selected_git_asset():
 
 
 def _git_asset_tree_select(item, state):
-    """Only FBX leaf nodes are selectable; category rows act as folders."""
+    """Only supported FBX/GLB asset leaves are selectable; categories act as folders."""
     if not state:
         return True
     return item in GIT_ASSET_TREE_MAP
@@ -847,7 +890,7 @@ def _update_git_asset_details(*_):
         category = str(asset.get("category") or "model").replace("_", " ")
         phase = str(asset.get("phase") or "always").replace("_", " ")
         message = "%s    ·    ID: %s    ·    %s / %s    ·    %.1f MiB" % (
-            asset.get("_relative_file", ""),
+            (asset.get("_relative_file", "") + (" → " + asset.get("_replacement_relative_file", "") if asset.get("_format_conversion") else "")),
             asset.get("id", ""),
             category,
             phase,
@@ -940,17 +983,17 @@ def refresh_git_asset_list(*_):
 
         client_asset_count = sum(1 for item in assets if not item.get("_canonical_terrain"))
         canonical_count = sum(1 for item in assets if item.get("_canonical_terrain"))
-        note = "Git: clients/%s/scene.json    ·    Клиентские FBX: %d    ·    Основной рельеф: %s" % (
+        note = "Git: clients/%s/scene.json    ·    Клиентские модели (FBX + GLB → FBX): %d    ·    Основной рельеф: %s" % (
             client_slug, client_asset_count, "доступен" if canonical_count else "не найден"
         )
         if missing_fbx:
             note += "    ·    отсутствуют локально: %d" % missing_fbx
         if non_fbx:
-            note += "    ·    GLB/прочие: %d (не показываются)" % non_fbx
+            note += "    ·    прочие форматы не поддерживаются: %d" % non_fbx
         note += ". Список читается из локального клона — сначала сделай Pull в GitHub Desktop."
         cmds.text(WINDOW + "_git_asset_status", edit=True, label=note)
 
-        # Do not auto-select the first FBX: replacement must require an
+        # Do not auto-select the first model: replacement requires an
         # explicit user choice. Preserve a previous selection only on refresh.
         if previous_tree_item:
             cmds.treeView(
@@ -992,6 +1035,9 @@ def prepare_client_asset_export(repo, components, node_metadata, replace_asset_i
 
     existing = None
     existing_size_bytes = 0
+    source_relative_file = ""
+    format_conversion = ""
+    source_size_bytes = 0
     if replace_asset_id:
         matches = [item for item in assets if isinstance(item, dict) and str(item.get("id") or "") == str(replace_asset_id)]
         if len(matches) != 1:
@@ -1001,9 +1047,15 @@ def prepare_client_asset_export(repo, components, node_metadata, replace_asset_i
         if not asset_id:
             raise RuntimeError("У выбранного Git-объекта отсутствует ID.")
         asset_name = str(existing.get("name") or asset_id)
-        relative_file = str(existing.get("file") or "").replace("\\", "/")
-        model_path = _safe_existing_fbx_path(client_dir, relative_file, require_exists=True)
-        existing_size_bytes = os.path.getsize(model_path)
+        source_relative_file = str(existing.get("file") or "").replace("\\", "/")
+        source_model_path, model_path, relative_file = _resolve_replacement_fbx_target(
+            client_dir, source_relative_file
+        )
+        source_size_bytes = os.path.getsize(source_model_path)
+        # Compare the new export against the previous FBX output when one exists.
+        # GLB source size is not comparable to Maya's FBX output size.
+        existing_size_bytes = os.path.getsize(model_path) if os.path.isfile(model_path) else 0
+        format_conversion = "GLB → FBX" if source_relative_file.lower().endswith(".glb") else ""
 
     else:
         asset_name = source_root_name
@@ -1086,6 +1138,9 @@ def prepare_client_asset_export(repo, components, node_metadata, replace_asset_i
         "client_slug": client_slug, "asset_id": asset_id, "asset_name": asset_name,
         "source_root_name": source_root_name, "is_replacement": bool(existing),
         "existing_size_bytes": existing_size_bytes,
+        "source_size_bytes": source_size_bytes,
+        "source_relative_file": source_relative_file,
+        "format_conversion": format_conversion,
         "relative_file": relative_file, "model_path": model_path,
         "temporary_model_path": temporary_model_path, "manifest_path": scene_path,
         "temporary_manifest_path": temporary_manifest_path, "manifest": manifest
@@ -2692,13 +2747,25 @@ def replace_selected_scene_asset(*_):
     if asset.get("_canonical_terrain"):
         replace_canonical_terrain()
         return
+    source_file = asset.get("_relative_file", "")
+    output_file = asset.get("_replacement_relative_file", source_file)
+    conversion_note = ""
+    if asset.get("_format_conversion"):
+        conversion_note = (
+            "\n\nВНИМАНИЕ: объект сейчас хранится как GLB, а Maya экспортирует FBX. "
+            "После успешной замены scene.json будет переключён на FBX. "
+            "Исходный GLB останется в папке как резервный файл; он не будет удалён."
+        )
     message = (
-        "Будет заменён существующий FBX в локальном Git-репозитории.\n\n"
-        "Объект: %s\nID: %s\nФайл: %s\n\n"
+        "Будет заменена существующая модель в локальном Git-репозитории.\n\n"
+        "Объект: %s\nID: %s\nИсходный файл: %s\nFBX для записи: %s\n\n"
         "Геометрия и назначения материалов будут взяты из текущего выделения Maya.\n"
-        "ID, категория, фаза, transform / масштаб, видимость, Collision и Forest blocker останутся прежними.\n\n"
-        "Это изменит локальные файлы Git. Продолжить?"
-    ) % (asset.get("name") or asset.get("id"), asset.get("id"), asset.get("_relative_file"))
+        "ID, категория, фаза, transform / масштаб, видимость, Collision и Forest blocker останутся прежними."
+        "%s\n\nЭто изменит локальные файлы Git. Продолжить?"
+    ) % (
+        asset.get("name") or asset.get("id"), asset.get("id"),
+        source_file, output_file, conversion_note
+    )
     choice = cmds.confirmDialog(
         title="Grade Optimizer · Replace Git Geometry",
         message=message,
@@ -3194,7 +3261,7 @@ def show():
     cmds.setParent("..")
     cmds.setParent("..")
 
-    # 2. REPLACE ASSET — choose an existing published FBX in a tree.
+    # 2. REPLACE ASSET — choose an existing published FBX/GLB in a tree.
     cmds.frameLayout(
         label="2. ЗАМЕНА СУЩЕСТВУЮЩЕГО ОБЪЕКТА",
         collapsable=True, collapse=True, marginWidth=9, marginHeight=8,
@@ -3202,7 +3269,7 @@ def show():
     )
     cmds.columnLayout(adjustableColumn=True, rowSpacing=6)
     cmds.text(
-        label="Выбери опубликованную модель в дереве. Категории раскрываются как папки в Outliner.",
+        label="Выбери опубликованную FBX/GLB-модель. Для GLB Maya запишет FBX и переключит на него scene.json.",
         align="left", height=34, wordWrap=True
     )
     cmds.rowLayout(
@@ -3210,7 +3277,7 @@ def show():
         columnWidth2=(435, 95)
     )
     cmds.text(
-        label="ОБЪЕКТЫ ПРОЕКТА + БАЗОВЫЙ РЕЛЬЕФ",
+        label="FBX / GLB → FBX + БАЗОВЫЙ РЕЛЬЕФ",
         align="left", font="smallBoldLabelFont"
     )
     cmds.button(
@@ -3235,7 +3302,7 @@ def show():
     )
     cmds.text(
         WINDOW + "_git_asset_info",
-        label="Выбери FBX-модель в дереве.",
+        label="Выбери FBX/GLB-модель в дереве.",
         align="left", height=38, wordWrap=True,
         font="smallPlainLabelFont"
     )
