@@ -5794,20 +5794,46 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       if(typeof item.file!=='string'||!/^models\/[A-Za-z0-9_.-]+\.(glb|fbx)$/i.test(item.file)){
         console.warn('Пропущен файл модели с некорректным путём:',item.file);continue;
       }
-      let buffer;
+      let buffer,sourcePath=item.file;
+      const isStageOneAsset=item.id==='slopes_stage1'||
+        /slopes[_ -]*stage[_ -]*1/i.test(String(item.name||''));
       if(useBrowserBackup){
         const stored=backupBuffers.get(item.id);
         if(!stored?.buffer)throw new Error('В локальном бэкапе отсутствует бинарный файл модели '+item.name+'.');
         buffer=stored.buffer.slice(0);
+        sourcePath=stored.sourcePath||item.file;
+        if(isStageOneAsset&&/\.glb$/i.test(sourcePath)){
+          console.warn('[Grade Optimizer] Stage1 is loaded from an unsynced browser GLB backup; sync it or open the project with ?remote=1 to use the canonical FBX and compact material groups.',{
+            sourcePath,manifestFile:item.file
+          });
+        }
       }else{
-        const modelResponse=await fetch('./clients/'+slug+'/'+item.file+'?t='+Date.now(),{cache:'no-store'});
-        if(!modelResponse.ok)throw new Error('Не удалось загрузить модель '+item.name+' ('+modelResponse.status+').');
+        let modelResponse=null;
+        if(isStageOneAsset&&/\.glb$/i.test(item.file)){
+          const preferredFbxPath=item.file.replace(/\.glb$/i,'.fbx');
+          const fbxResponse=await fetch('./clients/'+slug+'/'+preferredFbxPath+'?t='+Date.now(),{cache:'no-store'});
+          if(fbxResponse.ok){
+            modelResponse=fbxResponse;
+            sourcePath=preferredFbxPath;
+            console.info('[Grade Optimizer] Stage1: using the canonical FBX and compacting repeated face-material groups.',{
+              manifestFile:item.file,sourcePath
+            });
+          }else{
+            console.warn('[Grade Optimizer] Stage1 canonical FBX unavailable; falling back to manifest GLB.',{
+              sourcePath:preferredFbxPath,status:fbxResponse.status
+            });
+          }
+        }
+        if(!modelResponse){
+          modelResponse=await fetch('./clients/'+slug+'/'+item.file+'?t='+Date.now(),{cache:'no-store'});
+          if(!modelResponse.ok)throw new Error('Не удалось загрузить модель '+item.name+' ('+modelResponse.status+').');
+        }
         buffer=await modelResponse.arrayBuffer();
       }
-      const gltf=await parseSceneModel(buffer,item.file,'./clients/'+slug+'/models/');
+      const gltf=await parseSceneModel(buffer,sourcePath,'./clients/'+slug+'/models/');
       const root=gltf.scene||gltf.scenes?.[0];
       if(!root)throw new Error('Модель без сцены: '+item.name);
-      if(/\.fbx$/i.test(item.file))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id);
+      if(/\.fbx$/i.test(sourcePath))restoreCadBridgeWorkingCoordinates(root,item.mayaExport,item.name||item.id);
       captureEditorNodeVisibilityDefaults(root);
       root.name=item.name||root.name||'Project model';
       applyClientAssetTransform(root,item.transform||{});
@@ -5816,7 +5842,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       const meta={
         id:item.id,name:root.name,category:item.category||'prop',phase:item.phase||'always',
         visible:item.visible!==false,collision:!!item.collision,forestBlocker:!!item.forestBlocker,
-        activeTerrain:!!item.activeTerrain,modelDirty:false,sourceFile:item.sourceFile||item.file,
+        activeTerrain:!!item.activeTerrain,modelDirty:false,sourceFile:sourcePath,
         mayaExport:item.mayaExport||null
       };
       root.visible=meta.visible;
@@ -5852,7 +5878,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       totalVisibleMeshCount+=visibleMeshCount;
       totalVertexCount+=vertexCount;
       console.info('[Grade Optimizer] Imported asset geometry:',{
-        id:item.id,file:item.file,meshCount,vertexCount,visibleMeshCount,
+        id:item.id,file:sourcePath,manifestFile:item.file,meshCount,vertexCount,visibleMeshCount,
         bounds:{min:geometryBounds.min.toArray(),max:geometryBounds.max.toArray()},
         size:geometrySize.toArray(),center:geometryCenter.toArray(),
         normalization:{
@@ -5864,7 +5890,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       root.userData.resortAssetId=item.id;
       root.userData.resortAsset={...meta};
       root.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;}});
-      const asset={id:item.id,name:root.name,root,meta,sourceType:'imported',sourceBuffer:buffer.slice(0),sourcePath:item.file};
+      const asset={id:item.id,name:root.name,root,meta,sourceType:'imported',sourceBuffer:buffer.slice(0),sourcePath};
       scene.add(root);
       state.importedAssets.push(asset);
       if(meta.category==='slope')applyImportedSlopeDepthBias(root,-1,-1);
