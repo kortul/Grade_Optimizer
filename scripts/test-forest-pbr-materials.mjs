@@ -40,7 +40,7 @@ assert.match(renderer, /const sprayCount=high\?4:mid\?3:2/, 'secondary branches 
 assert.doesNotMatch(renderer, /addTriangle|addQuad|fanWidth/, 'broad flat fan surfaces must be absent from V9 foliage');
 assert.match(renderer, /const phase=hash\(level\+11,variant\+37\)\*Math\.PI\*2/, 'spruce tiers must not rotate into a golden-angle vortex');
 assert.match(renderer, /const addSnowCap=/, 'spruce boughs must carry segmented top-side snow patches');
-assert.match(renderer, /material\.positionNode=positionLocal/, 'wind flex must be restricted to outer branch reach');
+assert.match(renderer, /material\.positionNode=positionLocal/, 'V9 foliage must remain static until branch-local deformation is added');
 assert.doesNotMatch(renderer, /positionLocal\.y\.mul\(0\.0075\)|positionLocal\.y\.mul\(0\.0055\)/, 'old whole-tree algae sway must be removed');
 assert.match(renderer, /function removeLegacyTreeAssets\(root\)/, 'named legacy tree assets must be stripped from Stage 1 before creating the new forest');
 assert.doesNotMatch(renderer, /addClump|SphereGeometry|IcosahedronGeometry/, 'rounded foliage clumps must not be part of V9 geometry');
