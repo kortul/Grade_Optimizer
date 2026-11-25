@@ -25,7 +25,7 @@ assert.ok(
 assert.ok(existsSync(resolve(root, entryPath)), 'active module does not exist: ' + entryPath);
 pass('active entrypoint exists: ' + entryPath);
 const skierBatchSource=read('skier-render-batching.v1.js').toString('utf8');
-assert.ok(skierBatchSource.includes('mergeGeometries')&&skierBatchSource.includes('physicsCollision:false')&&skierBatchSource.includes('goSkierBatchHidden'),'Stage1 skier render batching must merge static meshes while keeping a separate collision source');
+assert.ok(skierBatchSource.includes('mergeGeometries')&&skierBatchSource.includes('physicsCollision: false')&&skierBatchSource.includes('goSkierBatchHidden'),'Stage1 skier render batching must merge static meshes while keeping a separate collision source');
 assert.ok(entrySource.includes('setStageOneSkierRenderBatch')&&entrySource.includes('Skier Stage1 mesh batching'),'active app must batch Stage1 static meshes only in skier mode');
 const renderPerformanceSource=read('render-performance.v1.js').toString('utf8');
 assert.ok(renderPerformanceSource.includes('performanceProfileActive ? profileMaximum : maximum')&&renderPerformanceSource.includes('frameIntervalsMs.length < 5'),'render performance helpers must cap skier resolution and reject undersampled rolling FPS');
