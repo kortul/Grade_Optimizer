@@ -137,7 +137,7 @@ function formatTime(hours) {
 function updateSkyEnvironment(solar,force=false){
   if(!renderer||!solar)return;
   const now=performance.now();
-  if(!force&&now-skyEnvironmentLastUpdate<900)return;
+  if(!force&&now-skyEnvironmentLastUpdate<2500)return;
   skyEnvironmentLastUpdate=now;
   const width=512,height=256;
   const count=width*height;
@@ -205,7 +205,7 @@ function advanceDayCycleFrame(deltaSeconds){
   ui.time.value=String(advanceSolarClock(Number(ui.time.value),deltaSeconds,ui.dayLength.value));
   updateSky();
 }
-function updateSky() {
+function updateSky(forceEnvironment=false) {
   const hours = Number(ui.time.value);
   const solar = calculateSolarCycle(THREE,hours);
   solarState=solar;
@@ -259,7 +259,7 @@ function updateSky() {
     elevation:Number(ui.cloudElevation.value),wind:Number(ui.wind.value),daylight:solar.daylight,
     twilight:solar.twilight,rayStrength:Number(ui.godRays.value),sunDirection,sunColor:liveSunColor
   });
-  updateSkyEnvironment(solar);
+  updateSkyEnvironment(solar,forceEnvironment);
   ui.timeValue.textContent = formatTime(hours);
 }
 function setLoadingMessage(message){
@@ -1458,10 +1458,10 @@ function bindUI() {
     dayCyclePlaying=false;
     syncDayCycleButton();
     updateSkyLabels();
-    updateSky();
+    updateSky(true);
   });
   [ui.sunIntensity,ui.turbidity,ui.rayleigh,ui.cloudCoverage,ui.cloudDensity,ui.cloudElevation].forEach(input=>{
-    input.addEventListener('input',()=>{updateSkyLabels();updateSky();});
+    input.addEventListener('input',()=>{updateSkyLabels();updateSky(true);});
   });
   ui.dayCycle.addEventListener('click',()=>{
     dayCyclePlaying=!dayCyclePlaying;
