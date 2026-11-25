@@ -6,10 +6,12 @@ on:
       - 'clients/alpine-resort/models/slopes_stage1.fbx'
       - 'clients/alpine-resort/models/slopes_stage1.glb'
       - 'clients/alpine-resort/scene.json'
-      - 'app.v192.js'
+      - 'app.v197.js'
       - '.github/scripts/inspect-stage1-runtime-source.mjs'
       - 'stage-one-material-groups.v1.js'
+      - 'stage-one-materials.v1.js'
       - 'scripts/test-stage-one-material-groups.mjs'
+      - 'scripts/test-stage-one-materials.mjs'
   push:
     branches: [main]
     paths:
@@ -18,13 +20,15 @@ on:
       - 'clients/alpine-resort/scene.json'
       - 'assets/real-terrain.fbx'
       - 'assets/real-terrain.json'
-      - 'app.v192.js'
+      - 'app.v197.js'
       - 'index.html'
       - '.github/workflows/inspect-stage1-fbx.yml'
       - '.github/scripts/inspect-stage1-fbx.mjs'
       - '.github/scripts/inspect-stage1-runtime-source.mjs'
       - 'stage-one-material-groups.v1.js'
+      - 'stage-one-materials.v1.js'
       - 'scripts/test-stage-one-material-groups.mjs'
+      - 'scripts/test-stage-one-materials.mjs'
   workflow_dispatch:
 
 permissions:
