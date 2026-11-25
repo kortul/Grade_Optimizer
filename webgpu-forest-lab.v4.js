@@ -89,9 +89,6 @@ const marchSteps = uniform(18);
 const spatialSigma = uniform(1.15);
 const depthSensitivity = uniform(22);
 const fogColor = uniform(new THREE.Color(0xc7d9e5));
-const hazeSunDirection=uniform(new THREE.Vector3(0,1,0));
-const hazeSunColor=uniform(new THREE.Color(0xffd2b0));
-const hazeSunWeight=uniform(0.12);
 const rayStrength=uniform(Number(ui.godRays.value));
 const raySteps=uniform(12);
 const rayResolutionScale=uniform(0.42);
@@ -151,9 +148,6 @@ function updateSky() {
   solarState=solar;
   sunDirection.copy(solar.sunDirection);
   foliageSunDirection.value.copy(sunDirection).normalize();
-  hazeSunDirection.value.copy(sunDirection).normalize();
-  hazeSunColor.value.copy(solar.sunColor);
-  hazeSunWeight.value=THREE.MathUtils.clamp(solar.daylight*(0.10+solar.twilight*0.28),0,0.34);
   foliageDaylight.value=solar.daylight;
   sunLight.castShadow=solar.daylight>0.035;
   sky.sunPosition.value.copy(sunDirection);
@@ -451,22 +445,9 @@ function buildFogPipeline() {
       rayPoint.addAssign(stepVector);
     });
     const volumeFog = float(1).sub(opticalDepth.negate().exp());
-    // Beer-Lambert aerial perspective: low, grazing rays cross more aerosol than steep rays.
-    const distanceBeyond = surfaceDistance.sub(rangeFogNear).max(0);
-    const rangeGate = smoothstep(rangeFogNear,rangeFogFar,surfaceDistance);
-    const horizonPath = float(1).sub(rayDirection.y.abs()).pow(1.35);
-    const pathScale = float(0.40).add(horizonPath.mul(0.82));
-    const cameraAltitude = cameraPosition.y.sub(groundY).max(0);
-    const surfaceAltitude = worldPosition.y.sub(groundY).max(0);
-    const meanAltitude = cameraAltitude.add(surfaceAltitude).mul(0.5);
-    const aerosolScaleHeight = fogHeight.mul(3.5).add(350);
-    const altitudeDensity = exp(meanAltitude.negate().div(aerosolScaleHeight)).clamp(0.14,1);
-    const extinction = fogDensity.mul(0.025).add(0.000006);
-    const rangeOpticalDepth = distanceBeyond.mul(pathScale).mul(altitudeDensity).mul(extinction);
-    const rangeFog = float(1).sub(rangeOpticalDepth.negate().exp()).mul(rangeGate);
-    // Combine near-ground fog and distant haze as transmittances.
-    const amount = float(1).sub(float(1).sub(volumeFog).mul(float(1).sub(rangeFog)))
-      .mul(fogStrength).clamp(0,1);
+    const rangeT = surfaceDistance.sub(rangeFogNear).div(rangeFogFar.sub(rangeFogNear).max(0.001)).clamp(0, 1);
+    const rangeFog = rangeT.mul(rangeT); // Ease into distance haze instead of fogging the whole frame at mid-range.
+    const amount = volumeFog.max(rangeFog).mul(fogStrength).clamp(0, 1);
     return isBackgroundDepth(depth).select(float(0), amount);
   });
   const lowResFog = rtt(fogNode(), null, null, {
@@ -540,18 +521,7 @@ function buildFogPipeline() {
     return total.div(weightTotal.max(0.0001));
   });
   const raysResult=upsampleRays(lowResRays,sceneDepth);
-  const viewToSurface = Fn(([depth]) => {
-    const viewPosition=getViewPosition(screenUV,depth,projectionInverse);
-    const worldPosition=cameraWorld.mul(vec4(viewPosition,1)).xyz;
-    return worldPosition.sub(cameraPosition).normalize();
-  })(sceneDepth.sample(screenUV).r);
-  const sunCosine=viewToSurface.dot(hazeSunDirection).clamp(-1,1);
-  const mieG=float(0.76);
-  const mieDenominator=float(1).add(mieG.mul(mieG)).sub(sunCosine.mul(mieG.mul(2))).max(0.035);
-  const miePhase=float(1).sub(mieG.mul(mieG)).div(mieDenominator.pow(1.5)).mul(0.0385).clamp(0,1);
-  const warmScatter=miePhase.mul(hazeSunWeight).clamp(0,0.28);
-  const aerialLight=fogColor.mix(hazeSunColor,warmScatter);
-  const foggedScene=sceneColor.rgb.mix(aerialLight,fogResult);
+  const foggedScene=sceneColor.rgb.mix(fogColor,fogResult);
   const shaftColour=vec3(1.0,0.86,0.67);
   renderPipeline.outputNode=foggedScene.add(shaftColour.mul(raysResult.mul(float(0.22).add(fogResult.mul(0.78)))));
   renderPipeline.needsUpdate = true;
