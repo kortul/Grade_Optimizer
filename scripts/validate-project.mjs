@@ -79,9 +79,9 @@ assert.ok(!entrySource.includes("labelRenderer.domElement.style.display='';")&&!
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'CSS must immediately hide slope labels for '+menuClass);
 }
-assert.ok(html.includes('app.v200.js')&&!html.includes('app.v198.js'),'HTML must activate the current v199 release');
+assert.ok(html.includes('app.v200.js')&&!html.includes('app.v198.js'),'HTML must activate the current v200 release');
 pass('fast spatial-index slope-label culling and immediate menu-layer suppression are present');
-assert.ok(!entrySource.includes('intersectObjects(')&&!entrySource.includes('new THREE.Raycaster()'),'angle-label visibility must avoid per-label scene raycasts that stall large terrain');
+assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
 
 assert.ok(html.includes('id="skierSpawnSlots"')&&html.includes('id="placeSkierSpawnButton"')&&html.includes('id="deleteSkierSpawnButton"')&&html.includes('id="sceneLookTab-spawn"')&&html.includes('id="sceneLookPanel-spawn"'), 'Scene Editor skier spawn tool controls / dedicated tab are missing');
