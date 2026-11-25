@@ -1102,7 +1102,7 @@ assert.ok(alpineForestSource.includes("import { GLTFLoader } from 'three/addons/
   alpineForestSource.includes('restoreStageOneCoordinates(root,item)'),
   'Forest Lab must keep the Slopes_Stage1 terrain and CAD Bridge transforms');
 assert.ok(alpineForestSource.includes('V11: dense alpine spruce foliage built from compact, volumetric needle tufts')&&
-  alpineForestSource.includes('const branches=high?6:mid?5:4')&&
+  alpineForestSource.includes('branches=high?6:mid?5:4')&&
   alpineForestSource.includes('const twigStations=high?3:mid?2:1')&&
   alpineForestSource.includes('const tuftCount=high?3:mid?2:1')&&
   alpineForestSource.includes('const needleCount=8')&&
