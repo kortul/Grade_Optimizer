@@ -530,7 +530,7 @@ assert.ok(!entrySource.includes('modeTransition'), 'mode changes must not be blo
 assert.ok(entrySource.includes("if(state.mode==='skier'){")&&entrySource.includes("skierController.update(dt);"), 'skier physics must update every frame once skier mode is active');
 assert.ok(entrySource.includes("if(resumePendingSkier)requestAnimationFrame(()=>setSceneMode('skier'))"), 'queued skier request must resume after initial splash removal');
 assert.ok(skierSource.includes('_downhillClearance('), 'skier spawn must validate continuous downhill terrain');
-assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('this._findSpawn(slot)')&&skierSource.includes("this.lastStartError='NO_GROUND_UNDER_DRONE'"), 'drone handoff must never silently relocate to a distant piste when no ground exists beneath it');
+assert.ok(skierSource.includes('if(!spawnFound&&!isDroneSpawn){')&&skierSource.includes('const defaultHit=this._findSpawn(0);')&&skierSource.includes("this.lastStartError='NO_GROUND_UNDER_DRONE'"), 'only ordinary starts may use the slot-0 summit fallback; drone handoff must never silently relocate to a distant piste');
 assert.ok(skierSource.includes('this.velocity.copy(downhill).multiplyScalar(initialSpeed)'), 'drone-to-skier handoff must begin with controlled downhill motion');
 
 assert.ok(skierSource.includes("tuck: this.keys.has('w') || this.keys.has('arrowup')"), 'skier tuck state missing from HUD payload');
