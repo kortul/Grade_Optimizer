@@ -84,7 +84,9 @@ function buildBatch(root, signature) {
 
     const groupCount = geometry.groups?.length || 0;
     const elementCount = geometry.index?.count ?? geometry.attributes.position.count;
-    const singleFullGroup = groupCount === 0 || (
+    const isSingleMaterialArray = Array.isArray(object.material) && object.material.length === 1;
+    const singleFullGroup = !Array.isArray(object.material) || (
+      isSingleMaterialArray &&
       groupCount === 1 &&
       geometry.groups[0].start === 0 &&
       geometry.groups[0].count >= elementCount &&
