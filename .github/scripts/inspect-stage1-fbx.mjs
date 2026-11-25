@@ -9,6 +9,27 @@ const manifestFile = 'clients/alpine-resort/scene.json';
 const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'));
 const asset = manifest.assets?.find(item => item.id === 'slopes_stage1');
 if (!asset) throw new Error('slopes_stage1 entry is missing from scene.json');
+const savedEditorAsset = (manifest.editorSettings?.assets || []).find(item =>
+  item.id === asset.id ||
+  (item.sourceFile && String(item.sourceFile).endsWith('/slopes_stage1.fbx')) ||
+  /slopes[_ -]*stage[_ -]*1/i.test(String(item.name || ''))
+);
+const savedMaterialRows = savedEditorAsset?.materials || [];
+const savedMaterialIds = new Set(savedMaterialRows.map(item => item.materialId).filter(Boolean));
+const savedMaterialNameCounts = savedMaterialRows.reduce((counts,item) => {
+  const name = String(item.materialName || '(unnamed)');
+  counts[name] = (counts[name] || 0) + 1;
+  return counts;
+}, {});
+const savedEditorMaterialAudit = {
+  settingsPresent: !!manifest.editorSettings,
+  savedAssetMatched: !!savedEditorAsset,
+  savedAssetId: savedEditorAsset?.id || null,
+  savedAssetName: savedEditorAsset?.name || null,
+  savedMaterialRows: savedMaterialRows.length,
+  uniqueSavedMaterialIds: savedMaterialIds.size,
+  savedMaterialNameCounts
+};
 
 const bytes = readFileSync(file);
 const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
@@ -49,6 +70,7 @@ const materialGroupsPreserved = originalMaterialGroups.every(item =>
   JSON.stringify(item.geometry.groups || []) === item.groups
 );
 console.log(JSON.stringify({
+  savedEditorMaterialAudit,
   stageOneMaterialSharingAudit: {
     rawMaterialAudit, stageOneMaterialSharing, sharedMaterialAudit, materialGroupsPreserved
   }
