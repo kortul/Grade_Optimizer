@@ -31,7 +31,7 @@ assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'semantic 
 assert.match(renderer, /function createSplinePineMaterial\(\)/, 'procedural near/mid forest still uses its physical foliage material');
 assert.match(renderer, /MeshPhysicalNodeMaterial\(\{\s*roughness:0\.88/, 'foliage should retain its physical node material');
 assert.match(renderer, /V10: keep V9's tree silhouette; fill each bough with dense, layered 3D needle sprays/, 'spruce must use the new whorled bough geometry');
-assert.match(renderer, /const branches=high\?7:mid\?6:5/, 'near, mid and far LODs must use V10's denser tier structure');
+assert.match(renderer, /const branches=high\?7:mid\?6:5/, 'near, mid and far LODs must use the denser V10 tier structure');
 assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
 assert.match(renderer, /const addNeedle=/, 'foliage must be made from volumetric needle geometry, not flat cards');
 assert.match(renderer, /const twigStations=high\?6:mid\?4:3/, 'V10 must add closely spaced paired twigs on each main bough');
