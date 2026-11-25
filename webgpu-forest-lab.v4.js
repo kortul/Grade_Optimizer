@@ -543,7 +543,7 @@ function buildFogPipeline() {
   const viewToSurface = Fn(([depth]) => {
     const viewPosition=getViewPosition(screenUV,depth,projectionInverse);
     const worldPosition=cameraWorld.mul(vec4(viewPosition,1)).xyz;
-    return normalize(worldPosition.sub(cameraPosition));
+    return worldPosition.sub(cameraPosition).normalize();
   })(sceneDepth.sample(screenUV).r);
   const sunCosine=viewToSurface.dot(hazeSunDirection).clamp(-1,1);
   const mieG=float(0.76);
