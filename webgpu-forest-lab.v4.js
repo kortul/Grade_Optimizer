@@ -6,14 +6,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { SunLight } from 'three/addons/lights/SunLight.js';
 import { SunLightNode } from 'three/addons/lights/SunLightNode.js';
-import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import { calculateSolarCycle, advanceSolarClock, createSolarDisc, updateSolarDisc } from './solar-cycle.v1.js';
 import { createForestAtmosphere } from './webgpu-forest-atmosphere.v1.js';
 import {
-  builtinAOContext, exp, float, Fn, fwidth, getViewPosition, interleavedGradientNoise,
-  isBackgroundDepth, Loop, mrt, normalView, packNormalToRGB, pass, rtt, sample,
-  screenCoordinate, screenUV, smoothstep, texture3D, uniform, unpackRGBToNormal,
-  vec2, vec3, vec4, normalWorld, positionLocal, sin, cos, time, dot, max
+  float, uniform, vec3, normalWorld, positionLocal, sin, cos, time, dot, max
 } from 'three/tsl';
 
 const stage = document.getElementById('stage');
@@ -72,10 +68,6 @@ let solarState=null;
 const daylightSunColor = new THREE.Color(0xfff8f1);
 const lowSunColor = new THREE.Color(0xffc18e);
 const liveSunColor = new THREE.Color();
-const rayStrength=uniform(Number(ui.godRays.value));
-const raySteps=uniform(12);
-const rayResolutionScale=uniform(0.42);
-const sunScreenUV=uniform(new THREE.Vector2(0.78,0.16));
 
 
 
