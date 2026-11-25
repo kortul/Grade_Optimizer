@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v206.js')&&!html.includes('app.v205.js'),'HTML must activate the current v206 release');
+assert.ok(html.includes('app.v207.js')&&!html.includes('app.v206.js'),'HTML must activate the current v207 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
@@ -446,9 +446,10 @@ assert.ok(droneSource.includes('clampToTerrainBounds(this.camera.position)'), 'd
 assert.ok(droneSource.includes('clampToTerrainBounds(nextPosition)'), 'drone movement is not clamped to the terrain bounds');
 assert.ok(entrySource.includes('function fitModeHudToViewport(){'), 'viewport-aware HUD fitting function missing');
 assert.ok(entrySource.includes('new ResizeObserver(scheduleModeHudFit)'), 'HUD resize observer missing');
-assert.ok(entrySource.includes('skier-controller.v101.js'), 'active app must use the flat-start custom-spawn controller');
-const skierSource = read('skier-controller.v101.js').toString('utf8');
-const skierContactUtils = read('skier-terrain-contact.v3.js').toString('utf8');
+assert.ok(entrySource.includes('skier-controller.v102.js'), 'active app must use the overview-visible, unified-physics skier controller');
+const skierSource = read('skier-controller.v102.js').toString('utf8');
+const skierContactUtils = read('skier-terrain-contact.v4.js').toString('utf8');
+const skierViewUtils = read('skier-view-presentation.v1.js').toString('utf8');
 const skierContactTests = read('scripts/test-skier-terrain-contact.mjs').toString('utf8');
 assert.ok(skierContactTests.includes('overlapping piste and terrain choose the surface continuous with the skier height')&&skierContactTests.includes('near-vertical wall normals are rejected'), 'skier terrain-contact regression tests must cover surface transitions and wall rejection');
 assert.ok(skierSource.includes('respawnAtCustomSpawn(spawn)')&&skierSource.includes('spawnHint.headingYaw'), 'skier controller must apply custom spawn position and heading');
@@ -489,10 +490,15 @@ assert.ok(!skierSource.includes('const skiGround=this._groundAt('), 'ski model p
 const lookupQueryIndex=skierSource.indexOf('const lookupHit=this._groundFromLookup(x,z,referenceY,maxVerticalDelta);');
 const raycastIndex=skierSource.indexOf('this.raycaster.intersectObject(this.terrain,true)');
 assert.ok(lookupQueryIndex>=0&&raycastIndex>lookupQueryIndex, 'skier ground queries must use continuity-aware spatial lookup before Raycaster fallback');
-assert.ok(skierSource.includes('faceNormal.y<MIN_TERRAIN_NORMAL_Y')&&skierSource.includes('MIN_SMOOTH_NORMAL_ALIGNMENT'), 'terrain contact must reject vertical walls and unreliable interpolated normals');
+assert.ok(skierSource.includes('faceNormal.y<MIN_TERRAIN_NORMAL_Y')&&skierSource.includes('resolvePhysicsContactNormal')&&!skierSource.includes('MIN_SMOOTH_NORMAL_ALIGNMENT'),'terrain and piste physics must use geometric face normals instead of mesh vertex shading normals');
 assert.ok(skierSource.includes('groundedReferenceY')&&skierSource.includes('expectedNextGroundY')&&skierSource.includes('maxVerticalDelta'), 'ground sampling must preserve height continuity when switching between slope and terrain meshes');
 assert.ok(skierSource.includes('_smoothGroundNormal(nextHit.normal,dt)')&&skierSource.includes('new THREE.Matrix4().makeBasis(right,normal,back)'), 'skier orientation must be smoothed and re-orthogonalized at terrain transitions');
 assert.ok(skierSource.includes('this._isTerrainCollisionMesh(object)')&&skierContactUtils.includes('selectGroundContactCandidate'), 'only visible valid collision meshes may become skier support surfaces');
+assert.ok(skierContactUtils.includes('export function resolvePhysicsContactNormal(')&&skierSource.includes('resolvePhysicsContactNormal({x:t.fnx,y:t.fny,z:t.fnz})'),'spatial lookup and Raycaster fallback must use geometric normals consistently');
+assert.ok(entrySource.includes("skierController.stop({keepSceneModel:mode==='drone'||mode==='overview'})")&&!entrySource.includes("if(mode==='overview')skierController.hideForOverview()"),'skier model must remain visible at its last position after exiting Skier or Drone mode');
+assert.ok(skierSource.includes('showForOverview(){')&&skierSource.includes('this._updateSkierAvatar(true);'),'overview marker must force full skier avatar materials visible after first-person mode');
+assert.ok(skierSource.includes('this.firstPersonFovScale = 1.25')&&skierSource.includes('resolveSkierViewFov(this.cameraFovBase,this.viewBlend,this.firstPersonFovScale)'),'first-person FOV must be 25 percent wider and blend to scene FOV in third-person');
+assert.ok(skierViewUtils.includes('export function resolveSkierViewFov('),'skier camera FOV helper is missing');
 assert.ok(skierContactUtils.includes('MIN_TERRAIN_NORMAL_Y')&&skierContactUtils.includes('blendGroundNormal'), 'engine-independent terrain-contact stability helpers are present');
 assert.ok(entrySource.includes('function isVisibleSkierPhysicsObject(')&&entrySource.includes('An active imported Terrain replaces the hidden base terrain')&&entrySource.includes('remove.forEach(object=>object.parent?.remove(object))'), 'skier collision composite must exclude hidden mesh geometry and not collide with stale base terrain');
 assert.ok(skierSource.includes('stats.raycastFallbacks++')&&skierSource.includes('getTerrainPerformanceDiagnostics()'), 'terrain lookup performance counters and diagnostics API are missing');
