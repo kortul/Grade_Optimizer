@@ -123,6 +123,8 @@ pass('viewport and material-list selection highlight all matching material group
 
 assert.ok(entrySource.includes('function editorTexturesEquivalent(a,b)')&&entrySource.includes('function mergeEquivalentEditorMaterials(root)'), 'conservative duplicate-material matching and FBX-wide material consolidation are missing');
 const parseModelSource=entrySource.slice(entrySource.indexOf('function parseSceneModel('),entrySource.indexOf('const loadGLTF'));
+assert.ok(entrySource.includes("from './editor-shared-materials.v1.js'")&&parseModelSource.includes('mergeImportedMaterialsByName(root)')&&parseModelSource.includes('mergeImportedMaterialsByName(sceneRoot)'), 'FBX and GLB import must physically share same-named material instances across all asset mesh slots');
+
 assert.ok(parseModelSource.includes('mergeEquivalentEditorMaterials(root)')&&parseModelSource.includes('mergeEquivalentEditorMaterials(sceneRoot)'), 'FBX and GLB imports must consolidate equivalent material instances after material normalization');
 assert.ok(entrySource.includes('const byMaterial=new Map()')&&entrySource.includes('byMaterial.get(id)')&&entrySource.includes('target.bindings.push({owner:asset,mesh:object,material,index})'), 'Materials tab must group each shared material into one entry while retaining all mesh-slot bindings');
 assert.ok(entrySource.includes('editorMaterialTargets=collectEditorMaterials(editorSelectedAsset,editorSelectedAsset?.root)'), 'Materials inspector must enumerate material bindings across the full selected FBX asset, not only the selected mesh');
