@@ -33,10 +33,9 @@ assert.match(renderer, /MeshPhysicalNodeMaterial\(\{\s*roughness:0\.88/, 'foliag
 assert.match(renderer, /V8: stable spruce whorls — no spiral tier rotation/, 'spruce must use the new whorled bough geometry');
 assert.match(renderer, /const branches=high\?5:mid\?4:3/, 'near, mid and far LODs must use coherent spruce branch tiers');
 assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and foliage atlas must be removed');
-assert.match(renderer, /const twigCount=high\\?5:mid\\?4:3/, 'spruce should use layered needle sprays at every LOD');
+assert.match(renderer, /const twigCount=high\?5:mid\?4:3/, 'spruce should use layered needle sprays at every LOD');
 assert.match(renderer, /const addBlade=/, 'foliage must be made from tapered needle blades, not round clumps');
 assert.match(renderer, /const phase=variant\*0\.42\+\(level%2\)\*0\.10/, 'spruce tiers must not rotate into a golden-angle vortex');
-assert.match(renderer, /const twigCount=high\?5:mid\?4:3/, 'spruce boughs must be built from twig branches, not broad fan plates');
 assert.match(renderer, /const addSnowPatch=/, 'spruce boughs must carry segmented top-side snow patches');
 assert.match(renderer, /const flex=outerReach\.mul\(0\.012\)/, 'wind flex must be restricted to outer branch reach');
 assert.doesNotMatch(renderer, /positionLocal\.y\.mul\(0\.0075\)|positionLocal\.y\.mul\(0\.0055\)/, 'old whole-tree algae sway must be removed');
