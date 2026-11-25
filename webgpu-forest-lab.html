@@ -45,7 +45,7 @@
   <div id="loading">Загружаем рельеф, трассы и готовим spatial lookup для леса…</div>
   <section class="panel">
     <h1>WEBGPU · ALPINE FOREST</h1>
-    <div class="sub">Real Terrain + Slopes_Stage1 · procedural spruce LOD · god rays</div>
+    <div class="sub">Real Terrain + Slopes_Stage1 · TSL cloud volume · spruce LOD</div>
     <div class="status"><span class="dot" id="statusDot"></span><span id="backendStatus">Инициализация renderer…</span></div>
     <div class="metrics">
       <div class="metric"><b id="fps">—</b><span>FPS</span></div>
@@ -75,8 +75,9 @@
       <input id="cloudCoverage" type="range" min="0" max="1" step="0.01" value="0.42">
       <label for="cloudDensity"><span>Плотность облаков</span><strong id="cloudDensityValue">45%</strong></label>
       <input id="cloudDensity" type="range" min="0" max="1" step="0.01" value="0.45">
-      <label for="cloudElevation"><span>Высота облачного слоя</span><strong id="cloudElevationValue">55%</strong></label>
+      <label for="cloudElevation"><span>Высота облачного слоя</span><strong id="cloudElevationValue">2.8 км</strong></label>
       <input id="cloudElevation" type="range" min="0" max="1" step="0.01" value="0.55">
+      <div class="note">Тот же TSL cloud field, что в Atmosphere Lab: многомасштабная форма, светлая верхняя часть и затенённое основание.</div>
     </div>
     <div class="section">
       <h2>Солнечные лучи</h2>
@@ -86,8 +87,8 @@
     </div>
     <div class="section">
       <h2>Ели у склонов</h2>
-      <label for="forestDensity"><span>Плотность леса</span><strong id="forestDensityValue">100%</strong></label>
-      <input id="forestDensity" type="range" min="0.25" max="1.35" step="0.05" value="1.0">
+      <label for="forestDensity"><span>Плотность леса</span><strong id="forestDensityValue">115%</strong></label>
+      <input id="forestDensity" type="range" min="0.25" max="1.35" step="0.05" value="1.15">
       <div class="note">Три уровня детализации: объёмные ели с ветвями на краю трасс, облегчённые spline-ветви глубже в лесу, atlas-billboard вдали.</div>
     </div>
     <div class="section">
