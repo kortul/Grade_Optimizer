@@ -663,7 +663,7 @@ function buildTreePlacements(footprint, density) {
     {min:70,max:132,keep:0.38,spacing:11.5}
   ];
   const sampleStep=9.5;
-  const spacingCell=12;
+  const spacingCell=20;
   const randCache=new Map();
   const randomAt=(x,z,salt)=>{
     const key=Math.round(x*2)+':'+Math.round(z*2)+':'+salt;
