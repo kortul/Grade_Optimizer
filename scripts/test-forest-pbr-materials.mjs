@@ -8,6 +8,8 @@ assert.match(source,/function makeTerrainPbrMaterial\(source,proceduralMaps,cach
 assert.match(source,/map:source\.map\|\|proceduralMaps\.albedo/,'source baseColor maps must be preserved, otherwise use procedural albedo');
 assert.match(source,/if\(needsProceduralAlbedo\)ensureWorldTerrainUV\(object,true\)/,'procedural maps need world-scale UVs even when FBX contains generic UVs');
 assert.match(source,/color:source\.color\?\.clone\?\.\(\)\|\|new THREE\.Color\(0xffffff\)/,'authored FBX baseColor must be retained');
+assert.match(source,/specularColor:new THREE\.Color\(0xffffff\)/,'Phong default dark specular must not suppress physical highlights');
+assert.doesNotMatch(source,/specularColor:source\.specular/,'Phong specular must not be copied as a physical F0 color');
 assert.match(source,/object\.castShadow=true;\s*object\.receiveShadow=true;/,'base terrain must both cast and receive shadows');
 assert.doesNotMatch(source,/new THREE\.MeshStandardMaterial\(\{ color: 0xe7eff4/,'flat pale-grey terrain override must not return');
 assert.match(source,/scene\.environmentIntensity=0\.92;/,'PBR environment reflections must have useful intensity');
