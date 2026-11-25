@@ -5,7 +5,7 @@ import {
   normalizeUpwardNormal,
   selectGroundContactCandidate,
   blendGroundNormal
-} from '../skier-terrain-contact.v1.js';
+} from '../skier-terrain-contact.v2.js';
 
 const candidate=(surface,y,normal={x:0,y:1,z:0})=>({
   surface,
