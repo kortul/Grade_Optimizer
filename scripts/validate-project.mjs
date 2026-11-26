@@ -1214,10 +1214,11 @@ assert.ok(alpineForestPageV17.includes('webgpu-forest-lab.v17.js?v=20261126e')&&
   'the standalone V17 page must load its renderer');
 assert.ok(alpineForestSourceV17.includes('levels:28,branches:8,width:1.02')&&
   alpineForestSourceV17.includes('const twigStations=high?5:mid?3:2')&&
-  alpineForestSourceV17.includes('const armCount=high?(stationRand()<0.58?2:1):1')&&
-  alpineForestSourceV17.includes('const cardCount=high?3:mid?2:1'),
+  alpineForestSourceV17.includes('const armCount=high?(stationRand()<0.38?2:1):1')&&
+  alpineForestSourceV17.includes('const cardCount=high?3:mid?2:1')&&
+  alpineForestSourceV17.includes('const armCount=high?(stationRand()<0.38?2:1):1'),
   'V17 must use denser whorls, branching and layered foliage');
-assert.ok(alpineForestSourceV17.includes('armRand()<0.34')&&
+assert.ok(alpineForestSourceV17.includes('armRand()<0.25')&&
   alpineForestSourceV17.includes('tip.y-=twigLength*(0.07+armRand()*0.16)')&&
   alpineForestSourceV17.includes('geometry.addGroup(0,woodIndices.length,0)')&&
   alpineForestSourceV17.includes('return [wood,foliage]'),
