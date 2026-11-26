@@ -30,7 +30,7 @@ assert.doesNotMatch(renderer,/cameraTurned/,'camera rotation alone must not rebu
 assert.match(renderer,/const cellSize=520/,'spatial batches must not explode draw-call counts');
 assert.match(renderer,/mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/,'spatial batches must remain frustum culled');
 assert.match(renderer,/sunLight\.shadow\.mapSize\.setScalar\(512\)/,'shadow map must remain reduced');
-assert.match(html,/webgpu-forest-lab\.v15\.js\?v=20261126c/,'main HTML must activate V16');
+assert.match(html,/webgpu-forest-lab\.v16\.js\?v=20261126d/,'main HTML must activate V16');
 
 assert.match(atmosphere,/function setResolutionScale\(scale\)/,'atmosphere must expose adaptive scaling');
 assert.match(atmosphere,/balanced:1\.0/,'balanced mode must start at native render scale');
