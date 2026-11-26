@@ -1083,40 +1083,50 @@ assert.ok(webgpuAtmosphereSource.includes('sky.mieCoefficient.value = 0.0038')&&
 assert.ok(webgpuAtmosphereSource.includes('renderer.toneMappingExposure = 0.55;'),'Atmosphere Lab display exposure must use the shared SkyMesh / ACES preview baseline');
 pass('isolated WebGPU atmosphere lab: canonical terrain, SkyMesh, TSL volumetrics, camera depth and quality profiles');
 
-// WebGPU Alpine Forest Lab V12: three full spruce varieties, varied sizes and adaptive render resolution.
+// WebGPU Alpine Forest Lab V13: irregular high-resolution spruce crowns and adaptive render resolution.
 const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
-const alpineForestPageV12=read('webgpu-forest-lab-v12.html').toString('utf8');
-const alpineForestSource=read('webgpu-forest-lab.v12.js').toString('utf8');
+const alpineForestPageV13=read('webgpu-forest-lab-v13.html').toString('utf8');
+const alpineForestSource=read('webgpu-forest-lab.v13.js').toString('utf8');
 const alpineAtmosphereSource=read('webgpu-forest-atmosphere.v2.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v12.js?v=20261126a'),
-  'Forest Lab must load pinned Three.js r187 V12');
-assert.ok(alpineForestPageV12.includes('webgpu-forest-lab.v12.js?v=20261126a')&&
-  alpineForestPageV12.includes('Alpine Spruce Forest Lab V12'),
-  'the standalone V12 page must load its renderer');
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v13.js?v=20261126a'),
+  'Forest Lab must load pinned Three.js r187 V13');
+assert.ok(alpineForestPageV13.includes('webgpu-forest-lab.v13.js?v=20261126a')&&
+  alpineForestPageV13.includes('Alpine Spruce Forest Lab V13'),
+  'the standalone V13 page must load its renderer');
 assert.ok(alpineForestSource.includes("import { createForestAtmosphere } from './webgpu-forest-atmosphere.v2.js'")&&
   alpineForestSource.includes('new THREE.WebGPURenderer')&&
   alpineForestSource.includes('renderer.backend.isWebGPUBackend === true'),
-  'V12 must use WebGPURenderer and detect its real backend');
+  'V13 must use WebGPURenderer and detect its real backend');
 assert.ok(alpineForestSource.includes("name:'Norway'")&&alpineForestSource.includes("name:'Alpine'")&&
-  alpineForestSource.includes("name:'Broad'")&&alpineForestSource.includes('const needleCount=10'),
-  'V12 must provide three visibly different spruce morphologies and dense needle tufts');
+  alpineForestSource.includes("name:'Broad'")&&alpineForestSource.includes('const needleCount=high?14:mid?9:5'),
+  'V13 must provide three spruce morphologies and LOD-specific volumetric needle sprays');
+assert.ok(alpineForestSource.includes('levels:24,branches:7,width:1.02')&&
+  alpineForestSource.includes('levels:26,branches:6,width:0.86')&&
+  alpineForestSource.includes('levels:22,branches:8,width:1.16'),
+  'V13 must increase the near-LOD tier count by approximately 2.2–2.5x');
+assert.ok(alpineForestSource.includes('const gapWeights=Array.from')&&
+  alpineForestSource.includes('new THREE.QuadraticBezierCurve3')&&
+  alpineForestSource.includes('while(r2>1)')&&
+  alpineForestSource.includes('tertiary shoot'),
+  'V13 branches and foliage must use irregular curved geometry and volumetric sampling');
 assert.ok(alpineForestSource.includes('sizeClass<0.38?6.5+rr()*5.5:sizeClass<0.84?11+rr()*6:17+rr()*6'),
-  'V12 must distribute trees in three different size classes');
+  'V13 must distribute trees in three different size classes');
 assert.ok(alpineForestSource.includes('distanceSq<140*140')&&
   alpineForestSource.includes('distanceSq<260*260')&&
   alpineForestSource.includes('distanceSq<950*950')&&
   alpineForestSource.includes('const cellSize=520'),
-  'V12 must use tighter shadow, near, mid and spatial-cell ranges');
+  'V13 must preserve tighter shadow, near, mid and spatial-cell ranges');
 assert.ok(alpineForestSource.includes('mesh.computeBoundingSphere();mesh.frustumCulled=true;')&&
-  alpineForestSource.includes("mesh.receiveShadow=lod==='near'"),
-  'spatial batches must be frustum culled and only near LOD should receive shadows');
+  alpineForestSource.includes("mesh.receiveShadow=lod==='near'")&&
+  alpineForestSource.includes('new THREE.InstancedMesh'),
+  'spatial batches must remain instanced, frustum culled and only near LOD should receive shadows');
 assert.ok(alpineForestSource.includes('frameTimeEMA>34')&&
   alpineForestSource.includes('atmosphere.setResolutionScale(dynamicResolutionScale)'),
-  'V12 must use adaptive render resolution under GPU load');
+  'V13 must use adaptive render resolution under GPU load');
 assert.ok(alpineForestSource.includes('antialias: false')&&
   alpineForestSource.includes('sunLight.shadow.mapSize.setScalar(512)')&&
   alpineForestSource.includes('sunLight.shadow.camera.far=2200'),
-  'V12 must reduce MSAA and shadow-map cost');
+  'V13 must reduce MSAA and shadow-map cost');
 assert.ok(alpineForestSource.includes('function removeLegacyTreeAssets(root)')&&
   alpineForestSource.includes('buildTreePlacements(footprint'),
   'Stage 1 cleanup and terrain placement must remain intact');
@@ -1128,8 +1138,8 @@ assert.ok(alpineAtmosphereSource.includes('new SkyMesh()')&&
   alpineAtmosphereSource.includes('qualityScale*dynamicResolutionScale')&&
   alpineAtmosphereSource.includes('pmremGenerator.fromScene(environmentScene, 0.035)')&&
   alpineAtmosphereSource.includes('renderer.render(scene, camera)'),
-  'V12 atmosphere must preserve physical sky, sky-derived IBL and direct rendering');
-pass('WebGPU Alpine Forest V12: three spruce varieties, varied sizes and adaptive resolution');
+  'V13 atmosphere must preserve physical sky, sky-derived IBL and direct rendering');
+pass('WebGPU Alpine Forest V13: irregular high-resolution spruce crowns, varied sizes and adaptive resolution');
 
 // Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
 // The forest is terrain-wide and intentionally does not depend on any piste / Stage 1 asset.
