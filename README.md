@@ -96,6 +96,12 @@ An experimental snow-rendering lab is available at [webgpu-snow-lab.html](https:
 The single [Alpine Lab](https://kortul.github.io/Grade_Optimizer/alpine-lab.html) combines the canonical `assets/real-terrain.fbx` + `assets/real-terrain.json` terrain, a terrain-wide procedural spruce forest, and the existing production `WeatherSystem v9`. It intentionally uses the same stable Three.js 0.160.0 / WebGL stack as the main viewer instead of the experimental WebGPU / TSL path. The sky, cloud volumes, solar day cycle, wind, moon / stars and optional ground fog are driven by the same weather implementation already used by the main app. Tree placement samples a cached triangle-height lookup over the entire base terrain, filters steep slopes and the upper tree line, and draws the forest with `InstancedMesh`. It does not load `Slopes_Stage1`, inspect piste boundaries, or apply any CAD Bridge / slope transform. If the base FBX cannot be loaded, the page builds a procedural fallback terrain from the sidecar bounds. The previous `webgpu-forest-lab.html` and `webgpu-atmosphere-lab.html` links redirect to this unified page.
 
 
+
+
+### WebGPU Alpine Spruce Forest Lab V14
+
+[Open the V14 standalone forest lab](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab-v14.html) — fuller needle coverage, 4× MSAA, hysteretic spatial LOD and a 1080p output target. The canonical [Forest Lab page](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab.html) now loads V14; V13 remains available for rollback.
+
 ### Ponlai rendering reference
 
 [Ponlai](https://github.com/HuberyLL/ponlai) remains a visual architecture reference only. The unified Alpine Lab deliberately prioritizes the proven project weather renderer and a straightforward terrain-wide forest before any deeper WebGPU renderer work. No Ponlai game, island or non-MIT creative content is copied into this repository.
