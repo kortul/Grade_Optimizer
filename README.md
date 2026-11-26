@@ -98,9 +98,9 @@ The single [Alpine Lab](https://kortul.github.io/Grade_Optimizer/alpine-lab.html
 
 
 
-### WebGPU Alpine Spruce Forest Lab V16
+### WebGPU Alpine Spruce Forest Lab V17
 
-[Open the V16 standalone forest lab](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab-v16.html) — opaque branch scaffold is rendered separately from alpha-cut foliage cards, with larger crossed 3D spray clusters and matching colour/coverage silhouettes. The canonical [Forest Lab page](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab.html) now loads V16; V13–V15 remain available for rollback and comparison.
+[Open the V17 standalone forest lab](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab-v17.html) — denser whorls, more irregular two-sided hanging branchlets, tertiary sprays and three crossed foliage-card planes in the near LOD. The canonical [Forest Lab page](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab.html) now loads V17; V13–V16 remain available for rollback and comparison.
 
 ### Ponlai rendering reference
 
