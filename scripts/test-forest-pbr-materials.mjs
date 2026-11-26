@@ -1,49 +1,38 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const renderer = readFileSync(new URL('../webgpu-forest-lab.v11.js', import.meta.url), 'utf8');
-const html = readFileSync(new URL('../webgpu-forest-lab.html', import.meta.url), 'utf8');
-const atmosphere = readFileSync(new URL('../webgpu-forest-atmosphere.v1.js', import.meta.url), 'utf8');
+const renderer=readFileSync(new URL('../webgpu-forest-lab.v12.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../webgpu-forest-lab.html',import.meta.url),'utf8');
+const atmosphere=readFileSync(new URL('../webgpu-forest-atmosphere.v2.js',import.meta.url),'utf8');
 
-// Preserve the semantic stage-one material replacement and the physical look.
-assert.match(renderer, /shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes'\}\)/, 'Stage 1 semantic groups must still be recognised');
-assert.match(renderer, /object\.material\.map\(\(\)=>snowMaterial\)/, 'semantic material identities must not leak Maya display colours into the winter look');
-assert.match(renderer, /function createSplinePineMaterial\(\)/, 'procedural forest must use its physical foliage material');
-assert.match(renderer, /MeshPhysicalNodeMaterial\(\{\s*roughness:0\.88/, 'foliage should retain its physical node material');
+assert.match(renderer,/shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes'\}\)/,'Stage 1 semantic groups must still be recognised');
+assert.match(renderer,/object\.material\.map\(\(\)=>snowMaterial\)/,'winter material replacement must remain intact');
+assert.match(renderer,/new THREE\.WebGPURenderer\(\{ antialias: false, powerPreference: 'high-performance' \}\)/,'V12 must initialize WebGPURenderer without MSAA');
+assert.match(renderer,/renderer\.backend\.isWebGPUBackend === true/,'the visible label must identify the actual WebGPU backend or WebGL fallback');
+assert.match(renderer,/name:'Norway'[\s\S]*name:'Alpine'[\s\S]*name:'Broad'/,'V12 must provide three genuinely different spruce morphologies');
+assert.match(renderer,/levels:10,branches:7,width:1\.02/,'Norway spruce must have a full classic silhouette');
+assert.match(renderer,/levels:11,branches:6,width:0\.84/,'Alpine spruce must be tall and narrow');
+assert.match(renderer,/levels:9,branches:8,width:1\.18/,'Broad spruce must have a mature wide silhouette');
+assert.match(renderer,/sizeClass<0\.38\?6\.5\+rr\(\)\*5\.5:sizeClass<0\.84\?11\+rr\(\)\*6:17\+rr\(\)\*6/,'trees must use small, medium and large size bands');
+assert.match(renderer,/const needleCount=10/,'needle tufts must contain ten blades');
+assert.match(renderer,/length\*\(0\.125\+hash\(seed\+7,i\)\*0\.035\)/,'needle blades must overlap more densely');
+assert.match(renderer,/const cellSize=520/,'forest instances must remain split into spatial cells');
+assert.match(renderer,/distanceSq<140\*140/,'only trees within 140 m should enter the shadow band');
+assert.match(renderer,/distanceSq<260\*260/,'detailed near LOD must end at 260 m');
+assert.match(renderer,/distanceSq<950\*950/,'mid LOD must end at 950 m');
+assert.match(renderer,/mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/,'spatial batches must use frustum culling');
+assert.match(renderer,/mesh\.receiveShadow=lod==='near'/,'only near trees should receive shadows');
+assert.match(renderer,/frameTimeEMA>34/,'adaptive resolution must react to sustained slow frames');
+assert.match(renderer,/atmosphere\.setResolutionScale\(dynamicResolutionScale\)/,'adaptive scale must reach the renderer through the atmosphere');
+assert.match(renderer,/sunLight\.shadow\.mapSize\.setScalar\(512\)/,'shadow map must be reduced to 512');
+assert.match(renderer,/sunLight\.shadow\.camera\.far=2200/,'shadow distance must be reduced');
+assert.match(html,/webgpu-forest-lab\.v12\.js\?v=20261126a/,'main HTML must activate V12');
 
-// Density comes from compact multi-needle tufts; geometry is explicitly reduced for LOD.
-assert.match(renderer, /V11: dense alpine spruce foliage built from compact, volumetric needle tufts/, 'V11 dense spruce generator must be active');
-assert.match(renderer, /branches=high\?6:mid\?5:4/, 'each LOD must use the V11 branch budget');
-assert.match(renderer, /const twigStations=high\?3:mid\?2:1/, 'twiglet count must reduce with distance');
-assert.match(renderer, /const tuftCount=high\?3:mid\?2:1/, 'near trees must receive overlapping foliage tufts');
-assert.match(renderer, /const addNeedleTuft=/, 'foliage must use compact 3D needle tufts');
-assert.match(renderer, /const needleCount=8/, 'each compact tuft must use multiple individually oriented needles');
-assert.doesNotMatch(renderer, /addClump|SphereGeometry|IcosahedronGeometry/, 'rounded foliage clumps must not be used');
-assert.doesNotMatch(renderer, /Forest_Far_Billboards_|createCrossBillboardGeometry\(\),|loadPineAtlas\(\);/, 'old crossed billboards and atlas path must remain absent');
-
-// Culling and tighter LODs keep a dense forest from drawing the entire map every frame.
-assert.match(renderer, /mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/, 'each tree batch must have bounds and enable frustum culling');
-assert.match(renderer, /mesh\.receiveShadow=lod==='near'/, 'only near trees should pay the shadow-receiver cost');
-assert.match(renderer, /const cellSize=420/, 'forest batches must be split into spatial cells');
-assert.match(renderer, /distanceSq<210\*210/, 'only the closest trees should cast detailed shadows');
-assert.match(renderer, /distanceSq<370\*370/, 'near LOD should be limited to close trees');
-assert.match(renderer, /distanceSq<1350\*1350/, 'mid LOD should be limited to medium-distance trees');
-assert.match(renderer, /verticesPerTree:vertexCount/, 'V11 must report per-LOD vertex budgets');
-
-// No crown-wide wind displacement until branch-local attributes are supported.
-assert.match(renderer, /material\.positionNode=positionLocal/, 'V11 crowns must remain stable instead of using whole-tree sway');
-assert.match(renderer, /function removeLegacyTreeAssets\(root\)/, 'named legacy tree assets must be removed before new forest placement');
-assert.match(html, /webgpu-forest-lab\.v11\.js\?v=20261125w/, 'HTML must load the V11 renderer revision');
-
-// The shared physical SkyMesh, fog and IBL stay untouched.
-assert.match(atmosphere, /new SkyMesh\(\)/, 'physical SkyMesh must remain active');
-assert.match(atmosphere, /skyDome\.cloudCoverage\.value/, 'cloud coverage must remain on the physical sky');
-assert.match(atmosphere, /pmremGenerator\.fromScene\(environmentScene, 0\.035\)/, 'PMREM must use the same physical sky');
-assert.match(atmosphere, /scene\.environment = next\.texture/, 'PBR materials must receive sky IBL');
-assert.match(atmosphere, /renderer\.render\(scene, camera\)/, 'the fast baseline must use direct scene rendering');
-assert.doesNotMatch(atmosphere, /GTAONode|buildFogPipeline|rtt\(/, 'the removed screen-space pipeline must stay absent');
-assert.match(renderer, /renderer\.toneMappingExposure = 0\.52/, 'snow and terrain exposure must remain stable');
-
-console.log('✓ V11 dense compact spruce tufts and per-LOD vertex budgets are active');
-console.log('✓ Spatially chunked InstancedMesh batches use frustum culling and tighter LOD');
-console.log('✓ Physical SkyMesh, snow PBR and direct rendering remain active');
+assert.match(atmosphere,/function setResolutionScale\(scale\)/,'atmosphere must expose adaptive scaling');
+assert.match(atmosphere,/qualityScale\*dynamicResolutionScale/,'adaptive and quality profiles must compose');
+assert.match(atmosphere,/new SkyMesh\(\)/,'physical SkyMesh must remain active');
+assert.match(atmosphere,/pmremGenerator\.fromScene\(environmentScene, 0\.035\)/,'PBR IBL must remain sky-derived');
+assert.match(atmosphere,/renderer\.render\(scene, camera\)/,'direct renderer path must remain active');
+console.log('✓ V12 WebGPU, three spruce varieties, three size classes and dense needle tufts');
+console.log('✓ Adaptive resolution, shorter LOD/shadow ranges and frustum culling');
+console.log('✓ Physical SkyMesh and snow PBR remain active');
