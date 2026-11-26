@@ -1224,7 +1224,7 @@ async function start() {
     fpsFrames++;
     if(now-lastResolutionDecision>=1400){
       let nextScale=dynamicResolutionScale;
-      if(frameTimeEMA>34)nextScale=Math.max(0.58,dynamicResolutionScale-0.08);
+      if(frameTimeEMA>34)nextScale=Math.max(0.70,dynamicResolutionScale-0.08);
       else if(frameTimeEMA<25)nextScale=Math.min(1,dynamicResolutionScale+0.04);
       if(Math.abs(nextScale-dynamicResolutionScale)>0.001){
         dynamicResolutionScale=nextScale;
