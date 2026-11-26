@@ -949,7 +949,7 @@ function createSplinePineGeometry(lod,variant){
   const baseBranches=high?shape.branches:mid?Math.max(4,shape.branches-2):Math.max(3,shape.branches-3);
   // V17: denser branch whorls and layered sprays, with the same instanced prototype architecture.
   const twigStations=high?5:mid?3:2;
-  const twigClusters=high?3:mid?2:1;
+  const twigClusters=high?2:mid?2:1;
   const darkColours=[0x0b281d,0x0a2630,0x0c291e];
   const greenColours=[0x153c29,0x1a3e42,0x1c432a];
   const litColours=[0x315d40,0x3b6868,0x416b43];
@@ -1100,7 +1100,7 @@ function createSplinePineGeometry(lod,variant){
       }
 
       // Needle sprays fill the primary bough from the inner shoulder to the outer third.
-      const primaryClumps=high?4:mid?2:1;
+      const primaryClumps=high?3:mid?2:1;
       for(let spray=0;spray<primaryClumps;spray++){
         const sprayRand=makeRng(level*101+branch*17+spray,variant,401);
         const q=0.18+(spray+(sprayRand()-0.5)*0.42)/primaryClumps*0.78;
@@ -1122,11 +1122,11 @@ function createSplinePineGeometry(lod,variant){
         const branchAxis=curve.getTangentAt(u).normalize();
         const branchSide=new THREE.Vector3().crossVectors(branchAxis,up).normalize();
         if(branchSide.lengthSq()<1e-5)branchSide.copy(tangent);
-        const armCount=high?(stationRand()<0.58?2:1):1;
+        const armCount=high?(stationRand()<0.38?2:1):1;
         for(let arm=0;arm<armCount;arm++){
           const armRand=makeRng(level*823+branch*59+station*23+arm,variant,601);
           if(armRand()<0.08)continue;
-          const sign=arm===0?(armRand()<0.5?-1:1):(arm===1?-1:1);
+          const sign=armCount>1?(arm===0?1:-1):(armRand()<0.5?-1:1);
           const fan=0.30+armRand()*0.42;
           const twigDir=branchAxis.clone().multiplyScalar(0.38+armRand()*0.20)
             .addScaledVector(radial,0.26+armRand()*0.24)
@@ -1157,7 +1157,7 @@ function createSplinePineGeometry(lod,variant){
             twigLength*shape.needleScale*0.44,tipColour);
 
           // Tertiary forks add the little hanging spray tips characteristic of spruce boughs.
-          if(high&&armRand()<0.34){
+          if(high&&armRand()<0.25){
             const forkT=0.32+armRand()*0.46;
             const forkRoot=twigCurve.getPointAt(forkT);
             const forkAxis=twigCurve.getTangentAt(forkT).normalize();
