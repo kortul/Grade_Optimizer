@@ -1045,7 +1045,6 @@ function createSplinePineGeometry(lod,variant){
       indices.push(first,first+1,first+2,first,first+2,first+3);
     }
   };
-  const addSnowCap=
   const addSnowCap=(a,b,side,halfWidth,seed)=>{
     const rng=makeRng(seed,variant,1811);
     const aa=a.clone(),bb=b.clone();aa.y+=0.025+rng()*0.012;bb.y+=0.018+rng()*0.012;
