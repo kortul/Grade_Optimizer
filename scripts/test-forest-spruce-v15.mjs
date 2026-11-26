@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const source=readFileSync(new URL('../webgpu-forest-lab.v15.js',import.meta.url),'utf8');
+const atmosphere=readFileSync(new URL('../webgpu-forest-atmosphere.v4.js',import.meta.url),'utf8');
+const standalone=readFileSync(new URL('../webgpu-forest-lab-v15.html',import.meta.url),'utf8');
+
+const start=source.indexOf('function createSplinePineGeometry(lod,variant){');
+const end=source.indexOf('function createPineBacklightNode(){',start);
+assert.ok(start>=0&&end>start,'V15 spruce geometry generator must exist');
+const generator=source.slice(start,end);
+assert.match(generator,/const positions=\[\],normals=\[\],colors=\[\],uvs=\[\],indices=\[\]/);
+assert.match(generator,/const twigStations=high\?4:mid\?3:1/);
+assert.match(generator,/const twigClusters=high\?2:mid\?1:1/);
+assert.match(generator,/const primaryClumps=high\?3:mid\?2:1/);
+assert.match(generator,/new THREE\.QuadraticBezierCurve3/);
+assert.match(generator,/const gapWeights=Array\.from/);
+assert.match(generator,/while\(r2>1\)/);
+assert.match(generator,/const cardCount=high&&rng\(\)<0\.28\?2:1/);
+assert.match(generator,/Float32BufferAttribute\(uvs,2\)/);
+assert.doesNotMatch(generator,/const needleCount=/);
+assert.doesNotMatch(generator,/needleLength\*\(0\.048\+rng\(\)\*0\.028\)/);
+assert.match(source,/function createSpruceFoliageAtlas\(\)/);
+assert.match(source,/const SPRUCE_ATLAS_SIZE=512/);
+assert.match(source,/function createCoverageAlphaTexture\(canvas,size,cutoff=0\.28\)/);
+assert.match(source,/texture\.mipmaps=mipmaps;texture\.generateMipmaps=false/);
+assert.match(source,/alphaMap:foliageAtlas\.alphaMap,alphaTest:0\.28,alphaToCoverage:true/);
+assert.match(source,/new THREE\.CanvasTexture\(colourCanvas\)/);
+assert.match(source,/new THREE\.WebGPURenderer\(\{ antialias: true/);
+assert.match(source,/const cellSize=520/);
+assert.match(source,/distance<165\)return 'near'/);
+assert.match(source,/frameTimeEMA>34/);
+assert.match(atmosphere,/balanced:1\.0/);
+assert.match(atmosphere,/Math\.max\(0\.55,qualityScale\*dynamicResolutionScale\)/);
+assert.match(atmosphere,/dynamicResolutionScale=THREE\.MathUtils\.clamp\(Number\(scale\)\|\|1,0\.55,1\)/);
+assert.match(standalone,/webgpu-forest-lab\.v15\.js\?v=20261126c/);
+assert.match(standalone,/ALPINE SPRUCE V15/);
+console.log('Forest Spruce V15 textured-card, coverage-mip, LOD and performance checks passed.');
