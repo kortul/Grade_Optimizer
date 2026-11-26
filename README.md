@@ -98,9 +98,9 @@ The single [Alpine Lab](https://kortul.github.io/Grade_Optimizer/alpine-lab.html
 
 
 
-### WebGPU Alpine Spruce Forest Lab V15
+### WebGPU Alpine Spruce Forest Lab V16
 
-[Open the V15 standalone forest lab](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab-v15.html) — textured alpha-cut spruce-spray cards, coverage-preserving mipmaps, 4× MSAA and adaptive 1080p output. The canonical [Forest Lab page](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab.html) now loads V15; V13 and V14 remain available for comparison.
+[Open the V16 standalone forest lab](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab-v16.html) — opaque branch scaffold is rendered separately from alpha-cut foliage cards, with larger crossed 3D spray clusters and matching colour/coverage silhouettes. The canonical [Forest Lab page](https://kortul.github.io/Grade_Optimizer/webgpu-forest-lab.html) now loads V16; V13–V15 remain available for rollback and comparison.
 
 ### Ponlai rendering reference
 
