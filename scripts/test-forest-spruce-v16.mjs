@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const source=readFileSync(new URL('../webgpu-forest-lab.v16.js',import.meta.url),'utf8');
+const standalone=readFileSync(new URL('../webgpu-forest-lab-v16.html',import.meta.url),'utf8');
+const main=readFileSync(new URL('../webgpu-forest-lab.html',import.meta.url),'utf8');
+
+const start=source.indexOf('function createSplinePineGeometry(lod,variant){');
+const end=source.indexOf('function createPineBacklightNode(){',start);
+assert.ok(start>=0&&end>start,'V16 spruce geometry generator must exist');
+const generator=source.slice(start,end);
+assert.match(generator,/woodIndices=\[\],foliageIndices=\[\]/);
+assert.match(generator,/geometry\.addGroup\(0,woodIndices\.length,0\)/);
+assert.match(generator,/geometry\.addGroup\(woodIndices\.length,foliageIndices\.length,1\)/);
+assert.match(generator,/const clumpSize=size\*\(high\?2\.9:mid\?2\.7:2\.5\)/);
+assert.match(generator,/const cardCount=high\?2:1/);
+assert.match(generator,/woodIndices\.push\(a0,b0,c0,b0,d0,c0\)/);
+assert.match(generator,/foliageIndices\.push\(first,first\+1,first\+2,first,first\+2,first\+3\)/);
+assert.doesNotMatch(generator,/indices\.push\(/);
+const materialStart=source.indexOf('function createSplinePineMaterial(){');
+const materialEnd=source.indexOf('function createTreeInstanceBatch(',materialStart);
+const material=source.slice(materialStart,materialEnd);
+assert.match(material,/const wood=new THREE\.MeshPhysicalNodeMaterial\(\{/);
+assert.doesNotMatch(material.slice(0,material.indexOf('const foliage=')),/alphaMap|alphaTest/);
+assert.match(material,/const foliage=new THREE\.MeshPhysicalNodeMaterial\(\{/);
+assert.match(material,/return \[wood,foliage\]/);
+assert.match(source,/const bladeWidth=2\.4\+rng\(\)\*2\.5,bladeColour=/);
+assert.match(source,/blade\(alpha,px,py,dx,dy,bladeWidth,'#fff'\)/);
+assert.match(source,/const smallWidth=1\.5\+rng\(\)\*1\.2,smallColour=/);
+assert.match(source,/new THREE\.InstancedMesh\(geometry,material,trees\.length\)/);
+assert.match(source,/new THREE\.WebGPURenderer\(\{ antialias: true/);
+assert.match(standalone,/webgpu-forest-lab\.v16\.js\?v=20261126d/);
+assert.match(standalone,/ALPINE SPRUCE V16/);
+assert.match(main,/webgpu-forest-lab\.v16\.js\?v=20261126d/);
+console.log('Forest Spruce V16 branch-material separation, dense cards, atlas mask and active-page checks passed.');
