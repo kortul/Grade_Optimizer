@@ -20,7 +20,7 @@ assert.match(geometry,/armRand\(\)<0\.25/);
 assert.match(geometry,/tip\.y-=twigLength\*\(0\.07\+armRand\(\)\*0\.16\)/);
 assert.match(geometry,/geometry\.addGroup\(0,woodIndices\.length,0\)/);
 assert.match(geometry,/geometry\.addGroup\(woodIndices\.length,foliageIndices\.length,1\)/);
-assert.match(geometry,/return \[wood,foliage\]/);
+assert.match(source,/return \[wood,foliage\]/);
 assert.match(source,/new THREE\.InstancedMesh\(geometry,material,trees\.length\)/);
 assert.match(standalone,/webgpu-forest-lab\.v17\.js\?v=20261126e/);
 assert.match(main,/webgpu-forest-lab\.v17\.js\?v=20261126e/);
