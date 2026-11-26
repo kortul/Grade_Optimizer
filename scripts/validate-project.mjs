@@ -1088,8 +1088,11 @@ const alpineForestHtml=read('webgpu-forest-lab.html').toString('utf8');
 const alpineForestPageV13=read('webgpu-forest-lab-v13.html').toString('utf8');
 const alpineForestSource=read('webgpu-forest-lab.v13.js').toString('utf8');
 const alpineAtmosphereSource=read('webgpu-forest-atmosphere.v2.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v13.js?v=20261126a'),
-  'Forest Lab must load pinned Three.js r187 V13');
+const alpineForestPageV14=read('webgpu-forest-lab-v14.html').toString('utf8');
+const alpineForestSourceV14=read('webgpu-forest-lab.v14.js').toString('utf8');
+const alpineAtmosphereSourceV14=read('webgpu-forest-atmosphere.v3.js').toString('utf8');
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v14.js?v=20261126b'),
+  'Forest Lab main page must load pinned Three.js r187 V14');
 assert.ok(alpineForestPageV13.includes('webgpu-forest-lab.v13.js?v=20261126a')&&
   alpineForestPageV13.includes('Alpine Spruce Forest Lab V13'),
   'the standalone V13 page must load its renderer');
@@ -1140,6 +1143,28 @@ assert.ok(alpineAtmosphereSource.includes('new SkyMesh()')&&
   alpineAtmosphereSource.includes('renderer.render(scene, camera)'),
   'V13 atmosphere must preserve physical sky, sky-derived IBL and direct rendering');
 pass('WebGPU Alpine Forest V13: irregular high-resolution spruce crowns, varied sizes and adaptive resolution');
+assert.ok(alpineForestPageV14.includes('webgpu-forest-lab.v14.js?v=20261126b')&&
+  alpineForestPageV14.includes('Alpine Spruce Forest Lab V14'),
+  'the standalone V14 page must load its renderer');
+assert.ok(alpineForestSourceV14.includes("import { createForestAtmosphere } from './webgpu-forest-atmosphere.v3.js'")&&
+  alpineForestSourceV14.includes('new THREE.WebGPURenderer({ antialias: true')&&
+  alpineForestSourceV14.includes('renderer.backend.isWebGPUBackend === true'),
+  'V14 must use WebGPU, 4x MSAA and real backend detection');
+assert.ok(alpineForestSourceV14.includes('const needleCount=high?20:mid?12:6')&&
+  alpineForestSourceV14.includes('const twigStations=high?6:mid?4:2')&&
+  alpineForestSourceV14.includes('const radiusSide=size*0.34,radiusUp=size*0.29,radiusAlong=size*0.18'),
+  'V14 must increase foliage coverage and needle-clump volume');
+assert.ok(alpineForestSourceV14.includes('function selectTreeLod(distance,current)')&&
+  alpineForestSourceV14.includes('current===\'near\'&&distance>=115&&distance<300')&&
+  alpineForestSourceV14.includes('const cellSize=300')&&
+  !alpineForestSourceV14.includes('cameraTurned'),
+  'V14 must use hysteretic distance LOD and avoid camera-rotation rebuilds');
+assert.ok(alpineForestSourceV14.includes('const previousGroup=forestSystem.group')&&
+  alpineForestSourceV14.includes('frameTimeEMA>21')&&
+  alpineAtmosphereSourceV14.includes('balanced:1.0')&&
+  alpineAtmosphereSourceV14.includes('Math.max(0.85,qualityScale*dynamicResolutionScale)'),
+  'V14 must atomically swap LOD batches and target native 1080p with a bounded adaptive floor');
+pass('WebGPU Alpine Forest V14: fuller crowns, 4x MSAA, stable hysteretic LOD and 1080p target');
 
 // Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
 // The forest is terrain-wide and intentionally does not depend on any piste / Stage 1 asset.
