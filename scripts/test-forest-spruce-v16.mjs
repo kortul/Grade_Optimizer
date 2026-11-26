@@ -17,7 +17,7 @@ assert.match(generator,/const cardCount=high\?2:1/);
 assert.match(generator,/woodIndices\.push\(a0,b0,c0,b0,d0,c0\)/);
 assert.match(generator,/foliageIndices\.push\(first,first\+1,first\+2,first,first\+2,first\+3\)/);
 assert.doesNotMatch(generator,/indices\.push\(/);
-const materialStart=source.indexOf('function createSplinePineMaterial(){');
+const materialStart=source.indexOf('function createSplinePineMaterial() {');
 const materialEnd=source.indexOf('function createTreeInstanceBatch(',materialStart);
 const material=source.slice(materialStart,materialEnd);
 assert.match(material,/const wood=new THREE\.MeshPhysicalNodeMaterial\(\{/);
