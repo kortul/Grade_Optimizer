@@ -292,10 +292,10 @@ assert.ok(entrySource.includes('weatherPresetButtons.forEach(button =>')&&entryS
 assert.ok(weatherSource.includes("this.params = { ...WeatherSystem.PRESETS.light, preset: 'light', groundFog: false, volumetrics: true }"), 'ground fog must default to OFF');
 assert.ok(weatherSource.includes('shadowDensity')&&weatherSource.includes('uRayStrength'), 'broken-cloud sun shafts must be present and weather-dependent');
 assert.ok(weatherSource.includes('makeGroundFogTexture()')&&weatherSource.includes('setGroundFog(enabled)'), 'optional ground fog simulation is missing');
-assert.ok(entrySource.includes('dayTime:13.5'), 'default scene time must be sunny midday');
+assert.ok(entrySource.includes('dayTime:15.75'), 'default scene time must be 15:45');
 assert.ok(html.includes('id="weatherGroundFog"')&&html.includes('id="sceneGroundFog"'), 'ground fog controls must be exposed in Weather and Scene Look');
 assert.ok(entrySource.includes("if(typeof saved.groundFog==='boolean')weatherSystem.setGroundFog(saved.groundFog)"), 'ground fog preference must restore with project weather settings');
-pass('sunny midday default, atmospheric god rays and persistent optional ground fog are present');
+pass('15:45 default, atmospheric god rays and persistent optional ground fog are present');
 assert.ok(!entrySource.includes("weather-open'))setWeatherPanelOpen(false)"), 'changing to skier / drone mode must not forcibly close weather settings');
 assert.doesNotMatch(html,/#[^\n]*skier-mode #weatherPanel[^\n]*display:none|#[^\n]*drone-mode #weatherPanel[^\n]*display:none/, 'weather panel must remain available in skier and drone modes');
 assert.ok(html.includes('#app.weather-open #weatherPanel{display:block}'), 'weather panel open state CSS missing');
