@@ -60,8 +60,11 @@ let renderer, controls, groundLevel = 0, elapsed = 0;
 let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(), terrainMeshCount = 0;
 let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null;
 let snowPbrMaterial=null;
-let forestSpriteTextures=null,forestSpriteMaterials=null,forestSpriteLastCameraX=NaN,forestSpriteLastCameraZ=NaN,forestSpriteLastUpdate=0;
-let allTreesAsSprites=false;
+let forestSpriteTextures=null,forestSpriteMaterials=null,forestSpriteGeometry=null,forestSpriteLastCameraX=NaN,forestSpriteLastCameraZ=NaN,forestSpriteLastUpdate=0;
+const FOREST_SPRITE_DENSITY_MULTIPLIER=3;
+const FOREST_SPRITE_CELL_SIZE=480;
+const forestSpriteDummy=new THREE.Object3D();
+let allTreesAsSprites=true;
 let atmosphere=null,dayCyclePlaying=false;
 let solarState=null;
 
@@ -1244,7 +1247,7 @@ async function loadForestSpriteTextures(){
     texture.colorSpace=THREE.SRGBColorSpace;
     texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
     texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;
-    texture.generateMipmaps=true;texture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||1);
+    texture.generateMipmaps=true;texture.anisotropy=Math.min(4,renderer?.capabilities?.getMaxAnisotropy?.()||1);
     return texture;
   });
   atlas.dispose();
@@ -1273,60 +1276,127 @@ function buildForestSpritePlacements(trees,footprint){
   }
   return sprites;
 }
-function buildAllTreeSpritePlacements(trees){
-  return trees.map((tree,index)=>({
-    x:tree.x,y:tree.y+0.06,z:tree.z,height:tree.height,
-    width:tree.height*(0.52+seededRandom(tree.x,tree.z,0x6A31+index)()*0.10),
-    variant:Math.floor(seededRandom(tree.z,tree.x,0x4C19+index)()*FOREST_SPRITE_VARIANTS.length)
-  }));
+function buildAllTreeSpritePlacements(trees,footprint){
+  const sprites=[];
+  const goldenAngle=Math.PI*(3-Math.sqrt(5));
+  const makeSprite=(x,z,groundY,height,salt)=>{
+    const variant=Math.floor(seededRandom(z,x,0x4C19+salt)()*FOREST_SPRITE_VARIANTS.length);
+    return {x,y:groundY+0.06,z,height,width:height*(0.52+seededRandom(x,z,0x6A31+salt)()*0.10),variant};
+  };
+  for(let index=0;index<trees.length;index++){
+    const tree=trees[index];
+    sprites.push(makeSprite(tree.x,tree.z,tree.y-0.08,tree.height,index*3));
+    for(let layer=1;layer<FOREST_SPRITE_DENSITY_MULTIPLIER;layer++){
+      const random=seededRandom(tree.x,tree.z,0x6A31+index*23+layer*47);
+      const initialAngle=random()*Math.PI*2;
+      const baseRadius=THREE.MathUtils.clamp(tree.width*(0.58+layer*0.055),3.2,7.8);
+      let placement=null;
+      for(let attempt=0;attempt<8&&!placement;attempt++){
+        const angle=initialAngle+attempt*goldenAngle;
+        const radius=baseRadius*(0.84+random()*0.32);
+        const x=tree.x+Math.cos(angle)*radius,z=tree.z+Math.sin(angle)*radius;
+        if(footprint?.contains?.(x,z))continue;
+        const ground=terrainHeightLookup?sampleTerrainSurface(x,z,terrainHeightLookup):sampleSlopeMarginSurface(x,z,footprint,180);
+        if(!ground||ground.normalY<0.50)continue;
+        placement=makeSprite(x,z,ground.y,tree.height*(0.74+random()*0.16),index*3+layer);
+      }
+      if(!placement){
+        const angle=initialAngle+Math.PI;
+        const x=tree.x+Math.cos(angle)*1.35,z=tree.z+Math.sin(angle)*1.35;
+        const inside=footprint?.contains?.(x,z);
+        const ground=!inside&&(terrainHeightLookup?sampleTerrainSurface(x,z,terrainHeightLookup):sampleSlopeMarginSurface(x,z,footprint,180));
+        placement=makeSprite(inside?tree.x:x,inside?tree.z:z,ground?.y??(tree.y-0.08),tree.height*0.78,index*3+layer);
+      }
+      sprites.push(placement);
+    }
+  }
+  return sprites;
+}
+function syncForestShadowMode(){
+  const shadowsEnabled=!allTreesAsSprites;
+  if(renderer?.shadowMap)renderer.shadowMap.enabled=shadowsEnabled;
+  if(sunLight?.shadow){
+    sunLight.shadow.autoUpdate=shadowsEnabled;
+    if(shadowsEnabled)sunLight.shadow.needsUpdate=true;
+  }
 }
 function syncSpriteModeButton(){
-  if(!ui.spriteMode)return;
-  ui.spriteMode.textContent=allTreesAsSprites?'Вернуть 3D-деревья':'Заменить все деревья на спрайты';
-  ui.spriteMode.setAttribute('aria-pressed',String(allTreesAsSprites));
-  ui.spriteMode.classList.toggle('active',allTreesAsSprites);
+  if(ui.spriteMode){
+    ui.spriteMode.textContent=allTreesAsSprites?'Перейти к 3D-деревьям':'Все деревья — спрайты ×3';
+    ui.spriteMode.setAttribute('aria-pressed',String(allTreesAsSprites));
+    ui.spriteMode.classList.toggle('active',allTreesAsSprites);
+  }
+  syncForestShadowMode();
+}
+function ensureProceduralForestAssets(){
+  if(!forestSystem)return;
+  if(forestSystem.splineMaterial&&forestSystem.geometries.near.length)return;
+  const geometries={near:[],mid:[],far:[]};
+  for(let variant=0;variant<3;variant++){
+    geometries.near.push(createSplinePineGeometry('near',variant));
+    geometries.mid.push(createSplinePineGeometry('mid',variant));
+    geometries.far.push(createSplinePineGeometry('far',variant));
+  }
+  forestSystem.geometries=geometries;
+  forestSystem.splineMaterial=createSplinePineMaterial();
 }
 function createForestSpriteBatches(parent,sprites){
-  if(!forestSpriteTextures||!sprites.length)return;
-  forestSpriteMaterials=[];
-  const dummy=new THREE.Object3D();
-  for(let variant=0;variant<forestSpriteTextures.length;variant++){
-    const batch=sprites.filter(tree=>tree.variant===variant);
-    if(!batch.length)continue;
-    const texture=forestSpriteTextures[variant];
-    const material=new THREE.MeshBasicMaterial({
-      map:texture,color:0xffffff,transparent:true,alphaTest:0.12,
-      side:THREE.DoubleSide,depthWrite:true,toneMapped:true,fog:true
-    });
-    forestSpriteMaterials.push(material);
-    const geometry=new THREE.PlaneGeometry(1,1);
-    const mesh=new THREE.InstancedMesh(geometry,material,batch.length);
-    mesh.name='MainStyle_ForestSprite_'+FOREST_SPRITE_VARIANTS[variant];
-    mesh.frustumCulled=false;mesh.castShadow=false;mesh.receiveShadow=false;
-    batch.forEach((tree,index)=>{
-      const yaw=Math.atan2(camera.position.x-tree.x,camera.position.z-tree.z);
-      dummy.position.set(tree.x,tree.y+tree.height*.5,tree.z);
-      dummy.rotation.set(0,yaw,0);dummy.scale.set(tree.width,tree.height,1);dummy.updateMatrix();
-      mesh.setMatrixAt(index,dummy.matrix);
-    });
-    mesh.instanceMatrix.needsUpdate=true;
-    parent.add(mesh);
-    forestSpriteMaterials.push({mesh,trees:batch,material});
+  if(!forestSpriteTextures||!sprites.length)return [];
+  if(!forestSpriteGeometry)forestSpriteGeometry=new THREE.PlaneGeometry(1,1);
+  if(!forestSpriteMaterials){
+    forestSpriteMaterials=forestSpriteTextures.map(texture=>new THREE.MeshBasicMaterial({
+      map:texture,color:0xffffff,transparent:false,alphaTest:0.18,
+      side:THREE.FrontSide,depthWrite:true,toneMapped:true,fog:true
+    }));
   }
+  const cells=new Map();
+  for(const tree of sprites){
+    const cx=Math.floor(tree.x/FOREST_SPRITE_CELL_SIZE),cz=Math.floor(tree.z/FOREST_SPRITE_CELL_SIZE);
+    const key=cx+'_'+cz;
+    let variants=cells.get(key);
+    if(!variants){variants=Array.from({length:FOREST_SPRITE_VARIANTS.length},()=>[]);cells.set(key,variants);}
+    variants[tree.variant].push(tree);
+  }
+  const batches=[];
+  for(const [cellKey,variants] of cells){
+    for(let variant=0;variant<variants.length;variant++){
+      const treesInBatch=variants[variant];
+      if(!treesInBatch.length)continue;
+      const mesh=new THREE.InstancedMesh(forestSpriteGeometry,forestSpriteMaterials[variant],treesInBatch.length);
+      mesh.name='MainStyle_ForestSprite_'+FOREST_SPRITE_VARIANTS[variant]+'_'+cellKey;
+      mesh.frustumCulled=true;mesh.castShadow=false;mesh.receiveShadow=false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      treesInBatch.forEach((tree,index)=>{
+        const yaw=Math.atan2(camera.position.x-tree.x,camera.position.z-tree.z);
+        forestSpriteDummy.position.set(tree.x,tree.y+tree.height*.5,tree.z);
+        forestSpriteDummy.rotation.set(0,yaw,0);
+        forestSpriteDummy.scale.set(tree.width,tree.height,1);
+        forestSpriteDummy.updateMatrix();
+        mesh.setMatrixAt(index,forestSpriteDummy.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate=true;
+      mesh.computeBoundingSphere();
+      parent.add(mesh);
+      batches.push({mesh,trees:treesInBatch});
+    }
+  }
+  console.info('[Forest V22] Sprite batches:',{sprites:sprites.length,cells:cells.size,batches:batches.length,cellSize:FOREST_SPRITE_CELL_SIZE});
+  return batches;
 }
 function updateForestSpriteBillboards(){
   if(!forestSystem?.spriteBatches?.length)return;
   const now=performance.now();
-  if(now-forestSpriteLastUpdate<100)return;
+  if(now-forestSpriteLastUpdate<180)return;
   const dx=camera.position.x-forestSpriteLastCameraX,dz=camera.position.z-forestSpriteLastCameraZ;
-  if(Number.isFinite(forestSpriteLastCameraX)&&dx*dx+dz*dz<0.0025)return;
-  const dummy=new THREE.Object3D();
+  if(Number.isFinite(forestSpriteLastCameraX)&&dx*dx+dz*dz<0.25)return;
   for(const batch of forestSystem.spriteBatches){
     batch.trees.forEach((tree,index)=>{
       const yaw=Math.atan2(camera.position.x-tree.x,camera.position.z-tree.z);
-      dummy.position.set(tree.x,tree.y+tree.height*.5,tree.z);
-      dummy.rotation.set(0,yaw,0);dummy.scale.set(tree.width,tree.height,1);dummy.updateMatrix();
-      batch.mesh.setMatrixAt(index,dummy.matrix);
+      forestSpriteDummy.position.set(tree.x,tree.y+tree.height*.5,tree.z);
+      forestSpriteDummy.rotation.set(0,yaw,0);
+      forestSpriteDummy.scale.set(tree.width,tree.height,1);
+      forestSpriteDummy.updateMatrix();
+      batch.mesh.setMatrixAt(index,forestSpriteDummy.matrix);
     });
     batch.mesh.instanceMatrix.needsUpdate=true;
   }
@@ -1394,6 +1464,7 @@ function rebuildForestLod(force=false){
   const nextGroup=new THREE.Group();
   nextGroup.name='GO_Procedural_SkiForest_V22';
   if(!allTreesAsSprites){
+    ensureProceduralForestAssets();
     for(const [cellKey,cell] of cells)for(let variant=0;variant<3;variant++){
       createTreeInstanceBatch(cell.shadow[variant],'near',variant,nextGroup,true,cellKey);
       createTreeInstanceBatch(cell.near[variant],'near',variant,nextGroup,false,cellKey);
@@ -1403,8 +1474,7 @@ function rebuildForestLod(force=false){
   }
   // Build off-scene, then swap in one operation so no blank-frame flash is exposed.
   const activeSpriteTrees=allTreesAsSprites?(forestSystem.allSpriteTrees||[]):(forestSystem.spriteTrees||[]);
-  createForestSpriteBatches(nextGroup,activeSpriteTrees);
-  forestSystem.spriteBatches=nextGroup.children.filter(child=>child.isInstancedMesh&&String(child.name).startsWith('MainStyle_ForestSprite_')).map(mesh=>({mesh,trees:activeSpriteTrees.filter(tree=>tree.variant===FOREST_SPRITE_VARIANTS.indexOf(mesh.name.replace('MainStyle_ForestSprite_','')))}));
+  forestSystem.spriteBatches=createForestSpriteBatches(nextGroup,activeSpriteTrees);
   const previousGroup=forestSystem.group;
   scene.add(nextGroup);
   if(previousGroup){
@@ -1510,16 +1580,11 @@ async function loadStageOneAndForest() {
   try{await loadForestSpriteTextures();}catch(error){console.warn('[Forest V22] Main-app sprite atlas unavailable; procedural forest remains active.',error);}
   const spriteTrees=buildForestSpritePlacements(trees,footprint);
   
-  const geometries={near:[],mid:[],far:[]};
-  for(let variant=0;variant<3;variant++){
-    geometries.near.push(createSplinePineGeometry('near',variant));
-    geometries.mid.push(createSplinePineGeometry('mid',variant));
-    geometries.far.push(createSplinePineGeometry('far',variant));
-  }
   forestSystem={
-    trees,spriteTrees,allSpriteTrees:buildAllTreeSpritePlacements(trees),footprint,geometries,
+    trees,spriteTrees,allSpriteTrees:buildAllTreeSpritePlacements(trees,footprint),footprint,
+    geometries:{near:[],mid:[],far:[]},
     spriteBatches:[],
-    splineMaterial:createSplinePineMaterial(),
+    splineMaterial:null,
     group:new THREE.Group(),
     lastCamera:new THREE.Vector3(Infinity,Infinity,Infinity),
     lastForward:new THREE.Vector3(0,0,-1),
@@ -1544,7 +1609,7 @@ function rebuildForestDensity() {
     forestSystem.group.clear();
     forestSystem.trees=trees;
     forestSystem.spriteTrees=buildForestSpritePlacements(trees,footprint);
-    forestSystem.allSpriteTrees=buildAllTreeSpritePlacements(trees);
+    forestSystem.allSpriteTrees=buildAllTreeSpritePlacements(trees,footprint);
     forestSystem.lastCamera.set(Infinity,Infinity,Infinity);
     rebuildForestLod(true);
   }
@@ -1609,6 +1674,7 @@ async function start() {
   sunLight.shadow.camera.far=2200;
   sunLight.shadow.normalBias=0.035;
   sunLight.shadow.autoUpdate=true;
+  syncForestShadowMode();
   camera.aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
   camera.updateProjectionMatrix();
   const isWebGPU = renderer.backend && renderer.backend.isWebGPUBackend === true;
@@ -1648,7 +1714,7 @@ async function start() {
     renderer.setSize(stage.clientWidth, stage.clientHeight);
   }, { passive: true });
   let dynamicResolutionScale=1;
-  let frameTimeEMA=25;
+  let frameTimeEMA=16.7;
   let lastResolutionDecision=performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now();
@@ -1668,14 +1734,14 @@ async function start() {
     fpsFrames++;
     // Wide hysteresis and a slower cadence keep internal resolution from oscillating,
     // which otherwise makes alpha-cut needle edges appear to shimmer.
-    if(now-lastResolutionDecision>=1800){
+    if(now-lastResolutionDecision>=1200){
       let nextScale=dynamicResolutionScale;
-      if(frameTimeEMA>27)nextScale=Math.max(0.58,dynamicResolutionScale-(frameTimeEMA>36?0.075:0.04));
-      else if(frameTimeEMA<23)nextScale=Math.min(1,dynamicResolutionScale+0.02);
+      if(frameTimeEMA>18.5)nextScale=Math.max(0.55,dynamicResolutionScale-(frameTimeEMA>24?0.065:0.035));
+      else if(frameTimeEMA<16)nextScale=Math.min(1,dynamicResolutionScale+0.015);
       if(Math.abs(nextScale-dynamicResolutionScale)>0.001){
         dynamicResolutionScale=nextScale;
         atmosphere.setResolutionScale(dynamicResolutionScale);
-        statusText.textContent=backendLabel+' · 1080p output · render '+Math.round(dynamicResolutionScale*100)+'% · directional foliage · 40 FPS adaptive resolution';
+        statusText.textContent=backendLabel+' · 1080p output · render '+Math.round(dynamicResolutionScale*100)+'% · sprite-optimized · 55 FPS adaptive resolution';
       }
       lastResolutionDecision=now;
     }
