@@ -1,3 +1,4 @@
+globalThis.__GO_FENCE_DEBUG=true;
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { findSteepSafetyFencePlacements, buildSafetyFenceBoundaryChains } from '../safety-fences.v1.js';
