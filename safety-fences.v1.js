@@ -76,6 +76,7 @@ export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sam
      const outerY=sampleTerrainY(center.x+outX*edgeSampleDistance,center.z+outZ*edgeSampleDistance);
      if(Number.isFinite(outerY)){
       const drop=edgeY-outerY;
+      if(globalThis.__GO_FENCE_DEBUG&&candidateCount<4)console.log('FENCE DEBUG SAMPLE',{center,insideLeft,outX,outZ,edgeY,outerY,drop,minimumDrop,edgeSampleDistance});
       if(drop>=minimumDrop){
        const angle=Math.atan(drop/edgeSampleDistance)*180/Math.PI;
        if(angle>=minimumAngleDegrees){
