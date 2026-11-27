@@ -1259,7 +1259,8 @@ assert.ok(alpineForestSourceV20.includes('const sx=size*0.5,sy=size*0.90,ex=size
   'V20 must orient the spray texture along the twig and needle direction away from the trunk');
 assert.ok(alpineForestSourceV20.includes('const cardCount=high?Math.max(1,layers):1')&&
   alpineForestSourceV20.includes('addNeedleClump(centre,axis,seedBase+i*31,scale*(0.82+rr()*0.34),colour,1)')&&
-  alpineForestSourceV20.includes('const sprayCount=1')&&
+  alpineForestSourceV20.includes('const sprayCount=high?1:2')&&
+  alpineForestSourceV20.includes('addSpraysAlong(primary,high?1:2')&&
   alpineForestSourceV20.includes('if(high&&sr()<0.34)'),
   'V20 must cut redundant cross-cards and tertiary shoots from the expensive close LOD');
 assert.ok(alpineForestSourceV20.includes('mesh.castShadow=!!castShadow;mesh.receiveShadow=false')&&
