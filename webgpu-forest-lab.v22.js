@@ -1264,7 +1264,7 @@ function buildForestSpritePlacements(trees,footprint){
     const offset=5.5+seed*5.5;
     const x=tree.x+dx*offset-dz*side*(1.5+seed*2.2);
     const z=tree.z+dz*offset+dx*side*(1.5+seed*2.2);
-    const ground=sampleTerrainSurface(x,z,terrainHeightLookup);
+    const ground=terrainHeightLookup?sampleTerrainSurface(x,z,terrainHeightLookup):sampleSlopeMarginSurface(x,z,footprint,180);
     if(!ground||ground.normalY<0.50)continue;
     const height=tree.height*(0.76+seed*0.24);
     sprites.push({x,y:ground.y+0.06,z,height,width:height*(0.52+seededRandom(x,z,0x29A1)()*0.10),variant:Math.floor(seededRandom(z,x,0x3B27)()*FOREST_SPRITE_VARIANTS.length)});
@@ -1491,7 +1491,7 @@ async function loadStageOneAndForest() {
   await nextAnimationFrame();
   const trees=buildTreePlacements(footprint,Number(ui.forestDensity.value));
   setLoadingMessage('Подгружаем sprite-хвою и добавляем дальний лес…');
-  await loadForestSpriteTextures();
+  try{await loadForestSpriteTextures();}catch(error){console.warn('[Forest V22] Main-app sprite atlas unavailable; procedural forest remains active.',error);}
   const spriteTrees=buildForestSpritePlacements(trees,footprint);
   
   const geometries={near:[],mid:[],far:[]};
