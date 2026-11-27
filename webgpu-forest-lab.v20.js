@@ -1000,10 +1000,11 @@ function createSplinePineGeometry(lod,variant){
       const root=center.clone().addScaledVector(side,x*radiusSide*shell)
         .addScaledVector(lift,y*radiusUp*shell).addScaledVector(forward,z*radiusAlong*shell);
       const outward=new THREE.Vector3(center.x,0,center.z);
-      outward.addScaledVector(forward,-outward.dot(forward));
       if(outward.lengthSq()<1e-5)outward.copy(lift);
       outward.normalize();
-      const spraySide=new THREE.Vector3().crossVectors(forward,outward).normalize();
+      const spraySide=new THREE.Vector3().crossVectors(forward,outward);
+      if(spraySide.lengthSq()<1e-5)spraySide.copy(side);
+      spraySide.normalize();
       // Keep every spray moving toward the twig tip and away from the trunk.
       // Randomness now only perturbs the fan; it can no longer reverse needle direction.
       const direction=forward.clone().multiplyScalar(0.68+rng()*0.13)
