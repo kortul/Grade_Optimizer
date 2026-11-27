@@ -1098,7 +1098,7 @@ const alpineForestPageV16=read('webgpu-forest-lab-v16.html').toString('utf8');
 const alpineForestSourceV16=read('webgpu-forest-lab.v16.js').toString('utf8');
 const alpineForestPageV18=read('webgpu-forest-lab-v18.html').toString('utf8');
 const alpineForestSourceV18=read('webgpu-forest-lab.v18.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v18.js?v=20261126e'),
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v18.js?v=20261127a'),
   'Forest Lab main page must load pinned Three.js r187 V18');
 assert.ok(alpineForestPageV13.includes('webgpu-forest-lab.v13.js?v=20261126a')&&
   alpineForestPageV13.includes('Alpine Spruce Forest Lab V13'),
@@ -1213,17 +1213,17 @@ assert.ok(alpineForestPageV18.includes('webgpu-forest-lab.v18.js?v=20261126e')&&
   alpineForestPageV18.includes('Alpine Spruce Forest Lab V18'),
   'the standalone V18 page must load its renderer');
 assert.ok(alpineForestSourceV18.includes('levels:28,branches:8,width:1.02')&&
-  alpineForestSourceV18.includes('const twigStations=high?5:mid?3:2')&&
-  alpineForestSourceV18.includes('const armCount=high?(stationRand()<0.38?2:1):1')&&
-  alpineForestSourceV18.includes('const cardCount=high?3:mid?2:1')&&
-  alpineForestSourceV18.includes('const twigClusters=high?2:mid?2:1'),
-  'V18 must use denser whorls, branching and layered foliage');
-assert.ok(alpineForestSourceV18.includes('armRand()<0.25')&&
-  alpineForestSourceV18.includes('tip.y-=twigLength*(0.07+armRand()*0.16)')&&
+  alpineForestSourceV18.includes('const tierCount=high?20:mid?13:7')&&
+  alpineForestSourceV18.includes('const goldenAngle=Math.PI*(3-Math.sqrt(5))')&&
+  alpineForestSourceV18.includes('const secondaryCount=high?7:mid?4:2'),
+  'V18 must use a hierarchical, phyllotactic spruce scaffold with irregular whorls');
+assert.ok(alpineForestSourceV18.includes('const sprayCount=high?3:mid?2:1')&&
+  alpineForestSourceV18.includes('const forkCount=sr()<0.24?2:1')&&
+  alpineForestSourceV18.includes('addTubeCurve(tertiary')&&
   alpineForestSourceV18.includes('geometry.addGroup(0,woodIndices.length,0)')&&
   alpineForestSourceV18.includes('return [wood,foliage]'),
-  'V18 must keep hanging tertiary shoots and separate foliage/branch materials');
-pass('WebGPU Alpine Forest V18: denser spruce whorls, hanging branchlets and layered sprays');
+  'V18 must attach layered needle sprays to tertiary terminal shoots and retain separate foliage/branch materials');
+pass('WebGPU Alpine Forest V18: hierarchical spruce scaffold, phyllotactic whorls and terminal needle sprays');
 
 // Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
 // The forest is terrain-wide and intentionally does not depend on any piste / Stage 1 asset.
