@@ -1,5 +1,4 @@
-// Lightweight auto-placement of alpine piste safety nets.
-// Connected boundary chains are sampled at panel intervals; only steep drops and cliff edges are fenced.
+// Automatic alpine safety-net placement with time-sliced analysis and persistent IndexedDB caching.
 function pointKey(x,z){return Math.round(x*4)+','+Math.round(z*4);}
 function buildBoundaryChains(edges){
  const nodes=new Map(),edgeData=[];
@@ -41,53 +40,91 @@ function pointAtDistance(points,cumulative,distance){
  return {x:points[lo].x+(points[hi].x-points[lo].x)*t,z:points[lo].z+(points[hi].z-points[lo].z)*t};
 }
 function deterministicUnit(x,z,salt){const value=Math.sin(x*12.9898+z*78.233+salt*37.719)*43758.5453;return value-Math.floor(value);}
-/** Finds panels where the terrain falls away steeply immediately outside a piste. */
-/** Finds panels only when the terrain falls away steeply immediately outside a piste.
- * Two height queries per sample keep this cheap enough for manual/on-demand generation.
- */
-export function findSteepSafetyFencePlacements(footprint,isInsidePiste,sampleTerrainY,{
+const yieldOneFrame=()=>new Promise(resolve=>{
+ if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>resolve());
+ else setTimeout(resolve,0);
+});
+export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sampleTerrainY,{
  spacing=5.5,panelWidth=5.8,panelHeight=1.38,minimumAngleDegrees=26,
- edgeSampleDistance=8,maxPanels=2400
+ edgeSampleDistance=8,maxPanels=1600,maxChains=3,yieldEvery=12,yieldControl=yieldOneFrame
 }={}){
  if(!footprint?.edges?.length||typeof isInsidePiste!=='function'||typeof sampleTerrainY!=='function')return [];
+ const chains=buildBoundaryChains(footprint.edges).map(points=>({points,length:cumulativeLengths(points)}))
+  .filter(chain=>chain.length[chain.length-1]>=spacing*.72)
+  .sort((a,b)=>b.length[b.length-1]-a.length[a.length-1]).slice(0,maxChains);
  const placements=[],left={x:0,z:0},minimumDrop=edgeSampleDistance*Math.tan(minimumAngleDegrees*Math.PI/180);
- for(const points of buildBoundaryChains(footprint.edges)){
-  if(points.length<2)continue;
-  const cumulative=cumulativeLengths(points),total=cumulative[cumulative.length-1];
-  if(total<spacing*.72)continue;
+ let candidateCount=0;
+ for(const chain of chains){
+  const points=chain.points,cumulative=chain.length,total=cumulative[cumulative.length-1];
   for(let distance=spacing*.5;distance<total-spacing*.28;distance+=spacing){
    const before=pointAtDistance(points,cumulative,Math.max(0,distance-1.15));
    const after=pointAtDistance(points,cumulative,Math.min(total,distance+1.15));
    const center=pointAtDistance(points,cumulative,distance);
-   let tx=after.x-before.x,tz=after.z-before.z;
-   const tangentLength=Math.hypot(tx,tz);if(tangentLength<1e-5)continue;
+   let tx=after.x-before.x,tz=after.z-before.z;const tangentLength=Math.hypot(tx,tz);
+   if(tangentLength<1e-5)continue;
    tx/=tangentLength;tz/=tangentLength;left.x=-tz;left.z=tx;
    let insideLeft=null;
    for(const probeDistance of [1.1,2.2,4.0]){
-    const leftInside=!!isInsidePiste(center.x+left.x*probeDistance,center.z+left.z*probeDistance);
-    const rightInside=!!isInsidePiste(center.x-left.x*probeDistance,center.z-left.z*probeDistance);
-    if(leftInside!==rightInside){insideLeft=leftInside;break;}
+    const li=!!isInsidePiste(center.x+left.x*probeDistance,center.z+left.z*probeDistance);
+    const ri=!!isInsidePiste(center.x-left.x*probeDistance,center.z-left.z*probeDistance);
+    if(li!==ri){insideLeft=li;break;}
    }
-   if(insideLeft===null)continue;
-   const outX=insideLeft?-left.x:left.x,outZ=insideLeft?-left.z:left.z;
-   const edgeX=center.x-outX*.55,edgeZ=center.z-outZ*.55;
-   const edgeY=sampleTerrainY(edgeX,edgeZ)??sampleTerrainY(center.x,center.z);
-   if(!Number.isFinite(edgeY))continue;
-   const outerY=sampleTerrainY(center.x+outX*edgeSampleDistance,center.z+outZ*edgeSampleDistance);
-   if(!Number.isFinite(outerY))continue;
-   const drop=edgeY-outerY;
-   if(drop<minimumDrop)continue;
-   const angle=Math.atan(drop/edgeSampleDistance)*180/Math.PI;
-   if(angle<minimumAngleDegrees)continue;
-   placements.push({
-    x:center.x+outX*.68,y:edgeY,z:center.z+outZ*.68,
-    tx,tz,width:panelWidth,height:panelHeight,
-    tint:.94+deterministicUnit(center.x,center.z,31)*.06
-   });
-   if(placements.length>=maxPanels)return placements;
+   if(insideLeft!==null){
+    const outX=insideLeft?-left.x:left.x,outZ=insideLeft?-left.z:left.z;
+    const edgeY=sampleTerrainY(center.x-outX*.55,center.z-outZ*.55)??sampleTerrainY(center.x,center.z);
+    if(Number.isFinite(edgeY)){
+     const outerY=sampleTerrainY(center.x+outX*edgeSampleDistance,center.z+outZ*edgeSampleDistance);
+     if(Number.isFinite(outerY)){
+      const drop=edgeY-outerY;
+      if(drop>=minimumDrop){
+       const angle=Math.atan(drop/edgeSampleDistance)*180/Math.PI;
+       if(angle>=minimumAngleDegrees){
+        placements.push({x:center.x+outX*.68,y:edgeY,z:center.z+outZ*.68,tx,tz,width:panelWidth,height:panelHeight,
+         tint:.94+deterministicUnit(center.x,center.z,31)*.06});
+        if(placements.length>=maxPanels)return placements;
+       }
+      }
+     }
+    }
+   }
+   if(++candidateCount%yieldEvery===0)await yieldControl();
   }
+  await yieldControl();
  }
  return placements;
+}
+const SAFETY_FENCE_DB='grade-optimizer-derived-cache-v1',SAFETY_FENCE_STORE='safety-fence-placements';
+let safetyFenceDbPromise=null;
+const safetyFenceMemoryCache=new Map();
+function openSafetyFenceDb(){
+ if(typeof indexedDB==='undefined')return Promise.resolve(null);
+ if(!safetyFenceDbPromise)safetyFenceDbPromise=new Promise(resolve=>{
+  let request;try{request=indexedDB.open(SAFETY_FENCE_DB,1);}catch{return resolve(null);}
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(SAFETY_FENCE_STORE))db.createObjectStore(SAFETY_FENCE_STORE,{keyPath:'key'});};
+  request.onsuccess=()=>resolve(request.result);request.onerror=()=>resolve(null);request.onblocked=()=>resolve(null);
+ });
+ return safetyFenceDbPromise;
+}
+export async function getCachedSafetyFencePlacements(key){
+ if(safetyFenceMemoryCache.has(key))return safetyFenceMemoryCache.get(key);
+ const db=await openSafetyFenceDb();if(!db)return null;
+ try{
+  const value=await new Promise((resolve,reject)=>{
+   const req=db.transaction(SAFETY_FENCE_STORE,'readonly').objectStore(SAFETY_FENCE_STORE).get(key);
+   req.onsuccess=()=>resolve(req.result?.placements??null);req.onerror=()=>reject(req.error);
+  });
+  if(Array.isArray(value))safetyFenceMemoryCache.set(key,value);
+  return Array.isArray(value)?value:null;
+ }catch(error){console.warn('[Grade Optimizer] Safety-fence cache read failed:',error);return null;}
+}
+export async function setCachedSafetyFencePlacements(key,placements){
+ safetyFenceMemoryCache.set(key,placements);
+ const db=await openSafetyFenceDb();if(!db)return false;
+ try{return await new Promise(resolve=>{
+  const tx=db.transaction(SAFETY_FENCE_STORE,'readwrite');
+  tx.objectStore(SAFETY_FENCE_STORE).put({key,placements,savedAt:Date.now()});
+  tx.oncomplete=()=>resolve(true);tx.onerror=()=>resolve(false);tx.onabort=()=>resolve(false);
+ });}catch(error){console.warn('[Grade Optimizer] Safety-fence cache write failed:',error);return false;}
 }
 export function buildSafetyFenceGroup(THREE,placements,texture,{visible=true}={}){
  if(!Array.isArray(placements)||!placements.length||!texture)return {group:null,count:0};
