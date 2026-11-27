@@ -44,6 +44,49 @@ const yieldOneFrame=()=>new Promise(resolve=>{
  if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>resolve());
  else setTimeout(resolve,0);
 });
+export async function collectSafetyFenceBoundaryEdges(THREE,assets,{yieldEveryTriangles=12000,yieldControl=yieldOneFrame}={}){
+ const output=[],stats=[];
+ const keyFor=(x,z)=>pointKey(x,z);
+ const addEdge=(map,p0,p1)=>{
+  const a=keyFor(p0.x,p0.z),b=keyFor(p1.x,p1.z);if(a===b)return;
+  const key=a<b?a+'|'+b:b+'|'+a,previous=map.get(key);
+  if(previous)previous.count++;
+  else map.set(key,{ax:p0.x,az:p0.z,bx:p1.x,bz:p1.z,count:1});
+ };
+ const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+ let totalTriangles=0;
+ for(const asset of (assets||[]).slice(0,3)){
+  const root=asset?.root;if(!root)continue;
+  root.updateWorldMatrix(true,true);
+  const meshes=[];root.traverseVisible(object=>{if(object.isMesh&&object.geometry?.attributes?.position)meshes.push(object);});
+  const edgeMap=new Map();let triangleCount=0;
+  for(const mesh of meshes){
+   mesh.updateWorldMatrix(true,false);
+   const geometry=mesh.geometry,positions=geometry.attributes.position,index=geometry.index;
+   const count=index?index.count:positions.count;
+   const start=Math.max(0,geometry.drawRange?.start||0);
+   const end=Math.min(count,Number.isFinite(geometry.drawRange?.count)?start+geometry.drawRange.count:count);
+   for(let offset=start;offset+2<end;offset+=3){
+    const ia=index?index.getX(offset):offset,ib=index?index.getX(offset+1):offset+1,ic=index?index.getX(offset+2):offset+2;
+    a.fromBufferAttribute(positions,ia).applyMatrix4(mesh.matrixWorld);
+    b.fromBufferAttribute(positions,ib).applyMatrix4(mesh.matrixWorld);
+    c.fromBufferAttribute(positions,ic).applyMatrix4(mesh.matrixWorld);
+    const area=(b.x-a.x)*(c.z-a.z)-(c.x-a.x)*(b.z-a.z);
+    if(Math.abs(area)<1e-6)continue;
+    addEdge(edgeMap,a,b);addEdge(edgeMap,b,c);addEdge(edgeMap,c,a);
+    triangleCount++;totalTriangles++;
+    if(totalTriangles%Math.max(1,yieldEveryTriangles)===0)await yieldControl();
+   }
+  }
+  const edges=[...edgeMap.values()].filter(edge=>edge.count===1);
+  const name=String(asset.meta?.name||asset.name||root.name||asset.id||'Unnamed slope');
+  stats.push({id:asset.id||'',name,meshCount:meshes.length,triangles:triangleCount,boundaryEdges:edges.length});
+  for(const edge of edges)output.push({...edge,assetId:asset.id||'',assetName:name});
+  await yieldControl();
+ }
+ return {edges:output,stats,totalTriangles};
+}
+
 export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sampleTerrainY,{
  spacing=5.5,panelWidth=5.8,panelHeight=1.38,minimumAngleDegrees=26,
  edgeSampleDistance=8,maxPanels=1600,maxChains=3,yieldEvery=12,yieldControl=yieldOneFrame
@@ -71,7 +114,7 @@ export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sam
    }
    if(insideLeft!==null){
     const outX=insideLeft?-left.x:left.x,outZ=insideLeft?-left.z:left.z;
-    const edgeY=sampleTerrainY(center.x-outX*.55,center.z-outZ*.55)??sampleTerrainY(center.x,center.z);
+    // Two terrain hits per candidate; the previous fallback could issue three full raycasts.\n    const edgeY=sampleTerrainY(center.x,center.z);
     if(Number.isFinite(edgeY)){
      const outerY=sampleTerrainY(center.x+outX*edgeSampleDistance,center.z+outZ*edgeSampleDistance);
      if(Number.isFinite(outerY)){
