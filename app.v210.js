@@ -44,11 +44,22 @@ const DEFAULT_FOREST_EDGE_DENSITY=100;
 const FOREST_MIN_ELEVATION_METERS=15;
 const FOREST_BACKGROUND_TREE_TARGET=100;
 const FOREST_BACKGROUND_TREE_MIN_SPACING=19;
-const FOREST_EDGE_TREE_TARGET_PER_100_PERCENT=900;
-const FOREST_EDGE_MAX_DISTANCE_METERS=72;
+const FOREST_EDGE_TREE_TARGET_PER_100_PERCENT=1100;
+const FOREST_EDGE_MIN_DISTANCE_METERS=4;
+const FOREST_EDGE_MAX_DISTANCE_METERS=85;
+const TREE_VISIBILITY_STORAGE_KEY='grade_optimizer_trees_visible_v1';
+let initialTreesVisible=true;
+try{const storedTreesVisible=localStorage.getItem(TREE_VISIBILITY_STORAGE_KEY);if(storedTreesVisible!==null)initialTreesVisible=storedTreesVisible!=='false';}catch{}
 function normalizeForestEdgeDensity(value){
   const number=Number(value);
-  return Number.isFinite(number)?Math.round(Math.max(0,Math.min(300,number))):DEFAULT_FOREST_EDGE_DENSITY;
+  return Number.isFinite(number)?Math.round(Math.max(0,Math.min(400,number))):DEFAULT_FOREST_EDGE_DENSITY;
+}
+function forestElevationDensity(y,maxElevation){
+  const range=Math.max(1,maxElevation-FOREST_MIN_ELEVATION_METERS);
+  const normalized=THREE.MathUtils.clamp((y-FOREST_MIN_ELEVATION_METERS)/range,0,1);
+  const ramp=THREE.MathUtils.clamp((normalized-0.05)/0.50,0,1);
+  const eased=ramp*ramp*(3-2*ramp);
+  return 0.12+0.88*eased;
 }
 
 const state = {
@@ -62,11 +73,11 @@ usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3, labelOpacity:
   labelsVisible:true, terrainLabelsVisible:true, terrainSlopesVisible:false,
   root:null, terrain:null, terrainMats:[], curves:null,
   designGroup:null, labelsGroup:null, terrainLabelsGroup:null,
-  homePos:null, homeTarget:null, savedOverviewCameras:{}, mode:'overview', dayTime:13.5, autoTime:false, optimizeMode:false,
+  homePos:null, homeTarget:null, savedOverviewCameras:{}, mode:'overview', dayTime:15.75, autoTime:false, optimizeMode:false,
   forestGroup:null, billboardMesh:null, billboardMeshes:[], billboardTrees:[],
   importedAssets:[], baseTerrain:null, baseTerrainMats:[], activeTerrainAssetId:null,
   treeAreas:[],treeAreaGroup:null,
-  forestEdgeDensity:DEFAULT_FOREST_EDGE_DENSITY,forestEdgeSpriteCount:0,
+  forestEdgeDensity:DEFAULT_FOREST_EDGE_DENSITY,forestEdgeSpriteCount:0,treesVisible:initialTreesVisible,fpsVisible:false,
   skierSpawns:{},selectedSkierSpawnSlot:'1',skierSpawnGroup:null,
   slopeAnalysisData:null,slopeCurvesData:null,slopeAnalysisGroup:null,
   slopeAnalysisLineMaterials:[],
@@ -134,6 +145,8 @@ const projectFolderWrittenModels=new Map();
 
 
 const view = document.getElementById('view');
+const fpsHudElement = document.getElementById('fpsHud');
+const showFpsToggleButton = document.getElementById('showFpsToggle');
 // The source terrain spans several kilometres. A conventional perspective
 // depth buffer loses precision at this scale and can produce z-fighting
 // where imported piste surfaces closely follow the original ground.
@@ -938,6 +951,19 @@ autoDayButton.addEventListener('click', () => {
   autoDayButton.textContent = state.autoTime ? 'Ⅱ' : '▶';
 });
 setTimeOfDay(state.dayTime);
+if(showFpsToggleButton&&fpsHudElement){
+  const syncFpsToggle=()=>{
+    showFpsToggleButton.textContent=state.fpsVisible?'СКРЫТЬ FPS':'ПОКАЗАТЬ FPS';
+    showFpsToggleButton.setAttribute('aria-pressed',String(state.fpsVisible));
+    fpsHudElement.hidden=!state.fpsVisible;
+  };
+  showFpsToggleButton.addEventListener('click',()=>{
+    state.fpsVisible=!state.fpsVisible;
+    if(state.fpsVisible)fpsHudElement.textContent='FPS: …';
+    syncFpsToggle();
+  });
+  syncFpsToggle();
+}
 
 // Weather controls are deliberately stored separately from client scene.json.
 // Environment preferences belong to this browser, not to imported client assets.
@@ -951,12 +977,19 @@ const weatherSnowInput = document.getElementById('weatherSnow');
 const weatherWindInput = document.getElementById('weatherWind');
 const weatherGroundFogInput = document.getElementById('weatherGroundFog');
 const weatherVolumetricsInput = document.getElementById('weatherVolumetrics');
+const weatherTreesInput = document.getElementById('weatherTrees');
 const weatherCloudsValue = document.getElementById('weatherCloudsValue');
 const weatherSnowValue = document.getElementById('weatherSnowValue');
 const weatherWindValue = document.getElementById('weatherWindValue');
 const weatherStatus = document.getElementById('weatherStatus');
 const weatherPresetButtons = [...document.querySelectorAll('[data-weather-preset]')];
 
+function applyTreesVisibility(visible){
+  state.treesVisible=!!visible;
+  if(state.forestGroup)state.forestGroup.visible=state.treesVisible;
+  if(weatherTreesInput)weatherTreesInput.checked=state.treesVisible;
+  try{localStorage.setItem(TREE_VISIBILITY_STORAGE_KEY,String(state.treesVisible));}catch(error){console.warn('Не удалось сохранить видимость деревьев:',error);}
+}
 function updateWeatherControls() {
   const settings = weatherSystem.getSettings();
   weatherCloudsInput.value = String(Math.round(settings.clouds * 100));
@@ -967,6 +1000,7 @@ function updateWeatherControls() {
   weatherWindValue.textContent = weatherWindInput.value + ' км/ч';
   if(weatherGroundFogInput)weatherGroundFogInput.checked=!!settings.groundFog;
   if(weatherVolumetricsInput)weatherVolumetricsInput.checked=settings.volumetrics!==false;
+  if(weatherTreesInput)weatherTreesInput.checked=state.treesVisible;
   const sceneGroundFog=document.getElementById('sceneGroundFog');
   if(sceneGroundFog)sceneGroundFog.checked=!!settings.groundFog;
   const sceneVolumetrics=document.getElementById('sceneVolumetrics');
@@ -1033,6 +1067,7 @@ const sceneGroundFogInput=document.getElementById('sceneGroundFog');
 if(sceneGroundFogInput)sceneGroundFogInput.addEventListener('change',applyGroundFogToggle);
 function applyVolumetricsToggle(event){weatherSystem.setVolumetrics(!!event.target.checked);updateWeatherControls();persistWeatherSettings();markClientProjectDirty('настройки volumetric effects');}
 if(weatherVolumetricsInput)weatherVolumetricsInput.addEventListener('change',applyVolumetricsToggle);
+if(weatherTreesInput)weatherTreesInput.addEventListener('change',event=>applyTreesVisibility(event.target.checked));
 const sceneVolumetricsInput=document.getElementById('sceneVolumetrics');
 if(sceneVolumetricsInput)sceneVolumetricsInput.addEventListener('change',applyVolumetricsToggle);
 
@@ -1921,7 +1956,7 @@ function findNearestSlopeBoundary(x,z,lookup,maxDistance=105){
   for(const edge of index.large)test(edge);
   return best;
 }
-function buildSlopeEdgeCandidates(candidates,slopeFootprint,treeAreas=[],reservedLaneZ=null){
+function buildSlopeEdgeCandidates(candidates,slopeFootprint,treeAreas=[],reservedLaneZ=null,maxElevation=FOREST_MIN_ELEVATION_METERS+1){
   if(!slopeFootprint?.edges?.length||!candidates.length)return [];
   const results=[];
   for(const candidate of candidates){
@@ -1930,22 +1965,26 @@ function buildSlopeEdgeCandidates(candidates,slopeFootprint,treeAreas=[],reserve
     if(reservedLaneZ!==null&&Math.abs(candidate.z-reservedLaneZ)<35)continue;
     if(candidate.y<FOREST_MIN_ELEVATION_METERS)continue;
     const nearest=findNearestSlopeBoundary(candidate.x,candidate.z,slopeFootprint,FOREST_EDGE_MAX_DISTANCE_METERS+25);
-    if(!nearest||nearest.distance<6||nearest.distance>FOREST_EDGE_MAX_DISTANCE_METERS)continue;
+    if(!nearest||nearest.distance<FOREST_EDGE_MIN_DISTANCE_METERS||nearest.distance>FOREST_EDGE_MAX_DISTANCE_METERS)continue;
     results.push({x:candidate.x,y:candidate.y,z:candidate.z,edgeDistance:nearest.distance});
   }
-  // Process the closest terrain samples first, so density is concentrated beside the piste.
-  results.sort((a,b)=>a.edgeDistance-b.edgeDistance||forestPlacementRandom(a.x,a.z,73)-forestPlacementRandom(b.x,b.z,73));
+  // Balance piste proximity with elevation: high terrain gets priority without losing the piste-edge focus.
+  results.sort((a,b)=>{
+    const scoreA=(a.edgeDistance/FOREST_EDGE_MAX_DISTANCE_METERS)*0.48+(1-forestElevationDensity(a.y,maxElevation))*0.52;
+    const scoreB=(b.edgeDistance/FOREST_EDGE_MAX_DISTANCE_METERS)*0.48+(1-forestElevationDensity(b.y,maxElevation))*0.52;
+    return scoreA-scoreB||forestPlacementRandom(a.x,a.z,73)-forestPlacementRandom(b.x,b.z,73);
+  });
   return results;
 }
 function forestPlacementRandom(x,z,salt=0){
   const value=Math.sin(x*12.9898+z*78.233+salt*37.719)*43758.5453;
   return value-Math.floor(value);
 }
-function buildSlopeEdgeTreePlacements(edgeCandidates,densityPercent,baseTrees){
+function buildSlopeEdgeTreePlacements(edgeCandidates,densityPercent,baseTrees,maxElevation=FOREST_MIN_ELEVATION_METERS+1){
   const density=normalizeForestEdgeDensity(densityPercent)/100;
   if(density<=0||!edgeCandidates.length)return [];
   const maxTrees=Math.round(FOREST_EDGE_TREE_TARGET_PER_100_PERCENT*density);
-  const minSpacing=Math.max(4.8,10.5-(density-1)*2.8);
+  const minSpacing=Math.max(4.1,10.5-(density-1)*2.8);
   const cellSize=18,occupied=new Map(),edgeTrees=[];
   const addOccupied=tree=>{
     const cx=Math.floor(tree.x/cellSize),cz=Math.floor(tree.z/cellSize),key=cx+':'+cz;
@@ -1961,11 +2000,11 @@ function buildSlopeEdgeTreePlacements(edgeCandidates,densityPercent,baseTrees){
     return true;
   };
   for(const tree of baseTrees)addOccupied(tree);
-  const keepByBand=[0.98,0.64,0.22];
+  const keepByBand=[0.99,0.66,0.20];
   for(let index=0;index<edgeCandidates.length&&edgeTrees.length<maxTrees;index++){
     const candidate=edgeCandidates[index];
-    const band=candidate.edgeDistance<22?0:candidate.edgeDistance<45?1:2;
-    const chance=Math.min(1,density*keepByBand[band]);
+    const band=candidate.edgeDistance<20?0:candidate.edgeDistance<45?1:2;
+    const chance=Math.min(1,density*keepByBand[band]*forestElevationDensity(candidate.y,maxElevation));
     if(forestPlacementRandom(candidate.x,candidate.z,band+401)>chance||!canPlace(candidate))continue;
     const random=forestPlacementRandom(candidate.z,candidate.x,band+917);
     const height=6.8+random*7.8;
@@ -2257,10 +2296,11 @@ function buildTestForest({reusePlacements=false}={}) {
     for(let i=candidates.length-1;i>0;i--){
       const j=Math.floor(rnd()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];
     }
-    edgeCandidates=buildSlopeEdgeCandidates(candidates,slopeFootprint,hasTreeAreas?state.treeAreas:[],hasTreeAreas?null:laneZ);
+    edgeCandidates=buildSlopeEdgeCandidates(candidates,slopeFootprint,hasTreeAreas?state.treeAreas:[],hasTreeAreas?null:laneZ,bounds.max.y);
     trees=[];
     const occupied=new Map();
     for(const candidate of candidates){
+      if(rnd()>forestElevationDensity(candidate.y,bounds.max.y))continue;
       if(hasTreeAreas&&!state.treeAreas.some(area=>pointInPoly(candidate.x,candidate.z,area.points)))continue;
       if(isTreePointOnSlope(candidate.x,candidate.z,slopeFootprint))continue;
       if(!hasTreeAreas&&Math.abs(candidate.z-laneZ)<27+rnd()*8)continue;
@@ -2283,12 +2323,13 @@ function buildTestForest({reusePlacements=false}={}) {
       edgeCandidates:edgeCandidates.map(candidate=>({...candidate})),trees:trees.map(tree=>({...tree}))};
   }
   const baseTreeCount=trees.length;
-  const edgeTrees=buildSlopeEdgeTreePlacements(edgeCandidates,state.forestEdgeDensity,trees);
+  const edgeTrees=buildSlopeEdgeTreePlacements(edgeCandidates,state.forestEdgeDensity,trees,bounds.max.y);
   trees=trees.concat(edgeTrees);
   state.forestEdgeSpriteCount=edgeTrees.length;
   syncForestEdgeDensityControl();
   if(!trees.length)return;
   const forest=new THREE.Group();
+  forest.visible=state.treesVisible;
   forest.name='TestForest_Billboards_LOD';
   state.forestGroup=forest;
   scene.add(forest);
@@ -7166,7 +7207,7 @@ let pendingSceneMode = null;
 let skierModePreparing = false;
 let modeCameraTransition = null;
 const runtimePerformance={
-  fps:0,fpsLastCompletedWindow:0,rafIntervalMs:0,rafSampleCount:0,
+  fps:0,fpsLastCompletedWindow:0,rafIntervalMs:0,rafSampleCount:0,fpsHudLastUpdate:0,
   frameMs:0,skierUpdateMs:0,weatherUpdateMs:0,forestUpdateMs:0,opticsMs:0,labelsMs:0,renderMs:0,
   drawCalls:0,triangles:0,points:0,geometries:0,textures:0,
   frameCount:0,fpsWindowStarted:performance.now(),fpsWindowFrames:0
@@ -8356,6 +8397,10 @@ const rafIntervalSamples=[];
   runtimePerformance.rafIntervalMs=rafIntervalMs;
   runtimePerformance.rafSampleCount=rafIntervalSamples.length;
   runtimePerformance.fps=calculateRollingFps(rafIntervalSamples);
+  if(state.fpsVisible&&fpsHudElement&&now-runtimePerformance.fpsHudLastUpdate>=250){
+    fpsHudElement.textContent='FPS: '+Math.round(runtimePerformance.fps||0);
+    runtimePerformance.fpsHudLastUpdate=now;
+  }
   const dt = Math.min(Math.max(rafIntervalMs/1000,0),0.04);
   renderer.info.reset();
   if(state.autoTime){
