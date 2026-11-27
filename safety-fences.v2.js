@@ -32,7 +32,7 @@ function materialRanges(mesh, geometry) {
   const ranges = [];
   for (const group of groups) {
     const start = Math.max(drawStart, Number(group.start) || 0);
-    const end = Math.min(drawEnd, start + Math.max(0, Number(group.count) || 0));
+    const end = Math.min(drawEnd, (Number(group.start) || 0) + Math.max(0, Number(group.count) || 0));
     if (end - start < 3) continue;
     const material = materials[group.materialIndex ?? 0] || materials[0];
     const kind = classifyStageOneSurfaceKind(material?.userData?.gradeOptimizerStageOneSurfaceKind) ||
@@ -105,15 +105,18 @@ export async function buildStageOneSlopeSurfaceLookup(THREE, root, {
     processed++;
   };
 
-  const visit = mesh => {
-    if (!mesh?.isMesh || !mesh.geometry?.attributes?.position || !isObjectVisible(mesh)) return;
+  const meshes = [];
+  root.traverseVisible(object => {
+    if (object.isMesh && object.geometry?.attributes?.position && isObjectVisible(object)) meshes.push(object);
+  });
+  for (const mesh of meshes) {
     const geometry = mesh.geometry;
     const position = geometry.attributes.position;
-    if (position.count < 3) return;
+    if (position.count < 3) continue;
     mesh.updateWorldMatrix(true, false);
     const elementCount = geometry.index?.count ?? position.count;
     const ranges = materialRanges(mesh, geometry);
-    if (!ranges.length) return;
+    if (!ranges.length) continue;
     stats.meshCount++;
     for (const range of ranges) {
       const end = Math.min(elementCount, range.end);
@@ -122,23 +125,9 @@ export async function buildStageOneSlopeSurfaceLookup(THREE, root, {
         const ib = geometry.index ? geometry.index.getX(offset + 1) : offset + 1;
         const ic = geometry.index ? geometry.index.getX(offset + 2) : offset + 2;
         addTriangle(range.kind, ia, ib, ic, mesh);
-        if (processed > 0 && processed % Math.max(1, yieldEveryTriangles) === 0) {
-          // The visitor itself stays synchronous; yielding is handled by the async traversal below.
-          return { yield: true };
-        }
+        if (processed > 0 && processed % Math.max(1, yieldEveryTriangles) === 0) await yieldControl();
       }
     }
-    return null;
-  };
-
-  const meshes = [];
-  root.traverseVisible(object => {
-    if (object.isMesh && object.geometry?.attributes?.position && isObjectVisible(object)) meshes.push(object);
-  });
-  for (const mesh of meshes) {
-    // Process one mesh at a time. Typical Stage 1 FBX contains only a few dozen meshes.
-    const result = visit(mesh);
-    if (result?.yield) await yieldControl();
   }
 
   for (const kind of ['slopes', 'angled']) {
@@ -257,7 +246,7 @@ function scanCrossSection(surface, center, normal, {
         continue;
       }
       misses++;
-      if (misses > bridgeGapSamples) return i - direction * (misses - 1);
+      if (misses > bridgeGapSamples) return i - direction * misses;
     }
     return direction < 0 ? 0 : samples.length - 1;
   };
