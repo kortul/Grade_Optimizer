@@ -24,7 +24,7 @@ assert.match(renderer,/geometry\.addGroup\(woodIndices\.length,foliageIndices\.l
 assert.match(renderer,/return \[wood,foliage\]/,'wood and foliage must not share the alpha-tested material');
 assert.match(renderer,/const clumpSize=size\*\(high\?2\.35:mid\?2\.2:2\.0\)/,'foliage cards must cover the twig scale rather than float as specks');
 assert.match(renderer,/new THREE\.QuadraticBezierCurve3/,'branches must remain curved');
-assert.match(renderer,/const goldenAngle=Math\\.PI\\*\\(3-Math\\.sqrt\\(5\\)\\)/,'phyllotactic whorl rotation must remain deterministic');
+assert.match(renderer,/const goldenAngle=Math\.PI\*\(3-Math\.sqrt\(5\)\)/,'phyllotactic whorl rotation must remain deterministic');
 assert.match(renderer,/function selectTreeLod\(distance,current\)/,'LOD must retain hysteresis');
 assert.doesNotMatch(renderer,/cameraTurned/,'camera rotation alone must not rebuild all forest batches');
 assert.match(renderer,/const cellSize=520/,'spatial batches must not explode draw-call counts');
