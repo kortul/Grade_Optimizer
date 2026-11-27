@@ -1293,7 +1293,7 @@ assert.ok(alpineForestSourceV21.includes('object.castShadow=false; // Static sno
   alpineForestSourceV21.includes('frameTimeEMA<23'),
   'V21 must reduce static terrain shadow work and adapt render resolution toward 40 FPS');
 pass('WebGPU Alpine Forest V21: fuller natural spruce crowns, dome shading and 40 FPS adaptive budget');
-assert.ok(alpineForestPageV22.includes('webgpu-forest-lab.v22.js?v=20261127a')&&alpineForestPageV22.includes('ALPINE SPRUCE V22'),
+assert.ok(alpineForestPageV22.includes('webgpu-forest-lab.v22.js?v=20261127b')&&alpineForestPageV22.includes('ALPINE SPRUCE V22'),
   'V22 page must load its renderer');
 assert.ok(alpineForestSourceV22.includes('loadForestSpriteTextures')&&alpineForestSourceV22.includes('buildForestSpritePlacements')&&
   alpineForestSourceV22.includes('MainStyle_ForestSprite_')&&alpineForestSourceV22.includes('updateForestSpriteBillboards'),
