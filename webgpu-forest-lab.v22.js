@@ -1322,7 +1322,9 @@ function syncForestShadowMode(){
 }
 function syncSpriteModeButton(){
   if(ui.spriteMode){
-    ui.spriteMode.textContent=allTreesAsSprites?'Перейти к 3D-деревьям':'Все деревья — спрайты ×3';
+    const spritesAvailable=!!forestSpriteTextures;
+    ui.spriteMode.disabled=!spritesAvailable;
+    ui.spriteMode.textContent=!spritesAvailable?'Спрайт-атлас не загружен':allTreesAsSprites?'Перейти к 3D-деревьям':'Все деревья — спрайты ×3';
     ui.spriteMode.setAttribute('aria-pressed',String(allTreesAsSprites));
     ui.spriteMode.classList.toggle('active',allTreesAsSprites);
   }
@@ -1577,7 +1579,10 @@ async function loadStageOneAndForest() {
   await nextAnimationFrame();
   const trees=buildTreePlacements(footprint,Number(ui.forestDensity.value));
   setLoadingMessage('Подгружаем sprite-хвою и добавляем дальний лес…');
-  try{await loadForestSpriteTextures();}catch(error){console.warn('[Forest V22] Main-app sprite atlas unavailable; procedural forest remains active.',error);}
+  try{await loadForestSpriteTextures();}catch(error){
+    allTreesAsSprites=false;
+    console.warn('[Forest V22] Main-app sprite atlas unavailable; falling back to procedural 3D trees.',error);
+  }
   const spriteTrees=buildForestSpritePlacements(trees,footprint);
   
   forestSystem={
