@@ -1001,7 +1001,12 @@ function applyTreesVisibility(visible){
   try{localStorage.setItem(TREE_VISIBILITY_STORAGE_KEY,String(state.treesVisible));}catch(error){console.warn('Не удалось сохранить видимость деревьев:',error);}
 }
 function syncSafetyFenceControls(){
-  const names=(state.safetyFenceAssets||[]).map(asset=>String(asset.meta?.name||asset.name||asset.root?.name||asset.id||'Без имени'));
+  const stats=state.safetyFenceAssetStats||[];
+  const names=stats.length?stats.map(item=>{
+    const children=(item.meshNames||[]).slice(0,5);
+    const more=(item.meshNames||[]).length>children.length?' +'+((item.meshNames||[]).length-children.length):'';
+    return item.name+(children.length?' → '+children.join(', ')+more:'');
+  }):(state.safetyFenceAssets||[]).map(asset=>String(asset.meta?.name||asset.name||asset.root?.name||asset.id||'Без имени'));
   const shortNames=names.length?names.join(', '):'нет видимых объектов категории slope';
   if(weatherSafetyFencesToggleButton){
     weatherSafetyFencesToggleButton.textContent=state.safetyFenceBuilding
@@ -2369,11 +2374,11 @@ function scheduleSafetyFenceBuild(slopeAssets,insideFootprint,cacheKey){
         if(revision!==state.safetyFenceBuildRevision)return;
         state.safetyFenceAssetStats=scan.stats;
         state.safetyFenceFootprint={...insideFootprint,edges:scan.edges};
-        const perAsset=scan.stats.map(item=>item.name+': '+item.meshCount+' mesh, '+item.boundaryEdges+' boundary edges');
+        const perAsset=scan.stats.map(item=>item.name+' ['+(item.meshNames||[]).slice(0,8).join(', ')+']: '+item.meshCount+' mesh, '+item.boundaryEdges+' boundary edges');
         console.info('[Grade Optimizer] Safety-fence slope inputs:',perAsset,'triangles:',scan.totalTriangles);
         if(!scan.edges.length){
           state.safetyFenceCount=0;
-          state.safetyFenceStatus='Склоны: '+slopeAssets.map(asset=>asset.meta?.name||asset.name||asset.id).join(', ')+'. Не найдены открытые граничные рёбра mesh — сетку не из чего строить.';
+          state.safetyFenceStatus='Нет открытых граничных рёбер у: '+scan.stats.map(item=>item.name+' ['+(item.meshNames||[]).slice(0,8).join(', ')+']').join('; ')+'.';
           console.warn('[Grade Optimizer] Safety fences: no boundary edges found.',scan.stats);
           return;
         }
@@ -2402,7 +2407,7 @@ function scheduleSafetyFenceBuild(slopeAssets,insideFootprint,cacheKey){
       const result=buildSafetyFenceGroup(THREE,placements,texture,{visible:state.safetyFencesVisible});
       if(!result.group)return;
       state.safetyFenceGroup=result.group;state.safetyFenceCount=result.count;scene.add(result.group);
-      state.safetyFenceStatus='Построено '+result.count+' секций. Склоны: '+slopeAssets.map(asset=>asset.meta?.name||asset.name||asset.id).join(', ')+'.';
+      state.safetyFenceStatus='Построено '+result.count+' секций на: '+(state.safetyFenceAssetStats||[]).map(item=>item.name+' ['+(item.meshNames||[]).slice(0,5).join(', ')+']').join('; ')+'.';
       console.info('[Grade Optimizer] Safety fences:',result.count,'panels on:',slopeAssets.map(asset=>asset.meta?.name||asset.name||asset.id));
     }catch(error){
       state.safetyFenceStatus='Ошибка построения сеток: '+(error?.message||String(error));
