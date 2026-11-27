@@ -66,6 +66,7 @@ jobs:
           node --input-type=module --check < app.v211.js
           node --input-type=module --check < app.v212.js
           node --input-type=module --check < app.v213.js
+          node --input-type=module --check < app.v214.js
           node --input-type=module --check < safety-fences.v1.js
           node --input-type=module --check < stage-one-materials.v1.js
           node --input-type=module --check < editor-shared-materials.v1.js
