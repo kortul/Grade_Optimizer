@@ -1128,7 +1128,7 @@ function createSplinePineGeometry(lod,variant){
         addTubeCurve(secondary,0.0095*Math.pow(Math.max(0.1,1-t),0.35)+0.0008,0.00035,high?4:2,3,green,dark);
 
         // Dense needle sprays sit on the branchlet itself, with a heavier terminal tuft.
-        const sprayCount=1;
+        const sprayCount=high?1:2;
         addSpraysAlong(secondary,sprayCount,tier*10007+b*211+s*31,twigLength*shape.needleScale*0.46,green);
         addNeedleClump(tip,dir,tier*13001+b*307+s*47,
           twigLength*shape.needleScale*(0.54+sr()*0.10),sr()<0.22?lit:green);
@@ -1159,7 +1159,7 @@ function createSplinePineGeometry(lod,variant){
       }
       // A restrained spray on the primary branch fills the inner bough without
       // turning the entire crown into disconnected spherical clumps.
-      addSpraysAlong(primary,1,tier*29009+b*701,branchLength*shape.needleScale*(high?0.23:mid?0.24:0.27),green);
+      addSpraysAlong(primary,high?1:2,tier*29009+b*701,branchLength*shape.needleScale*(high?0.23:mid?0.24:0.27),green);
     }
   }
 
