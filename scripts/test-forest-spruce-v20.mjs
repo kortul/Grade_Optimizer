@@ -17,7 +17,7 @@ assert.match(source,/addNeedleClump\(centre,axis,seedBase\+i\*31,scale\*\(0\.82\
 assert.match(source,/const sprayCount=high\?1:2/,'only the near LOD is reduced; medium and far LODs keep their spray coverage');
 assert.match(source,/addSpraysAlong\(primary,high\?1:2/,'the distant crown fill must retain the successful V19 spray count');
 assert.match(source,/if\(high&&sr\(\)<0\.34\)[\s\S]*const forkCount=1/,'tertiary twig density must be capped for the near LOD');
-assert.match(source,/addSpraysAlong\(primary,1/,'primary branches must use one fill spray each');
+assert.match(source,/addSpraysAlong\(primary,high\?1:2/,'medium and far primary branches must retain their established fill sprays');
 assert.match(source,/mesh\.castShadow=!!castShadow;mesh\.receiveShadow=false/,'trees must not pay for expensive shadow-map lookups on every foliage card');
 assert.match(source,/if\(distance<55\)return 'shadow'/,'only the immediate foreground should cast full tree shadows');
 assert.match(source,/if\(current==='shadow'&&distance<72\)return 'shadow'/,'shadow LOD must retain hysteresis');
