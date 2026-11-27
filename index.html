@@ -1417,7 +1417,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
             <h3>FOREST EDGE SPRITES <span class="editor-chip" id="forestEdgeSpriteCount">0 SPRITES</span></h3>
             <label for="forestEdgeSpriteDensity">Плотность спрайтов вдоль трасс <strong id="forestEdgeSpriteDensityValue">100%</strong></label>
             <input id="forestEdgeSpriteDensity" type="range" min="0" max="300" step="10" value="100" aria-label="Плотность спрайтов деревьев у края трасс"/>
-            <div class="editor-hint">Дополнительные ели размещаются по внешнему краю геометрии трасс, на исходном рельефе. 0% отключает крайовой лес, 300% — максимальная плотность. Используется тот же атлас с 8 вариантами елей. При наличии Tree Areas спрайты остаются внутри нарисованных зон.</div>
+            <div class="editor-hint">Основная масса елей размещается вдоль внешнего края трасс (до 72 м, с приоритетом первых 45 м). Редкие деревья остаются в остальном лесу. Ниже отметки 15 м деревья не ставятся. 0% отключает крайовой лес, 300% — высокая плотность. Используются 8 вариантов елей из того же атласа. Tree Areas продолжают ограничивать посадку.</div>
           </div>
           <label for="treeAreaName">Название новой зоны</label>
           <input id="treeAreaName" type="text" maxlength="80" placeholder="Например, North Forest"/>
@@ -1976,7 +1976,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v210.js?v=214"></script>
+<script type="module" src="./app.v210.js?v=215"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -2038,7 +2038,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v210.js?v=214"]');
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v210.js?v=215"]');
   moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить приложение или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
