@@ -114,7 +114,8 @@ export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sam
    }
    if(insideLeft!==null){
     const outX=insideLeft?-left.x:left.x,outZ=insideLeft?-left.z:left.z;
-    // Two terrain hits per candidate; the previous fallback could issue three full raycasts.\n    const edgeY=sampleTerrainY(center.x,center.z);
+    // Two terrain hits per candidate; the previous fallback could issue three full raycasts.
+     const edgeY=sampleTerrainY(center.x,center.z);
     if(Number.isFinite(edgeY)){
      const outerY=sampleTerrainY(center.x+outX*edgeSampleDistance,center.z+outZ*edgeSampleDistance);
      if(Number.isFinite(outerY)){
