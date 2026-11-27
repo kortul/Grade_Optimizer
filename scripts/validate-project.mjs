@@ -1106,7 +1106,7 @@ const alpineForestPageV21=read('webgpu-forest-lab-v21.html').toString('utf8');
 const alpineForestSourceV21=read('webgpu-forest-lab.v21.js').toString('utf8');
 const alpineForestPageV22=read('webgpu-forest-lab-v22.html').toString('utf8');
 const alpineForestSourceV22=read('webgpu-forest-lab.v22.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v22.js?v=20261127a')&&
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v22.js?v=20261127b')&&
   alpineForestHtml.includes('ALPINE SPRUCE V22'),
   'Forest Lab main page must load pinned Three.js r187 V22');
 assert.ok(alpineForestPageV13.includes('webgpu-forest-lab.v13.js?v=20261126a')&&
