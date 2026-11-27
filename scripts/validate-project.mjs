@@ -1106,7 +1106,7 @@ const alpineForestPageV21=read('webgpu-forest-lab-v21.html').toString('utf8');
 const alpineForestSourceV21=read('webgpu-forest-lab.v21.js').toString('utf8');
 const alpineForestPageV22=read('webgpu-forest-lab-v22.html').toString('utf8');
 const alpineForestSourceV22=read('webgpu-forest-lab.v22.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v22.js?v=20261127c')&&
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v22.js?v=20261127d')&&
   alpineForestHtml.includes('ALPINE SPRUCE V22'),
   'Forest Lab main page must load pinned Three.js r187 V22');
 assert.ok(alpineForestPageV13.includes('webgpu-forest-lab.v13.js?v=20261126a')&&
@@ -1293,7 +1293,7 @@ assert.ok(alpineForestSourceV21.includes('object.castShadow=false; // Static sno
   alpineForestSourceV21.includes('frameTimeEMA<23'),
   'V21 must reduce static terrain shadow work and adapt render resolution toward 40 FPS');
 pass('WebGPU Alpine Forest V21: fuller natural spruce crowns, dome shading and 40 FPS adaptive budget');
-assert.ok(alpineForestPageV22.includes('webgpu-forest-lab.v22.js?v=20261127c')&&alpineForestPageV22.includes('ALPINE SPRUCE V22'),
+assert.ok(alpineForestPageV22.includes('webgpu-forest-lab.v22.js?v=20261127d')&&alpineForestPageV22.includes('ALPINE SPRUCE V22'),
   'V22 page must load its renderer');
 assert.ok(alpineForestSourceV22.includes('loadForestSpriteTextures')&&alpineForestSourceV22.includes('buildForestSpritePlacements')&&
   alpineForestSourceV22.includes('MainStyle_ForestSprite_')&&alpineForestSourceV22.includes('updateForestSpriteBillboards'),
