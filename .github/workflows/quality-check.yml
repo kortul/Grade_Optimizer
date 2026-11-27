@@ -63,6 +63,8 @@ jobs:
       - name: Check active browser module syntax
         run: |
           node --input-type=module --check < app.v210.js
+          node --input-type=module --check < app.v211.js
+          node --input-type=module --check < safety-fences.v1.js
           node --input-type=module --check < stage-one-materials.v1.js
           node --input-type=module --check < editor-shared-materials.v1.js
           node --input-type=module --check < stage-one-material-groups.v1.js
@@ -99,5 +101,7 @@ jobs:
         run: node --test scripts/test-slope-label-index.mjs
       - name: Test render performance fallbacks
         run: node --test scripts/test-render-performance.mjs
+      - name: Test automatic steep-edge safety fence placement
+        run: node scripts/test-safety-fences.mjs
       - name: Validate project
         run: node scripts/validate-project.mjs

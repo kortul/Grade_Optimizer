@@ -80,8 +80,12 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v210.js')&&!html.includes('app.v209.js'),'HTML must activate the current v210 release');
+assert.ok(html.includes('app.v211.js')&&!html.includes('app.v209.js'),'HTML must activate the current v211 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
+assert.ok(entrySource.includes("import { findSteepSafetyFencePlacements, buildSafetyFenceGroup } from './safety-fences.v1.js';")&&entrySource.includes('scheduleSafetyFenceBuild(slopeFootprint);'),'active entrypoint must build the safety-fence layer from the piste footprint');
+assert.ok(html.includes('weatherSafetyFencesToggle')&&html.includes('weatherSafetyFenceCount'),'weather settings must expose the safety-fence visibility control and section count');
+assert.ok(existsSync(resolve(root,'assets/safety-fences/orange-safety-net.svg')),'safety-fence texture asset is missing');
+pass('steep-edge safety fences, texture asset and visibility controls are wired');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
 

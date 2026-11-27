@@ -16,4 +16,6 @@ Date: 2026-11-27
 - The dedicated AI image-generation (Gen) endpoint was not available in this session; this is an authored SVG, not an AI-generated bitmap.
 
 ## Validation
-- Static syntax validation and deployed browser visual verification are required.
+- Dedicated unit tests cover steep-drop placement, flat-terrain rejection, and invalid inputs.
+- CI syntax checks cover the active app entrypoint and safety-fence module.
+- Live browser visual/FPS verification is still required.
