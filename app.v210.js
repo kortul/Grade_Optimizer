@@ -977,7 +977,7 @@ const weatherSnowInput = document.getElementById('weatherSnow');
 const weatherWindInput = document.getElementById('weatherWind');
 const weatherGroundFogInput = document.getElementById('weatherGroundFog');
 const weatherVolumetricsInput = document.getElementById('weatherVolumetrics');
-const weatherTreesInput = document.getElementById('weatherTrees');
+const weatherTreesToggleButton = document.getElementById('weatherTreesToggle');
 const weatherCloudsValue = document.getElementById('weatherCloudsValue');
 const weatherSnowValue = document.getElementById('weatherSnowValue');
 const weatherWindValue = document.getElementById('weatherWindValue');
@@ -987,7 +987,10 @@ const weatherPresetButtons = [...document.querySelectorAll('[data-weather-preset
 function applyTreesVisibility(visible){
   state.treesVisible=!!visible;
   if(state.forestGroup)state.forestGroup.visible=state.treesVisible;
-  if(weatherTreesInput)weatherTreesInput.checked=state.treesVisible;
+  if(weatherTreesToggleButton){
+    weatherTreesToggleButton.textContent=state.treesVisible?'ВЫКЛЮЧИТЬ ДЕРЕВЬЯ':'ВКЛЮЧИТЬ ДЕРЕВЬЯ';
+    weatherTreesToggleButton.setAttribute('aria-pressed',String(!state.treesVisible));
+  }
   try{localStorage.setItem(TREE_VISIBILITY_STORAGE_KEY,String(state.treesVisible));}catch(error){console.warn('Не удалось сохранить видимость деревьев:',error);}
 }
 function updateWeatherControls() {
@@ -1000,7 +1003,10 @@ function updateWeatherControls() {
   weatherWindValue.textContent = weatherWindInput.value + ' км/ч';
   if(weatherGroundFogInput)weatherGroundFogInput.checked=!!settings.groundFog;
   if(weatherVolumetricsInput)weatherVolumetricsInput.checked=settings.volumetrics!==false;
-  if(weatherTreesInput)weatherTreesInput.checked=state.treesVisible;
+  if(weatherTreesToggleButton){
+    weatherTreesToggleButton.textContent=state.treesVisible?'ВЫКЛЮЧИТЬ ДЕРЕВЬЯ':'ВКЛЮЧИТЬ ДЕРЕВЬЯ';
+    weatherTreesToggleButton.setAttribute('aria-pressed',String(!state.treesVisible));
+  }
   const sceneGroundFog=document.getElementById('sceneGroundFog');
   if(sceneGroundFog)sceneGroundFog.checked=!!settings.groundFog;
   const sceneVolumetrics=document.getElementById('sceneVolumetrics');
@@ -1067,7 +1073,7 @@ const sceneGroundFogInput=document.getElementById('sceneGroundFog');
 if(sceneGroundFogInput)sceneGroundFogInput.addEventListener('change',applyGroundFogToggle);
 function applyVolumetricsToggle(event){weatherSystem.setVolumetrics(!!event.target.checked);updateWeatherControls();persistWeatherSettings();markClientProjectDirty('настройки volumetric effects');}
 if(weatherVolumetricsInput)weatherVolumetricsInput.addEventListener('change',applyVolumetricsToggle);
-if(weatherTreesInput)weatherTreesInput.addEventListener('change',event=>applyTreesVisibility(event.target.checked));
+if(weatherTreesToggleButton)weatherTreesToggleButton.addEventListener('click',()=>applyTreesVisibility(!state.treesVisible));
 const sceneVolumetricsInput=document.getElementById('sceneVolumetrics');
 if(sceneVolumetricsInput)sceneVolumetricsInput.addEventListener('change',applyVolumetricsToggle);
 
