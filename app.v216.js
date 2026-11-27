@@ -2368,7 +2368,7 @@ function scheduleSafetyFenceBuild(slopeAssets,insideFootprint,cacheKey){
     try{
       let placements=await getCachedSafetyFencePlacements(cacheKey);
       if(revision!==state.safetyFenceBuildRevision)return;
-      let scan=null,chains=[];
+      let scan=null,chains=[],terrainSamples=0,terrainHits=0;
       if(placements===null||!placements.length){
         scan=await collectSafetyFenceBoundaryEdges(THREE,slopeAssets,{yieldEveryTriangles:10000});
         if(revision!==state.safetyFenceBuildRevision)return;
@@ -2396,7 +2396,7 @@ function scheduleSafetyFenceBuild(slopeAssets,insideFootprint,cacheKey){
           meshes:terrainLookup.meshCount,triangles:terrainLookup.triangleCount,
           vertices:terrainLookup.vertexCount,cells:terrainLookup.cells.size
         });
-        let terrainSamples=0,terrainHits=0;
+        terrainSamples=0;terrainHits=0;
         const sampleFenceTerrain=(x,z)=>{
           terrainSamples++;
           const height=sampleTerrainHeight(terrainLookup,x,z);
