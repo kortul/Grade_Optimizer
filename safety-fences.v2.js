@@ -51,6 +51,7 @@ function insertTriangle(index, triangle) {
   const iz1 = Math.floor(triangle.maxZ / size);
   const cellCount = (ix1 - ix0 + 1) * (iz1 - iz0 + 1);
   if (!Number.isFinite(cellCount) || cellCount <= 0) return;
+  index.triangleCount++;
   if (cellCount > 196) {
     index.large.push(triangle);
     return;
@@ -66,7 +67,6 @@ function insertTriangle(index, triangle) {
       bucket.push(triangle);
     }
   }
-  index.triangleCount++;
 }
 
 export async function buildStageOneSlopeSurfaceLookup(THREE, root, {
@@ -138,7 +138,7 @@ export async function buildStageOneSlopeSurfaceLookup(THREE, root, {
       cells: index.cells.size,
       meshes: index.meshIds.size
     };
-    stats.triangleCount += index.triangleCount + index.large.length;
+    stats.triangleCount += index.triangleCount;
   }
   return { byKind, stats };
 }
