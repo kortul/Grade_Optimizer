@@ -14,7 +14,8 @@ assert.match(clump,/const direction=forward\.clone\(\)\.multiplyScalar\(0\.68\+r
 assert.match(clump,/const cardCount=high\?Math\.max\(1,layers\):1/,'close terminal tufts may use two cards but regular sprays stay single-card');
 assert.match(source,/const sx=size\*0\.5,sy=size\*0\.90,ex=size\*0\.5,ey=size\*0\.10/,'the textured shoot axis must align with the card long axis');
 assert.match(source,/addNeedleClump\(centre,axis,seedBase\+i\*31,scale\*\(0\.82\+rr\(\)\*0\.34\),colour,1\)/,'branch sprays must render as one card each');
-assert.match(source,/const sprayCount=1/,'secondary shoots must not multiply three cross-cards at every station');
+assert.match(source,/const sprayCount=high\?1:2/,'only the near LOD is reduced; medium and far LODs keep their spray coverage');
+assert.match(source,/addSpraysAlong\(primary,high\?1:2/,'the distant crown fill must retain the successful V19 spray count');
 assert.match(source,/if\(high&&sr\(\)<0\.34\)[\s\S]*const forkCount=1/,'tertiary twig density must be capped for the near LOD');
 assert.match(source,/addSpraysAlong\(primary,1/,'primary branches must use one fill spray each');
 assert.match(source,/mesh\.castShadow=!!castShadow;mesh\.receiveShadow=false/,'trees must not pay for expensive shadow-map lookups on every foliage card');
