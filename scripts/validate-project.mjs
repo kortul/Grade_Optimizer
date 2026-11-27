@@ -80,12 +80,12 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v216.js')&&!html.includes('app.v209.js'),'HTML must activate the current v216 release');
+assert.ok(html.includes('app.v217.js')&&!html.includes('app.v209.js'),'HTML must activate the current v217 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
-assert.ok(entrySource.includes("collectSafetyFenceBoundaryEdges, buildTerrainHeightLookup, sampleTerrainHeight, buildSafetyFenceGroup, getCachedSafetyFencePlacements, setCachedSafetyFencePlacements } from './safety-fences.v1.js?v=6';")&&entrySource.includes('scheduleSafetyFenceBuild(safetyFenceAssets,slopeFootprint,state.safetyFenceCacheKey);'),'active entrypoint must build safety fences from independently scanned visible slope assets');
-assert.ok(entrySource.includes('let initialSafetyFencesVisible=true;')&&entrySource.includes('getCachedSafetyFencePlacements(cacheKey)')&&entrySource.includes('safetyFenceAssets=slopeAssets.slice(0,3)'),'safety fences must be precomputed for three pilot slope assets and reused from persistent cache');
-assert.ok(entrySource.includes('requestAnimationFrame(()=>run())')&&entrySource.includes('setCachedSafetyFencePlacements(cacheKey,placements)')&&entrySource.includes('yieldEveryTriangles:10000')&&entrySource.includes('yieldEvery:8')&&entrySource.includes('sampleTerrainHeight(terrainLookup,x,z)'),'safety-fence scanning, terrain indexing and placement must yield in batches and use local height samples');
-assert.ok(!entrySource.includes('edgesByAsset')&&entrySource.includes('meshNames'),'safety-fence edge scanning must stay out of the synchronous forest footprint pass and expose mesh-name diagnostics');
+assert.ok(entrySource.includes('function getSafetyFenceCenterlineRecords()')&&entrySource.includes('function getSafetyFenceStageOneAsset()')&&entrySource.includes('state.slopeCurvesData?.curves'),'safety fences must use named centerlines from the client manifest and the Stage1 asset');
+assert.ok(entrySource.includes('isPreferredStageOneSkierSlopeAsset(asset)')&&entrySource.includes('state.safetyFenceAnalysisFootprint=null')&&entrySource.includes('curve.points.length>=2'),'fence source selection must use Stage1 plus valid named centerlines, not arbitrary slope meshes');
+assert.ok(!entrySource.includes('scheduleSafetyFenceBuild(safetyFenceAssets,slopeFootprint,state.safetyFenceCacheKey)')&&!entrySource.includes('slopeAssets.slice(0,3)')&&entrySource.includes('ЗАБОРЫ ПО ЦЕНТРАЛЬНЫМ КРИВЫМ'),'the old automatic mesh-boundary prototype must stay disabled until centerline-to-Stage1 boundary tracing is implemented');
+assert.ok(entrySource.includes('curve.name||curve.id')&&entrySource.includes('stageOneAsset.meta?.name||stageOneAsset.name'),'fence diagnostics must expose actual slope-curve names and the Stage1 asset name');
 assert.ok(html.includes('weatherSafetyFencesToggle')&&html.includes('weatherSafetyFenceCount'),'weather settings must expose the safety-fence visibility control and section count');
 assert.ok(existsSync(resolve(root,'assets/safety-fences/orange-safety-net.svg')),'safety-fence texture asset is missing');
 pass('steep-edge safety fences, texture asset and visibility controls are wired');
