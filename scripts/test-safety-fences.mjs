@@ -20,7 +20,7 @@ test('places safety panels outside a piste when terrain drops steeply away',()=>
   for(const panel of panels){
     assert.ok(Number.isFinite(panel.x)&&Number.isFinite(panel.y)&&Number.isFinite(panel.z));
     assert.equal(panel.height,1.38);
-    assert.equal(panel.width,4.16);
+    assert.equal(panel.width,5.8);
   }
 });
 

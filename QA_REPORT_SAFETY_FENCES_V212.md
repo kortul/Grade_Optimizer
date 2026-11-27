@@ -11,6 +11,7 @@ Date: 2026-11-27
 - Uses a new local-storage key so previous auto-enabled settings cannot silently trigger the expensive calculation on upgrade.
 
 ## Validation
+- First CI run caught an outdated test expectation for the updated panel width (4.16 m); the assertion now matches the configured 5.8 m panel width.
 - CI syntax and project validation pass.
 - Dedicated tests verify placement on steep terrain, rejection on flat terrain, and safe handling of invalid input.
 - Browser timing/FPS still requires verification on the user's machine.
