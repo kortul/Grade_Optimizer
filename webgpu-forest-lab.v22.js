@@ -33,7 +33,8 @@ const ui = {
   quality: document.getElementById('quality'),
   forestDensity: document.getElementById('forestDensity'), forestDensityValue: document.getElementById('forestDensityValue'),
   wind: document.getElementById('windSpeed'), windValue: document.getElementById('windSpeedValue'),
-  leafTranslucency: document.getElementById('leafTranslucency'), leafTranslucencyValue: document.getElementById('leafTranslucencyValue')
+  leafTranslucency: document.getElementById('leafTranslucency'), leafTranslucencyValue: document.getElementById('leafTranslucencyValue'),
+  spriteMode: document.getElementById('spriteModeToggle')
 };
 
 const scene = new THREE.Scene();
@@ -60,6 +61,7 @@ let previousTime = performance.now(), fpsFrames = 0, fpsStart = performance.now(
 let terrainRoot=null, stageOneRoot=null, forestSystem=null, terrainBounds=null, terrainHeightLookup=null;
 let snowPbrMaterial=null;
 let forestSpriteTextures=null,forestSpriteMaterials=null,forestSpriteLastCameraX=NaN,forestSpriteLastCameraZ=NaN,forestSpriteLastUpdate=0;
+let allTreesAsSprites=false;
 let atmosphere=null,dayCyclePlaying=false;
 let solarState=null;
 
@@ -1271,6 +1273,19 @@ function buildForestSpritePlacements(trees,footprint){
   }
   return sprites;
 }
+function buildAllTreeSpritePlacements(trees){
+  return trees.map((tree,index)=>({
+    x:tree.x,y:tree.y+0.06,z:tree.z,height:tree.height,
+    width:tree.height*(0.52+seededRandom(tree.x,tree.z,0x6A31+index)()*0.10),
+    variant:Math.floor(seededRandom(tree.z,tree.x,0x4C19+index)()*FOREST_SPRITE_VARIANTS.length)
+  }));
+}
+function syncSpriteModeButton(){
+  if(!ui.spriteMode)return;
+  ui.spriteMode.textContent=allTreesAsSprites?'Вернуть 3D-деревья':'Заменить все деревья на спрайты';
+  ui.spriteMode.setAttribute('aria-pressed',String(allTreesAsSprites));
+  ui.spriteMode.classList.toggle('active',allTreesAsSprites);
+}
 function createForestSpriteBatches(parent,sprites){
   if(!forestSpriteTextures||!sprites.length)return;
   forestSpriteMaterials=[];
@@ -1378,17 +1393,18 @@ function rebuildForestLod(force=false){
   if(!force&&lodChanges===0)return;
   const nextGroup=new THREE.Group();
   nextGroup.name='GO_Procedural_SkiForest_V22';
-  for(const [cellKey,cell] of cells)for(let variant=0;variant<3;variant++){
-    createTreeInstanceBatch(cell.shadow[variant],'near',variant,nextGroup,true,cellKey);
-    createTreeInstanceBatch(cell.near[variant],'near',variant,nextGroup,false,cellKey);
-    createTreeInstanceBatch(cell.mid[variant],'mid',variant,nextGroup,false,cellKey);
-    createTreeInstanceBatch(cell.far[variant],'far',variant,nextGroup,false,cellKey);
+  if(!allTreesAsSprites){
+    for(const [cellKey,cell] of cells)for(let variant=0;variant<3;variant++){
+      createTreeInstanceBatch(cell.shadow[variant],'near',variant,nextGroup,true,cellKey);
+      createTreeInstanceBatch(cell.near[variant],'near',variant,nextGroup,false,cellKey);
+      createTreeInstanceBatch(cell.mid[variant],'mid',variant,nextGroup,false,cellKey);
+      createTreeInstanceBatch(cell.far[variant],'far',variant,nextGroup,false,cellKey);
+    }
   }
   // Build off-scene, then swap in one operation so no blank-frame flash is exposed.
-  createForestSpriteBatches(nextGroup,forestSystem.spriteTrees||[]);
-  forestSystem.spriteBatches=nextGroup.children.filter(child=>child.isInstancedMesh&&String(child.name).startsWith('MainStyle_ForestSprite_')).map(mesh=>({mesh,trees:(forestSystem.spriteTrees||[]).filter(tree=>tree.variant===Number(mesh.name.split('_').pop()))}));
-  // Variant names are strings, so recover the matching batch directly from mesh metadata.
-  forestSystem.spriteBatches=nextGroup.children.filter(child=>child.isInstancedMesh&&String(child.name).startsWith('MainStyle_ForestSprite_')).map(mesh=>({mesh,trees:forestSystem.spriteTrees.filter(tree=>tree.variant===FOREST_SPRITE_VARIANTS.indexOf(mesh.name.replace('MainStyle_ForestSprite_','')))}));
+  const activeSpriteTrees=allTreesAsSprites?(forestSystem.allSpriteTrees||[]):(forestSystem.spriteTrees||[]);
+  createForestSpriteBatches(nextGroup,activeSpriteTrees);
+  forestSystem.spriteBatches=nextGroup.children.filter(child=>child.isInstancedMesh&&String(child.name).startsWith('MainStyle_ForestSprite_')).map(mesh=>({mesh,trees:activeSpriteTrees.filter(tree=>tree.variant===FOREST_SPRITE_VARIANTS.indexOf(mesh.name.replace('MainStyle_ForestSprite_','')))}));
   const previousGroup=forestSystem.group;
   scene.add(nextGroup);
   if(previousGroup){
@@ -1501,7 +1517,7 @@ async function loadStageOneAndForest() {
     geometries.far.push(createSplinePineGeometry('far',variant));
   }
   forestSystem={
-    trees,spriteTrees,footprint,geometries,
+    trees,spriteTrees,allSpriteTrees:buildAllTreeSpritePlacements(trees),footprint,geometries,
     spriteBatches:[],
     splineMaterial:createSplinePineMaterial(),
     group:new THREE.Group(),
@@ -1527,6 +1543,8 @@ function rebuildForestDensity() {
   if(forestSystem){
     forestSystem.group.clear();
     forestSystem.trees=trees;
+    forestSystem.spriteTrees=buildForestSpritePlacements(trees,footprint);
+    forestSystem.allSpriteTrees=buildAllTreeSpritePlacements(trees);
     forestSystem.lastCamera.set(Infinity,Infinity,Infinity);
     rebuildForestLod(true);
   }
@@ -1553,6 +1571,14 @@ function bindUI() {
   ui.fogStrength.addEventListener('input',updateFogControls);
   ui.forestDensity.addEventListener('input',()=>ui.forestDensityValue.textContent=Math.round(Number(ui.forestDensity.value)*100)+'%');
   ui.forestDensity.addEventListener('change',rebuildForestDensity);
+  ui.spriteMode?.addEventListener('click',()=>{
+    if(!forestSystem)return;
+    allTreesAsSprites=!allTreesAsSprites;
+    syncSpriteModeButton();
+    forestSystem.lastCamera.set(Infinity,Infinity,Infinity);
+    rebuildForestLod(true);
+  });
+  syncSpriteModeButton();
   foliageWind.value=Number(ui.wind.value)/9;
   ui.wind.addEventListener('input',()=>{updateSkyLabels();foliageWind.value=Number(ui.wind.value)/9;updateSky();});
   ui.leafTranslucency.addEventListener('input',()=>{updateSkyLabels();foliageBacklight.value=Number(ui.leafTranslucency.value);});
