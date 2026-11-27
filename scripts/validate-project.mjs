@@ -1301,6 +1301,14 @@ assert.ok(alpineForestSourceV22.includes('loadForestSpriteTextures')&&alpineFore
 assert.ok(alpineForestPageV22.includes('@media(max-width:700px)')&&alpineForestPageV22.includes('panelToggle')&&
   alpineForestSourceV22.includes('mobile-collapsed'),
   'V22 must provide a collapsible touch-friendly mobile control panel');
+assert.ok(alpineForestSourceV22.includes('buildAllTreeSpritePlacements')&&
+  alpineForestSourceV22.includes('allTreesAsSprites')&&alpineForestSourceV22.includes('spriteModeToggle')&&
+  alpineForestSourceV22.includes('const activeSpriteTrees=allTreesAsSprites?(forestSystem.allSpriteTrees||[]):(forestSystem.spriteTrees||[])')&&
+  alpineForestSourceV22.includes('if(!allTreesAsSprites){'),
+  'V22 must allow toggling every procedural tree to main-app atlas sprites and restoring geometry trees');
+assert.ok(alpineForestPageV22.includes('id="spriteModeToggle"')&&
+  alpineForestPageV22.includes('Заменить все деревья на спрайты'),
+  'V22 must expose a touch-friendly all-sprite mode button');
 pass('WebGPU Alpine Forest V22: main-app atlas sprite fill and mobile interface');
 
 
