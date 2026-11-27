@@ -1096,10 +1096,10 @@ const alpineForestSourceV15=read('webgpu-forest-lab.v15.js').toString('utf8');
 const alpineAtmosphereSourceV15=read('webgpu-forest-atmosphere.v4.js').toString('utf8');
 const alpineForestPageV16=read('webgpu-forest-lab-v16.html').toString('utf8');
 const alpineForestSourceV16=read('webgpu-forest-lab.v16.js').toString('utf8');
-const alpineForestPageV17=read('webgpu-forest-lab-v17.html').toString('utf8');
-const alpineForestSourceV17=read('webgpu-forest-lab.v17.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v17.js?v=20261126e'),
-  'Forest Lab main page must load pinned Three.js r187 V17');
+const alpineForestPageV18=read('webgpu-forest-lab-v18.html').toString('utf8');
+const alpineForestSourceV18=read('webgpu-forest-lab.v18.js').toString('utf8');
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v18.js?v=20261126e'),
+  'Forest Lab main page must load pinned Three.js r187 V18');
 assert.ok(alpineForestPageV13.includes('webgpu-forest-lab.v13.js?v=20261126a')&&
   alpineForestPageV13.includes('Alpine Spruce Forest Lab V13'),
   'the standalone V13 page must load its renderer');
@@ -1209,21 +1209,21 @@ assert.ok(alpineForestSourceV16.includes('const bladeWidth=2.4+rng()*2.5,bladeCo
   'V16 colour and alpha spray silhouettes must use identical random dimensions');
 pass('WebGPU Alpine Forest V16: independent opaque branches, denser 3D foliage cards and aligned alpha silhouettes');
 
-assert.ok(alpineForestPageV17.includes('webgpu-forest-lab.v17.js?v=20261126e')&&
-  alpineForestPageV17.includes('Alpine Spruce Forest Lab V17'),
-  'the standalone V17 page must load its renderer');
-assert.ok(alpineForestSourceV17.includes('levels:28,branches:8,width:1.02')&&
-  alpineForestSourceV17.includes('const twigStations=high?5:mid?3:2')&&
-  alpineForestSourceV17.includes('const armCount=high?(stationRand()<0.38?2:1):1')&&
-  alpineForestSourceV17.includes('const cardCount=high?3:mid?2:1')&&
-  alpineForestSourceV17.includes('const twigClusters=high?2:mid?2:1'),
-  'V17 must use denser whorls, branching and layered foliage');
-assert.ok(alpineForestSourceV17.includes('armRand()<0.25')&&
-  alpineForestSourceV17.includes('tip.y-=twigLength*(0.07+armRand()*0.16)')&&
-  alpineForestSourceV17.includes('geometry.addGroup(0,woodIndices.length,0)')&&
-  alpineForestSourceV17.includes('return [wood,foliage]'),
-  'V17 must keep hanging tertiary shoots and separate foliage/branch materials');
-pass('WebGPU Alpine Forest V17: denser spruce whorls, hanging branchlets and layered sprays');
+assert.ok(alpineForestPageV18.includes('webgpu-forest-lab.v18.js?v=20261126e')&&
+  alpineForestPageV18.includes('Alpine Spruce Forest Lab V18'),
+  'the standalone V18 page must load its renderer');
+assert.ok(alpineForestSourceV18.includes('levels:28,branches:8,width:1.02')&&
+  alpineForestSourceV18.includes('const twigStations=high?5:mid?3:2')&&
+  alpineForestSourceV18.includes('const armCount=high?(stationRand()<0.38?2:1):1')&&
+  alpineForestSourceV18.includes('const cardCount=high?3:mid?2:1')&&
+  alpineForestSourceV18.includes('const twigClusters=high?2:mid?2:1'),
+  'V18 must use denser whorls, branching and layered foliage');
+assert.ok(alpineForestSourceV18.includes('armRand()<0.25')&&
+  alpineForestSourceV18.includes('tip.y-=twigLength*(0.07+armRand()*0.16)')&&
+  alpineForestSourceV18.includes('geometry.addGroup(0,woodIndices.length,0)')&&
+  alpineForestSourceV18.includes('return [wood,foliage]'),
+  'V18 must keep hanging tertiary shoots and separate foliage/branch materials');
+pass('WebGPU Alpine Forest V18: denser spruce whorls, hanging branchlets and layered sprays');
 
 // Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
 // The forest is terrain-wide and intentionally does not depend on any piste / Stage 1 asset.
@@ -1238,9 +1238,9 @@ assert.ok(alpineLabSource.includes("loadFBX('./assets/real-terrain.fbx')")&&alpi
 assert.ok(!alpineLabSource.includes('Slopes_Stage1')&&!alpineLabSource.includes('buildSlopeFootprint')&&!alpineLabSource.includes('restoreStageOneCoordinates'),'Alpine Lab forest must not depend on piste geometry or Stage 1 transforms');
 assert.ok(alpineLabHtml.includes('id="forestDensity"')&&alpineLabHtml.includes('id="cloudCoverage"')&&alpineLabHtml.includes('id="groundFog"')&&alpineLabHtml.includes('id="dayCycleToggle"'),'Alpine Lab must expose forest, cloud, fog and day-cycle controls');
 assert.ok(
-  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v17.js') &&
+  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v18.js') &&
   read('webgpu-atmosphere-lab.html').toString('utf8').includes('location.replace("./webgpu-forest-lab.html")'),
-  'Forest Lab must load active V17 and the legacy Atmosphere Lab URL must redirect to it'
+  'Forest Lab must load active V18 and the legacy Atmosphere Lab URL must redirect to it'
 );
 pass('unified Alpine Lab: stable WebGL, shared WeatherSystem v9 and terrain-wide instanced forest');
 
