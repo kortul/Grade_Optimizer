@@ -40,6 +40,11 @@ const clampSlopeDistance=(value,fallback=790)=>{
   const number=Number(value);
   return Number.isFinite(number)?Math.max(0,Math.min(1500,number)):fallback;
 };
+const DEFAULT_FOREST_EDGE_DENSITY=100;
+function normalizeForestEdgeDensity(value){
+  const number=Number(value);
+  return Number.isFinite(number)?Math.round(Math.max(0,Math.min(300,number))):DEFAULT_FOREST_EDGE_DENSITY;
+}
 
 const state = {
   slope:(saved&&saved.slope)||'A1',
@@ -56,6 +61,7 @@ usable:90, earthwork_w:0.03, max_fill:0, off_range:3, cross_max:3, labelOpacity:
   forestGroup:null, billboardMesh:null, billboardMeshes:[], billboardTrees:[],
   importedAssets:[], baseTerrain:null, baseTerrainMats:[], activeTerrainAssetId:null,
   treeAreas:[],treeAreaGroup:null,
+  forestEdgeDensity:DEFAULT_FOREST_EDGE_DENSITY,forestEdgeSpriteCount:0,
   skierSpawns:{},selectedSkierSpawnSlot:'1',skierSpawnGroup:null,
   slopeAnalysisData:null,slopeCurvesData:null,slopeAnalysisGroup:null,
   slopeAnalysisLineMaterials:[],
@@ -1803,8 +1809,17 @@ function buildSlopeFootprintLookup(baseBounds,assets){
   const size=baseBounds.getSize(new THREE.Vector3());
   const cellSize=Math.max(12,Math.min(32,Math.max(size.x,size.z)/300));
   const cols=Math.max(1,Math.ceil(size.x/cellSize)),rows=Math.max(1,Math.ceil(size.z/cellSize));
-  const cells=new Map(),large=[];
+  const cells=new Map(),large=[],edgeMap=new Map();
   const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+  const edgePointKey=(x,z)=>Math.round(x*4)+','+Math.round(z*4);
+  const addBoundaryEdge=(p0,p1)=>{
+    const k0=edgePointKey(p0.x,p0.z),k1=edgePointKey(p1.x,p1.z);
+    if(k0===k1)return;
+    const key=k0<k1?k0+'|'+k1:k1+'|'+k0;
+    const existing=edgeMap.get(key);
+    if(existing)existing.count++;
+    else edgeMap.set(key,{ax:p0.x,az:p0.z,bx:p1.x,bz:p1.z,count:1});
+  };
   const insert=(ax,az,bx,bz,cx,cz)=>{
     const den=(bz-cz)*(ax-cx)+(cx-bx)*(az-cz);
     if(Math.abs(den)<1e-10)return;
@@ -1837,10 +1852,26 @@ function buildSlopeFootprintLookup(baseBounds,assets){
         b.fromBufferAttribute(positions,ib).applyMatrix4(object.matrixWorld);
         c.fromBufferAttribute(positions,ic).applyMatrix4(object.matrixWorld);
         insert(a.x,a.z,b.x,b.z,c.x,c.z);
+        addBoundaryEdge(a,b);addBoundaryEdge(b,c);addBoundaryEdge(c,a);
       }
     });
   }
-  return {originX:baseBounds.min.x,originZ:baseBounds.min.z,cellSize,cols,rows,cells,large};
+  const boundaryEdges=[...edgeMap.values()].filter(edge=>edge.count===1);
+  const edgeCellSize=80,edgeCells=new Map(),largeEdges=[];
+  for(const edge of boundaryEdges){
+    const ix0=Math.floor((Math.min(edge.ax,edge.bx)-baseBounds.min.x)/edgeCellSize);
+    const ix1=Math.floor((Math.max(edge.ax,edge.bx)-baseBounds.min.x)/edgeCellSize);
+    const iz0=Math.floor((Math.min(edge.az,edge.bz)-baseBounds.min.z)/edgeCellSize);
+    const iz1=Math.floor((Math.max(edge.az,edge.bz)-baseBounds.min.z)/edgeCellSize);
+    if((ix1-ix0+1)*(iz1-iz0+1)>256){largeEdges.push(edge);continue;}
+    for(let iz=iz0;iz<=iz1;iz++)for(let ix=ix0;ix<=ix1;ix++){
+      const key=iz*cols+ix;
+      let bucket=edgeCells.get(key);if(!bucket){bucket=[];edgeCells.set(key,bucket);}
+      bucket.push(edge);
+    }
+  }
+  return {originX:baseBounds.min.x,originZ:baseBounds.min.z,cellSize,cols,rows,cells,large,
+    edges:boundaryEdges,edgeLookup:{originX:baseBounds.min.x,originZ:baseBounds.min.z,cellSize:edgeCellSize,cols,cells:edgeCells,large:largeEdges}};
 }
 function pointInSlopeTriangle(x,z,t){
   const wa=((t.bz-t.cz)*(x-t.cx)+(t.cx-t.bx)*(z-t.cz))/t.den;
@@ -1856,6 +1887,82 @@ function isTreePointOnSlope(x,z,lookup){
     if(bucket&&bucket.some(t=>pointInSlopeTriangle(x,z,t)))return true;
   }
   return lookup.large.some(t=>pointInSlopeTriangle(x,z,t));
+}
+function findNearestSlopeBoundary(x,z,lookup,maxDistance=105){
+  const index=lookup?.edgeLookup;
+  if(!index||!index.cells?.size)return null;
+  const cx=Math.floor((x-index.originX)/index.cellSize),cz=Math.floor((z-index.originZ)/index.cellSize);
+  const radius=Math.ceil(maxDistance/index.cellSize);
+  let best=null,bestDistanceSq=maxDistance*maxDistance;
+  const tested=new Set();
+  const test=edge=>{
+    if(tested.has(edge))return;
+    tested.add(edge);
+    const dx=edge.bx-edge.ax,dz=edge.bz-edge.az,lengthSq=dx*dx+dz*dz;
+    const t=lengthSq>1e-8?THREE.MathUtils.clamp(((x-edge.ax)*dx+(z-edge.az)*dz)/lengthSq,0,1):0;
+    const px=edge.ax+dx*t,pz=edge.az+dz*t,ex=x-px,ez=z-pz,distanceSq=ex*ex+ez*ez;
+    if(distanceSq<bestDistanceSq){bestDistanceSq=distanceSq;best={distance:Math.sqrt(distanceSq),x:px,z:pz,edge};}
+  };
+  for(let ring=0;ring<=radius;ring++){
+    for(let dz=-ring;dz<=ring;dz++)for(let dx=-ring;dx<=ring;dx++){
+      if(ring>0&&Math.abs(dx)!==ring&&Math.abs(dz)!==ring)continue;
+      const bucket=index.cells.get((cz+dz)*index.cols+(cx+dx));
+      if(bucket)for(const edge of bucket)test(edge);
+    }
+    if(best&&best.distance<=Math.max(0,ring-1)*index.cellSize)break;
+  }
+  for(const edge of index.large)test(edge);
+  return best;
+}
+function buildSlopeEdgeCandidates(candidates,slopeFootprint,treeAreas=[]){
+  if(!slopeFootprint?.edges?.length||!candidates.length)return [];
+  const results=[];
+  for(const candidate of candidates){
+    if(isTreePointOnSlope(candidate.x,candidate.z,slopeFootprint))continue;
+    if(treeAreas.length&&!treeAreas.some(area=>pointInPoly(candidate.x,candidate.z,area.points)))continue;
+    const nearest=findNearestSlopeBoundary(candidate.x,candidate.z,slopeFootprint,105);
+    if(!nearest||nearest.distance<7||nearest.distance>96)continue;
+    results.push({x:candidate.x,y:candidate.y,z:candidate.z,edgeDistance:nearest.distance});
+  }
+  return results;
+}
+function forestPlacementRandom(x,z,salt=0){
+  const value=Math.sin(x*12.9898+z*78.233+salt*37.719)*43758.5453;
+  return value-Math.floor(value);
+}
+function buildSlopeEdgeTreePlacements(edgeCandidates,densityPercent,baseTrees){
+  const density=normalizeForestEdgeDensity(densityPercent)/100;
+  if(density<=0||!edgeCandidates.length)return [];
+  const maxTrees=Math.round(220*density);
+  const minSpacing=Math.max(6.5,11.5-(density-1)*2.5);
+  const cellSize=18,occupied=new Map(),edgeTrees=[];
+  const addOccupied=tree=>{
+    const cx=Math.floor(tree.x/cellSize),cz=Math.floor(tree.z/cellSize),key=cx+':'+cz;
+    let bucket=occupied.get(key);if(!bucket){bucket=[];occupied.set(key,bucket);}
+    bucket.push(tree);
+  };
+  const canPlace=candidate=>{
+    const cx=Math.floor(candidate.x/cellSize),cz=Math.floor(candidate.z/cellSize);
+    for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+      const bucket=occupied.get((cx+dx)+':'+(cz+dz));
+      if(bucket&&bucket.some(tree=>Math.hypot(tree.x-candidate.x,tree.z-candidate.z)<minSpacing))return false;
+    }
+    return true;
+  };
+  for(const tree of baseTrees)addOccupied(tree);
+  const keepByBand=[0.98,0.72,0.44];
+  for(let index=0;index<edgeCandidates.length&&edgeTrees.length<maxTrees;index++){
+    const candidate=edgeCandidates[index];
+    const band=candidate.edgeDistance<25?0:candidate.edgeDistance<55?1:2;
+    const chance=Math.min(1,density*keepByBand[band]);
+    if(forestPlacementRandom(candidate.x,candidate.z,band+401)>chance||!canPlace(candidate))continue;
+    const random=forestPlacementRandom(candidate.z,candidate.x,band+917);
+    const height=6.8+random*7.8;
+    const tree={x:candidate.x,y:candidate.y,z:candidate.z,height,
+      width:height*(0.44+forestPlacementRandom(candidate.x,candidate.z,band+1201)*0.12),edgeSprite:true};
+    edgeTrees.push(tree);addOccupied(tree);
+  }
+  return edgeTrees;
 }
 function loadAiPineTextures(){
   if(!aiPineTexturesPromise){
@@ -2111,10 +2218,12 @@ function buildTestForest({reusePlacements=false}={}) {
   const areasKey=JSON.stringify(state.treeAreas.map(area=>({id:area.id,points:area.points})));
   const slopeAssets=getVisibleSlopeAssets();
   const slopeKey=slopeAssetsSignature(slopeAssets);
-  let trees=null;
+  let trees=null,slopeFootprint=null,edgeCandidates=[];
   if(reusePlacements&&forestPlacementCache?.terrain===forestTerrain&&forestPlacementCache.boundsKey===boundsKey&&
      forestPlacementCache.areasKey===areasKey&&forestPlacementCache.slopeKey===slopeKey){
     trees=forestPlacementCache.trees.map(tree=>({...tree}));
+    slopeFootprint=forestPlacementCache.slopeFootprint||null;
+    edgeCandidates=(forestPlacementCache.edgeCandidates||[]).map(candidate=>({...candidate}));
   }else{
     const meshes=[];
     forestTerrain.traverse(object=>{if(object.isMesh&&object.geometry?.attributes?.position)meshes.push(object);});
@@ -2131,10 +2240,11 @@ function buildTestForest({reusePlacements=false}={}) {
       }
     }
     // Tree Area polygons are world-space X/Z; visible piste geometry is excluded.
-    const slopeFootprint=buildSlopeFootprintLookup(bounds,slopeAssets);
+    slopeFootprint=buildSlopeFootprintLookup(bounds,slopeAssets);
     for(let i=candidates.length-1;i>0;i--){
       const j=Math.floor(rnd()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];
     }
+    edgeCandidates=buildSlopeEdgeCandidates(candidates,slopeFootprint,hasTreeAreas?state.treeAreas:[]);
     trees=[];
     const occupied=new Map();
     for(const candidate of candidates){
@@ -2156,8 +2266,14 @@ function buildTestForest({reusePlacements=false}={}) {
       bucket.push(tree);
       if(trees.length>=desiredCount)break;
     }
-    forestPlacementCache={terrain:forestTerrain,boundsKey,areasKey,slopeKey,trees:trees.map(tree=>({...tree}))};
+    forestPlacementCache={terrain:forestTerrain,boundsKey,areasKey,slopeKey,slopeFootprint,
+      edgeCandidates:edgeCandidates.map(candidate=>({...candidate})),trees:trees.map(tree=>({...tree}))};
   }
+  const baseTreeCount=trees.length;
+  const edgeTrees=buildSlopeEdgeTreePlacements(edgeCandidates,state.forestEdgeDensity,trees);
+  trees=trees.concat(edgeTrees);
+  state.forestEdgeSpriteCount=edgeTrees.length;
+  syncForestEdgeDensityControl();
   if(!trees.length)return;
   const forest=new THREE.Group();
   forest.name='TestForest_Billboards_LOD';
@@ -2218,7 +2334,7 @@ function buildTestForest({reusePlacements=false}={}) {
       height:t.billboardHeight||t.height,
       width:t.billboardWidth||t.width
     }));
-    dbg('OpenAI AI-лес: '+trees.length+' деревьев на исходном рельефе'+(hasTreeAreas?' · '+state.treeAreas.length+' Tree Areas':'')+' · '+AI_PINE_VARIANTS.length+' вариантов · single camera-facing card');
+    dbg('OpenAI AI-лес: '+trees.length+' деревьев ('+baseTreeCount+' базовых + '+edgeTrees.length+' у края трасс)'+(hasTreeAreas?' · '+state.treeAreas.length+' Tree Areas':'')+' · '+AI_PINE_VARIANTS.length+' вариантов · single camera-facing card');
     return;
   }
   // Procedural fallback while the generated texture is loading.
@@ -3025,6 +3141,14 @@ function renderTreeAreaOverlays(){
   }
   updateTreeAreaOverlayVisibility();
 }
+function syncForestEdgeDensityControl(){
+  const input=document.getElementById('forestEdgeSpriteDensity');
+  const value=document.getElementById('forestEdgeSpriteDensityValue');
+  const count=document.getElementById('forestEdgeSpriteCount');
+  if(input)input.value=String(state.forestEdgeDensity);
+  if(value)value.textContent=state.forestEdgeDensity+'%';
+  if(count)count.textContent=(state.forestEdgeSpriteCount||0).toLocaleString('ru-RU')+' SPRITES';
+}
 function updateTreeAreaPanel(){
   const count=document.getElementById('treeAreaCount'),list=document.getElementById('treeAreaList');
   const draw=document.getElementById('treeAreaDrawButton'),finish=document.getElementById('treeAreaFinishButton');
@@ -3117,6 +3241,18 @@ document.getElementById('treeAreaDrawButton')?.addEventListener('click',beginTre
 document.getElementById('treeAreaFinishButton')?.addEventListener('click',finishTreeAreaDrawing);
 document.getElementById('treeAreaCancelButton')?.addEventListener('click',stopTreeAreaDrawing);
 document.getElementById('treeAreaClearButton')?.addEventListener('click',clearTreeAreas);
+const forestEdgeSpriteDensityInput=document.getElementById('forestEdgeSpriteDensity');
+forestEdgeSpriteDensityInput?.addEventListener('input',()=>{
+  state.forestEdgeDensity=normalizeForestEdgeDensity(forestEdgeSpriteDensityInput.value);
+  syncForestEdgeDensityControl();
+});
+forestEdgeSpriteDensityInput?.addEventListener('change',()=>{
+  state.forestEdgeDensity=normalizeForestEdgeDensity(forestEdgeSpriteDensityInput.value);
+  syncForestEdgeDensityControl();
+  buildTestForest({reusePlacements:true});
+  if(clientWorkspaceReady)markClientProjectDirty('плотность спрайтов у края трасс');
+});
+syncForestEdgeDensityControl();
 function goHome(){
   if(restoreSavedOverviewCameraForCurrentSlope())return;
   if(state.homePos&&state.homeTarget){
@@ -5843,7 +5979,7 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
       return false;
     }
   }
-  if(previousSlug!==slug){state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();updateTreeAreaPanel();}
+  if(previousSlug!==slug){state.treeAreas=[];state.forestEdgeDensity=DEFAULT_FOREST_EDGE_DENSITY;state.forestEdgeSpriteCount=0;forestPlacementCache=null;renderTreeAreaOverlays();updateTreeAreaPanel();syncForestEdgeDensityControl();}
   if(previousSlug!==slug){state.treeAreas=[];forestPlacementCache=null;renderTreeAreaOverlays();}
   state.slopeCurvesData=null;
   renderSlopeAnalysisOverlays(null);
@@ -5911,6 +6047,8 @@ async function openClientWorkspace(value,{updateUrl=true}={}){
     const backupBuffers=useBrowserBackup?localBackup.assetBuffers:null;
     await buildSlopeAnalysisFromManifest(manifest);
     state.treeAreas=normalizeTreeAreas(manifest.treeAreas);
+    state.forestEdgeDensity=normalizeForestEdgeDensity(manifest.forestEdgeDensity??DEFAULT_FOREST_EDGE_DENSITY);
+    syncForestEdgeDensityControl();
     state.skierSpawns=normalizeSkierSpawnMap(manifest.skierSpawns);
     renderSkierSpawnOverlays();
     updateSkierSpawnPanel();
@@ -6187,7 +6325,7 @@ async function collectClientManifest(slug){
     };
   });
   const editorSettings=await collectProjectEditorSettings();
-  return {schemaVersion:'1.0',clientId:slug,updatedAt:new Date().toISOString(),assets,editorSettings,overviewCameras:normalizeOverviewCameraMap(state.savedOverviewCameras),treeAreas:normalizeTreeAreas(state.treeAreas),skierSpawns:normalizeSkierSpawnMap(state.skierSpawns),slopeAnalysis:state.slopeAnalysisData||undefined,slopeCurves:state.slopeCurvesData||undefined};
+  return {schemaVersion:'1.0',clientId:slug,updatedAt:new Date().toISOString(),assets,editorSettings,overviewCameras:normalizeOverviewCameraMap(state.savedOverviewCameras),treeAreas:normalizeTreeAreas(state.treeAreas),forestEdgeDensity:normalizeForestEdgeDensity(state.forestEdgeDensity),skierSpawns:normalizeSkierSpawnMap(state.skierSpawns),slopeAnalysis:state.slopeAnalysisData||undefined,slopeCurves:state.slopeCurvesData||undefined};
 }
 
 async function exportAssetForClientPublish(asset){
@@ -8015,7 +8153,7 @@ window.__GRADE_OPTIMIZER_MODE_API=Object.freeze({
   toggle(){const current=state.mode;return this.set(current==='drone'?'skier':current==='skier'?'drone':'skier');},
   respawnTop(){return respawnSkierAtStageOneSummit();},
   respawnSpawn(slot){return respawnSkierAtSpawnSlot(String(slot));},
-  diagnostics(){return {mode:state.mode,terrain:!!state.terrain,baseTerrain:!!state.baseTerrain,treeAreaCount:state.treeAreas.length,treeAreas:normalizeTreeAreas(state.treeAreas),treeAreaDrawing,skierSpawns:normalizeSkierSpawnMap(state.skierSpawns),skierSpawnDrawing:skierSpawnPlacementStep,root:!!state.root,skierTerrainName:skierController.terrain?.name||null,skierSpawn:skierController.lastSpawnInfo,startError:skierController.lastStartError,start:skierController.lastStartDiagnostics,skierModePreparing,controlsEnabled:controls.enabled,sceneLoadingVisible:sceneLoadingEl.getClientRects().length>0,terrainPerformance:skierController.getTerrainPerformanceDiagnostics(),slopeLabels:{total:slopeAnalysisAngleLabelRecords.length,active:slopeAnalysisActiveAngleLabels.size,spatialCells:slopeAnalysisAngleLabelIndex.cells.size},skierInput:skierController.diagnostics(),renderPipeline:{postProcessing:cameraOptics.enabled&&!cameraOptics.composerFailed,quality:cameraOptics.quality,bloom:!!cameraOptics.bloomPass.enabled,volumetricClouds:weatherSystem.cloudVolume.visible,shadows:renderer.shadowMap.enabled,pixelRatio:renderer.getPixelRatio(),devicePixelRatio:window.devicePixelRatio||1,skierResolutionProfile:!!skierPerformanceRestore,slopeOverlayVisible:!!state.slopeAnalysisGroup?.visible,activeAngleLabels:slopeAnalysisActiveAngleLabels.size},sceneRenderBreakdown:collectRenderSceneBreakdown(),importedAssets:collectImportedAssetDiagnostics(),multiplayer:multiplayerClient.diagnostics(),runtimePerformance:{...runtimePerformance}};}
+  diagnostics(){return {mode:state.mode,terrain:!!state.terrain,baseTerrain:!!state.baseTerrain,treeAreaCount:state.treeAreas.length,treeAreas:normalizeTreeAreas(state.treeAreas),forestEdgeSpriteCount:state.forestEdgeSpriteCount,forestEdgeDensity:state.forestEdgeDensity,treeAreaDrawing,skierSpawns:normalizeSkierSpawnMap(state.skierSpawns),skierSpawnDrawing:skierSpawnPlacementStep,root:!!state.root,skierTerrainName:skierController.terrain?.name||null,skierSpawn:skierController.lastSpawnInfo,startError:skierController.lastStartError,start:skierController.lastStartDiagnostics,skierModePreparing,controlsEnabled:controls.enabled,sceneLoadingVisible:sceneLoadingEl.getClientRects().length>0,terrainPerformance:skierController.getTerrainPerformanceDiagnostics(),slopeLabels:{total:slopeAnalysisAngleLabelRecords.length,active:slopeAnalysisActiveAngleLabels.size,spatialCells:slopeAnalysisAngleLabelIndex.cells.size},skierInput:skierController.diagnostics(),renderPipeline:{postProcessing:cameraOptics.enabled&&!cameraOptics.composerFailed,quality:cameraOptics.quality,bloom:!!cameraOptics.bloomPass.enabled,volumetricClouds:weatherSystem.cloudVolume.visible,shadows:renderer.shadowMap.enabled,pixelRatio:renderer.getPixelRatio(),devicePixelRatio:window.devicePixelRatio||1,skierResolutionProfile:!!skierPerformanceRestore,slopeOverlayVisible:!!state.slopeAnalysisGroup?.visible,activeAngleLabels:slopeAnalysisActiveAngleLabels.size},sceneRenderBreakdown:collectRenderSceneBreakdown(),importedAssets:collectImportedAssetDiagnostics(),multiplayer:multiplayerClient.diagnostics(),runtimePerformance:{...runtimePerformance}};}
 });
 overviewModeButton.addEventListener('click',()=>{
   if(state.optimizeMode)setOptimizerOpen(false);
