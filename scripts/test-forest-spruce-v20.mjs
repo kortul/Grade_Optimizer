@@ -22,5 +22,5 @@ assert.match(source,/mesh\.castShadow=!!castShadow;mesh\.receiveShadow=false/,'t
 assert.match(source,/if\(distance<55\)return 'shadow'/,'only the immediate foreground should cast full tree shadows');
 assert.match(source,/if\(current==='shadow'&&distance<72\)return 'shadow'/,'shadow LOD must retain hysteresis');
 assert.match(standalone,/webgpu-forest-lab\.v20\.js\?v=20261127c/);
-assert.match(main,/webgpu-forest-lab\.v22\.js\?v=20261127b/);
+assert.match(main,/webgpu-forest-lab\.v22\.js\?v=20261127c/);
 console.log('Forest Spruce V20 branch-aligned needle sprays, vertical shoot atlas, reduced card count and limited shadow cost passed.');
