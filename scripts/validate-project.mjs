@@ -925,9 +925,13 @@ assert.ok(entrySource.includes('buildSlopeFootprintLookup(bounds,slopeAssets)')&
 assert.ok(entrySource.includes('function normalizeTreeAreas(')&&entrySource.includes('treeAreas:normalizeTreeAreas(state.treeAreas)'), 'tree areas must be normalized and saved in project manifest');
 assert.ok(entrySource.includes('state.treeAreas=normalizeTreeAreas(manifest.treeAreas)'), 'tree areas must restore from project manifest');
 assert.ok(entrySource.includes('pointInPoly(candidate.x,candidate.z,area.points)'), 'forest placement must be restricted to saved polygons when areas exist');
+assert.ok(entrySource.includes('function buildSlopeEdgeCandidates(')&&entrySource.includes('edges:boundaryEdges')&&entrySource.includes('buildSlopeEdgeTreePlacements(edgeCandidates,state.forestEdgeDensity,trees)'), 'forest must distribute additional atlas trees along the outer edges of imported pistes');
+assert.ok(entrySource.includes('findNearestSlopeBoundary')&&entrySource.includes('edgeCandidates:edgeCandidates.map')&&!entrySource.includes('const y=terrainY(x,z)'), 'edge-sprite placement must reuse spatial terrain vertex samples and avoid per-tree terrain raycasts');
+assert.ok(entrySource.includes('forestEdgeDensity:normalizeForestEdgeDensity(state.forestEdgeDensity)')&&entrySource.includes('state.forestEdgeDensity=normalizeForestEdgeDensity(manifest.forestEdgeDensity'), 'edge sprite density must persist in and restore from project manifest');
 assert.ok(entrySource.includes('onTreeAreaPointerDown')&&entrySource.includes('finishTreeAreaDrawing')&&entrySource.includes('treeAreaDrawButton'), 'Tree Areas drawing tool is missing');
 assert.ok(entrySource.includes("markClientProjectDirty('Tree Area: '+name)"), 'tree area changes must mark the project dirty');
 assert.ok(html.includes('id="sceneLookTab-trees"')&&html.includes('id="treeAreaDrawButton"')&&html.includes('id="treeAreaFinishButton"'), 'Scene Editor Tree Areas panel is missing');
+assert.ok(html.includes('id="forestEdgeSpriteDensity"')&&html.includes('id="forestEdgeSpriteDensityValue"')&&html.includes('id="forestEdgeSpriteCount"'), 'Scene Editor Trees tab must expose piste-edge sprite density and current sprite count');
 assert.ok(entrySource.includes("trees:['TREE PLACEMENT AREAS'")&&entrySource.includes("if(name==='trees')updateTreeAreaPanel();")&&entrySource.includes('updateTreeAreaOverlayVisibility();'), 'Tree Areas tab must show its heading, refresh the list and update saved polygon overlays');
 pass('original-terrain-only trees, slope exclusion and persistent world-space Tree Areas are present');
 assert.ok(entrySource.includes('function buildTestForest({reusePlacements=false}={})'), 'test forest builder must support cached placement reuse');
