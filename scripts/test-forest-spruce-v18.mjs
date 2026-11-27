@@ -18,6 +18,6 @@ assert.match(geometry,/addTubeCurve\(tertiary/);
 assert.match(geometry,/geometry\.addGroup\(0,woodIndices\.length,0\)/);
 assert.match(geometry,/geometry\.addGroup\(woodIndices\.length,foliageIndices\.length,1\)/);
 assert.match(source,/new THREE\.InstancedMesh\(geometry,material,trees\.length\)/);
-assert.match(standalone,/webgpu-forest-lab\\.v19\\.js\\?v=20261127b/);
+assert.match(standalone,/webgpu-forest-lab\\.v18\\.js\\?v=20261127a/);
 assert.match(main,/webgpu-forest-lab\\.v19\\.js\\?v=20261127b/);
 console.log('Forest Spruce V18 hierarchical scaffold, phyllotactic placement, terminal needle sprays, LOD and historical V18 generator and V19 main-page activation passed.');
