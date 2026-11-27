@@ -80,7 +80,8 @@ export async function collectSafetyFenceBoundaryEdges(THREE,assets,{yieldEveryTr
   }
   const edges=[...edgeMap.values()].filter(edge=>edge.count===1);
   const name=String(asset.meta?.name||asset.name||root.name||asset.id||'Unnamed slope');
-  stats.push({id:asset.id||'',name,meshCount:meshes.length,triangles:triangleCount,boundaryEdges:edges.length});
+  const meshNames=[...new Set(meshes.map((mesh,index)=>String(mesh.name||('Mesh '+(index+1))).trim()).filter(Boolean))];
+  stats.push({id:asset.id||'',name,meshCount:meshes.length,meshNames,triangles:triangleCount,boundaryEdges:edges.length});
   for(const edge of edges)output.push({...edge,assetId:asset.id||'',assetName:name});
   await yieldControl();
  }
