@@ -1916,12 +1916,13 @@ function findNearestSlopeBoundary(x,z,lookup,maxDistance=105){
   for(const edge of index.large)test(edge);
   return best;
 }
-function buildSlopeEdgeCandidates(candidates,slopeFootprint,treeAreas=[]){
+function buildSlopeEdgeCandidates(candidates,slopeFootprint,treeAreas=[],reservedLaneZ=null){
   if(!slopeFootprint?.edges?.length||!candidates.length)return [];
   const results=[];
   for(const candidate of candidates){
     if(isTreePointOnSlope(candidate.x,candidate.z,slopeFootprint))continue;
     if(treeAreas.length&&!treeAreas.some(area=>pointInPoly(candidate.x,candidate.z,area.points)))continue;
+    if(reservedLaneZ!==null&&Math.abs(candidate.z-reservedLaneZ)<35)continue;
     const nearest=findNearestSlopeBoundary(candidate.x,candidate.z,slopeFootprint,105);
     if(!nearest||nearest.distance<7||nearest.distance>96)continue;
     results.push({x:candidate.x,y:candidate.y,z:candidate.z,edgeDistance:nearest.distance});
@@ -2248,7 +2249,7 @@ function buildTestForest({reusePlacements=false}={}) {
     for(let i=candidates.length-1;i>0;i--){
       const j=Math.floor(rnd()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];
     }
-    edgeCandidates=buildSlopeEdgeCandidates(candidates,slopeFootprint,hasTreeAreas?state.treeAreas:[]);
+    edgeCandidates=buildSlopeEdgeCandidates(candidates,slopeFootprint,hasTreeAreas?state.treeAreas:[],hasTreeAreas?null:laneZ);
     trees=[];
     const occupied=new Map();
     for(const candidate of candidates){
