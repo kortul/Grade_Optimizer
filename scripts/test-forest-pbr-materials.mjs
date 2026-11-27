@@ -7,18 +7,18 @@ const atmosphere=readFileSync(new URL('../webgpu-forest-atmosphere.v4.js',import
 
 assert.match(renderer,/shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes'\}\)/,'Stage 1 semantic groups must still be recognised');
 assert.match(renderer,/object\.material\.map\(\(\)=>snowMaterial\)/,'winter material replacement must remain intact');
-assert.match(renderer,/new THREE\.WebGPURenderer\(\{ antialias: true, powerPreference: 'high-performance' \}\)/,'V19 must retain the 4-sample antialiasing path');
+assert.match(renderer,/new THREE\.WebGPURenderer\(\{ antialias: true, powerPreference: 'high-performance' \}\)/,'V20 must retain the 4-sample antialiasing path');
 assert.match(renderer,/renderer\.backend\.isWebGPUBackend === true/,'the visible label must identify WebGPU or WebGL fallback');
-assert.match(renderer,/name:'Norway'[\s\S]*name:'Alpine'[\s\S]*name:'Broad'/,'V18 must provide three spruce morphologies');
+assert.match(renderer,/name:'Norway'[\s\S]*name:'Alpine'[\s\S]*name:'Broad'/,'V20 must provide three spruce morphologies');
 assert.match(renderer,/levels:28,branches:8,width:1\.02/,'Norway spruce must retain its crown tier profile');
 assert.match(renderer,/levels:30,branches:7,width:0\.86/,'Alpine spruce must retain its tall narrow silhouette');
 assert.match(renderer,/levels:26,branches:8,width:1\.16/,'Broad spruce must retain its wide silhouette');
-assert.match(renderer,/function createSpruceFoliageAtlas\(\)/,'V18 must draw a dedicated procedural foliage atlas');
+assert.match(renderer,/function createSpruceFoliageAtlas\(\)/,'V20 must draw a dedicated procedural foliage atlas');
 assert.match(renderer,/const SPRUCE_ATLAS_SIZE=1024/,'foliage atlas must be high-resolution');
-assert.match(renderer,/alphaMap:foliageAtlas\.alphaMap,alphaTest:0\.22,alphaToCoverage:true/,'V19 foliage must render as alpha-cut textured cards with coverage AA');
+assert.match(renderer,/alphaMap:foliageAtlas\.alphaMap,alphaTest:0\.22,alphaToCoverage:true/,'V20 foliage must render as alpha-cut textured cards with coverage AA');
 assert.match(renderer,/createCoverageAlphaTexture\(alphaCanvas,size,0\.22\)/,'foliage alpha must have a single-tile coverage-preserving mip chain');
 assert.match(renderer,/const cardCount=high\?Math.max\(1,layers\):1/,'V20 limits close foliage cross-cards to control GPU cost');
-assert.doesNotMatch(renderer,/const needleCount=high\?20:mid\?12:6/,'V18 must no longer build a triangle for every needle');
+assert.doesNotMatch(renderer,/const needleCount=high\?20:mid\?12:6/,'V20 must no longer build a triangle for every needle');
 assert.match(renderer,/geometry\.addGroup\(0,woodIndices\.length,0\)/,'branch scaffold must use a separate opaque material group');
 assert.match(renderer,/geometry\.addGroup\(woodIndices\.length,foliageIndices\.length,1\)/,'foliage cards must use their independent alpha-tested material');
 assert.match(renderer,/return \[wood,foliage\]/,'wood and foliage must not share the alpha-tested material');
@@ -30,7 +30,7 @@ assert.doesNotMatch(renderer,/cameraTurned/,'camera rotation alone must not rebu
 assert.match(renderer,/const cellSize=520/,'spatial batches must not explode draw-call counts');
 assert.match(renderer,/mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/,'spatial batches must remain frustum culled');
 assert.match(renderer,/sunLight\.shadow\.mapSize\.setScalar\(512\)/,'shadow map must remain reduced');
-assert.match(html,/webgpu-forest-lab\.v20\.js\?v=20261127c/,'main HTML must activate V19');
+assert.match(html,/webgpu-forest-lab\.v20\.js\?v=20261127c/,'main HTML must activate V20');
 
 assert.match(atmosphere,/function setResolutionScale\(scale\)/,'atmosphere must expose adaptive scaling');
 assert.match(atmosphere,/balanced:1\.0/,'balanced mode must start at native render scale');
@@ -38,6 +38,6 @@ assert.match(atmosphere,/Math\.max\(0\.55,qualityScale\*dynamicResolutionScale\)
 assert.match(atmosphere,/new SkyMesh\(\)/,'physical SkyMesh must remain active');
 assert.match(atmosphere,/pmremGenerator\.fromScene\(environmentScene, 0\.035\)/,'PBR IBL must remain sky-derived');
 assert.match(atmosphere,/renderer\.render\(scene, camera\)/,'direct renderer path must remain active');
-console.log('✓ V18 textured spruce-spray cards and coverage-preserving alpha mipmaps');
+console.log('✓ V20 textured spruce-spray cards and coverage-preserving alpha mipmaps');
 console.log('✓ 4× MSAA, irregular branches, hysteretic LOD and reduced forest draw calls');
 console.log('✓ Adaptive internal render scale, physical SkyMesh and snow PBR');
