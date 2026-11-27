@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const source=readFileSync(new URL('../webgpu-forest-lab.v19.js',import.meta.url),'utf8');
+const standalone=readFileSync(new URL('../webgpu-forest-lab-v19.html',import.meta.url),'utf8');
+const main=readFileSync(new URL('../webgpu-forest-lab.html',import.meta.url),'utf8');
+
+const start=source.indexOf('function createSplinePineGeometry(lod,variant){');
+const end=source.indexOf('function createPineBacklightNode(){',start);
+assert.ok(start>=0&&end>start,'V19 spruce generator must exist');
+const geometry=source.slice(start,end);
+assert.match(source,/const SPRUCE_ATLAS_SIZE=1024/,'foliage texture must retain fine needle detail');
+assert.match(source,/GO_SpruceNeedleShoot_V19/,'foliage must use the single-shoot texture rather than a 2x2 atlas');
+assert.doesNotMatch(geometry,/const tile=Math\.floor\(rng\(\)\*4\)/,'foliage cards must not sample mip-bleeding atlas tiles');
+assert.match(source,/createCoverageAlphaTexture\(alphaCanvas,size,0\.22\)/,'single-shoot alpha mipmaps must preserve the denser coverage threshold');
+assert.match(source,/alphaTest:0\.22,alphaToCoverage:true/,'needle silhouettes must retain MSAA coverage');
+assert.match(geometry,/const tierCount=high\?22:mid\?16:10/,'near, mid and far tiers must no longer collapse to sparse 7-tier trees');
+assert.match(geometry,/const primaryBranches=high\?8:mid\?7:6/,'distant trees must retain full primary branch whorls');
+assert.match(geometry,/const secondaryCount=high\?7:mid\?4:3/,'distant crowns must retain secondary branch coverage');
+assert.match(geometry,/const sprayCount=high\?3:mid\?2:2/,'all LODs must carry multiple needle sprays per secondary shoot');
+assert.match(geometry,/const clumpSize=size\*\(high\?2\.55:mid\?2\.65:2\.8\)/,'far foliage cards must grow enough to cover their branch tips');
+assert.match(geometry,/const cardCount=high\?3:mid\?2:1/,'near and mid sprays must remain volumetric while far LOD stays economical');
+assert.match(geometry,/geometry\.addGroup\(0,woodIndices\.length,0\)/);
+assert.match(geometry,/geometry\.addGroup\(woodIndices\.length,foliageIndices\.length,1\)/);
+assert.match(source,/new THREE\.InstancedMesh\(geometry,material,trees\.length\)/);
+assert.match(source,/oldBatch\.dispose\?\.\(\)/,'replaced LOD batches must release their instance buffers');
+assert.match(standalone,/webgpu-forest-lab\.v19\.js\?v=20261127b/);
+assert.match(main,/webgpu-forest-lab\.v19\.js\?v=20261127b/);
+console.log('Forest Spruce V19 single-shoot mip-safe foliage, denser distant LOD, volumetric near/mid cards and batch disposal passed.');
