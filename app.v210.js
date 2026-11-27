@@ -1851,6 +1851,8 @@ function buildSlopeFootprintLookup(baseBounds,assets){
         a.fromBufferAttribute(positions,ia).applyMatrix4(object.matrixWorld);
         b.fromBufferAttribute(positions,ib).applyMatrix4(object.matrixWorld);
         c.fromBufferAttribute(positions,ic).applyMatrix4(object.matrixWorld);
+        const projectedArea=(b.x-a.x)*(c.z-a.z)-(c.x-a.x)*(b.z-a.z);
+        if(Math.abs(projectedArea)<1e-6)continue;
         insert(a.x,a.z,b.x,b.z,c.x,c.z);
         addBoundaryEdge(a,b);addBoundaryEdge(b,c);addBoundaryEdge(c,a);
       }
@@ -1865,13 +1867,13 @@ function buildSlopeFootprintLookup(baseBounds,assets){
     const iz1=Math.floor((Math.max(edge.az,edge.bz)-baseBounds.min.z)/edgeCellSize);
     if((ix1-ix0+1)*(iz1-iz0+1)>256){largeEdges.push(edge);continue;}
     for(let iz=iz0;iz<=iz1;iz++)for(let ix=ix0;ix<=ix1;ix++){
-      const key=iz*cols+ix;
+      const key=ix+':'+iz;
       let bucket=edgeCells.get(key);if(!bucket){bucket=[];edgeCells.set(key,bucket);}
       bucket.push(edge);
     }
   }
   return {originX:baseBounds.min.x,originZ:baseBounds.min.z,cellSize,cols,rows,cells,large,
-    edges:boundaryEdges,edgeLookup:{originX:baseBounds.min.x,originZ:baseBounds.min.z,cellSize:edgeCellSize,cols,cells:edgeCells,large:largeEdges}};
+    edges:boundaryEdges,edgeLookup:{originX:baseBounds.min.x,originZ:baseBounds.min.z,cellSize:edgeCellSize,cells:edgeCells,large:largeEdges}};
 }
 function pointInSlopeTriangle(x,z,t){
   const wa=((t.bz-t.cz)*(x-t.cx)+(t.cx-t.bx)*(z-t.cz))/t.den;
@@ -1890,7 +1892,7 @@ function isTreePointOnSlope(x,z,lookup){
 }
 function findNearestSlopeBoundary(x,z,lookup,maxDistance=105){
   const index=lookup?.edgeLookup;
-  if(!index||!index.cells?.size)return null;
+  if(!index||(!index.cells?.size&&!index.large?.length))return null;
   const cx=Math.floor((x-index.originX)/index.cellSize),cz=Math.floor((z-index.originZ)/index.cellSize);
   const radius=Math.ceil(maxDistance/index.cellSize);
   let best=null,bestDistanceSq=maxDistance*maxDistance;
@@ -1906,7 +1908,7 @@ function findNearestSlopeBoundary(x,z,lookup,maxDistance=105){
   for(let ring=0;ring<=radius;ring++){
     for(let dz=-ring;dz<=ring;dz++)for(let dx=-ring;dx<=ring;dx++){
       if(ring>0&&Math.abs(dx)!==ring&&Math.abs(dz)!==ring)continue;
-      const bucket=index.cells.get((cz+dz)*index.cols+(cx+dx));
+      const bucket=index.cells.get((cx+dx)+':'+(cz+dz));
       if(bucket)for(const edge of bucket)test(edge);
     }
     if(best&&best.distance<=Math.max(0,ring-1)*index.cellSize)break;
@@ -2196,6 +2198,8 @@ function clearTestForest() {
   state.billboardMesh=null;
   state.billboardMeshes=[];
   state.billboardTrees=[];
+  state.forestEdgeSpriteCount=0;
+  syncForestEdgeDensityControl();
   lastBillboardCameraX=NaN;lastBillboardCameraZ=NaN;
 }
 
