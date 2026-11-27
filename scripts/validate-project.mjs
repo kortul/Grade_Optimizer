@@ -1106,7 +1106,7 @@ const alpineForestPageV21=read('webgpu-forest-lab-v21.html').toString('utf8');
 const alpineForestSourceV21=read('webgpu-forest-lab.v21.js').toString('utf8');
 const alpineForestPageV22=read('webgpu-forest-lab-v22.html').toString('utf8');
 const alpineForestSourceV22=read('webgpu-forest-lab.v22.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v22.js?v=20261127b')&&
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v22.js?v=20261127c')&&
   alpineForestHtml.includes('ALPINE SPRUCE V22'),
   'Forest Lab main page must load pinned Three.js r187 V22');
 assert.ok(alpineForestPageV13.includes('webgpu-forest-lab.v13.js?v=20261126a')&&
@@ -1293,7 +1293,7 @@ assert.ok(alpineForestSourceV21.includes('object.castShadow=false; // Static sno
   alpineForestSourceV21.includes('frameTimeEMA<23'),
   'V21 must reduce static terrain shadow work and adapt render resolution toward 40 FPS');
 pass('WebGPU Alpine Forest V21: fuller natural spruce crowns, dome shading and 40 FPS adaptive budget');
-assert.ok(alpineForestPageV22.includes('webgpu-forest-lab.v22.js?v=20261127b')&&alpineForestPageV22.includes('ALPINE SPRUCE V22'),
+assert.ok(alpineForestPageV22.includes('webgpu-forest-lab.v22.js?v=20261127c')&&alpineForestPageV22.includes('ALPINE SPRUCE V22'),
   'V22 page must load its renderer');
 assert.ok(alpineForestSourceV22.includes('loadForestSpriteTextures')&&alpineForestSourceV22.includes('buildForestSpritePlacements')&&
   alpineForestSourceV22.includes('MainStyle_ForestSprite_')&&alpineForestSourceV22.includes('updateForestSpriteBillboards'),
@@ -1311,8 +1311,17 @@ assert.ok(alpineForestSourceV22.includes('buildAllTreeSpritePlacements')&&
   alpineForestSourceV22.includes('if(!allTreesAsSprites){'),
   'V22 must allow toggling every procedural tree to main-app atlas sprites and restoring geometry trees');
 assert.ok(alpineForestPageV22.includes('id="spriteModeToggle"')&&
-  alpineForestPageV22.includes('Заменить все деревья на спрайты'),
-  'V22 must expose a touch-friendly all-sprite mode button');
+  alpineForestPageV22.includes('Все деревья — спрайты ×3'),
+  'V22 must expose the default 3x all-sprite mode button');
+assert.ok(alpineForestSourceV22.includes('let allTreesAsSprites=true')&&
+  alpineForestSourceV22.includes('FOREST_SPRITE_DENSITY_MULTIPLIER=3')&&
+  alpineForestSourceV22.includes('buildAllTreeSpritePlacements(trees,footprint)'),
+  'V22 must start in all-sprite mode and place three separated sprites per source tree');
+assert.ok(alpineForestSourceV22.includes('transparent:false,alphaTest:0.18')&&
+  alpineForestSourceV22.includes('mesh.frustumCulled=true')&&
+  alpineForestSourceV22.includes('mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)')&&
+  alpineForestSourceV22.includes('sunLight.shadow.autoUpdate=shadowsEnabled'),
+  'V22 sprite rendering must use opaque alpha cutouts, spatial frustum culling, dynamic instance buffers and mode-aware shadows');
 pass('WebGPU Alpine Forest V22: main-app atlas sprite fill and mobile interface');
 
 
