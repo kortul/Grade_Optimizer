@@ -24,11 +24,29 @@
     .cycle-speed input{margin:0}
     select{width:100%;padding:7px 9px;border-radius:7px;border:1px solid #ffffff25;background:#1a2a38;color:#eef6fc;font:inherit;font-size:11px}
     .sprite-mode-toggle{width:100%;min-height:44px;margin:10px 0 2px;padding:10px 12px;border:1px solid rgba(167,211,235,.35);border-radius:10px;background:rgba(95,150,180,.16);color:#eaf6ff;font:600 12px system-ui;cursor:pointer;touch-action:manipulation}.sprite-mode-toggle:hover,.sprite-mode-toggle.active{background:rgba(94,170,205,.30);border-color:rgba(167,220,245,.72)}
+    .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.panel-head h1{min-width:0}
+    .panel-toggle{display:none;flex:none;min-height:36px;padding:6px 11px;border:1px solid #8bc8e64a;border-radius:8px;background:#26445a;color:#eaf6ff;font:700 11px system-ui;cursor:pointer;touch-action:manipulation}
+    .panel-toggle:focus-visible{outline:2px solid #b8e4ff;outline-offset:2px}
     .note{font-size:10px;color:#91a5b8;margin-top:12px;line-height:1.5}.note a{color:#a9dfff}
     #error{display:none;white-space:pre-wrap;color:#ffb0a8;font-size:10px;margin-top:10px}
     #loading{position:fixed;inset:0;display:grid;place-items:center;background:#101923cc;z-index:2;color:#e8f3fb;font-size:13px;letter-spacing:.03em}
     .hint{position:fixed;right:16px;bottom:14px;z-index:2;padding:8px 11px;border-radius:8px;background:#111c28b8;color:#c3d2df;font-size:10px;pointer-events:none}
-    @media(max-width:600px){.panel{top:8px;left:8px;width:min(340px,calc(100vw - 16px));max-height:calc(100vh - 16px);padding:12px 13px}.hint{right:8px;bottom:8px;font-size:9px}}
+    @media(max-width:700px){
+      html,body{height:100%;height:100dvh}
+      .panel{top:auto;bottom:max(8px,env(safe-area-inset-bottom));left:8px;width:calc(100vw - 16px);max-height:min(48dvh,420px);padding:10px 12px;border-radius:14px;touch-action:pan-y}
+      .panel-head{min-height:34px}.panel-toggle{display:block}
+      .panel.mobile-collapsed{max-height:52px;overflow:hidden;padding-bottom:8px}
+      .panel.mobile-collapsed .sub,.panel.mobile-collapsed .status,.panel.mobile-collapsed .metrics,.panel.mobile-collapsed .section,.panel.mobile-collapsed #error,.panel.mobile-collapsed .note{display:none}
+      .panel:not(.mobile-collapsed){max-height:min(52dvh,460px)}
+      .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:7px 0 9px}
+      .metric{padding:5px 7px}.metric b{font-size:16px}
+      .section{padding-top:7px;margin-top:8px}
+      label{font-size:12px;margin:8px 0 3px}
+      input[type=range]{height:25px;touch-action:pan-x}
+      select,.cycle-controls button{min-height:40px;font-size:12px}
+      .hint{right:8px;bottom:calc(64px + env(safe-area-inset-bottom));font-size:9px}
+    }
+    @media(max-width:700px) and (orientation:landscape){.panel{max-height:58dvh;width:min(420px,calc(100vw - 16px))}.panel:not(.mobile-collapsed){max-height:58dvh}.hint{bottom:8px}}
   </style>
   <script type="importmap">
     {
@@ -44,8 +62,8 @@
 <body>
   <div id="stage"></div>
   <div id="loading">Загружаем рельеф, трассы и готовим spatial lookup для леса…</div>
-  <section class="panel">
-    <h1>WEBGPU · ALPINE SPRUCE V22</h1>
+  <section class="panel mobile-collapsed" id="controlPanel">
+    <div class="panel-head"><h1>WEBGPU · ALPINE SPRUCE V22</h1><button class="panel-toggle" id="panelToggle" type="button" aria-expanded="false">Настройки</button></div>
     <div class="sub">Slopes_Stage1 · V21 · fuller needle sprays · dome-shaded foliage · adaptive 40 FPS</div>
     <div class="status"><span class="dot" id="statusDot"></span><span id="backendStatus">Инициализация renderer…</span></div>
     <div class="metrics">
