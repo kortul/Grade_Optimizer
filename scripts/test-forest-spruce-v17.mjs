@@ -23,5 +23,5 @@ assert.match(geometry,/geometry\.addGroup\(woodIndices\.length,foliageIndices\.l
 assert.match(source,/return \[wood,foliage\]/);
 assert.match(source,/new THREE\.InstancedMesh\(geometry,material,trees\.length\)/);
 assert.match(standalone,/webgpu-forest-lab\.v17\.js\?v=20261126e/);
-assert.match(main,/webgpu-forest-lab\.v20\.js\?v=20261127c/);
+assert.match(main,/webgpu-forest-lab\.v21\.js\?v=20261127a/);
 console.log('Forest Spruce V17 denser whorls, hanging branchlets, layered foliage and page activation passed.');
