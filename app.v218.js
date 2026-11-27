@@ -17,7 +17,7 @@ import { resolveRendererPixelRatio, calculateRollingFps } from './render-perform
 import { CameraOptics } from './camera-optics.v2.js';
 import { buildSlopeAngleSpatialIndex, forEachSlopeAngleSpatialCandidate } from './slope-label-index.v1.js';
 import { buildTerrainHeightLookup, sampleTerrainHeight, buildSafetyFenceGroup } from './safety-fences.v1.js?v=6';
-import { buildStageOneSlopeSurfaceLookup, findCenterlineSafetyFencePlacements, selectH3SafetyFenceCurves } from './safety-fences.v2.js?v=1';
+import { buildStageOneSlopeSurfaceLookup, findCenterlineSafetyFencePlacements, selectH3SafetyFenceCurves } from './safety-fences.v2.js?v=2';
 import { ResortMultiplayer } from './multiplayer.v11.js';
 import { MULTIPLAYER_SERVER_URL } from './multiplayer-config.v1.js';
 
