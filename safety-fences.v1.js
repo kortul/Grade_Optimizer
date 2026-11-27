@@ -46,7 +46,7 @@ const yieldOneFrame=()=>new Promise(resolve=>{
 });
 export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sampleTerrainY,{
  spacing=5.5,panelWidth=5.8,panelHeight=1.38,minimumAngleDegrees=26,
- edgeSampleDistance=8,maxPanels=1600,maxChains=3,yieldEvery=12,yieldControl=yieldOneFrame,debug=false
+ edgeSampleDistance=8,maxPanels=1600,maxChains=3,yieldEvery=12,yieldControl=yieldOneFrame
 }={}){
  if(!footprint?.edges?.length||typeof isInsidePiste!=='function'||typeof sampleTerrainY!=='function')return [];
  const chains=buildSafetyFenceBoundaryChains(footprint.edges).map(points=>({points,length:cumulativeLengths(points)}))
@@ -55,12 +55,11 @@ export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sam
  const placements=[],left={x:0,z:0},minimumDrop=edgeSampleDistance*Math.tan(minimumAngleDegrees*Math.PI/180);
  let candidateCount=0;
  for(const chain of chains){
-  const points=chain.points,cumulative=chain.length,total=cumulative[cumulative.length-1];
+  const points=chain.points,cumulative=chain.distances,total=cumulative[cumulative.length-1];
   for(let distance=spacing*.5;distance<total-spacing*.28;distance+=spacing){
    const before=pointAtDistance(points,cumulative,Math.max(0,distance-1.15));
    const after=pointAtDistance(points,cumulative,Math.min(total,distance+1.15));
    const center=pointAtDistance(points,cumulative,distance);
-   if(debug&&candidateCount<5)console.log('FENCE CANDIDATE',center);
    let tx=after.x-before.x,tz=after.z-before.z;const tangentLength=Math.hypot(tx,tz);
    if(tangentLength<1e-5)continue;
    tx/=tangentLength;tz/=tangentLength;left.x=-tz;left.z=tx;
@@ -78,8 +77,6 @@ export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sam
      const outerY=sampleTerrainY(center.x+outX*edgeSampleDistance,center.z+outZ*edgeSampleDistance);
      if(Number.isFinite(outerY)){
       const drop=edgeY-outerY;
-      if(globalThis.__GO_FENCE_DEBUG&&candidateCount<4)console.log('FENCE DEBUG SAMPLE',{center,insideLeft,outX,outZ,edgeY,outerY,drop,minimumDrop,edgeSampleDistance});
-      if(debug&&candidateCount<5)console.log('FENCE DROP',{edgeY,outerY,drop,minimumDrop});
       if(drop>=minimumDrop){
        const angle=Math.atan(drop/edgeSampleDistance)*180/Math.PI;
        if(angle>=minimumAngleDegrees){
