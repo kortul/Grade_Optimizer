@@ -16,7 +16,7 @@ import { mergeImportedMaterialsByName } from './editor-shared-materials.v1.js';
 import { resolveRendererPixelRatio, calculateRollingFps } from './render-performance.v1.js';
 import { CameraOptics } from './camera-optics.v2.js';
 import { buildSlopeAngleSpatialIndex, forEachSlopeAngleSpatialCandidate } from './slope-label-index.v1.js';
-import { findSteepSafetyFencePlacements, buildSafetyFenceGroup, getCachedSafetyFencePlacements, setCachedSafetyFencePlacements } from './safety-fences.v1.js';
+import { findSteepSafetyFencePlacements, buildSafetyFenceGroup, getCachedSafetyFencePlacements, setCachedSafetyFencePlacements } from './safety-fences.v1.js?v=3';
 import { ResortMultiplayer } from './multiplayer.v11.js';
 import { MULTIPLAYER_SERVER_URL } from './multiplayer-config.v1.js';
 

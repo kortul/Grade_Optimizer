@@ -15,6 +15,9 @@ Date: 2026-11-27
 - Current model import supports GLB/FBX only; Maya curve entities are not consumed as fence guides yet.
 - Recommended future input is compact JSON containing ordered world-space XYZ polyline points. This avoids mesh-boundary detection and can place safety nets directly along artist-authored borders.
 
+## Deployment
+- The active entrypoint imports the fence module with a versioned URL to prevent stale browser module-cache reuse.
+
 ## Validation
 - CI syntax, project checks and dedicated fence tests.
 - Browser visual/FPS verification remains necessary.
