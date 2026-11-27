@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findSteepSafetyFencePlacements } from '../safety-fences.v1.js';
+import { findSteepSafetyFencePlacements, buildSafetyFenceBoundaryChains } from '../safety-fences.v1.js';
 const footprint={edges:[
  {ax:0,az:0,bx:10,bz:0},{ax:10,az:0,bx:10,bz:10},
  {ax:10,az:10,bx:0,bz:10},{ax:0,az:10,bx:0,bz:0}
 ]};
 const isInside=(x,z)=>x>0&&x<10&&z>0&&z<10;
+test('reconstructs closed piste boundary contours',()=>{
+ const chains=buildSafetyFenceBoundaryChains(footprint.edges);
+ assert.equal(chains.length,1);
+ assert.ok(chains[0].length>=5);
+});
 test('places panels outside a piste when terrain drops steeply away',async()=>{
  const terrainY=(x,z)=>z<0?100+z*.8:100;
  const panels=await findSteepSafetyFencePlacements(footprint,isInside,terrainY);

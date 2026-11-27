@@ -1,6 +1,6 @@
 // Automatic alpine safety-net placement with time-sliced analysis and persistent IndexedDB caching.
 function pointKey(x,z){return Math.round(x*4)+','+Math.round(z*4);}
-function buildBoundaryChains(edges){
+export function buildSafetyFenceBoundaryChains(edges){
  const nodes=new Map(),edgeData=[];
  const addNode=(key,x,z)=>{let node=nodes.get(key);if(!node){node={x,z,edges:[]};nodes.set(key,node);}return node;};
  for(const edge of edges||[]){
@@ -49,7 +49,7 @@ export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sam
  edgeSampleDistance=8,maxPanels=1600,maxChains=3,yieldEvery=12,yieldControl=yieldOneFrame
 }={}){
  if(!footprint?.edges?.length||typeof isInsidePiste!=='function'||typeof sampleTerrainY!=='function')return [];
- const chains=buildBoundaryChains(footprint.edges).map(points=>({points,length:cumulativeLengths(points)}))
+ const chains=buildSafetyFenceBoundaryChains(footprint.edges).map(points=>({points,length:cumulativeLengths(points)}))
   .filter(chain=>chain.length[chain.length-1]>=spacing*.72)
   .sort((a,b)=>b.length[b.length-1]-a.length[a.length-1]).slice(0,maxChains);
  const placements=[],left={x:0,z:0},minimumDrop=edgeSampleDistance*Math.tan(minimumAngleDegrees*Math.PI/180);
