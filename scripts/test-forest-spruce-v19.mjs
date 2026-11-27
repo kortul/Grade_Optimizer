@@ -28,5 +28,5 @@ assert.match(source,/now-lastResolutionDecision>=1800/,'adaptive render scale mu
 assert.match(source,/frameTimeEMA>40/,'resolution scaling must use a wide lower-quality threshold');
 assert.match(source,/frameTimeEMA<21/,'resolution recovery must use a separate upper-quality threshold');
 assert.match(standalone,/webgpu-forest-lab\.v19\.js\?v=20261127b/);
-assert.match(main,/webgpu-forest-lab\.v21\.js\?v=20261127a/);
+assert.match(main,/webgpu-forest-lab\.v22\.js\?v=20261127a/);
 console.log('Forest Spruce V19 single-shoot mip-safe foliage, denser distant LOD, volumetric near/mid cards and batch disposal passed.');
