@@ -31,5 +31,5 @@ assert.match(source,/new THREE\.InstancedMesh\(geometry,material,trees\.length\)
 assert.match(source,/new THREE\.WebGPURenderer\(\{ antialias: true/);
 assert.match(standalone,/webgpu-forest-lab\.v16\.js\?v=20261126d/);
 assert.match(standalone,/ALPINE SPRUCE V16/);
-assert.match(main,/webgpu-forest-lab\.v21\.js\?v=20261127a/);
+assert.match(main,/webgpu-forest-lab\.v22\.js\?v=20261127a/);
 console.log('Forest Spruce V16 branch-material separation, dense cards, atlas mask and active-page checks passed.');
