@@ -33,6 +33,8 @@ assert.match(renderer,/mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;
 assert.match(renderer,/sunLight\.shadow\.mapSize\.setScalar\(512\)/,'shadow map must remain reduced');
 assert.match(html,/webgpu-forest-lab\.v22\.js\?v=20261127b/,'main HTML must activate V22');
 assert.match(html,/id="spriteModeToggle"[\s\S]*Заменить все деревья на спрайты/,'main Forest Lab page must expose the all-sprite toggle');
+assert.match(html,/class="panel mobile-collapsed" id="controlPanel"[\s\S]*id="panelToggle"/,'mobile Forest Lab controls must start collapsed behind a dedicated toggle');
+assert.match(html,/\.panel\.mobile-collapsed \.sub[\s\S]*max-height:min\(52dvh,460px\)/,'mobile Forest Lab must keep the scene visible and limit expanded controls to a bottom sheet');
 assert.ok(forestV22.includes('buildAllTreeSpritePlacements')&&forestV22.includes('allTreesAsSprites')&&forestV22.includes('spriteModeToggle')&&forestV22.includes('if(!allTreesAsSprites){'),'V22 must support switching the complete forest between sprite and geometry modes');
 
 assert.match(atmosphere,/function setResolutionScale\(scale\)/,'atmosphere must expose adaptive scaling');
