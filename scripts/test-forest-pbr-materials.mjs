@@ -31,8 +31,8 @@ assert.doesNotMatch(renderer,/cameraTurned/,'camera rotation alone must not rebu
 assert.match(renderer,/const cellSize=520/,'spatial batches must not explode draw-call counts');
 assert.match(renderer,/mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/,'spatial batches must remain frustum culled');
 assert.match(renderer,/sunLight\.shadow\.mapSize\.setScalar\(512\)/,'shadow map must remain reduced');
-assert.match(html,/webgpu-forest-lab\.v22\.js\?v=20261127b/,'main HTML must activate V22');
-assert.match(html,/id="spriteModeToggle"[\s\S]*Заменить все деревья на спрайты/,'main Forest Lab page must expose the all-sprite toggle');
+assert.match(html,/webgpu-forest-lab\.v22\.js\?v=20261127c/,'main HTML must activate V22');
+assert.match(html,/id="spriteModeToggle"[\s\S]*Все деревья — спрайты ×3/,'main Forest Lab page must expose the all-sprite toggle');
 assert.match(html,/class="panel mobile-collapsed" id="controlPanel"[\s\S]*id="panelToggle"/,'mobile Forest Lab controls must start collapsed behind a dedicated toggle');
 assert.match(html,/\.panel\.mobile-collapsed \.sub[\s\S]*max-height:min\(52dvh,460px\)/,'mobile Forest Lab must keep the scene visible and limit expanded controls to a bottom sheet');
 assert.ok(forestV22.includes('buildAllTreeSpritePlacements')&&forestV22.includes('allTreesAsSprites')&&forestV22.includes('spriteModeToggle')&&forestV22.includes('if(!allTreesAsSprites){'),'V22 must support switching the complete forest between sprite and geometry modes');
@@ -46,3 +46,10 @@ assert.match(atmosphere,/renderer\.render\(scene, camera\)/,'direct renderer pat
 console.log('✓ V20 textured spruce-spray cards and coverage-preserving alpha mipmaps');
 console.log('✓ 4× MSAA, irregular branches, hysteretic LOD and reduced forest draw calls');
 console.log('✓ Adaptive internal render scale, physical SkyMesh and snow PBR');
+
+assert.match(forestV22,/let allTreesAsSprites=true/,'all-sprite mode must be the default');
+assert.match(forestV22,/FOREST_SPRITE_DENSITY_MULTIPLIER=3/,'default sprite density must be 300 percent');
+assert.match(forestV22,/transparent:false,alphaTest:0\.18/,'sprite cards must use opaque alpha cutouts instead of blended transparency');
+assert.match(forestV22,/mesh\.frustumCulled=true/,'sprite batches must be culled by spatial cell');
+assert.match(forestV22,/sunLight\.shadow\.autoUpdate=shadowsEnabled/,'sprite-only mode must skip the unused shadow-map refresh');
+assert.match(forestV22,/frameTimeEMA>18\.5/,'adaptive resolution must react before frame rate falls to 45 FPS');
