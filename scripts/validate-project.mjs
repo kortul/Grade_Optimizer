@@ -576,9 +576,9 @@ assert.ok(skierSource.includes('turnLean*(0.055+speedBlend*0.035)'), 'hip / knee
 assert.ok(skierSource.includes('const fullyVisible=blend>=0.995'), 'skier materials must switch to opaque rendering when fully visible');
 assert.ok(skierSource.includes('mat.depthWrite=fullyVisible') && skierSource.includes('mat.needsUpdate=true'), 'fully visible skier materials must write depth to prevent distance-dependent part loss');
 assert.ok(skierSource.includes('object.frustumCulled=false'), 'skier avatar parts must not be culled independently');
-assert.ok(entrySource.includes('dayTime:13.5'), 'default scene time must start at sunny midday 13:30');
-assert.match(html, /id="timeOfDay"[^>]*value="13.5"/, 'default time slider must start at 13:30');
-assert.ok(html.includes('id="timeValue">13:30') && html.includes('id="timeCompactValue">13:30'), 'both default time labels must show 13:30');
+assert.ok(entrySource.includes('dayTime:15.75'), 'default scene time must start at 15:45');
+assert.match(html, /id="timeOfDay"[^>]*value="15.75"/, 'default time slider must start at 15:45');
+assert.ok(html.includes('id="timeValue">15:45') && html.includes('id="timeCompactValue">15:45'), 'both default time labels must show 15:45');
 assert.ok(html.indexOf('id="weatherToggle"') < html.indexOf('id="editorToggle"'), 'cloud weather button must be placed immediately before the gear');
 assert.ok(html.includes('class="weather-icon-button"') && html.includes('class="weather-cloud-icon"'), 'weather control must use its compact cloud icon');
 assert.ok(skierSource.includes("'Kneepad_Upper_Strap'") && skierSource.includes("'Kneepad_Lower_Stitch'"), 'layered knee protection details are missing');
