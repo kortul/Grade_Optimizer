@@ -88,6 +88,80 @@ export async function collectSafetyFenceBoundaryEdges(THREE,assets,{yieldEveryTr
  return {edges:output,stats,totalTriangles};
 }
 
+export async function buildTerrainHeightLookup(THREE,root,{cellSize:requestedCellSize=0,yieldEveryVertices=20000,yieldEveryTriangles=10000,yieldControl=yieldOneFrame}={}){
+ if(!root)return null;
+ root.updateWorldMatrix(true,true);
+ const meshes=[];root.traverseVisible(object=>{if(object.isMesh&&object.geometry?.attributes?.position)meshes.push(object);});
+ if(!meshes.length)return null;
+ const point=new THREE.Vector3();let minX=Infinity,minZ=Infinity,maxX=-Infinity,maxZ=-Infinity,vertexCount=0;
+ for(const mesh of meshes){
+  mesh.updateWorldMatrix(true,false);const positions=mesh.geometry.attributes.position;
+  for(let i=0;i<positions.count;i++){
+   point.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
+   if(Number.isFinite(point.x)&&Number.isFinite(point.y)&&Number.isFinite(point.z)){
+    minX=Math.min(minX,point.x);maxX=Math.max(maxX,point.x);minZ=Math.min(minZ,point.z);maxZ=Math.max(maxZ,point.z);
+   }
+   vertexCount++;
+   if(vertexCount%Math.max(1,yieldEveryVertices)===0)await yieldControl();
+  }
+ }
+ if(!Number.isFinite(minX)||!Number.isFinite(minZ))return null;
+ const spanX=Math.max(1e-4,maxX-minX),spanZ=Math.max(1e-4,maxZ-minZ);
+ const cellSize=Number.isFinite(requestedCellSize)&&requestedCellSize>0?requestedCellSize:Math.max(8,Math.min(24,Math.max(spanX,spanZ)/400));
+ const cols=Math.max(1,Math.ceil(spanX/cellSize)),rows=Math.max(1,Math.ceil(spanZ/cellSize));
+ const cells=new Map(),large=[];
+ const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+ let triangleCount=0;
+ const insert=triangle=>{
+  const ix0=Math.max(0,Math.floor((Math.min(triangle.ax,triangle.bx,triangle.cx)-minX)/cellSize));
+  const ix1=Math.min(cols-1,Math.floor((Math.max(triangle.ax,triangle.bx,triangle.cx)-minX)/cellSize));
+  const iz0=Math.max(0,Math.floor((Math.min(triangle.az,triangle.bz,triangle.cz)-minZ)/cellSize));
+  const iz1=Math.min(rows-1,Math.floor((Math.max(triangle.az,triangle.bz,triangle.cz)-minZ)/cellSize));
+  if(ix1<ix0||iz1<iz0)return;
+  if((ix1-ix0+1)*(iz1-iz0+1)>256){large.push(triangle);return;}
+  for(let iz=iz0;iz<=iz1;iz++)for(let ix=ix0;ix<=ix1;ix++){
+   const key=iz*cols+ix;let bucket=cells.get(key);if(!bucket){bucket=[];cells.set(key,bucket);}bucket.push(triangle);
+  }
+ };
+ for(const mesh of meshes){
+  mesh.updateWorldMatrix(true,false);
+  const geometry=mesh.geometry,positions=geometry.attributes.position,index=geometry.index,count=index?index.count:positions.count;
+  const start=Math.max(0,geometry.drawRange?.start||0);
+  const end=Math.min(count,Number.isFinite(geometry.drawRange?.count)?start+geometry.drawRange.count:count);
+  for(let offset=start;offset+2<end;offset+=3){
+   const ia=index?index.getX(offset):offset,ib=index?index.getX(offset+1):offset+1,ic=index?index.getX(offset+2):offset+2;
+   a.fromBufferAttribute(positions,ia).applyMatrix4(mesh.matrixWorld);
+   b.fromBufferAttribute(positions,ib).applyMatrix4(mesh.matrixWorld);
+   c.fromBufferAttribute(positions,ic).applyMatrix4(mesh.matrixWorld);
+   const den=(b.z-c.z)*(a.x-c.x)+(c.x-b.x)*(a.z-c.z);
+   if(Math.abs(den)<1e-10)continue;
+   insert({ax:a.x,az:a.z,ay:a.y,bx:b.x,bz:b.z,by:b.y,cx:c.x,cz:c.z,cy:c.y,den});
+   triangleCount++;
+   if(triangleCount%Math.max(1,yieldEveryTriangles)===0)await yieldControl();
+  }
+ }
+ return {originX:minX,originZ:minZ,cellSize,cols,rows,cells,large,meshCount:meshes.length,vertexCount,triangleCount};
+}
+
+export function sampleTerrainHeight(lookup,x,z){
+ if(!lookup?.cells)return null;
+ const ix=Math.floor((x-lookup.originX)/lookup.cellSize),iz=Math.floor((z-lookup.originZ)/lookup.cellSize);
+ if(ix<0||iz<0||ix>=lookup.cols||iz>=lookup.rows)return null;
+ const bucket=lookup.cells.get(iz*lookup.cols+ix)||[];
+ let best=null;
+ const sample=triangle=>{
+  const wa=((triangle.bz-triangle.cz)*(x-triangle.cx)+(triangle.cx-triangle.bx)*(z-triangle.cz))/triangle.den;
+  const wb=((triangle.cz-triangle.az)*(x-triangle.cx)+(triangle.ax-triangle.cx)*(z-triangle.cz))/triangle.den;
+  const wc=1-wa-wb;
+  if(wa< -1e-5||wb< -1e-5||wc< -1e-5)return;
+  const y=wa*triangle.ay+wb*triangle.by+wc*triangle.cy;
+  if(Number.isFinite(y)&&(best===null||y>best))best=y;
+ };
+ for(const triangle of bucket)sample(triangle);
+ for(const triangle of lookup.large)sample(triangle);
+ return best;
+}
+
 export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sampleTerrainY,{
  spacing=5.5,panelWidth=5.8,panelHeight=1.38,minimumAngleDegrees=26,
  edgeSampleDistance=8,maxPanels=1600,maxChains=3,yieldEvery=12,yieldControl=yieldOneFrame
