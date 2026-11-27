@@ -1301,6 +1301,10 @@ assert.ok(alpineForestSourceV22.includes('loadForestSpriteTextures')&&alpineFore
 assert.ok(alpineForestPageV22.includes('@media(max-width:700px)')&&alpineForestPageV22.includes('panelToggle')&&
   alpineForestSourceV22.includes('mobile-collapsed'),
   'V22 must provide a collapsible touch-friendly mobile control panel');
+assert.ok(alpineForestHtml.includes('class="panel mobile-collapsed" id="controlPanel"')&&
+  alpineForestHtml.includes('id="panelToggle"')&&alpineForestHtml.includes('.panel.mobile-collapsed .sub')&&
+  alpineForestHtml.includes('@media(max-width:700px)'),
+  'active Forest Lab page must start with its mobile control panel collapsed behind the open/close button');
 assert.ok(alpineForestSourceV22.includes('buildAllTreeSpritePlacements')&&
   alpineForestSourceV22.includes('allTreesAsSprites')&&alpineForestSourceV22.includes('spriteModeToggle')&&
   alpineForestSourceV22.includes('const activeSpriteTrees=allTreesAsSprites?(forestSystem.allSpriteTrees||[]):(forestSystem.spriteTrees||[])')&&
