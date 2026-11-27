@@ -42,20 +42,25 @@ function pointAtDistance(points,cumulative,distance){
 }
 function deterministicUnit(x,z,salt){const value=Math.sin(x*12.9898+z*78.233+salt*37.719)*43758.5453;return value-Math.floor(value);}
 /** Finds panels where the terrain falls away steeply immediately outside a piste. */
+/** Finds panels only when the terrain falls away steeply immediately outside a piste.
+ * Two height queries per sample keep this cheap enough for manual/on-demand generation.
+ */
 export function findSteepSafetyFencePlacements(footprint,isInsidePiste,sampleTerrainY,{
- spacing=3.95,panelWidth=4.16,panelHeight=1.38,minimumAngleDegrees=26,
- edgeSampleDistance=6,farSampleDistance=12,maxPanels=5200
+ spacing=5.5,panelWidth=5.8,panelHeight=1.38,minimumAngleDegrees=26,
+ edgeSampleDistance=8,maxPanels=2400
 }={}){
  if(!footprint?.edges?.length||typeof isInsidePiste!=='function'||typeof sampleTerrainY!=='function')return [];
- const placements=[],left={x:0,z:0};
+ const placements=[],left={x:0,z:0},minimumDrop=edgeSampleDistance*Math.tan(minimumAngleDegrees*Math.PI/180);
  for(const points of buildBoundaryChains(footprint.edges)){
-  if(points.length<2)continue;const cumulative=cumulativeLengths(points),total=cumulative[cumulative.length-1];
+  if(points.length<2)continue;
+  const cumulative=cumulativeLengths(points),total=cumulative[cumulative.length-1];
   if(total<spacing*.72)continue;
   for(let distance=spacing*.5;distance<total-spacing*.28;distance+=spacing){
    const before=pointAtDistance(points,cumulative,Math.max(0,distance-1.15));
    const after=pointAtDistance(points,cumulative,Math.min(total,distance+1.15));
    const center=pointAtDistance(points,cumulative,distance);
-   let tx=after.x-before.x,tz=after.z-before.z;const tangentLength=Math.hypot(tx,tz);if(tangentLength<1e-5)continue;
+   let tx=after.x-before.x,tz=after.z-before.z;
+   const tangentLength=Math.hypot(tx,tz);if(tangentLength<1e-5)continue;
    tx/=tangentLength;tz/=tangentLength;left.x=-tz;left.z=tx;
    let insideLeft=null;
    for(const probeDistance of [1.1,2.2,4.0]){
@@ -65,20 +70,20 @@ export function findSteepSafetyFencePlacements(footprint,isInsidePiste,sampleTer
    }
    if(insideLeft===null)continue;
    const outX=insideLeft?-left.x:left.x,outZ=insideLeft?-left.z:left.z;
-   const edgeY=sampleTerrainY(center.x-outX*.55,center.z-outZ*.55)??sampleTerrainY(center.x,center.z);
+   const edgeX=center.x-outX*.55,edgeZ=center.z-outZ*.55;
+   const edgeY=sampleTerrainY(edgeX,edgeZ)??sampleTerrainY(center.x,center.z);
    if(!Number.isFinite(edgeY))continue;
-   const nearY=sampleTerrainY(center.x+outX*edgeSampleDistance,center.z+outZ*edgeSampleDistance);
-   const farY=sampleTerrainY(center.x+outX*farSampleDistance,center.z+outZ*farSampleDistance);
-   const nearDrop=nearY===null?null:edgeY-nearY,farDrop=farY===null?null:edgeY-farY,grades=[];
-   if(Number.isFinite(nearDrop))grades.push(nearDrop/edgeSampleDistance);
-   if(Number.isFinite(farDrop))grades.push(farDrop/farSampleDistance);
-   const angle=Math.atan(Math.max(0,...grades))*180/Math.PI;
-   const cliffEdge=farY===null&&nearY!==null&&nearDrop>=1.35;
-   const steepEnough=angle>=minimumAngleDegrees&&((nearDrop!==null&&nearDrop>=2.35)||(farDrop!==null&&farDrop>=4.7));
-   if(!cliffEdge&&!steepEnough)continue;
-   const footY=sampleTerrainY(center.x+outX*.68,center.z+outZ*.68);
-   placements.push({x:center.x+outX*.68,y:Number.isFinite(footY)?footY:edgeY,z:center.z+outZ*.68,
-    tx,tz,width:panelWidth,height:panelHeight,tint:.94+deterministicUnit(center.x,center.z,31)*.06});
+   const outerY=sampleTerrainY(center.x+outX*edgeSampleDistance,center.z+outZ*edgeSampleDistance);
+   if(!Number.isFinite(outerY))continue;
+   const drop=edgeY-outerY;
+   if(drop<minimumDrop)continue;
+   const angle=Math.atan(drop/edgeSampleDistance)*180/Math.PI;
+   if(angle<minimumAngleDegrees)continue;
+   placements.push({
+    x:center.x+outX*.68,y:edgeY,z:center.z+outZ*.68,
+    tx,tz,width:panelWidth,height:panelHeight,
+    tint:.94+deterministicUnit(center.x,center.z,31)*.06
+   });
    if(placements.length>=maxPanels)return placements;
   }
  }

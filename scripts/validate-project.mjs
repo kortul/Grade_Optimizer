@@ -80,9 +80,10 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v211.js')&&!html.includes('app.v209.js'),'HTML must activate the current v211 release');
+assert.ok(html.includes('app.v212.js')&&!html.includes('app.v209.js'),'HTML must activate the current v211 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(entrySource.includes("import { findSteepSafetyFencePlacements, buildSafetyFenceGroup } from './safety-fences.v1.js';")&&entrySource.includes('scheduleSafetyFenceBuild(slopeFootprint);'),'active entrypoint must build the safety-fence layer from the piste footprint');
+assert.ok(entrySource.includes('let initialSafetyFencesVisible=false;')&&entrySource.includes('if(!state.safetyFencesVisible||state.safetyFenceGroup||state.safetyFenceBuilding'),'safety fence placement must be opt-in and must not run during initial site loading');
 assert.ok(html.includes('weatherSafetyFencesToggle')&&html.includes('weatherSafetyFenceCount'),'weather settings must expose the safety-fence visibility control and section count');
 assert.ok(existsSync(resolve(root,'assets/safety-fences/orange-safety-net.svg')),'safety-fence texture asset is missing');
 pass('steep-edge safety fences, texture asset and visibility controls are wired');
