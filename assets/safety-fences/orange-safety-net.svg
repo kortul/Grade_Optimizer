@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="216" viewBox="0 0 640 216">
+<defs>
+ <linearGradient id="net" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a32" stop-opacity=".52"/><stop offset=".48" stop-color="#ff6414" stop-opacity=".30"/><stop offset="1" stop-color="#e94c0b" stop-opacity=".48"/></linearGradient>
+ <linearGradient id="tape" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d94309"/><stop offset=".16" stop-color="#ff7a17"/><stop offset=".5" stop-color="#ff9a2e"/><stop offset=".84" stop-color="#ff7113"/><stop offset="1" stop-color="#c93b08"/></linearGradient>
+ <linearGradient id="post" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#783e27"/><stop offset=".22" stop-color="#e2a36b"/><stop offset=".48" stop-color="#fff0c9"/><stop offset=".72" stop-color="#bd6131"/><stop offset="1" stop-color="#67321f"/></linearGradient>
+ <pattern id="diamond" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H20M0 0V20" fill="none" stroke="#ff8c25" stroke-width="2.4" stroke-opacity=".95"/><path d="M1 1H19M1 1V19" fill="none" stroke="#b93608" stroke-width=".7" stroke-opacity=".58"/></pattern>
+ <pattern id="fine" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 8L8 0M-2 2L2 -2M6 10L10 6" stroke="#ffbf65" stroke-width=".65" stroke-opacity=".34"/></pattern>
+</defs>
+<rect x="19" y="24" width="602" height="168" fill="url(#net)"/><rect x="19" y="24" width="602" height="168" fill="url(#diamond)"/><rect x="19" y="24" width="602" height="168" fill="url(#fine)"/>
+<path d="M20 30H620M20 186H620" stroke="#a93d12" stroke-width="5" stroke-opacity=".7"/><path d="M20 26H620M20 34H620M20 182H620M20 190H620" stroke="#ffb34b" stroke-width="2.8"/>
+<rect x="19" y="8" width="602" height="19" rx="4" fill="url(#tape)" stroke="#b9410c" stroke-width="2"/><rect x="19" y="189" width="602" height="19" rx="4" fill="url(#tape)" stroke="#b9410c" stroke-width="2"/>
+<path d="M28 17H612M28 198H612" stroke="#ffe3a4" stroke-width="2" stroke-dasharray="16 9" stroke-opacity=".78"/><path d="M22 106H618" stroke="#f5a044" stroke-width="3" stroke-opacity=".8"/>
+<path d="M20 26V190M620 26V190" stroke="#7c351f" stroke-width="10" stroke-linecap="round"/><path d="M20 26V190M620 26V190" stroke="url(#post)" stroke-width="7" stroke-linecap="round"/><path d="M24 28V188M624 28V188" stroke="#ffe0b0" stroke-width="1.5" stroke-opacity=".7"/>
+<rect x="8" y="1" width="14" height="214" rx="4" fill="url(#post)" stroke="#5f3527" stroke-width="1.8"/><rect x="618" y="1" width="14" height="214" rx="4" fill="url(#post)" stroke="#5f3527" stroke-width="1.8"/><path d="M11 10V205M621 10V205" stroke="#fff0cf" stroke-width="1.5" stroke-opacity=".68"/>
+</svg>

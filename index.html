@@ -816,6 +816,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--ui-accent)}
 .weather-ground-fog-toggle small{color:#8199aa;font-size:8px}
 #weatherPanel .weather-trees-toggle{width:100%;margin-top:10px;padding:10px 12px;border:1px solid rgba(95,207,157,.35);border-radius:8px;background:rgba(46,163,106,.16);color:#a8edc9;font-size:10px;font-weight:800;letter-spacing:.45px;text-align:left}
 #weatherPanel .weather-trees-toggle[aria-pressed="true"]{border-color:rgba(255,176,132,.35);background:rgba(184,103,63,.15);color:#ffd0b5}
+#weatherPanel .weather-fences-toggle{border-color:rgba(255,143,54,.42);background:rgba(232,104,24,.16);color:#ffc18a}
+#weatherPanel .weather-fence-count{margin:5px 2px 0;color:#98aabd;font-size:9px;letter-spacing:.2px}
 @media(max-width:1180px){#weatherPanel{top:116px;left:12px;width:min(360px,calc(100% - 24px));max-height:calc(100% - 136px)}}
 @media(max-width:620px){#weatherPanel{top:166px;left:8px;right:8px;width:auto;max-height:calc(100% - 178px);padding:11px}.weather-preset-grid{gap:5px}}
 </style>
@@ -1236,6 +1238,8 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   <label class="weather-ground-fog-toggle" for="weatherVolumetrics"><input id="weatherVolumetrics" type="checkbox" checked/> <span>Объёмные эффекты <small>облака · god rays · ground fog</small></span></label>
   <label class="weather-ground-fog-toggle" for="weatherGroundFog"><input id="weatherGroundFog" type="checkbox"/> <span>Наземный туман <small>выключен по умолчанию</small></span></label>
   <button id="weatherTreesToggle" class="weather-trees-toggle" type="button" aria-pressed="false">ВЫКЛЮЧИТЬ ДЕРЕВЬЯ</button>
+  <button id="weatherSafetyFencesToggle" class="weather-trees-toggle weather-fences-toggle" type="button" aria-pressed="true">СКРЫТЬ СЕТКИ БЕЗОПАСНОСТИ</button>
+  <div id="weatherSafetyFenceCount" class="weather-fence-count" aria-live="polite">Ограждения появятся на крутых краях трасс</div>
   <div id="weatherStatus" aria-live="polite">Ясно · лёгкие облака</div>
 </div>
 
@@ -1983,7 +1987,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v210.js?v=217"></script>
+<script type="module" src="./app.v211.js?v=218"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -2045,7 +2049,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v210.js?v=217"]');
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v211.js?v=218"]');
   moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить приложение или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
