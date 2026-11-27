@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const renderer=readFileSync(new URL('../webgpu-forest-lab.v17.js',import.meta.url),'utf8');
+const renderer=readFileSync(new URL('../webgpu-forest-lab.v18.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../webgpu-forest-lab.html',import.meta.url),'utf8');
 const atmosphere=readFileSync(new URL('../webgpu-forest-atmosphere.v4.js',import.meta.url),'utf8');
 
