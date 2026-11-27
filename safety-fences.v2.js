@@ -399,9 +399,11 @@ export async function findCenterlineSafetyFencePlacements(curve, surface, sample
       const last = side.side === 'left' ? lastLeftPlacement : lastRightPlacement;
       if (distance - last < panelSpacing * 0.78) continue;
       const position = {
-        x: side.edge.x + side.nx * 0.22,
+        // Cross-section probes are discrete; place the panel safely outside
+        // the last interior sample instead of allowing it to clip the piste edge.
+        x: side.edge.x + side.nx * Math.max(0.75, crossSectionStep * 0.65),
         y: side.edge.y + 0.02,
-        z: side.edge.z + side.nz * 0.22,
+        z: side.edge.z + side.nz * Math.max(0.75, crossSectionStep * 0.65),
         tx: tangent.x,
         tz: tangent.z,
         width: panelWidth,
