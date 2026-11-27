@@ -82,7 +82,7 @@ for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-lay
 }
 assert.ok(html.includes('app.v213.js')&&!html.includes('app.v209.js'),'HTML must activate the current v211 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
-assert.ok(entrySource.includes("import { findSteepSafetyFencePlacements, buildSafetyFenceGroup } from './safety-fences.v1.js';")&&entrySource.includes('scheduleSafetyFenceBuild(slopeFootprint);'),'active entrypoint must build the safety-fence layer from the piste footprint');
+assert.ok(entrySource.includes("import { findSteepSafetyFencePlacements, buildSafetyFenceGroup, getCachedSafetyFencePlacements, setCachedSafetyFencePlacements } from './safety-fences.v1.js';")&&entrySource.includes('scheduleSafetyFenceBuild(state.safetyFenceFootprint,state.safetyFenceCacheKey);'),'active entrypoint must build the cached safety-fence layer from the selected piste footprints');
 assert.ok(entrySource.includes('let initialSafetyFencesVisible=true;')&&entrySource.includes('getCachedSafetyFencePlacements(cacheKey)')&&entrySource.includes('safetyFenceAssets=slopeAssets.slice(0,3)'),'safety fences must be precomputed for three pilot slope assets and reused from persistent cache');
 assert.ok(entrySource.includes('requestAnimationFrame(()=>run())')&&entrySource.includes('setCachedSafetyFencePlacements(cacheKey,placements)'),'safety-fence analysis must be deferred until after first frame and cached');
 assert.ok(html.includes('weatherSafetyFencesToggle')&&html.includes('weatherSafetyFenceCount'),'weather settings must expose the safety-fence visibility control and section count');
