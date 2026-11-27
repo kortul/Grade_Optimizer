@@ -1241,8 +1241,11 @@ assert.ok(alpineForestSourceV19.includes('const tierCount=high?22:mid?16:10')&&
   alpineForestSourceV19.includes('const sprayCount=high?3:mid?2:2'),
   'V19 must preserve dense foliage structure across near, mid and far LODs');
 assert.ok(alpineForestSourceV19.includes('oldBatch.dispose?.()')&&
-  alpineForestSourceV19.includes('new THREE.InstancedMesh(geometry,material,trees.length)'),
-  'V19 must release replaced instance batches and preserve instanced rendering');
+  alpineForestSourceV19.includes('new THREE.InstancedMesh(geometry,material,trees.length)')&&
+  alpineForestSourceV19.includes('now-lastResolutionDecision>=1800')&&
+  alpineForestSourceV19.includes('frameTimeEMA>40')&&alpineForestSourceV19.includes('frameTimeEMA<21'),
+  'V19 must release replaced batches, preserve instancing and prevent dynamic-resolution shimmer');
+
 pass('WebGPU Alpine Forest V19: single-shoot mip-safe foliage, fuller distant crowns and LOD batch cleanup');
 
 // Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
