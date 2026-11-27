@@ -1209,7 +1209,7 @@ assert.ok(alpineForestSourceV16.includes('const bladeWidth=2.4+rng()*2.5,bladeCo
   'V16 colour and alpha spray silhouettes must use identical random dimensions');
 pass('WebGPU Alpine Forest V16: independent opaque branches, denser 3D foliage cards and aligned alpha silhouettes');
 
-assert.ok(alpineForestPageV18.includes('webgpu-forest-lab.v18.js?v=20261126e')&&
+assert.ok(alpineForestPageV18.includes('webgpu-forest-lab.v18.js?v=20261127a')&&
   alpineForestPageV18.includes('Alpine Spruce Forest Lab V18'),
   'the standalone V18 page must load its renderer');
 assert.ok(alpineForestSourceV18.includes('levels:28,branches:8,width:1.02')&&
