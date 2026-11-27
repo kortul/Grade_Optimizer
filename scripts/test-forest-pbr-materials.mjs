@@ -15,14 +15,14 @@ assert.match(renderer,/levels:30,branches:7,width:0\.86/,'Alpine spruce must ret
 assert.match(renderer,/levels:26,branches:8,width:1\.16/,'Broad spruce must retain its wide silhouette');
 assert.match(renderer,/function createSpruceFoliageAtlas\(\)/,'V18 must draw a dedicated procedural foliage atlas');
 assert.match(renderer,/const SPRUCE_ATLAS_SIZE=1024/,'foliage atlas must be high-resolution');
-assert.match(renderer,/alphaMap:foliageAtlas\.alphaMap,alphaTest:0\.22,alphaToCoverage:true/,'foliage must render as alpha-cut textured cards with coverage AA');
-assert.match(renderer,/createCoverageAlphaTexture\\(alphaCanvas,size,0\\.22\\)/,'foliage alpha must have custom coverage-preserving mips');
+assert.match(renderer,/alphaMap:foliageAtlas\.alphaMap,alphaTest:0\.22,alphaToCoverage:true/,'V19 foliage must render as alpha-cut textured cards with coverage AA');
+assert.match(renderer,/createCoverageAlphaTexture\(alphaCanvas,size,0\.22\)/,'foliage alpha must have a single-tile coverage-preserving mip chain');
 assert.match(renderer,/const cardCount=high\?3:mid\?2:1/,'some near clumps must use crossed cards to add volume');
 assert.doesNotMatch(renderer,/const needleCount=high\?20:mid\?12:6/,'V18 must no longer build a triangle for every needle');
 assert.match(renderer,/geometry\.addGroup\(0,woodIndices\.length,0\)/,'branch scaffold must use a separate opaque material group');
 assert.match(renderer,/geometry\.addGroup\(woodIndices\.length,foliageIndices\.length,1\)/,'foliage cards must use their independent alpha-tested material');
 assert.match(renderer,/return \[wood,foliage\]/,'wood and foliage must not share the alpha-tested material');
-assert.match(renderer,/const clumpSize=size\\*\\(high\\?2\\.55:mid\\?2\\.65:2\\.8\\)/,'foliage cards must cover the twig scale rather than float as specks');
+assert.match(renderer,/const clumpSize=size\*\(high\?2\.55:mid\?2\.65:2\.8\)/,'foliage cards must cover twig tips and fill the more distant LODs');
 assert.match(renderer,/new THREE\.QuadraticBezierCurve3/,'branches must remain curved');
 assert.match(renderer,/const goldenAngle=Math\.PI\*\(3-Math\.sqrt\(5\)\)/,'phyllotactic whorl rotation must remain deterministic');
 assert.match(renderer,/function selectTreeLod\(distance,current\)/,'LOD must retain hysteresis');
@@ -30,7 +30,7 @@ assert.doesNotMatch(renderer,/cameraTurned/,'camera rotation alone must not rebu
 assert.match(renderer,/const cellSize=520/,'spatial batches must not explode draw-call counts');
 assert.match(renderer,/mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/,'spatial batches must remain frustum culled');
 assert.match(renderer,/sunLight\.shadow\.mapSize\.setScalar\(512\)/,'shadow map must remain reduced');
-assert.match(html,/webgpu-forest-lab\\.v19\\.js\\?v=20261127b/,'main HTML must activate V18');
+assert.match(html,/webgpu-forest-lab\.v19\.js\?v=20261127b/,'main HTML must activate V19');
 
 assert.match(atmosphere,/function setResolutionScale\(scale\)/,'atmosphere must expose adaptive scaling');
 assert.match(atmosphere,/balanced:1\.0/,'balanced mode must start at native render scale');
