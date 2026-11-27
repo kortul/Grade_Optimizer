@@ -1,22 +1,22 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const renderer=readFileSync(new URL('../webgpu-forest-lab.v18.js',import.meta.url),'utf8');
+const renderer=readFileSync(new URL('../webgpu-forest-lab.v19.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../webgpu-forest-lab.html',import.meta.url),'utf8');
 const atmosphere=readFileSync(new URL('../webgpu-forest-atmosphere.v4.js',import.meta.url),'utf8');
 
 assert.match(renderer,/shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes'\}\)/,'Stage 1 semantic groups must still be recognised');
 assert.match(renderer,/object\.material\.map\(\(\)=>snowMaterial\)/,'winter material replacement must remain intact');
-assert.match(renderer,/new THREE\.WebGPURenderer\(\{ antialias: true, powerPreference: 'high-performance' \}\)/,'V18 must retain the 4-sample antialiasing path');
+assert.match(renderer,/new THREE\.WebGPURenderer\(\{ antialias: true, powerPreference: 'high-performance' \}\)/,'V19 must retain the 4-sample antialiasing path');
 assert.match(renderer,/renderer\.backend\.isWebGPUBackend === true/,'the visible label must identify WebGPU or WebGL fallback');
 assert.match(renderer,/name:'Norway'[\s\S]*name:'Alpine'[\s\S]*name:'Broad'/,'V18 must provide three spruce morphologies');
 assert.match(renderer,/levels:28,branches:8,width:1\.02/,'Norway spruce must retain its crown tier profile');
 assert.match(renderer,/levels:30,branches:7,width:0\.86/,'Alpine spruce must retain its tall narrow silhouette');
 assert.match(renderer,/levels:26,branches:8,width:1\.16/,'Broad spruce must retain its wide silhouette');
 assert.match(renderer,/function createSpruceFoliageAtlas\(\)/,'V18 must draw a dedicated procedural foliage atlas');
-assert.match(renderer,/const SPRUCE_ATLAS_SIZE=512/,'foliage atlas must be high-resolution');
-assert.match(renderer,/alphaMap:foliageAtlas\.alphaMap,alphaTest:0\.28,alphaToCoverage:true/,'foliage must render as alpha-cut textured cards with coverage AA');
-assert.match(renderer,/function createCoverageAlphaTexture\(canvas,size,cutoff=0\.28\)/,'foliage alpha must have custom coverage-preserving mips');
+assert.match(renderer,/const SPRUCE_ATLAS_SIZE=1024/,'foliage atlas must be high-resolution');
+assert.match(renderer,/alphaMap:foliageAtlas\.alphaMap,alphaTest:0\.22,alphaToCoverage:true/,'foliage must render as alpha-cut textured cards with coverage AA');
+assert.match(renderer,/function createCoverageAlphaTexture\\(canvas,size,cutoff=0\\.22\\)/,'foliage alpha must have custom coverage-preserving mips');
 assert.match(renderer,/const cardCount=high\?3:mid\?2:1/,'some near clumps must use crossed cards to add volume');
 assert.doesNotMatch(renderer,/const needleCount=high\?20:mid\?12:6/,'V18 must no longer build a triangle for every needle');
 assert.match(renderer,/geometry\.addGroup\(0,woodIndices\.length,0\)/,'branch scaffold must use a separate opaque material group');
