@@ -113,5 +113,7 @@ jobs:
         run: node scripts/test-safety-fences.mjs
       - name: Test H3 centerline safety fence placement
         run: node --test scripts/test-safety-fences-v2.mjs
+      - name: Audit the real H3 centerline export
+        run: node scripts/inspect-h3-slope-curve.mjs
       - name: Validate project
         run: node scripts/validate-project.mjs
