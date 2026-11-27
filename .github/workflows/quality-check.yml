@@ -36,6 +36,7 @@ jobs:
           node --input-type=module --check < webgpu-forest-lab.v18.js
           node --input-type=module --check < webgpu-forest-lab.v19.js
           node --input-type=module --check < webgpu-forest-lab.v20.js
+          node --input-type=module --check < webgpu-forest-lab.v21.js
           node scripts/test-forest-spruce-v13.mjs
           node scripts/test-forest-spruce-v14.mjs
           node scripts/test-forest-spruce-v15.mjs
