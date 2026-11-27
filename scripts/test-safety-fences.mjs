@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findSteepSafetyFencePlacements, buildSafetyFenceBoundaryChains, collectSafetyFenceBoundaryEdges } from '../safety-fences.v1.js';
+import { findSteepSafetyFencePlacements, buildSafetyFenceBoundaryChains, collectSafetyFenceBoundaryEdges, buildTerrainHeightLookup, sampleTerrainHeight } from '../safety-fences.v1.js';
 const footprint={edges:[
  {ax:0,az:0,bx:10,bz:0},{ax:10,az:0,bx:10,bz:10},
  {ax:10,az:10,bx:0,bz:10},{ax:0,az:10,bx:0,bz:0}
@@ -71,4 +71,27 @@ test('limits fence boundary scanning to the first three slope assets',async()=>{
   makeAsset('a','A'),makeAsset('b','B'),makeAsset('c','C'),makeAsset('d','D')
  ],{yieldControl:async()=>{}});
  assert.deepEqual(result.stats.map(item=>item.name),['A','B','C']);
+});
+
+test('terrain height index samples triangle heights with barycentric interpolation',async()=>{
+ const mesh=testTriangleMesh([[0,5,0],[10,15,0],[0,5,10]]);
+ const root={updateWorldMatrix(){},traverseVisible(visitor){visitor(mesh);}};
+ let yields=0;
+ const index=await buildTerrainHeightLookup({Vector3:TestVector3},root,{
+  cellSize:10,yieldEveryVertices:1,yieldEveryTriangles:1,yieldControl:async()=>{yields++;}
+ });
+ assert.equal(index.meshCount,1);
+ assert.equal(index.vertexCount,3);
+ assert.equal(index.triangleCount,1);
+ assert.equal(sampleTerrainHeight(index,2,2),7);
+ assert.equal(sampleTerrainHeight(index,12,2),null);
+ assert.ok(yields>=4,'height-index construction should yield during both vertex and triangle passes');
+});
+test('terrain height index ignores degenerate XZ triangles and empty roots',async()=>{
+ const degenerate=testTriangleMesh([[0,1,0],[5,2,0],[10,3,0]]);
+ const root={updateWorldMatrix(){},traverseVisible(visitor){visitor(degenerate);}};
+ const index=await buildTerrainHeightLookup({Vector3:TestVector3},root,{yieldControl:async()=>{}});
+ assert.equal(index.triangleCount,0);
+ assert.equal(sampleTerrainHeight(index,2,0),null);
+ assert.equal(await buildTerrainHeightLookup({Vector3:TestVector3},null),null);
 });
