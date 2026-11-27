@@ -49,9 +49,9 @@ export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sam
  edgeSampleDistance=8,maxPanels=1600,maxChains=3,yieldEvery=12,yieldControl=yieldOneFrame
 }={}){
  if(!footprint?.edges?.length||typeof isInsidePiste!=='function'||typeof sampleTerrainY!=='function')return [];
- const chains=buildSafetyFenceBoundaryChains(footprint.edges).map(points=>({points,length:cumulativeLengths(points)}))
-  .filter(chain=>chain.length[chain.length-1]>=spacing*.72)
-  .sort((a,b)=>b.length[b.length-1]-a.length[a.length-1]).slice(0,maxChains);
+ const chains=buildSafetyFenceBoundaryChains(footprint.edges).map(points=>({points,distances:cumulativeLengths(points)}))
+  .filter(chain=>chain.distances[chain.distances.length-1]>=spacing*.72)
+  .sort((a,b)=>b.distances[b.distances.length-1]-a.distances[a.distances.length-1]).slice(0,maxChains);
  const placements=[],left={x:0,z:0},minimumDrop=edgeSampleDistance*Math.tan(minimumAngleDegrees*Math.PI/180);
  let candidateCount=0;
  for(const chain of chains){
