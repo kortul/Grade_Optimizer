@@ -35,12 +35,14 @@ jobs:
           node --input-type=module --check < webgpu-forest-lab.v17.js
           node --input-type=module --check < webgpu-forest-lab.v18.js
           node --input-type=module --check < webgpu-forest-lab.v19.js
+          node --input-type=module --check < webgpu-forest-lab.v20.js
           node scripts/test-forest-spruce-v13.mjs
           node scripts/test-forest-spruce-v14.mjs
           node scripts/test-forest-spruce-v15.mjs
           node scripts/test-forest-spruce-v16.mjs
           node scripts/test-forest-spruce-v18.mjs
           node scripts/test-forest-spruce-v19.mjs
+          node scripts/test-forest-spruce-v20.mjs
           node --input-type=module --check < webgpu-forest-atmosphere.v2.js
           node --input-type=module --check < webgpu-forest-atmosphere.v3.js
           node --input-type=module --check < webgpu-forest-atmosphere.v4.js
