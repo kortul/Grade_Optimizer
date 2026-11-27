@@ -49,7 +49,7 @@ const FOREST_EDGE_TREE_TARGET_PER_100_PERCENT=1100;
 const FOREST_EDGE_MIN_DISTANCE_METERS=4;
 const FOREST_EDGE_MAX_DISTANCE_METERS=85;
 const TREE_VISIBILITY_STORAGE_KEY='grade_optimizer_trees_visible_v1';
-const SAFETY_FENCE_VISIBILITY_STORAGE_KEY='grade_optimizer_safety_fences_visible_v3';
+const SAFETY_FENCE_VISIBILITY_STORAGE_KEY='grade_optimizer_safety_fences_visible_v4';
 let initialTreesVisible=true;
 let initialSafetyFencesVisible=true;
 try{const storedTreesVisible=localStorage.getItem(TREE_VISIBILITY_STORAGE_KEY);if(storedTreesVisible!==null)initialTreesVisible=storedTreesVisible!=='false';}catch{}

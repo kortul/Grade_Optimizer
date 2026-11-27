@@ -3,7 +3,7 @@
 Date: 2026-11-27
 
 ## Changes
-- Safety fences are enabled by default and start building automatically after the first rendered frame.
+- Safety fences are enabled by default (using a fresh v4 visibility preference key so an older hidden preference cannot suppress them) and start building automatically after the first rendered frame.
 - Pilot placement is limited to the first three visible imported slope assets and up to the three longest connected boundary contours found in that selection.
 - Per-asset fence boundaries are collected during the existing piste-footprint geometry pass, avoiding a second full mesh traversal.
 - Placement analysis yields back to the browser every 12 candidate panels.
