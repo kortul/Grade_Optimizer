@@ -1515,15 +1515,16 @@ async function start() {
     rebuildForestLod(false);
     atmosphere.render();
     fpsFrames++;
-    if(now-lastResolutionDecision>=650){
+    // Wide hysteresis and a slower cadence keep internal resolution from oscillating,
+    // which otherwise makes alpha-cut needle edges appear to shimmer.
+    if(now-lastResolutionDecision>=1800){
       let nextScale=dynamicResolutionScale;
-      if(frameTimeEMA>34)nextScale=Math.max(0.55,dynamicResolutionScale-(frameTimeEMA>48?0.12:0.08));
-      else if(frameTimeEMA>27)nextScale=Math.max(0.55,dynamicResolutionScale-0.045);
-      else if(frameTimeEMA<24)nextScale=Math.min(1,dynamicResolutionScale+0.025);
+      if(frameTimeEMA>40)nextScale=Math.max(0.55,dynamicResolutionScale-(frameTimeEMA>55?0.08:0.045));
+      else if(frameTimeEMA<21)nextScale=Math.min(1,dynamicResolutionScale+0.015);
       if(Math.abs(nextScale-dynamicResolutionScale)>0.001){
         dynamicResolutionScale=nextScale;
         atmosphere.setResolutionScale(dynamicResolutionScale);
-        statusText.textContent=backendLabel+' · 1080p output · render '+Math.round(dynamicResolutionScale*100)+'% · textured foliage';
+        statusText.textContent=backendLabel+' · 1080p output · render '+Math.round(dynamicResolutionScale*100)+'% · stable foliage sampling';
       }
       lastResolutionDecision=now;
     }
