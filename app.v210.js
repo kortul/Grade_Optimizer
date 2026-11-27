@@ -41,6 +41,11 @@ const clampSlopeDistance=(value,fallback=790)=>{
   return Number.isFinite(number)?Math.max(0,Math.min(1500,number)):fallback;
 };
 const DEFAULT_FOREST_EDGE_DENSITY=100;
+const FOREST_MIN_ELEVATION_METERS=15;
+const FOREST_BACKGROUND_TREE_TARGET=100;
+const FOREST_BACKGROUND_TREE_MIN_SPACING=19;
+const FOREST_EDGE_TREE_TARGET_PER_100_PERCENT=900;
+const FOREST_EDGE_MAX_DISTANCE_METERS=72;
 function normalizeForestEdgeDensity(value){
   const number=Number(value);
   return Number.isFinite(number)?Math.round(Math.max(0,Math.min(300,number))):DEFAULT_FOREST_EDGE_DENSITY;
@@ -1923,10 +1928,13 @@ function buildSlopeEdgeCandidates(candidates,slopeFootprint,treeAreas=[],reserve
     if(isTreePointOnSlope(candidate.x,candidate.z,slopeFootprint))continue;
     if(treeAreas.length&&!treeAreas.some(area=>pointInPoly(candidate.x,candidate.z,area.points)))continue;
     if(reservedLaneZ!==null&&Math.abs(candidate.z-reservedLaneZ)<35)continue;
-    const nearest=findNearestSlopeBoundary(candidate.x,candidate.z,slopeFootprint,105);
-    if(!nearest||nearest.distance<7||nearest.distance>96)continue;
+    if(candidate.y<FOREST_MIN_ELEVATION_METERS)continue;
+    const nearest=findNearestSlopeBoundary(candidate.x,candidate.z,slopeFootprint,FOREST_EDGE_MAX_DISTANCE_METERS+25);
+    if(!nearest||nearest.distance<6||nearest.distance>FOREST_EDGE_MAX_DISTANCE_METERS)continue;
     results.push({x:candidate.x,y:candidate.y,z:candidate.z,edgeDistance:nearest.distance});
   }
+  // Process the closest terrain samples first, so density is concentrated beside the piste.
+  results.sort((a,b)=>a.edgeDistance-b.edgeDistance||forestPlacementRandom(a.x,a.z,73)-forestPlacementRandom(b.x,b.z,73));
   return results;
 }
 function forestPlacementRandom(x,z,salt=0){
@@ -1936,8 +1944,8 @@ function forestPlacementRandom(x,z,salt=0){
 function buildSlopeEdgeTreePlacements(edgeCandidates,densityPercent,baseTrees){
   const density=normalizeForestEdgeDensity(densityPercent)/100;
   if(density<=0||!edgeCandidates.length)return [];
-  const maxTrees=Math.round(220*density);
-  const minSpacing=Math.max(6.5,11.5-(density-1)*2.5);
+  const maxTrees=Math.round(FOREST_EDGE_TREE_TARGET_PER_100_PERCENT*density);
+  const minSpacing=Math.max(4.8,10.5-(density-1)*2.8);
   const cellSize=18,occupied=new Map(),edgeTrees=[];
   const addOccupied=tree=>{
     const cx=Math.floor(tree.x/cellSize),cz=Math.floor(tree.z/cellSize),key=cx+':'+cz;
@@ -1953,10 +1961,10 @@ function buildSlopeEdgeTreePlacements(edgeCandidates,densityPercent,baseTrees){
     return true;
   };
   for(const tree of baseTrees)addOccupied(tree);
-  const keepByBand=[0.98,0.72,0.44];
+  const keepByBand=[0.98,0.64,0.22];
   for(let index=0;index<edgeCandidates.length&&edgeTrees.length<maxTrees;index++){
     const candidate=edgeCandidates[index];
-    const band=candidate.edgeDistance<25?0:candidate.edgeDistance<55?1:2;
+    const band=candidate.edgeDistance<22?0:candidate.edgeDistance<45?1:2;
     const chance=Math.min(1,density*keepByBand[band]);
     if(forestPlacementRandom(candidate.x,candidate.z,band+401)>chance||!canPlace(candidate))continue;
     const random=forestPlacementRandom(candidate.z,candidate.x,band+917);
@@ -2215,7 +2223,7 @@ function buildTestForest({reusePlacements=false}={}) {
   const laneZ=bounds.min.z+spanZ*0.187;
   let seed=0x51A1;
   const rnd=()=>{ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
-  const desiredCount=380,minSpacing=11.5;
+  const desiredCount=FOREST_BACKGROUND_TREE_TARGET,minSpacing=FOREST_BACKGROUND_TREE_MIN_SPACING;
   const xMin=bounds.min.x+spanX*0.025,xMax=bounds.max.x-spanX*0.025;
   const zMin=bounds.min.z+spanZ*0.025,zMax=bounds.max.z-spanZ*0.025;
   const boundsKey=[bounds.min.x,bounds.min.y,bounds.min.z,bounds.max.x,bounds.max.y,bounds.max.z].join('|');
@@ -2241,7 +2249,7 @@ function buildTestForest({reusePlacements=false}={}) {
       const positions=mesh.geometry.attributes.position;
       for(let i=0;i<positions.count;i+=stride){
         vertex.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
-        if(vertex.x>=xMin&&vertex.x<=xMax&&vertex.z>=zMin&&vertex.z<=zMax)candidates.push({x:vertex.x,y:vertex.y,z:vertex.z});
+        if(vertex.x>=xMin&&vertex.x<=xMax&&vertex.z>=zMin&&vertex.z<=zMax&&vertex.y>=FOREST_MIN_ELEVATION_METERS)candidates.push({x:vertex.x,y:vertex.y,z:vertex.z});
       }
     }
     // Tree Area polygons are world-space X/Z; visible piste geometry is excluded.
@@ -2339,7 +2347,7 @@ function buildTestForest({reusePlacements=false}={}) {
       height:t.billboardHeight||t.height,
       width:t.billboardWidth||t.width
     }));
-    dbg('OpenAI AI-лес: '+trees.length+' деревьев ('+baseTreeCount+' базовых + '+edgeTrees.length+' у края трасс)'+(hasTreeAreas?' · '+state.treeAreas.length+' Tree Areas':'')+' · '+AI_PINE_VARIANTS.length+' вариантов · single camera-facing card');
+    dbg('OpenAI AI-лес: '+trees.length+' деревьев ('+baseTreeCount+' редких фоновых + '+edgeTrees.length+' у трасс · '+FOREST_MIN_ELEVATION_METERS+' м минимум)'+(hasTreeAreas?' · '+state.treeAreas.length+' Tree Areas':'')+' · '+AI_PINE_VARIANTS.length+' вариантов · single camera-facing card');
     return;
   }
   // Procedural fallback while the generated texture is loading.
