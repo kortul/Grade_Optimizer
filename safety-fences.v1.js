@@ -108,7 +108,7 @@ export async function buildTerrainHeightLookup(THREE,root,{cellSize:requestedCel
  if(!Number.isFinite(minX)||!Number.isFinite(minZ))return null;
  const spanX=Math.max(1e-4,maxX-minX),spanZ=Math.max(1e-4,maxZ-minZ);
  const cellSize=Number.isFinite(requestedCellSize)&&requestedCellSize>0?requestedCellSize:Math.max(8,Math.min(24,Math.max(spanX,spanZ)/400));
- const cols=Math.max(1,Math.ceil(spanX/cellSize)),rows=Math.max(1,Math.ceil(spanZ/cellSize));
+ const cols=Math.max(1,Math.ceil(spanX/cellSize)+1),rows=Math.max(1,Math.ceil(spanZ/cellSize)+1);
  const cells=new Map(),large=[];
  const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
  let triangleCount=0;
