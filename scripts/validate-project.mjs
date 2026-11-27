@@ -82,7 +82,7 @@ for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-lay
 }
 assert.ok(html.includes('app.v218.js')&&!html.includes('app.v209.js'),'HTML must activate the current v218 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
-assert.ok(entrySource.includes('function getSafetyFenceCenterlineRecords()')&&entrySource.includes('selectH3SafetyFenceCurves')&&entrySource.includes('./safety-fences.v2.js?v=1'),'safety fences must use the named H3 centerline and Stage1 surface sampler');
+assert.ok(entrySource.includes('function getSafetyFenceCenterlineRecords()')&&entrySource.includes('selectH3SafetyFenceCurves')&&entrySource.includes('./safety-fences.v2.js?v=2'),'safety fences must use the named H3 centerline and Stage1 surface sampler');
 assert.ok(entrySource.includes('isPreferredStageOneSkierSlopeAsset(asset)')&&entrySource.includes('state.safetyFenceAnalysisFootprint=null')&&entrySource.includes('curve.points.length>=2'),'fence source selection must use Stage1 plus valid named H3 centerlines, not arbitrary slope meshes');
 assert.ok(entrySource.includes('scheduleH3SafetyFenceBuild()')&&entrySource.includes('findCenterlineSafetyFencePlacements')&&entrySource.includes("for(const kind of ['slopes','angled'])"),'H3 safety nets must be traced against Stage1 material surfaces');
 assert.ok(!entrySource.includes('scheduleSafetyFenceBuild(')&&!entrySource.includes('slopeAssets.slice(0,3)')&&entrySource.includes('minimumTurnDegrees:20')&&entrySource.includes('minimumEdgeAngleDegrees:16'),'fence placement must be sparse and restricted to turns / steep external edges');
