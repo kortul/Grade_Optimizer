@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const renderer=readFileSync(new URL('../webgpu-forest-lab.v20.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../webgpu-forest-lab.html',import.meta.url),'utf8');
 const atmosphere=readFileSync(new URL('../webgpu-forest-atmosphere.v4.js',import.meta.url),'utf8');
+const forestV22=readFileSync(new URL('../webgpu-forest-lab.v22.js',import.meta.url),'utf8');
 
 assert.match(renderer,/shareStageOneMaterialsByKind\(root,\{defaultKind:'slopes'\}\)/,'Stage 1 semantic groups must still be recognised');
 assert.match(renderer,/object\.material\.map\(\(\)=>snowMaterial\)/,'winter material replacement must remain intact');
@@ -31,6 +32,8 @@ assert.match(renderer,/const cellSize=520/,'spatial batches must not explode dra
 assert.match(renderer,/mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/,'spatial batches must remain frustum culled');
 assert.match(renderer,/sunLight\.shadow\.mapSize\.setScalar\(512\)/,'shadow map must remain reduced');
 assert.match(html,/webgpu-forest-lab\.v22\.js\?v=20261127b/,'main HTML must activate V22');
+assert.match(html,/id="spriteModeToggle"[\s\S]*Заменить все деревья на спрайты/,'main Forest Lab page must expose the all-sprite toggle');
+assert.match(forestV22,/buildAllTreeSpritePlacements[\s\S]*allTreesAsSprites[\s\S]*spriteModeToggle/,'V22 must support switching the complete forest between sprite and geometry modes');
 
 assert.match(atmosphere,/function setResolutionScale\(scale\)/,'atmosphere must expose adaptive scaling');
 assert.match(atmosphere,/balanced:1\.0/,'balanced mode must start at native render scale');
