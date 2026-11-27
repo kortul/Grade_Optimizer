@@ -41,6 +41,8 @@ WASD controls use physical key codes, so they also work with a Russian keyboard 
 
 ## Forest
 
+The standalone Alpine Spruce Forest Lab is currently V18 (`webgpu-forest-lab.html`). Its hierarchical spruce skeleton uses irregular phyllotactic whorls, primary scaffolds, hanging secondary branchlets and tertiary terminal shoots; needle-spray cards attach to those shoots rather than floating as generic crown clumps. V18 is an original implementation informed by the MIT-licensed SeedThree, threejs-nanites and Inkwell WebGPU Trees projects; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). V17 and earlier remain available as versioned rollback pages.
+
 `assets/trees/snowy_conifer_atlas.webp` is an RGBA atlas with winter conifer cutouts. Each tree uses one camera-facing instanced plane; the atlas billboards use a texture-matched emissive fill linked to daylight, keeping trees readable before sunset while fading naturally at dusk and night. Crossed planes are avoided because they caused z-fighting.
 
 ## Quality checks
