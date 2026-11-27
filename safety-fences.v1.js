@@ -69,7 +69,6 @@ export async function findSteepSafetyFencePlacements(footprint,isInsidePiste,sam
     const ri=!!isInsidePiste(center.x-left.x*probeDistance,center.z-left.z*probeDistance);
     if(li!==ri){insideLeft=li;break;}
    }
-   if(debug&&candidateCount<5)console.log('FENCE SIDES',{insideLeft,left,tx,tz});
    if(insideLeft!==null){
     const outX=insideLeft?-left.x:left.x,outZ=insideLeft?-left.z:left.z;
     const edgeY=sampleTerrainY(center.x-outX*.55,center.z-outZ*.55)??sampleTerrainY(center.x,center.z);
