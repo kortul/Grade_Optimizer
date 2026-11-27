@@ -76,7 +76,6 @@ test('places nets only along the steep outside edge of a straight H3 segment',as
     yieldControl:async()=>{}
   });
   assert.ok(result.placements.length>=2,'expected a few nets on the dangerous piste edge');
-  console.log('[H3 fence test] steep edge placements:',JSON.stringify(result.placements.map(panel=>({x:panel.x,z:panel.z,reason:panel.reason}))));
   assert.ok(result.placements.every(panel=>panel.z>10),'panels should be outside the high-z edge');
   assert.ok(result.placements.every(panel=>panel.reason==='steep-edge'));
   assert.equal(result.diagnostics.surfaceHitRatio,1);
