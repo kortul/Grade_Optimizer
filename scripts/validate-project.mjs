@@ -1098,8 +1098,10 @@ const alpineForestPageV16=read('webgpu-forest-lab-v16.html').toString('utf8');
 const alpineForestSourceV16=read('webgpu-forest-lab.v16.js').toString('utf8');
 const alpineForestPageV18=read('webgpu-forest-lab-v18.html').toString('utf8');
 const alpineForestSourceV18=read('webgpu-forest-lab.v18.js').toString('utf8');
-assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v18.js?v=20261127a'),
-  'Forest Lab main page must load pinned Three.js r187 V18');
+const alpineForestPageV19=read('webgpu-forest-lab-v19.html').toString('utf8');
+const alpineForestSourceV19=read('webgpu-forest-lab.v19.js').toString('utf8');
+assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v19.js?v=20261127b'),
+  'Forest Lab main page must load pinned Three.js r187 V19');
 assert.ok(alpineForestPageV13.includes('webgpu-forest-lab.v13.js?v=20261126a')&&
   alpineForestPageV13.includes('Alpine Spruce Forest Lab V13'),
   'the standalone V13 page must load its renderer');
@@ -1225,6 +1227,24 @@ assert.ok(alpineForestSourceV18.includes('const sprayCount=high?3:mid?2:1')&&
   'V18 must attach layered needle sprays to tertiary terminal shoots and retain separate foliage/branch materials');
 pass('WebGPU Alpine Forest V18: hierarchical spruce scaffold, phyllotactic whorls and terminal needle sprays');
 
+assert.ok(alpineForestPageV19.includes('webgpu-forest-lab.v19.js?v=20261127b')&&
+  alpineForestPageV19.includes('Alpine Spruce Forest Lab V19'),
+  'the standalone V19 page must load its renderer');
+assert.ok(alpineForestSourceV19.includes('const SPRUCE_ATLAS_SIZE=1024')&&
+  alpineForestSourceV19.includes('GO_SpruceNeedleShoot_V19')&&
+  alpineForestSourceV19.includes('createCoverageAlphaTexture(alphaCanvas,size,0.22)')&&
+  alpineForestSourceV19.includes('alphaTest:0.22,alphaToCoverage:true'),
+  'V19 must use a single full-resolution needle-shoot texture with coverage-preserving alpha mips');
+assert.ok(alpineForestSourceV19.includes('const tierCount=high?22:mid?16:10')&&
+  alpineForestSourceV19.includes('const primaryBranches=high?8:mid?7:6')&&
+  alpineForestSourceV19.includes('const secondaryCount=high?7:mid?4:3')&&
+  alpineForestSourceV19.includes('const sprayCount=high?3:mid?2:2'),
+  'V19 must preserve dense foliage structure across near, mid and far LODs');
+assert.ok(alpineForestSourceV19.includes('oldBatch.dispose?.()')&&
+  alpineForestSourceV19.includes('new THREE.InstancedMesh(geometry,material,trees.length)'),
+  'V19 must release replaced instance batches and preserve instanced rendering');
+pass('WebGPU Alpine Forest V19: single-shoot mip-safe foliage, fuller distant crowns and LOD batch cleanup');
+
 // Unified Alpine Lab: stable Three.js WebGL + the production WeatherSystem v9.
 // The forest is terrain-wide and intentionally does not depend on any piste / Stage 1 asset.
 const alpineLabHtml=read('alpine-lab.html').toString('utf8');
@@ -1238,9 +1258,9 @@ assert.ok(alpineLabSource.includes("loadFBX('./assets/real-terrain.fbx')")&&alpi
 assert.ok(!alpineLabSource.includes('Slopes_Stage1')&&!alpineLabSource.includes('buildSlopeFootprint')&&!alpineLabSource.includes('restoreStageOneCoordinates'),'Alpine Lab forest must not depend on piste geometry or Stage 1 transforms');
 assert.ok(alpineLabHtml.includes('id="forestDensity"')&&alpineLabHtml.includes('id="cloudCoverage"')&&alpineLabHtml.includes('id="groundFog"')&&alpineLabHtml.includes('id="dayCycleToggle"'),'Alpine Lab must expose forest, cloud, fog and day-cycle controls');
 assert.ok(
-  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v18.js') &&
+  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v19.js') &&
   read('webgpu-atmosphere-lab.html').toString('utf8').includes('location.replace("./webgpu-forest-lab.html")'),
-  'Forest Lab must load active V18 and the legacy Atmosphere Lab URL must redirect to it'
+  'Forest Lab must load active V19 and the legacy Atmosphere Lab URL must redirect to it'
 );
 pass('unified Alpine Lab: stable WebGL, shared WeatherSystem v9 and terrain-wide instanced forest');
 
