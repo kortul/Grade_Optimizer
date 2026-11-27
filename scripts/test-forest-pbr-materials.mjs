@@ -31,7 +31,7 @@ assert.doesNotMatch(renderer,/cameraTurned/,'camera rotation alone must not rebu
 assert.match(renderer,/const cellSize=520/,'spatial batches must not explode draw-call counts');
 assert.match(renderer,/mesh\.computeBoundingSphere\(\);mesh\.frustumCulled=true;/,'spatial batches must remain frustum culled');
 assert.match(renderer,/sunLight\.shadow\.mapSize\.setScalar\(512\)/,'shadow map must remain reduced');
-assert.match(html,/webgpu-forest-lab\.v22\.js\?v=20261127c/,'main HTML must activate V22');
+assert.match(html,/webgpu-forest-lab\.v22\.js\?v=20261127d/,'main HTML must activate V22');
 assert.match(html,/id="spriteModeToggle"[\s\S]*Все деревья — спрайты ×3/,'main Forest Lab page must expose the all-sprite toggle');
 assert.match(html,/class="panel mobile-collapsed" id="controlPanel"[\s\S]*id="panelToggle"/,'mobile Forest Lab controls must start collapsed behind a dedicated toggle');
 assert.match(html,/\.panel\.mobile-collapsed \.sub[\s\S]*max-height:min\(52dvh,460px\)/,'mobile Forest Lab must keep the scene visible and limit expanded controls to a bottom sheet');
@@ -53,3 +53,5 @@ assert.match(forestV22,/transparent:false,alphaTest:0\.18/,'sprite cards must us
 assert.match(forestV22,/mesh\.frustumCulled=true/,'sprite batches must be culled by spatial cell');
 assert.match(forestV22,/sunLight\.shadow\.autoUpdate=shadowsEnabled/,'sprite-only mode must skip the unused shadow-map refresh');
 assert.match(forestV22,/frameTimeEMA>18\.5/,'adaptive resolution must react before frame rate falls to 45 FPS');
+
+assert.match(forestV22,/falling back to procedural 3D trees/,'failed sprite atlas loading must fall back to procedural trees');
