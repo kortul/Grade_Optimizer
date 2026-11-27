@@ -1104,6 +1104,8 @@ const alpineForestPageV20=read('webgpu-forest-lab-v20.html').toString('utf8');
 const alpineForestSourceV20=read('webgpu-forest-lab.v20.js').toString('utf8');
 const alpineForestPageV21=read('webgpu-forest-lab-v21.html').toString('utf8');
 const alpineForestSourceV21=read('webgpu-forest-lab.v21.js').toString('utf8');
+const alpineForestPageV22=read('webgpu-forest-lab-v22.html').toString('utf8');
+const alpineForestSourceV22=read('webgpu-forest-lab.v22.js').toString('utf8');
 assert.ok(alpineForestHtml.includes('three@0.187.0')&&alpineForestHtml.includes('webgpu-forest-lab.v21.js?v=20261127a')&&
   alpineForestHtml.includes('ALPINE SPRUCE V21'),
   'Forest Lab main page must load pinned Three.js r187 V21');
@@ -1291,6 +1293,15 @@ assert.ok(alpineForestSourceV21.includes('object.castShadow=false; // Static sno
   alpineForestSourceV21.includes('frameTimeEMA<23'),
   'V21 must reduce static terrain shadow work and adapt render resolution toward 40 FPS');
 pass('WebGPU Alpine Forest V21: fuller natural spruce crowns, dome shading and 40 FPS adaptive budget');
+assert.ok(alpineForestPageV22.includes('webgpu-forest-lab.v22.js?v=20261127a')&&alpineForestPageV22.includes('ALPINE SPRUCE V22'),
+  'V22 page must load its renderer');
+assert.ok(alpineForestSourceV22.includes('loadForestSpriteTextures')&&alpineForestSourceV22.includes('buildForestSpritePlacements')&&
+  alpineForestSourceV22.includes('MainStyle_ForestSprite_')&&alpineForestSourceV22.includes('updateForestSpriteBillboards'),
+  'V22 must add camera-facing instanced sprite trees from the main app atlas');
+assert.ok(alpineForestPageV22.includes('@media(max-width:700px)')&&alpineForestPageV22.includes('panelToggle')&&
+  alpineForestSourceV22.includes('mobile-collapsed'),
+  'V22 must provide a collapsible touch-friendly mobile control panel');
+pass('WebGPU Alpine Forest V22: main-app atlas sprite fill and mobile interface');
 
 
 
@@ -1307,7 +1318,7 @@ assert.ok(alpineLabSource.includes("loadFBX('./assets/real-terrain.fbx')")&&alpi
 assert.ok(!alpineLabSource.includes('Slopes_Stage1')&&!alpineLabSource.includes('buildSlopeFootprint')&&!alpineLabSource.includes('restoreStageOneCoordinates'),'Alpine Lab forest must not depend on piste geometry or Stage 1 transforms');
 assert.ok(alpineLabHtml.includes('id="forestDensity"')&&alpineLabHtml.includes('id="cloudCoverage"')&&alpineLabHtml.includes('id="groundFog"')&&alpineLabHtml.includes('id="dayCycleToggle"'),'Alpine Lab must expose forest, cloud, fog and day-cycle controls');
 assert.ok(
-  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v21.js') &&
+  read('webgpu-forest-lab.html').toString('utf8').includes('src="./webgpu-forest-lab.v22.js') &&
   read('webgpu-atmosphere-lab.html').toString('utf8').includes('location.replace("./webgpu-forest-lab.html")'),
   'Forest Lab must load active V21 and the legacy Atmosphere Lab URL must redirect to it'
 );
