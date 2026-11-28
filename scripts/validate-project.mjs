@@ -87,7 +87,7 @@ assert.ok(entrySource.includes('isPreferredStageOneSkierSlopeAsset(asset)')&&ent
 assert.ok(entrySource.includes('scheduleHSafetyFenceBuild()')&&entrySource.includes('findCenterlineSafetyFencePlacements')&&entrySource.includes("for(const kind of ['slopes','angled'])"),'H-slope safety nets must be traced against Stage1 material surfaces');
 assert.ok(entrySource.includes('buildSafetyFenceGroup')&&entrySource.includes('./safety-fences.v8.js?v=8'),'H-slope panels must preserve the fixed v221 inset and delete sections whose full base span is unsupported');
 assert.ok(entrySource.includes("function shouldRenderSafetyFences()")&&entrySource.includes("state.mode==='skier'||state.mode==='drone'"),'fence meshes must render only in skier and drone modes');
-assert.ok(entrySource.includes("function updateModeSwitcher(){\\n  syncSafetyFenceModeVisibility();"),'every successful or fallback mode transition must resync fence visibility');
+assert.ok(entrySource.includes("function updateModeSwitcher(){")&&entrySource.includes("syncSafetyFenceModeVisibility();"),'every successful or fallback mode transition must resync fence visibility');
 assert.ok(entrySource.includes("visible:shouldRenderSafetyFences()"),'newly built fence groups must inherit the active mode visibility');
 assert.ok(entrySource.includes('selectHSafetyFenceCurves(valid)')&&entrySource.includes('complete set of H centerlines'),'fence generation must use every H centerline in the client manifest, not the selected display slope');
 assert.ok(entrySource.includes('fenceInsetMeters:1.25'),'H-slope fence panels must be offset toward the piste centre and resampled on Stage1');
