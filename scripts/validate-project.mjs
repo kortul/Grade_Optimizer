@@ -89,11 +89,11 @@ assert.ok(entrySource.includes('buildSafetyFenceGroup')&&entrySource.includes('.
 assert.ok(entrySource.includes('fenceInsetMeters:1.25'),'H-slope fence panels must be offset toward the piste centre and resampled on Stage1');
 assert.ok(entrySource.includes('coverageMode:\'full\'')&&entrySource.includes('dedupeSafetyFencePlacements'),'all H slopes must receive continuous short panels with shared-boundary duplicate suppression');
 assert.ok(entrySource.includes('stationSpacing:3.5')&&entrySource.includes('maxPanels:1200'),'full H-slope coverage must use short panel spacing without the former sparse 420-panel cap');
-assert.ok(!entrySource.includes('scheduleSafetyFenceBuild(')&&!entrySource.includes('slopeAssets.slice(0,3)')&&entrySource.includes('minimumTurnDegrees:20')&&entrySource.includes('minimumEdgeAngleDegrees:16'),'fence placement must be sparse and restricted to turns / steep external edges');
+assert.ok(!entrySource.includes('scheduleSafetyFenceBuild(')&&!entrySource.includes('slopeAssets.slice(0,3)')&&entrySource.includes("coverageMode:'full'"),'H-piste test placement must use continuous sampled edge runs rather than the legacy sparse hazard-only pass');
 assert.ok(entrySource.includes('curve.name||curve.id')&&entrySource.includes('stageOneAsset.meta?.name||stageOneAsset.name')&&entrySource.includes('H slopes safety-fence inputs'),'fence diagnostics must expose H3 curve details and the Stage1 asset name');
 assert.ok(html.includes('weatherSafetyFencesToggle')&&html.includes('weatherSafetyFenceCount'),'weather settings must expose the safety-fence visibility control and section count');
 assert.ok(existsSync(resolve(root,'assets/safety-fences/orange-safety-net.svg')),'safety-fence texture asset is missing');
-pass('all-H centerline safety fences, sparse placement rules, inset grounding, texture and controls are wired');
+pass('all-H centerline safety fences, continuous full-coverage placement, shared-edge deduplication, inset grounding and controls are wired');
 assert.ok(!entrySource.includes('slopeAnalysisOcclusionRaycaster')&&!entrySource.includes('updateSlopeAnalysisLabelOcclusion('),'slope-label visibility must not add per-label raycasts over terrain geometry');
 pass('slope labels use the low-cost spatial index rather than per-label terrain raycasts');
 
