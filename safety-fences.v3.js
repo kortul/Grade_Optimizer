@@ -467,7 +467,7 @@ export async function findCenterlineSafetyFencePlacements(curve, surface, sample
       if (forTurn) diagnostics.placedForTurns++;
       else if (forSteepEdge) diagnostics.placedForSteepEdges++;
       else diagnostics.placedForSteepRoutes++;
-      if (placements.length >= maxPanels) break;
+      if (pendingPlacements.length >= maxPanels) break;
     }
     if (placements.length >= maxPanels) break;
     if (diagnostics.sampledStations % Math.max(1, yieldEveryStations) === 0) await yieldControl();
