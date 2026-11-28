@@ -206,7 +206,7 @@ const PISTE_GROUP_LETTERS = new Set(['A','B','G','U','T','H']);
 export function selectPisteSafetyFenceCurves(curves) {
   return (Array.isArray(curves) ? curves : []).filter(curve => {
     const label = [curve?.name, curve?.id, curve?.sourcePath].filter(Boolean).join(' ');
-    const tokens = label.matchAll(/(?:^|[^a-z0-9])([a-z])(?:[\\s_-]*\\d+)?(?=$|[^a-z0-9])/gi);
+    const tokens = label.matchAll(/(?:^|[^a-z0-9])([a-z])(?:[\s_-]*\d+)?(?=$|[^a-z0-9])/gi);
     for (const match of tokens) {
       if (PISTE_GROUP_LETTERS.has(match[1].toUpperCase())) return true;
     }
