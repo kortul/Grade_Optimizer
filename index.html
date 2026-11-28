@@ -1875,6 +1875,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
       <div class="tutorial-step"><span class="step-number">1</span><div><strong>Кликни по склону</strong><small>Клик — захват мыши. Двигай мышью, чтобы осмотреться.</small></div></div>
       <div class="tutorial-step"><span class="step-number">2</span><div><strong>Оттолкнись и прыгай</strong><small><kbd>SHIFT</kbd> — толчок палками. <kbd>SPACE</kbd> — прыжок.</small></div></div>
       <div class="tutorial-step"><span class="step-number">3</span><div><strong>Поворачивай и тормози</strong><small><kbd>A</kbd> / <kbd>D</kbd> — поворот. <kbd>S</kbd> — тормоз.</small></div></div>
+      <div class="tutorial-step"><span class="step-number">4</span><div><strong>Переключай вид камеры</strong><small><kbd>C</kbd> — переключение между видом от первого и третьего лица.</small></div></div>
     </div>
   </section>
 
@@ -1887,7 +1888,8 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
       <div class="control-tile"><div class="control-keys"><kbd>SHIFT</kbd></div><div><strong>Толчок палками</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd>SPACE</kbd></div><div><strong>Прыжок</strong></div></div>
       <div class="control-tile"><div class="control-keys"><kbd>1</kbd></div><div><strong>Слот 1 · вершина Stage 1, если слот пуст</strong></div></div>
-      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd><span>/</span><kbd>C</kbd></div><div><strong>Осмотреться / 3-е лицо</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd class="key-mouse">МЫШЬ</kbd></div><div><strong>Осмотреться</strong></div></div>
+      <div class="control-tile"><div class="control-keys"><kbd>C</kbd></div><div><strong>Переключить вид камеры</strong></div></div>
     </div>
   </section>
 
@@ -1952,26 +1954,26 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   </div>
 </div>
 
-<div id="mobileControls" aria-label="Mobile controls">
+<div id="mobileControls" aria-label="Мобильное управление">
   <div class="mobile-status-row">
-    <div id="mobileModeHint" class="mobile-mode-hint">ОБЗОР · проведи пальцем, чтобы вращать сцену · два пальца — масштаб</div>
+    <div id="mobileModeHint" class="mobile-mode-hint">ОБЗОР · один палец — вращение · два пальца — масштаб</div>
     <div id="mobileSpeedBox" class="mobile-speed-box" hidden><strong id="mobileSpeedValue">0</strong><span>км/ч</span></div>
   </div>
-  <div id="mobileMoveStick" class="mobile-stick mobile-stick-move" role="group" aria-label="Movement joystick">
-    <span class="mobile-stick-caption">MOVE</span><span class="mobile-stick-ring"></span><span class="mobile-stick-knob"></span>
+  <div id="mobileMoveStick" class="mobile-stick mobile-stick-move" role="group" aria-label="Стик движения">
+    <span class="mobile-stick-caption">ДВИЖЕНИЕ</span><span class="mobile-stick-ring"></span><span class="mobile-stick-knob"></span>
   </div>
-  <div id="mobileLookStick" class="mobile-stick mobile-stick-look" role="group" aria-label="Camera look joystick">
-    <span class="mobile-stick-caption">LOOK</span><span class="mobile-stick-ring"></span><span class="mobile-stick-knob"></span>
+  <div id="mobileLookStick" class="mobile-stick mobile-stick-look" role="group" aria-label="Стик камеры">
+    <span class="mobile-stick-caption">КАМЕРА</span><span class="mobile-stick-ring"></span><span class="mobile-stick-knob"></span>
   </div>
-  <div id="mobileSkierActions" class="mobile-actions mobile-actions-skier" role="group" aria-label="Skier actions">
-    <button type="button" data-mobile-key="shift">PUSH</button>
-    <button type="button" data-mobile-action="jump">JUMP</button>
-    <button type="button" data-mobile-action="camera">VIEW</button>
+  <div id="mobileSkierActions" class="mobile-actions mobile-actions-skier" role="group" aria-label="Действия лыжника">
+    <button type="button" data-mobile-key="shift">ТОЛЧОК</button>
+    <button type="button" data-mobile-action="jump">ПРЫЖОК</button>
+    <button type="button" data-mobile-action="camera">ВИД</button>
   </div>
-  <div id="mobileDroneActions" class="mobile-actions mobile-actions-drone" role="group" aria-label="Drone actions">
-    <button type="button" data-mobile-key=" ">UP</button>
-    <button type="button" data-mobile-key="control">DOWN</button>
-    <button type="button" data-mobile-key="shift">BOOST</button>
+  <div id="mobileDroneActions" class="mobile-actions mobile-actions-drone" role="group" aria-label="Действия дрона">
+    <button type="button" data-mobile-key=" ">ВВЕРХ</button>
+    <button type="button" data-mobile-key="control">ВНИЗ</button>
+    <button type="button" data-mobile-key="shift">УСКОРЕНИЕ</button>
   </div>
 </div>
 
@@ -1987,7 +1989,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
 <div id="loading"><div class="box"><div class="spin"></div><div class="txt">Оптимизация склона — идёт расчёт…</div></div></div></div></div>
 <div id="sceneLoading" aria-live="polite"><div class="load-card"><div class="mountain-mark"><svg viewBox="0 0 180 76" width="180" height="76" fill="none" aria-hidden="true"><path d="M8 66 53 14 80 47 104 25 172 66" stroke="#b9d9ed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m42 27 11-13 12 17-9-5-6 7-8-3" fill="#eaf6ff" opacity=".8"/><path d="m94 37 10-12 13 15-8-4-7 6-7-5" fill="#dceefa" opacity=".8"/><path d="M8 66h164" stroke="#8fb4cc" stroke-width="1.2" opacity=".5"/></svg></div><div class="brand">Web 3D · Slopes</div><div class="load-title">Подготавливаем склон</div><div class="load-sub">Загружаем рельеф и собираем сцену</div><div class="load-track"></div><div class="load-foot">Зимняя визуализация</div></div></div>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./app.v233.js?v=242"></script>
+<script type="module" src="./app.v234.js?v=243"></script>
 <script id="grade-optimizer-mode-bridge">
 (()=>{
   const notice=document.getElementById('modeSwitchFeedback');
@@ -2049,7 +2051,7 @@ body.skier-spawn-placement #view canvas{cursor:crosshair!important}
   window.addEventListener('unhandledrejection',event=>{
     show('Ошибка загрузки модуля: '+(event.reason?.message||String(event.reason||'unknown')));
   });
-  const moduleScript=document.querySelector('script[type="module"][src="./app.v233.js?v=242"]');
+  const moduleScript=document.querySelector('script[type="module"][src="./app.v234.js?v=243"]');
   moduleScript?.addEventListener('error',()=>show('Браузер не смог загрузить приложение или один из его модулей.'));
 })();
 </script><style id="inspector-vertical-and-combined-lens">
