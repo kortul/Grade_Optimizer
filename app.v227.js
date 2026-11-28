@@ -1009,7 +1009,7 @@ function getSafetyFenceCenterlineRecords(){
   const valid=Array.isArray(curves)
     ?curves.filter(curve=>curve&&Array.isArray(curve.points)&&curve.points.length>=2)
     :[];
-  // The client manifest contains the complete A/B/G/U/T/H centerline set;
+  // The client manifest contains every named A/B/G/U/T/H piste centerline;
   // deliberately do not filter by the currently selected display slope.
   return selectPisteSafetyFenceCurves(valid);
 }
@@ -1025,8 +1025,8 @@ function syncSafetyFenceControls(){
   if(weatherSafetyFencesToggleButton){
     const hasGeometry=!!state.safetyFenceGroup;
     weatherSafetyFencesToggleButton.textContent=state.safetyFencesVisible
-      ?'ВЫКЛЮЧИТЬ ОГРАЖДЕНИЯ H'
-      :(state.safetyFenceBuilding?'СТРОЮ СЕТКИ H':'ВКЛЮЧИТЬ ОГРАЖДЕНИЯ H');
+      ?'ВЫКЛЮЧИТЬ ОГРАЖДЕНИЯ A/B/G/U/T/H'
+      :(state.safetyFenceBuilding?'СТРОЮ ОГРАЖДЕНИЯ A/B/G/U/T/H':'ВКЛЮЧИТЬ ОГРАЖДЕНИЯ A/B/G/U/T/H');
     weatherSafetyFencesToggleButton.setAttribute('aria-pressed',String(state.safetyFencesVisible));
     weatherSafetyFencesToggleButton.disabled=state.safetyFenceBuilding||(!hasGeometry&&!hasSources);
     weatherSafetyFencesToggleButton.title='Ограждения '+(state.safetyFencesVisible?'включены':'выключены')+
@@ -2608,7 +2608,7 @@ function buildTestForest({reusePlacements=false}={}) {
     ?'A/B/G/U/T/H: '+centrelineCurves.map(curve=>curve.name||curve.id||'Без имени').join(', ')+
       ' · Stage 1: '+(stageOneAsset?(stageOneAsset.meta?.name||stageOneAsset.name||stageOneAsset.id):'не найден')+
       ' · Сетки только на поворотах и крутых внешних кромках.'
-    :'Кривая A/B/G/U/T/H не найдена в manifest.slopeCurves.curves.';
+    :'Центральные кривые трасс A/B/G/U/T/H не найдены в manifest.slopeCurves.curves.';
   console.info('[Grade Optimizer] A/B/G/U/T/H safety-fence inputs:',{
     curveCount:centrelineCurves.length,
     curves:centrelineCurves.map(curve=>({
