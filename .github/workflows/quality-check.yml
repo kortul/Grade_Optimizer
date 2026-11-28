@@ -76,6 +76,7 @@ jobs:
           node --input-type=module --check < app.v221.js
           node --input-type=module --check < app.v222.js
           node --input-type=module --check < app.v223.js
+          node --input-type=module --check < app.v224.js
           node --input-type=module --check < safety-fences.v1.js
           node --input-type=module --check < safety-fences.v2.js
           node --input-type=module --check < safety-fences.v3.js
