@@ -89,7 +89,8 @@ assert.ok(entrySource.includes('buildSafetyFenceGroup')&&entrySource.includes('.
 assert.ok(entrySource.includes("function shouldRenderSafetyFences()")&&entrySource.includes("state.mode==='skier'||state.mode==='drone'"),'fence meshes must render only in skier and drone modes');
 assert.ok(entrySource.includes("function updateModeSwitcher(){")&&entrySource.includes("syncSafetyFenceModeVisibility();"),'every successful or fallback mode transition must resync fence visibility');
 assert.ok(entrySource.includes("visible:shouldRenderSafetyFences()"),'newly built fence groups must inherit the active mode visibility');
-assert.ok(entrySource.includes('selectPisteSafetyFenceCurves(valid)')&&entrySource.includes('complete A/B/G/U/T/A/B/G/U/T/H centerline set'),'fence generation must use every named A/B/G/U/T/A/B/G/U/T/H centerline in the client manifest, not the selected display slope');
+assert.ok(entrySource.includes('selectPisteSafetyFenceCurves(valid)')&&entrySource.includes('every named A/B/G/U/T/H piste centerline'),'fence generation must use every named A/B/G/U/T/H piste centerline in the client manifest, not the selected display slope');
+assert.ok(existsSync(resolve(root,'safety-fences.v9.js'))&&existsSync(resolve(root,'scripts/test-safety-fences-v9.mjs')),'all-piste selector module and its six-group regression suite must be present');
 assert.ok(entrySource.includes('fenceInsetMeters:1.25'),'A/B/G/U/T/H piste fence panels must be offset toward the piste centre and resampled on Stage1');
 assert.ok(entrySource.includes('coverageMode:\'full\'')&&entrySource.includes('dedupeSafetyFencePlacements'),'all A/B/G/U/T/H must receive continuous short panels with unsupported sections culled');
 assert.ok(entrySource.includes('fenceInsetMeters:1.25'),'fence placement must retain the fixed 1.25 m inset, without adaptive repositioning');
@@ -97,7 +98,7 @@ assert.ok(entrySource.includes('maximumPisteWidthMeters:55')&&entrySource.includ
 assert.ok(entrySource.includes("SAFETY_FENCE_VISIBILITY_STORAGE_KEY='grade_optimizer_safety_fences_enabled_v7'")&&entrySource.includes('let initialSafetyFencesVisible=true;'),'all A/B/G/U/T/H piste fences must be enabled by default');
 assert.ok(entrySource.includes('stationSpacing:3.5')&&entrySource.includes('maxPanels:1200'),'full A/B/G/U/T/H piste coverage must use short panel spacing without the former sparse 420-panel cap');
 assert.ok(!entrySource.includes('scheduleSafetyFenceBuild(')&&!entrySource.includes('slopeAssets.slice(0,3)')&&entrySource.includes("coverageMode:'full'"),'H-piste test placement must use continuous sampled edge runs rather than the legacy sparse hazard-only pass');
-assert.ok(entrySource.includes('curve.name||curve.id')&&entrySource.includes('stageOneAsset.meta?.name||stageOneAsset.name')&&entrySource.includes('A/B/G/U/T/H safety-fence inputs'),'fence diagnostics must expose H3 curve details and the Stage1 asset name');
+assert.ok(entrySource.includes('curve.name||curve.id')&&entrySource.includes('stageOneAsset.meta?.name||stageOneAsset.name')&&entrySource.includes('A/B/G/U/T/H safety-fence inputs'),'fence diagnostics must expose each piste curve and the Stage1 asset name');
 assert.ok(html.includes('weatherSafetyFencesToggle')&&html.includes('weatherSafetyFenceCount'),'weather settings must expose the safety-fence visibility control and section count');
 assert.ok(existsSync(resolve(root,'assets/safety-fences/orange-safety-net.svg')),'safety-fence texture asset is missing');
 pass('all-piste A/B/G/U/T/H safety fences, continuous full-coverage placement, shared-edge deduplication, inset grounding and controls are wired');
