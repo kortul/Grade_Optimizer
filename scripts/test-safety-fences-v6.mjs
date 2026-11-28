@@ -316,7 +316,7 @@ test('full-coverage panels are terrain-checked along their entire span and repor
   assert.ok(result.placements.length>0);
   assert.ok(result.diagnostics.maxAcceptedInset>=1.25);
   for(const panel of result.placements){
-    assert.equal(sampleStageOneSurfaceHeight(index.byKind.slopes,panel.ax,panel.az),100);
-    assert.equal(sampleStageOneSurfaceHeight(index.byKind.slopes,panel.bx,panel.bz),100);
+    assert.ok(Math.abs(sampleStageOneSurfaceHeight(index.byKind.slopes,panel.ax,panel.az)-100)<1e-6);
+    assert.ok(Math.abs(sampleStageOneSurfaceHeight(index.byKind.slopes,panel.bx,panel.bz)-100)<1e-6);
   }
 });
