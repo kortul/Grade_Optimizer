@@ -80,7 +80,7 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v223.js')&&!html.includes('app.v209.js'),'HTML must activate the current v223 release');
+assert.ok(html.includes('app.v224.js')&&!html.includes('app.v209.js'),'HTML must activate the current v224 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
 assert.ok(entrySource.includes('function getSafetyFenceCenterlineRecords()')&&entrySource.includes('selectHSafetyFenceCurves')&&entrySource.includes('./safety-fences.v7.js?v=7'),'safety fences must use all named H-slope centerlines and the Stage1 surface sampler');
 assert.ok(entrySource.includes('isPreferredStageOneSkierSlopeAsset(asset)')&&entrySource.includes('state.safetyFenceAnalysisFootprint=null')&&entrySource.includes('curve.points.length>=2'),'fence source selection must use Stage1 plus valid named H-slope centerlines, not arbitrary slope meshes');
@@ -89,6 +89,7 @@ assert.ok(entrySource.includes('buildSafetyFenceGroup')&&entrySource.includes('.
 assert.ok(entrySource.includes('fenceInsetMeters:1.25'),'H-slope fence panels must be offset toward the piste centre and resampled on Stage1');
 assert.ok(entrySource.includes('coverageMode:\'full\'')&&entrySource.includes('dedupeSafetyFencePlacements'),'all H slopes must receive continuous short panels with unsupported sections culled');
 assert.ok(entrySource.includes('fenceInsetMeters:1.25'),'fence placement must retain the fixed 1.25 m inset, without adaptive repositioning');
+assert.ok(entrySource.includes("SAFETY_FENCE_VISIBILITY_STORAGE_KEY='grade_optimizer_safety_fences_visible_v5'")&&entrySource.includes('let initialSafetyFencesVisible=false;'),'large H-slope fence analysis must be opt-in and must not block initial scene loading');
 assert.ok(entrySource.includes('stationSpacing:3.5')&&entrySource.includes('maxPanels:1200'),'full H-slope coverage must use short panel spacing without the former sparse 420-panel cap');
 assert.ok(!entrySource.includes('scheduleSafetyFenceBuild(')&&!entrySource.includes('slopeAssets.slice(0,3)')&&entrySource.includes("coverageMode:'full'"),'H-piste test placement must use continuous sampled edge runs rather than the legacy sparse hazard-only pass');
 assert.ok(entrySource.includes('curve.name||curve.id')&&entrySource.includes('stageOneAsset.meta?.name||stageOneAsset.name')&&entrySource.includes('H slopes safety-fence inputs'),'fence diagnostics must expose H3 curve details and the Stage1 asset name');
