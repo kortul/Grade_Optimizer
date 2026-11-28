@@ -2407,7 +2407,7 @@ function scheduleH3SafetyFenceBuild(){
             stationSpacing:4.5,panelSpacing:6.5,panelWidth:6.0,panelHeight:1.4,
             maxPanels:420,maxHalfWidth:64,crossSectionStep:1.25,
             turnWindowMeters:8,minimumTurnDegrees:20,
-            minimumEdgeAngleDegrees:16,edgeSampleDistance:8,
+            minimumEdgeAngleDegrees:16,edgeSampleDistance:8,panelTangentWindowMeters:4.5,
             minimumRouteAngleDegrees:27,yieldEveryStations:18
           });
           candidates.push(result);
