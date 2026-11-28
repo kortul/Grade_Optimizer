@@ -409,11 +409,11 @@ export async function findCenterlineSafetyFencePlacements(curve, surface, sample
         if (stationDelta < stationSpacing * 0.65 || stationDelta > stationSpacing * 1.65) continue;
         const dx = b.x - a.x, dz = b.z - a.z;
         const edgeLength = Math.hypot(dx, dz);
-        if (edgeLength < stationSpacing * 0.45 || edgeLength > stationSpacing * 2.2) continue;
+        if (edgeLength < stationSpacing * 0.45 || edgeLength > stationSpacing * 1.65) continue;
         const tangentDot = (dx * tangent.x + dz * tangent.z) / Math.max(1e-8, edgeLength);
-        if (tangentDot < 0.35) continue;
+        if (tangentDot < 0.55) continue;
         const normalDot = a.nx * b.nx + a.nz * b.nz;
-        if (normalDot < 0.15) continue;
+        if (normalDot < 0.35) continue;
         const verticalDelta = Math.abs(b.y - a.y);
         if (verticalDelta > Math.max(8, edgeLength * 1.5)) continue;
         pendingPlacements.push({
@@ -566,7 +566,8 @@ export async function findCenterlineSafetyFencePlacements(curve, surface, sample
       y: (ay + by) * 0.5,
       z: (az + bz) * 0.5,
       ax, ay, az, bx, by, bz,
-      width
+      width,
+      side: pending.side
     });
   }
   diagnostics.surfaceHitRatio = diagnostics.sampledStations
