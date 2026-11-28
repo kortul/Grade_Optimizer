@@ -50,11 +50,14 @@ function makeRectSurface(minX,maxX,minZ,maxZ,y=100,material='Slopes') {
 
 const THREE={Vector3:TestVector3};
 
-test('selects all requested A, B, G, U, T and H piste groups, and ignores unrelated labels',()=>{
+test('selects all requested A, B, C, G, U, T and H piste groups, and ignores unrelated labels',()=>{
   const curves=[
     {id:'curve-a1',name:'A1'},
     {id:'curve-a2',name:'Slope A-2'},
     {id:'curve-b1',name:'B1'},
+    {id:'curve-c1',name:'C1'},
+    {id:'curve-c2',name:'C2'},
+    {id:'curve-c-only',name:'C'},
     {id:'curve-g3',name:'G_3'},
     {id:'curve-u4',name:'U 4'},
     {id:'curve-t5',name:'T5'},
@@ -64,12 +67,11 @@ test('selects all requested A, B, G, U, T and H piste groups, and ignores unrela
     {id:'curve-a-only',name:'A'},
     {id:'curve-other',name:'Hotel3'},
     {id:'curve-s',name:'S1'},
-    {id:'curve-c',name:'C2'},
     {id:'curve-plain',name:'Central ridge'}
   ];
   assert.deepEqual(
     selectPisteSafetyFenceCurves(curves).map(curve=>curve.id),
-    ['curve-a1','curve-a2','curve-b1','curve-g3','curve-u4','curve-t5','curve-h1','curve-h12','curve-source','curve-a-only']
+    ['curve-a1','curve-a2','curve-b1','curve-c1','curve-c2','curve-c-only','curve-g3','curve-u4','curve-t5','curve-h1','curve-h12','curve-source','curve-a-only']
   );
 });
 test('builds a Stage1 surface index from Slopes material triangles',async()=>{
