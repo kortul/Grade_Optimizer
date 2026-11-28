@@ -196,11 +196,11 @@ export function sampleSupportedFenceSegment(surface, start, end, { maxProbeSpaci
   };
 }
 
-const PISTE_GROUP_LETTERS = new Set(['A','B','G','U','T','H']);
+const PISTE_GROUP_LETTERS = new Set(['A','B','C','G','U','T','H']);
 
 /**
  * Select all piste centreline curves belonging to the requested resort groups.
- * Recognises labels such as A1, "Slope B2", G-3, U_4, T 5 and H12 in
+ * Recognises labels such as A1, "Slope B2", C-3, G-4, U_5, T 6 and H12 in
  * name, id, or sourcePath, while ignoring unrelated words such as "Hotel".
  */
 export function selectPisteSafetyFenceCurves(curves) {
