@@ -80,6 +80,7 @@ jobs:
           node --input-type=module --check < app.v225.js
           node --input-type=module --check < app.v226.js
           node --input-type=module --check < app.v227.js
+          node --input-type=module --check < app.v228.js
           node --input-type=module --check < safety-fences.v1.js
           node --input-type=module --check < safety-fences.v2.js
           node --input-type=module --check < safety-fences.v3.js
@@ -137,7 +138,7 @@ jobs:
         run: node --test scripts/test-safety-fences-v5.mjs
       - name: Test strict H-slope edge culling and fixed-inset retention
         run: node --test scripts/test-safety-fences-v8.mjs
-      - name: Test all A/B/G/U/T/H piste centerline selection and fence rules
+      - name: Test all A/B/C/G/U/T/H piste centerline selection and fence rules
         run: node --test scripts/test-safety-fences-v9.mjs
       - name: Audit the real H centerline exports
         run: node scripts/inspect-h-slope-curves.mjs
