@@ -2456,8 +2456,8 @@ function schedulePisteSafetyFenceBuild(){
         state.safetyFenceCount=0;
         const matched=curveDiagnostics.some(item=>(item.surfaceHitRatio||0)>=0.2);
         state.safetyFenceStatus=matched
-          ?'A/B/G/U/T/H привязана к Stage 1, но опасных поворотов или крутых внешних кромок не найдено.'
-          :'Кривая A/B/G/U/T/H найдена, но не совпала с поверхностью Slopes/AngledSlopes Stage 1. См. диагностику консоли.';
+          ?'Для трасс A/B/G/U/T/H не осталось секций, прошедших проверку непрерывности и попадания на Stage 1.'
+          :'Кривые трасс A/B/G/U/T/H не совпали с поверхностью Slopes/AngledSlopes Stage 1. См. диагностику консоли.';
         console.warn('[Grade Optimizer] A/B/G/U/T/H safety fences: no panels passed placement rules.',{
           stageOne:surfaceData.stats,terrainAvailable:!!terrainLookup,curveDiagnostics
         });
@@ -2592,8 +2592,8 @@ function buildTestForest({reusePlacements=false}={}) {
   const baseTreeCount=trees.length;
   const edgeTrees=buildSlopeEdgeTreePlacements(edgeCandidates,state.forestEdgeDensity,trees,bounds.max.y);
   trees=trees.concat(edgeTrees);
-  // The first fence test is deliberately restricted to A/B/G/U/T/H. The curve name selects
-  // the piste; Stage 1 remains the shared surface and its mesh child names are irrelevant.
+  // Fence generation includes every A/B/G/U/T/H piste centerline in the manifest.
+  // Stage 1 remains the shared surface and its mesh child names are irrelevant.
   const centrelineCurves=getSafetyFenceCenterlineRecords();
   const stageOneAsset=getSafetyFenceStageOneAsset();
   state.safetyFenceAssets=stageOneAsset?[stageOneAsset]:[];
