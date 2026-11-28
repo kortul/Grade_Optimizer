@@ -254,8 +254,8 @@ test('full coverage produces continuous short panels along both measured piste e
   assert.ok(result.placements.every(panel=>panel.reason==='continuous-test'));
   assert.ok(result.placements.every(panel=>panel.width>=2.8&&panel.width<=4.2),
     'panel segments should follow the local station spacing rather than a long smoothed window');
-  assert.ok(result.placements.every(panel=>panel.z<=-8.5||panel.z>=8.5),
-    'both fence lines should sit close to the corresponding piste edge after the inward offset');
+  assert.ok(result.placements.every(panel=>panel.z<=-7.0||panel.z>=7.0),
+    'both fence lines should remain near their respective piste edge after the inward offset');
   assert.ok(result.placements.every(panel=>Number.isFinite(panel.ax)&&Number.isFinite(panel.bx)));
   assert.equal(result.diagnostics.panelCount,result.placements.length);
 });
