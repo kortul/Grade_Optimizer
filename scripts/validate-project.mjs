@@ -80,13 +80,15 @@ assert.ok(html.includes('#view > .slope-label-renderer{z-index:4;pointer-events:
 for(const menuClass of ['optimizer-open','editor-open','weather-open','slope-layers-open','material-library-open']){
   assert.ok(!html.includes('#app.'+menuClass+' #view > .slope-label-renderer'),'opening '+menuClass+' must not hide the full slope-label renderer');
 }
-assert.ok(html.includes('app.v220.js')&&!html.includes('app.v209.js'),'HTML must activate the current v220 release');
+assert.ok(html.includes('app.v221.js')&&!html.includes('app.v209.js'),'HTML must activate the current v221 release');
 pass('fast spatial-index slope-label culling and menu-safe label visibility are present');
-assert.ok(entrySource.includes('function getSafetyFenceCenterlineRecords()')&&entrySource.includes('selectHSafetyFenceCurves')&&entrySource.includes('./safety-fences.v4.js?v=4'),'safety fences must use all named H-slope centerlines and the Stage1 surface sampler');
+assert.ok(entrySource.includes('function getSafetyFenceCenterlineRecords()')&&entrySource.includes('selectHSafetyFenceCurves')&&entrySource.includes('./safety-fences.v5.js?v=5'),'safety fences must use all named H-slope centerlines and the Stage1 surface sampler');
 assert.ok(entrySource.includes('isPreferredStageOneSkierSlopeAsset(asset)')&&entrySource.includes('state.safetyFenceAnalysisFootprint=null')&&entrySource.includes('curve.points.length>=2'),'fence source selection must use Stage1 plus valid named H-slope centerlines, not arbitrary slope meshes');
 assert.ok(entrySource.includes('scheduleHSafetyFenceBuild()')&&entrySource.includes('findCenterlineSafetyFencePlacements')&&entrySource.includes("for(const kind of ['slopes','angled'])"),'H-slope safety nets must be traced against Stage1 material surfaces');
-assert.ok(entrySource.includes('buildSafetyFenceGroup')&&entrySource.includes('./safety-fences.v4.js?v=4'),'H-slope net panels must use the edge-endpoint geometry builder and inset grounding');
+assert.ok(entrySource.includes('buildSafetyFenceGroup')&&entrySource.includes('./safety-fences.v5.js?v=5'),'H-slope panels must use consecutive edge samples with continuous coverage and inset grounding');
 assert.ok(entrySource.includes('fenceInsetMeters:1.25'),'H-slope fence panels must be offset toward the piste centre and resampled on Stage1');
+assert.ok(entrySource.includes('coverageMode:\'full\'')&&entrySource.includes('dedupeSafetyFencePlacements'),'all H slopes must receive continuous short panels with shared-boundary duplicate suppression');
+assert.ok(entrySource.includes('stationSpacing:3.5')&&entrySource.includes('maxPanels:1200'),'full H-slope coverage must use short panel spacing without the former sparse 420-panel cap');
 assert.ok(!entrySource.includes('scheduleSafetyFenceBuild(')&&!entrySource.includes('slopeAssets.slice(0,3)')&&entrySource.includes('minimumTurnDegrees:20')&&entrySource.includes('minimumEdgeAngleDegrees:16'),'fence placement must be sparse and restricted to turns / steep external edges');
 assert.ok(entrySource.includes('curve.name||curve.id')&&entrySource.includes('stageOneAsset.meta?.name||stageOneAsset.name')&&entrySource.includes('H slopes safety-fence inputs'),'fence diagnostics must expose H3 curve details and the Stage1 asset name');
 assert.ok(html.includes('weatherSafetyFencesToggle')&&html.includes('weatherSafetyFenceCount'),'weather settings must expose the safety-fence visibility control and section count');
